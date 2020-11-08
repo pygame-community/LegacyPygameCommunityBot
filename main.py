@@ -9,12 +9,21 @@ import karma, commands, util
 
 bot = discord.Client()
 prefix = 'pg!'
-admin_roles = (772521884373614603, 772508687256125440, 772849669591400501)
+admin_roles = [772521884373614603, 772508687256125440, 772849669591400501]
+admin_users = [414330602930700288, 265154376409153537, 444116866944991236]
 
 @bot.event
 async def on_ready():
 	karma.init()
-	print('PygameBot ready!')
+	print('PygameBot ready!\nThe bot is in:')
+	for server in bot.guilds:
+		if server.id != 772505616680878080:
+			await server.leave()
+			continue
+		print('-', server.name)
+		for ch in server.channels:
+			print('  +', ch.name)
+
 	while True:
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
@@ -37,10 +46,13 @@ async def on_message(msg: discord.Message):
 			if role.id in admin_roles:
 				is_admin = True
 				break
-		if is_admin:
-			await commands.admin_command(msg, util.split(msg.content[len(prefix):]), prefix)
-		else:
-			await commands.user_command(msg, util.split(msg.content[len(prefix):]), prefix)
+		try:
+			if is_admin or msg.author.id in admin_users:
+				await commands.admin_command(msg, util.split(msg.content[len(prefix):]), prefix)
+			else:
+				await commands.user_command(msg, util.split(msg.content[len(prefix):]), prefix)
+		except discord.errors.Forbidden:
+			pass
 
 
 @bot.event
