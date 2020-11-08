@@ -2,6 +2,7 @@ import pygame.gfxdraw
 import pygame, math, cmath, time, os
 import builtins, random, asyncio
 import types, threading, psutil, gc
+from util import ThreadWithTrace
 
 process = psutil.Process(os.getpid())
 
@@ -79,7 +80,7 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 		glob.clear()
 		gc.collect()
 
-	thread = threading.Thread(target=execThread)
+	thread = ThreadWithTrace(target=execThread)
 	thread.start()
 
 	start = time.time()
@@ -91,5 +92,6 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 			output.exc = RuntimeError(f'The bot\'s memory has taken up to {max_memory} bytes!')
 			break
 		await asyncio.sleep(0.05) # Let the bot do other async things
-	thread.join(0.01)
+	thread.kill()
+	thread.join()
 	return output
