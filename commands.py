@@ -160,3 +160,5 @@ async def user_command(msg, args, prefix):
 				await sendEmbed(msg.channel, 'An exception occured!', exp[:2044] + ' ...')
 			else:
 				await sendEmbed(msg.channel, 'An exception occured!', exp)
+	elif i(args, 0) == 'pet' and len(args) == 1:
+		await msg.channel.send(file=discord.File('save/pet.gif'))

@@ -54,8 +54,6 @@ del random.__loader__
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
 
-
-
 def execSandbox(code):
 	class output:
 		text = None
@@ -64,7 +62,7 @@ def execSandbox(code):
 
 	for il in ['__subclasses__', '__loader__', '__bases__', 'mro']:
 		if il in code:
-			raise Exception('Uh oh... stinky.. poo, whose tryna breakout of the sandbox??!!')
+			raise Exception('Uh oh... stinky.. poo, ahahahahh, whose tryna breakout of the sandbox??!!')
 
 	exec(code, allowed_globals, {})
 
