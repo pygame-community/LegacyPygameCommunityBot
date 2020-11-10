@@ -79,7 +79,6 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 			output.exc = e
 		glob.clear()
 		gc.collect()
-
 	thread = ThreadWithTrace(target=execThread)
 	thread.start()
 

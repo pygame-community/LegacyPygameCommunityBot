@@ -5,24 +5,31 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 dummy = pygame.display.set_mode((69, 69))
 
-import karma, commands, util
+import commands, util
 
 bot = discord.Client()
 prefix = 'pg!'
-admin_roles = [772521884373614603, 772508687256125440, 772849669591400501]
-admin_users = [414330602930700288, 265154376409153537, 444116866944991236]
+admin_roles = [772521884373614603, 772508687256125440, 772849669591400501, 757845292526731274, 757845497795838004]
+admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387]
+allowed_servers = [772505616680878080, 757729636045160618]
+
+introch_id = 774916117881159681
+intro_channel = None
 
 @bot.event
 async def on_ready():
-	karma.init()
+	global intro_channel
+
 	print('PygameBot ready!\nThe bot is in:')
 	for server in bot.guilds:
-		if server.id != 772505616680878080:
+		if server.id not in allowed_servers:
 			await server.leave()
 			continue
 		print('-', server.name)
 		for ch in server.channels:
 			print('  +', ch.name)
+			if server.id == 772505616680878080 and ch.id == 774916117881159681:
+				intro_channel = ch
 
 	while True:
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="discord.io/pygame_community"))
@@ -31,8 +38,8 @@ async def on_ready():
 		await asyncio.sleep(2.5)
 
 @bot.event
-async def on_member_join(user: discord.Member):
-	await karma.vote(user, 0)
+async def on_member_remove(user: discord.Member):
+	await util.sendEmbed(intro_channel, '', f'{user} left!')
 
 @bot.event
 async def on_message(msg: discord.Message):
@@ -53,55 +60,6 @@ async def on_message(msg: discord.Message):
 				await commands.user_command(msg, util.split(msg.content[len(prefix):]), prefix)
 		except discord.errors.Forbidden:
 			pass
-
-
-@bot.event
-async def on_message_delete(msg: discord.Message):
-	pass
-
-@bot.event
-async def on_message_edit(before: discord.Message, after: discord.Message):
-	pass
-
-@bot.event
-async def on_reaction_add(reaction: discord.Reaction, user: Union[discord.Member, discord.User]):
-	msg = reaction.message
-	if type(msg.channel) == discord.DMChannel:
-		return
-	if type(reaction.emoji) == discord.Emoji:
-		emoji = reaction.emoji.name
-	elif type(reaction.emoji) == discord.PartialEmoji:
-		emoji = reaction.emoji.name
-		if not reaction:
-			emoji = ''
-	else:
-		emoji = reaction.emoji
-
-	if user.id != msg.author:
-		if emoji == '👍':
-			await karma.vote(msg.author, 1)
-		if emoji == '👎':
-			await karma.vote(msg.author, -1)
-
-@bot.event
-async def on_reaction_remove(reaction: discord.Reaction, user: Union[discord.Member, discord.User]):
-	msg = reaction.message
-	if type(msg.channel) == discord.DMChannel:
-		return
-	if type(reaction.emoji) == discord.Emoji:
-		emoji = reaction.emoji.name
-	elif type(reaction.emoji) == discord.PartialEmoji:
-		emoji = reaction.emoji.name
-		if not reaction:
-			emoji = ''
-	else:
-		emoji = reaction.emoji
-
-	if user.id != msg.author:
-		if emoji == '👍':
-			await karma.vote(msg.author, -1)
-		if emoji == '👎':
-			await karma.vote(msg.author, 1)
 
 with open('token.txt') as token:
 	bot.run(token.read())

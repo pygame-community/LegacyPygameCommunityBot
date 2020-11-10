@@ -2,7 +2,6 @@ import sys, os, socket, re, threading
 import asyncio, discord, json, time, psutil
 from typing import Union
 
-import karma
 from util import safeSub as i, filterID, sendEmbed
 from sandbox import execSandbox
 
@@ -60,23 +59,6 @@ async def admin_command(msg, args, prefix):
 		await user_command(msg, args, prefix)
 
 async def user_command(msg, args, prefix):
-	#if i(args, 0) == 'rep' and len(args) == 2:
-	#	iden = filterID(args[1])
-	#	if iden not in karma.data.keys():
-	#		await sendEmbed(msg.channel, 'Invalid argument value!', 'Correct arguments: `rep <ID or mention>`')
-	#		return
-	#	await sendEmbed(msg.channel, f'Their reputation value', karma.data[iden]["reputation"])
-	#elif i(args, 0) == 'rep':
-	#	iden = str(msg.author.id)
-	#	if iden not in karma.data.keys():
-	#		karma.data[iden] = {
-	#			"reputation": 0
-	#		}
-	#		await sendEmbed(msg.channel, f'Your reputation value', 0)
-	#	else:
-	#		await sendEmbed(msg.channel, f'Your reputation value', karma.data[iden]['reputation'])
-
-	#el
 	if i(args, 0) == 'doc' and len(args) == 2:
 		splits = args[1].split('.')
 		if i(splits, 0) not in known_modules:
