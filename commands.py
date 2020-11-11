@@ -7,6 +7,12 @@ from sandbox import execSandbox
 
 import pygame, numpy, math, cmath, pickle, pkg_resources
 
+last_pet = time.time() - 3600
+pet_anger = 0.1
+pet_cost = 0.1
+jumpscare_threshold = 20.0
+pet_interval = 60.0
+
 known_modules = {
 	'pygame': pygame,
 	'numpy': numpy,
@@ -56,9 +62,10 @@ async def admin_command(msg, args, prefix):
 	elif i(args, 0) == 'stop' and len(args) == 1:
 		sys.exit(0)
 	else:
-		await user_command(msg, args, prefix)
+		await user_command(msg, args, prefix, True, True)
 
-async def user_command(msg, args, prefix):
+async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
+	global last_pet, pet_anger
 	if i(args, 0) == 'doc' and len(args) == 2:
 		splits = args[1].split('.')
 		if i(splits, 0) not in known_modules:
@@ -119,10 +126,9 @@ async def user_command(msg, args, prefix):
 		if ret.startswith('py\n'):
 			ret = ret[3:]
 
-		timeout = 5
 		start = time.time()
-		returned = await execSandbox(ret, timeout)
-		if returned.exc == None:
+		returned = await execSandbox(ret, 5 if is_priv else 2)
+		if not returned.exc:
 			if type(returned.img) is pygame.Surface:
 				pygame.image.save(returned.img, f'temp{start}.png')
 				await msg.channel.send(file=discord.File(f'temp{start}.png'))
@@ -139,4 +145,13 @@ async def user_command(msg, args, prefix):
 			else:
 				await sendEmbed(msg.channel, 'An exception occured!', exp)
 	elif i(args, 0) == 'pet' and len(args) == 1:
-		await msg.channel.send(file=discord.File('save/pet.gif'))
+		pet_anger -= (time.time() - last_pet - pet_interval) * (pet_anger / jumpscare_threshold) + pet_cost
+		if pet_anger < pet_cost:
+			pet_anger = pet_cost
+		last_pet = time.time()
+		if pet_anger > jumpscare_threshold:
+			await msg.channel.send(file=discord.File('save/die.gif'))
+		else:
+			await msg.channel.send(file=discord.File('save/pet.gif'))
+	elif i(args, 0) == 'vibecheck' and len(args) == 1:
+		await sendEmbed(msg.channel, 'Vibe Check, snek?', f'Last petting\'s ANGERYNESS: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nWas last pet {time.time() - last_pet:.2f} second(s) ago')

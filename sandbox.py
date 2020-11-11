@@ -1,6 +1,6 @@
 import pygame.gfxdraw
 import pygame, math, cmath, time, os
-import builtins, random, asyncio
+import builtins, random, asyncio, numpy
 import types, threading, psutil, gc
 from util import ThreadWithTrace
 
@@ -39,6 +39,12 @@ del FilteredPygame.transform.__loader__
 del FilteredPygame.draw.__loader__
 del FilteredPygame.gfxdraw.__loader__
 
+del FilteredPygame.mask.__spec__
+del FilteredPygame.math.__spec__
+del FilteredPygame.transform.__spec__
+del FilteredPygame.draw.__spec__
+del FilteredPygame.gfxdraw.__spec__
+
 for const in dir(pygame.constants):
 	setattr(FilteredPygame, const, f'pygame.constants.{const}')
 
@@ -53,6 +59,10 @@ allowed_globals = {
 del math.__loader__
 del cmath.__loader__
 del random.__loader__
+
+del math.__spec__
+del cmath.__spec__
+del random.__spec__
 
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
