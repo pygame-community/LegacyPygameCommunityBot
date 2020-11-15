@@ -145,7 +145,7 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 			else:
 				await sendEmbed(msg.channel, 'An exception occured!', exp)
 	elif i(args, 0) == 'pet' and len(args) == 1:
-		pet_anger -= (time.time() - last_pet - pet_interval) * (pet_anger / jumpscare_threshold) + pet_cost
+		pet_anger -= (time.time() - last_pet - pet_interval) * (pet_anger / jumpscare_threshold) - pet_cost
 		if pet_anger < pet_cost:
 			pet_anger = pet_cost
 		last_pet = time.time()
@@ -154,4 +154,4 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 		else:
 			await msg.channel.send(file=discord.File('save/pet.gif'))
 	elif i(args, 0) == 'vibecheck' and len(args) == 1:
-		await sendEmbed(msg.channel, 'Vibe Check, snek?', f'Last petting\'s ANGERYNESS: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nWas last pet {time.time() - last_pet:.2f} second(s) ago')
+		await sendEmbed(msg.channel, 'Vibe Check, snek?', f'Previous petting anger: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago')
