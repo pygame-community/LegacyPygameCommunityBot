@@ -10,7 +10,7 @@ import commands, util
 bot = discord.Client()
 prefix = 'pg!'
 admin_roles = [772521884373614603, 772508687256125440, 772849669591400501, 757845292526731274, 757845497795838004]
-priv_roles = [757846873930203218, 757845720819826718, 774473681325785098, 772537232594698271]
+priv_roles = [757846873930203218, 757845720819826718, 774473681325785098, 772537232594698271, 778205389942030377]
 admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387]
 allowed_servers = [772505616680878080, 757729636045160618]
 
@@ -55,12 +55,10 @@ async def on_message(msg: discord.Message):
 		for role in msg.author.roles:
 			if role.id in admin_roles:
 				is_admin = True
-				break
 			elif role.id in priv_roles:
 				is_priv = True
-				break
 		try:
-			if is_admin or msg.author.id in admin_users:
+			if is_admin or (msg.author.id in admin_users):
 				await commands.admin_command(msg, util.split(msg.content[len(prefix):]), prefix)
 			else:
 				await commands.user_command(msg, util.split(msg.content[len(prefix):]), prefix, is_priv, False)
