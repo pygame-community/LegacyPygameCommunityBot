@@ -154,9 +154,9 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 			str_repr = '```' + str(returned.text).replace("`", "\u200e‎`") + '```'
 			
 			if len(str_repr) > 2048:
-				await sendEmbed(msg.channel, 'Returned text (executed in {duration:.3f} sec(s)):', str_repr[:2044] + ' ...')
+				await sendEmbed(msg.channel, f'Returned text (executed in {duration:.3f} sec(s)):', str_repr[:2044] + ' ...')
 			else:
-				await sendEmbed(msg.channel, 'Returned text (executed in {duration:.3f} sec(s)):', str_repr)
+				await sendEmbed(msg.channel, f'Returned text (executed in {duration:.3f} sec(s)):', str_repr)
 		
 		else:
 			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`") + ': ' + returned.exc.args[0].replace("`", "\u200e`") + '```'
