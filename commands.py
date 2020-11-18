@@ -159,7 +159,7 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				await sendEmbed(msg.channel, f'Returned text (executed in {duration:.3f} sec(s)):', str_repr)
 		
 		else:
-			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`") + ': ' + returned.exc.args[0].replace("`", "\u200e`") + '```'
+			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
 			
 			if len(exp) > 2048:
 				await sendEmbed(msg.channel, 'An exception occured!', exp[:2044] + ' ...')
