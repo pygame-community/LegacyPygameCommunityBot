@@ -72,6 +72,7 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 		text = None
 		img = None
 		exc = None
+		duration = None                                      # The script execution time 
 
 	allowed_globals['output'] = output
 
@@ -84,7 +85,9 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
+			script_start = time.perf_counter()
 			exec(code, glob, {})
+			output.duration = time.perf_counter()-script_start
 		except Exception as e:
 			output.exc = e
 		glob.clear()

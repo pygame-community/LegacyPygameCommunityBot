@@ -142,9 +142,9 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 		if ret.startswith('py\n'):
 			ret = ret[3:]
 
-		start = time.perf_counter()
+		start = time.time()
 		returned = await execSandbox(ret, 5 if is_priv else 2)
-		duration = time.perf_counter()-start
+		duration = returned.duration                          # the execution time of the script alone
 		
 		if not returned.exc:
 			if type(returned.img) is pygame.Surface:
