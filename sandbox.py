@@ -45,8 +45,8 @@ del FilteredPygame.transform.__spec__
 del FilteredPygame.draw.__spec__
 del FilteredPygame.gfxdraw.__spec__
 
-for const in dir(pygame.constants):
-	setattr(FilteredPygame, const, f'pygame.constants.{const}')
+for const in pygame.constants.__all__:
+	setattr(FilteredPygame, f'pygame.constants.{const}', pygame.constants.__dict__[const])
 
 allowed_globals = {
 	'__builtins__': {},
