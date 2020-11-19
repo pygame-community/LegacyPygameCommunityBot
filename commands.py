@@ -2,7 +2,7 @@ import sys, os, socket, re, threading
 import asyncio, discord, json, time, psutil
 from typing import Union
 
-from util import safeSub as i, filterID, sendEmbed
+from util import safeSub as i, filterID, sendEmbed, format_time
 from sandbox import execSandbox
 
 import pygame, numpy, math, cmath, pickle, pkg_resources, timeit, string, itertools, re, builtins
@@ -50,11 +50,14 @@ async def admin_command(msg, args, prefix):
 	if i(args, 0) == 'eval' and len(args) == 2:
 		
 		try:
+			script_start = time.perf_counter()
 			ev = '```' + repr(eval(msg.content[len(prefix) + 5:])).replace('`', '\u200e‎`') + '```'
+			script_duration = time.perf_counter()-script_start
+			
 			if len(ev) > 2048:
-				await sendEmbed(msg.channel, 'Return output', ev[:2044] + ' ...')
+				await sendEmbed(msg.channel, f'Return output (executed in {format_time(script_duration)}):', ev[:2044] + ' ...')
 			else:
-				await sendEmbed(msg.channel, 'Return output', ev)
+				await sendEmbed(msg.channel, f'Return output (executed in {format_time(script_duration)}):', ev)
 		
 		except Exception as e:
 			exp = f'```' + type(e).__name__.replace("`", "\u200e‎`") + ': ' + ", ".join([str(t) for t in e.args]).replace("`", "\u200e`") + '```'
@@ -154,9 +157,9 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 			str_repr = '```' + str(returned.text).replace("`", "\u200e‎`") + '```'
 			
 			if len(str_repr) > 2048:
-				await sendEmbed(msg.channel, f'Returned text (executed in {duration:.3f} sec(s)):', str_repr[:2044] + ' ...')
+				await sendEmbed(msg.channel, f'Returned text (executed in {format_time(duration)}):', str_repr[:2044] + ' ...')
 			else:
-				await sendEmbed(msg.channel, f'Returned text (executed in {duration:.3f} sec(s)):', str_repr)
+				await sendEmbed(msg.channel, f'Returned text (executed in {format_time(duration)}):', str_repr)
 		
 		else:
 			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
