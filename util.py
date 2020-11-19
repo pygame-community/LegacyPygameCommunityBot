@@ -6,7 +6,7 @@ from typing import Union
 def safeSub(li, ind):
 	try:
 		return li[ind]
-	except Exception:   # do not block BaseException exceptions
+	except:
 		return ''
 
 # Split
@@ -69,7 +69,6 @@ class ThreadWithTrace(threading.Thread):
 
 
 def format_time(t: float, decimal_places=3):
-
 	dec = 10**decimal_places
 
 	if t < 1e-06:
