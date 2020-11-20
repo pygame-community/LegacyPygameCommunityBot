@@ -46,7 +46,7 @@ for module in pkgs:
 		pass
 
 async def admin_command(msg, args, prefix):
-	if i(args, 0) == 'eval' and len(args) == 2:
+	if i(args, 0) == 'eval' and len(args) > 1:
 		
 		try:
 			script_start = time.perf_counter()
