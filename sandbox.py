@@ -33,6 +33,11 @@ class FilteredPygame:
 		tostring = pygame.image.tostring
 		frombuffer = pygame.image.frombuffer
 
+	class constants:
+		pass
+
+
+
 del FilteredPygame.mask.__loader__
 del FilteredPygame.math.__loader__
 del FilteredPygame.transform.__loader__
@@ -46,7 +51,8 @@ del FilteredPygame.draw.__spec__
 del FilteredPygame.gfxdraw.__spec__
 
 for const in pygame.constants.__all__:
-	setattr(FilteredPygame, f'pygame.constants.{const}', pygame.constants.__dict__[const])
+	setattr(FilteredPygame.constants, f'{const}', pygame.constants.__dict__[const])
+	setattr(FilteredPygame., f'{const}', pygame.constants.__dict__[const])
 
 allowed_globals = {
 	'__builtins__': {},
@@ -85,9 +91,13 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
+			d = {}
+			compiled_code = compile(code, "<string>", mode='exec') 
+
 			script_start = time.perf_counter()
-			exec(code, glob, {})
+			exec(compiled_code, glob, d)
 			output.duration = time.perf_counter()-script_start
+		
 		except Exception as e:
 			output.exc = e
 		glob.clear()

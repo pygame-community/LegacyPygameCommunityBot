@@ -49,9 +49,13 @@ async def admin_command(msg, args, prefix):
 	if i(args, 0) == 'eval' and len(args) > 1:
 		
 		try:
+			script = compile(msg.content[len(prefix) + 5:], "<string>", "eval")   # compile script first
+
 			script_start = time.perf_counter()
-			ev = repr(eval(msg.content[len(prefix) + 5:])).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
+			raw_eval = eval(script)
 			script_duration = time.perf_counter()-script_start
+
+			ev = repr(raw_eval).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 			
 			if len(ev) + 6 > 2048:
 				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
