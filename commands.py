@@ -2,7 +2,7 @@ import sys, os, socket, re, threading
 import asyncio, discord, json, time, psutil
 from typing import Union
 
-from util import safeSub as i, filterID, sendEmbed, format_time
+from util import safeSub as i, filterID, sendEmbed, formatTime
 from sandbox import execSandbox
 
 import pygame, numpy, math, cmath, pickle, pkg_resources, timeit, string, itertools, re, builtins
@@ -30,7 +30,6 @@ known_modules = {
 	'timeit': timeit,
 	'string': string,
 	'itertools': itertools,
-	're': re,
 	'builtins': builtins
 }
 
@@ -51,13 +50,13 @@ async def admin_command(msg, args, prefix):
 		
 		try:
 			script_start = time.perf_counter()
-			ev = '```' + repr(eval(msg.content[len(prefix) + 5:])).replace('`', '\u200e‎`') + '```'
+			ev = repr(eval(msg.content[len(prefix) + 5:])).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 			script_duration = time.perf_counter()-script_start
 			
-			if len(ev) > 2048:
-				await sendEmbed(msg.channel, f'Return output (executed in {format_time(script_duration)}):', ev[:2044] + ' ...')
+			if len(ev) + 6 > 2048:
+				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Return output (executed in {format_time(script_duration)}):', ev)
+				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev + '```')
 		
 		except Exception as e:
 			exp = f'```' + type(e).__name__.replace("`", "\u200e‎`") + ': ' + ", ".join([str(t) for t in e.args]).replace("`", "\u200e`") + '```'
@@ -111,8 +110,14 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				doclink += "#"
 				doclink += "".join([s+"." for s in splits])[:-1]
 			messg += 'Online documentation: ' + doclink + '\n'
-		messg += '```' + str(obj.__doc__).replace('`', '') + '```\n\n'
-		
+		messg += str(obj.__doc__).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
+
+		if len(messg) + 6 > 2048:
+			await sendEmbed(msg.channel, f'Documentation for {args[1]}', '```' + messg[:2038] + ' ...```')
+			return
+		else:
+			messg = '```' + messg + '```\n\n'
+
 		for ob in objs.keys():
 			if ob.startswith('__'):
 				continue
@@ -154,15 +159,15 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				pygame.image.save(returned.img, f'temp{start}.png')
 				await msg.channel.send(file=discord.File(f'temp{start}.png'))
 				os.remove(f'temp{start}.png')
-			str_repr = '```' + str(returned.text).replace("`", "\u200e‎`") + '```'
+			str_repr = str(returned.text).replace("```", "\u200e‎`\u200e`\u200e‎`\u200e‎‎")
 			
-			if len(str_repr) > 2048:
-				await sendEmbed(msg.channel, f'Returned text (executed in {format_time(duration)}):', str_repr[:2044] + ' ...')
+			if len(str_repr) + 6 > 2048:
+				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Returned text (executed in {format_time(duration)}):', str_repr)
+				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr + '```')
 		
 		else:
-			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
+			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`\u200e‎") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
 			
 			if len(exp) > 2048:
 				await sendEmbed(msg.channel, 'An exception occured!', exp[:2044] + ' ...')
