@@ -52,7 +52,7 @@ del FilteredPygame.gfxdraw.__spec__
 
 for const in pygame.constants.__all__:
 	setattr(FilteredPygame.constants, f'{const}', pygame.constants.__dict__[const])
-	setattr(FilteredPygame., f'{const}', pygame.constants.__dict__[const])
+	setattr(FilteredPygame, f'{const}', pygame.constants.__dict__[const])
 
 allowed_globals = {
 	'__builtins__': {},
