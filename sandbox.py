@@ -91,11 +91,11 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
-			d = {}
+			#d = {}
 			compiled_code = compile(code, "<string>", mode='exec') 
 
 			script_start = time.perf_counter()
-			exec(compiled_code, glob, d)
+			exec(compiled_code, glob)
 			output.duration = time.perf_counter()-script_start
 		
 		except Exception as e:
