@@ -15,6 +15,9 @@ admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 59016
 competence_roles = [772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002]
 allowed_servers = [772505616680878080, 757729636045160618]
 
+role_warning_enter = [] # Welcome messages are technically sent by the person on msg.author
+role_warning_once = [] # Probable first message
+
 introch_id = 774916117881159681
 intro_channel = None
 
@@ -79,7 +82,12 @@ async def on_message(msg: discord.Message):
 				has_a_competence_role = True
 
 		if not has_a_competence_role:
-			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+			if msg.author.id in role_warning_enter:
+				if msg.author.id not in role_warning_once:
+					await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+					role_warning_once.append(msg.author.id)
+			else:
+				role_warning_enter.append(msg.author.id)
 
 
 with open('token.txt') as token:
