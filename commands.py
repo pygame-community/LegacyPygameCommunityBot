@@ -58,9 +58,9 @@ async def admin_command(msg, args, prefix):
 			ev = repr(raw_eval).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 			
 			if len(ev) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev + '```')
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev + '```')
 		
 		except Exception as e:
 			exp = f'```' + type(e).__name__.replace("`", "\u200e‎`") + ': ' + ", ".join([str(t) for t in e.args]).replace("`", "\u200e`") + '```'
@@ -166,9 +166,9 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 			str_repr = str(returned.text).replace("```", "\u200e‎`\u200e`\u200e‎`\u200e‎‎")
 			
 			if len(str_repr) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr + '```')
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr + '```')
 		
 		else:
 			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`\u200e‎") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
