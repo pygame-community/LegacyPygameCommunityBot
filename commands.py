@@ -13,7 +13,7 @@ pet_cost = 0.1
 jumpscare_threshold = 20.0
 pet_interval = 60.0
 
-known_modules = {
+doc_modules = {       # Modules to provide documentation for
 	'pygame': pygame,
 	'numpy': numpy,
 	'discord': discord,
@@ -34,14 +34,14 @@ known_modules = {
 }
 
 for module in sys.modules.keys():
-	known_modules[module] = sys.modules[module]
+	doc_modules[module] = sys.modules[module]
 
 pkgs = sorted([i.key for i in pkg_resources.working_set])
 process = psutil.Process(os.getpid())
 
 for module in pkgs:
 	try:
-		known_modules[module] = __import__(module.replace('-', '_'))
+		doc_modules[module] = __import__(module.replace('-', '_'))
 	except:
 		pass
 
@@ -59,9 +59,9 @@ async def admin_command(msg, args, prefix):
 			ev = repr(raw_eval).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 			
 			if len(ev) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Return output (executed in {formatTime(script_duration)}):', '```' + ev + '```')
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev + '```')
 		
 		except Exception as e:
 			exp = type(e).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in e.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
@@ -92,10 +92,10 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 	if i(args, 0) == 'doc' and len(args) == 2:
 		splits = args[1].split('.')
 		
-		if i(splits, 0) not in known_modules:
-			await sendEmbed(msg.channel, f'No known module of that!', f'No such module is available for its documentation')
+		if i(splits, 0) not in doc_modules:
+			await sendEmbed(msg.channel, f'Unknown module!', f'No such module is available for its documentation')
 			return
-		objs = known_modules
+		objs = doc_modules
 		obj = None
 		
 		for part in splits:
@@ -170,9 +170,9 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				str_repr = ' '
 			
 			if len(str_repr) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Returned text (executed in {formatTime(duration)}):', '```' + str_repr + '```')
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr + '```')
 		
 		else:
 			exp = type(returned.exc).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in returned.exc.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
