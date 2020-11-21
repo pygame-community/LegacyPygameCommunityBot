@@ -11,7 +11,7 @@ disallowed_builtins = (
 	'__build_class__', '__debug__', '__doc__', '__import__', '__loader__', '__name__',
 	'__package__', '__spec__', 'copyright', 'credits', 'exit', 'type',
 	'help', 'input', 'license', 'print', 'open', 'quit', 'compile',
-	'exec', 'eval', 'getattr', 'setattr', 'delattr'
+	'exec', 'eval', 'getattr', 'setattr', 'delattr', 'globals', 'locals', 'vars'
 )
 
 for key in dir(builtins):
