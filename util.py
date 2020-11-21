@@ -84,3 +84,20 @@ class ThreadWithTrace(threading.Thread):
 
 	def kill(self):
 		self.killed = True
+
+
+SCRIPT_PRINT = """
+
+def print(*values, sep=" ", end="\\n"):
+	values = list(values)
+	output.text = str(output.text)
+	
+	for i in range(len(values)):
+		values[i] = str(values[i])
+		output.text += sep.join(values) + end
+
+"""
+
+INCLUDE_FUNCTIONS = {
+	"print": SCRIPT_PRINT
+}

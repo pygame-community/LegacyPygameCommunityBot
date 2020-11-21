@@ -2,7 +2,7 @@ import pygame.gfxdraw
 import pygame, math, cmath, time, os
 import builtins, random, asyncio, numpy
 import types, threading, psutil, gc
-from util import ThreadWithTrace
+from util import ThreadWithTrace, INCLUDE_FUNCTIONS
 
 process = psutil.Process(os.getpid())
 
@@ -92,7 +92,9 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
-			compiled_code = compile('def print(*values, sep=" ", end="\\n"):\n\tvalues = list(values)\n\toutput.text = str(output.text)\n\tfor i in range(len(values)):\n\t\tvalues[i] = str(values[i])\n\toutput.text += sep.join(values) + end\npass\n\n' + code, "<string>", mode='exec')
+			final_code = "\n".join(INCLUDE_FUNCTIONS[func_name] for func_name in INCLUDE_FUNCTIONS.keys()) + f"\n{code}"
+
+			compiled_code = compile(final_code, "<string>", mode='exec')
 
 			script_start = time.perf_counter()
 			exec(compiled_code, glob)

@@ -79,7 +79,7 @@ async def admin_command(msg, args, prefix):
 		await sendEmbed(msg.channel, 'Total memory used', f'{process.memory_info().rss} B')
 	
 	elif i(args, 0) == 'stop' and len(args) == 1:
-		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
+		await sendEmbed(msg.channel, 'Stopping bot...', 'Go make the world a better place...\nthat\'s smy final message,\ngoodbye.')
 		sys.exit(1)
 	
 	else:
@@ -93,7 +93,7 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 		splits = args[1].split('.')
 		
 		if i(splits, 0) not in known_modules:
-			await sendEmbed(msg.channel, f'No known module of that!', f'No such module is available for its documentation')
+			await sendEmbed(msg.channel, f'Unknown module!', f'No such module is available for its documentation')
 			return
 		objs = known_modules
 		obj = None
