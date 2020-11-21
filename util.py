@@ -28,11 +28,14 @@ def split(com):
 def formatTime(t: float, decimal_places=3):
 	dec = 10**decimal_places
 
-	if t < 1e-06:
+	if t < 1e-09:
+		return f"{int(t*1e+09*dec)/dec} ps"
+
+	elif t < 1e-06:
 		return f"{int(t*1e+09*dec)/dec} ns"
 
 	elif t < 1e-03:
-		return f"{int(t*1e+06*dec)/dec} us"
+		return f"{int(t*1e+06*dec)/dec} \u03bcs"
 
 	elif t < 1.0:
 		return f"{int(t*1e+03*dec)/dec} ms"

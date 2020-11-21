@@ -11,12 +11,13 @@ disallowed_builtins = (
 	'__build_class__', '__debug__', '__doc__', '__import__', '__loader__', '__name__',
 	'__package__', '__spec__', 'copyright', 'credits', 'exit', 'type',
 	'help', 'input', 'license', 'print', 'open', 'quit', 'compile',
-	'exec', 'eval', 'getattr', 'setattr', 'delattr'
+	'exec', 'eval', 'getattr', 'setattr', 'delattr', 'globals', 'locals', 'vars'
 )
 
 for key in dir(builtins):
 	if key not in disallowed_builtins:
 		filtered_builtins[key] = getattr(builtins, key)
+
 
 class FilteredPygame:
 	Surface = pygame.Surface
@@ -35,7 +36,6 @@ class FilteredPygame:
 
 	class constants:
 		pass
-
 
 
 del FilteredPygame.mask.__loader__
@@ -73,12 +73,13 @@ del random.__spec__
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
 
+
 async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	class output:
-		text = None
+		text = ''
 		img = None
 		exc = None
-		duration = None                                      # The script execution time 
+		duration = None # The script execution time
 
 	allowed_globals['output'] = output
 
@@ -91,12 +92,11 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
-			#d = {}
-			compiled_code = compile(code, "<string>", mode='exec') 
+			compiled_code = compile('def print(*values, sep=" ", end="\\n"):\n\tvalues = list(values)\n\toutput.text = str(output.text)\n\tfor i in range(len(values)):\n\t\tvalues[i] = str(values[i])\n\toutput.text += sep.join(values) + end\npass\n\n' + code, "<string>", mode='exec')
 
 			script_start = time.perf_counter()
 			exec(compiled_code, glob)
-			output.duration = time.perf_counter()-script_start
+			output.duration = time.perf_counter() - script_start
 		
 		except Exception as e:
 			output.exc = e

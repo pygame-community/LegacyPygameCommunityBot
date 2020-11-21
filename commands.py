@@ -45,6 +45,7 @@ for module in pkgs:
 	except:
 		pass
 
+
 async def admin_command(msg, args, prefix):
 	if i(args, 0) == 'eval' and len(args) > 1:
 		
@@ -78,10 +79,12 @@ async def admin_command(msg, args, prefix):
 		await sendEmbed(msg.channel, 'Total memory used', f'{process.memory_info().rss} B')
 	
 	elif i(args, 0) == 'stop' and len(args) == 1:
-		sys.exit(0)
+		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
+		sys.exit(1)
 	
 	else:
 		await user_command(msg, args, prefix, True, True)
+
 
 async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 	global last_pet, pet_anger
