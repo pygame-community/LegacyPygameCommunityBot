@@ -75,7 +75,11 @@ async def on_message(msg: discord.Message):
 			if role.id in competence_roles:
 				has_a_competence_role = True
 
+<<<<<<< HEAD
 		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772507287734321162, 772816508015083552]: # PGC #pygame, #python, #beginners-help   [SLOW]
+=======
+		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772816508015083552]: # PGC #pygame, #beginners-help
+>>>>>>> 30eb2a8448c969a1b5beb863623f8aa17b8df9d0
 			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
 
 
