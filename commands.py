@@ -78,7 +78,8 @@ async def admin_command(msg, args, prefix):
 		await sendEmbed(msg.channel, 'Total memory used', f'{process.memory_info().rss} B')
 	
 	elif i(args, 0) == 'stop' and len(args) == 1:
-		sys.exit(0)
+		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
+		sys.exit(1)
 	
 	else:
 		await user_command(msg, args, prefix, True, True)
