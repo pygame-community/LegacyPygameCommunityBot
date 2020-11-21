@@ -13,7 +13,7 @@ pet_cost = 0.1
 jumpscare_threshold = 20.0
 pet_interval = 60.0
 
-known_modules = {
+doc_modules = {       # Modules to provide documentation for
 	'pygame': pygame,
 	'numpy': numpy,
 	'discord': discord,
@@ -34,14 +34,14 @@ known_modules = {
 }
 
 for module in sys.modules.keys():
-	known_modules[module] = sys.modules[module]
+	doc_modules[module] = sys.modules[module]
 
 pkgs = sorted([i.key for i in pkg_resources.working_set])
 process = psutil.Process(os.getpid())
 
 for module in pkgs:
 	try:
-		known_modules[module] = __import__(module.replace('-', '_'))
+		doc_modules[module] = __import__(module.replace('-', '_'))
 	except:
 		pass
 
@@ -92,10 +92,10 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 	if i(args, 0) == 'doc' and len(args) == 2:
 		splits = args[1].split('.')
 		
-		if i(splits, 0) not in known_modules:
+		if i(splits, 0) not in doc_modules:
 			await sendEmbed(msg.channel, f'Unknown module!', f'No such module is available for its documentation')
 			return
-		objs = known_modules
+		objs = doc_modules
 		obj = None
 		
 		for part in splits:
