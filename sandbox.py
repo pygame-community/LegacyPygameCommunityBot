@@ -8,7 +8,7 @@ process = psutil.Process(os.getpid())
 
 filtered_builtins = {}
 disallowed_builtins = (
-	'__build_class__', '__debug__', '__doc__', '__import__', '__loader__', '__name__',
+	'__debug__', '__doc__', '__import__', '__loader__', '__name__',
 	'__package__', '__spec__', 'copyright', 'credits', 'exit', 'type',
 	'help', 'input', 'license', 'print', 'open', 'quit', 'compile',
 	'exec', 'eval', 'getattr', 'setattr', 'delattr', 'globals', 'locals', 'vars'
@@ -17,7 +17,7 @@ disallowed_builtins = (
 for key in dir(builtins):
 	if key not in disallowed_builtins:
 		filtered_builtins[key] = getattr(builtins, key)
-
+filtered_builtins['__build_class__'] = builtins.__build_class__
 
 class FilteredPygame:
 	Surface = pygame.Surface
