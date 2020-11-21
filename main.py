@@ -9,20 +9,25 @@ import commands, util
 
 bot = discord.Client()
 prefix = 'pg!'
-admin_roles = [772521884373614603, 772508687256125440, 772849669591400501, 757845292526731274, 757845497795838004]
-priv_roles = [757846873930203218, 757845720819826718, 774473681325785098, 772537232594698271, 778205389942030377]
-admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387]
-competence_roles = [772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002]
-allowed_servers = [772505616680878080, 757729636045160618]
 
-introch_id = 774916117881159681
-intro_channel = None
+# PGC Admin, PGC Moderator, PGC Wizards, NXT Devistrator, NXT Moderator
+admin_roles = [772521884373614603, 772508687256125440, 772849669591400501, 757845292526731274, 757845497795838004]
+
+# PGC Specialties, PGC Helpfulies, NXT Developer, NXT Contributor
+priv_roles = [774473681325785098, 778205389942030377, 757845720819826718, 757846873930203218]
+
+# AvaxarXapaxa, BaconInvader, MegaJC, Neuxbane
+admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387]
+
+# PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor
+competence_roles = [772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002]
+
+# PGC (Pygame Community Server), NXT (Neaxture)
+allowed_servers = [772505616680878080, 757729636045160618]
 
 
 @bot.event
 async def on_ready():
-	global intro_channel
-
 	print('PygameBot ready!\nThe bot is in:')
 	for server in bot.guilds:
 		if server.id not in allowed_servers:
@@ -31,20 +36,12 @@ async def on_ready():
 		print('-', server.name)
 		for ch in server.channels:
 			print('  +', ch.name)
-			if server.id == 772505616680878080 and ch.id == 774916117881159681:
-				intro_channel = ch
 
 	while True:
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="in discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
-
-
-@bot.event
-async def on_member_remove(user: discord.Member):
-	print('somebody left')
-	await util.sendEmbed(intro_channel, '', f'{user} left!')
 
 
 @bot.event
@@ -72,13 +69,13 @@ async def on_message(msg: discord.Message):
 		except discord.errors.Forbidden:
 			pass
 
-	if msg.channel.guild.id == 772505616680878080:
+	if msg.channel.guild.id == 772505616680878080: # In the pygame community discord server
 		has_a_competence_role = False
 		for role in msg.author.roles:
 			if role.id in competence_roles:
 				has_a_competence_role = True
 
-		if not has_a_competence_role:
+		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772507287734321162, 772816508015083552]: # PGC #pygame, #python, #beginners-help
 			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
 
 
