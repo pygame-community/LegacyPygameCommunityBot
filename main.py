@@ -20,7 +20,7 @@ priv_roles = set((774473681325785098, 778205389942030377, 757845720819826718, 75
 admin_users = set((414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387))
 
 # PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor
-competence_roles = set((772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002))
+competence_roles = set((772536799926157312, 772536976262823947, 772537033078997002, 772537232594698271))
 
 # PGC (Pygame Community Server), NXT (Neaxture)
 allowed_servers = set((772505616680878080, 757729636045160618))
@@ -77,7 +77,7 @@ async def on_message(msg: discord.Message):
 
 		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772816508015083552]: # PGC #pygame, #beginners-help
 			mg = await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
-			await asyncio.sleep(5)
+			await asyncio.sleep(10)
 			await mg.delete()
 
 
