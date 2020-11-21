@@ -23,7 +23,7 @@ admin_users = set((414330602930700288, 265154376409153537, 444116866944991236, 5
 competence_roles = set((772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002))
 
 # PGC (Pygame Community Server), NXT (Neaxture)
-allowed_servers = set((y772505616680878080, 757729636045160618))
+allowed_servers = set((772505616680878080, 757729636045160618))
 
 
 @bot.event
@@ -76,7 +76,9 @@ async def on_message(msg: discord.Message):
 				has_a_competence_role = True
 
 		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772816508015083552]: # PGC #pygame, #beginners-help
-			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+			mg = await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+			await asyncio.sleep(5)
+			await mg.delete()
 
 
 with open('token.txt') as token:
