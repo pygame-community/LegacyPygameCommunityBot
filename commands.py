@@ -64,12 +64,12 @@ async def admin_command(msg, args, prefix):
 				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev + '```')
 		
 		except Exception as e:
-			exp = f'```' + type(e).__name__.replace("`", "\u200e‎`") + ': ' + ", ".join([str(t) for t in e.args]).replace("`", "\u200e`") + '```'
+			exp = type(e).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in e.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
 			
-			if len(exp) > 2048:
-				await sendEmbed(msg.channel, 'An exception occured!', exp[:2044] + ' ...')
+			if len(exp) + 6 > 2048:
+				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, 'An exception occured!', exp)
+				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp + '```')
 	
 	elif i(args, 0) == 'sudo' and len(args) > 1:
 		await msg.channel.send(msg.content[len(prefix) + 5:])
@@ -108,22 +108,21 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 			except:
 				await sendEmbed(msg.channel, f'Class/function/sub-module not found!', f'There\'s no such thing here named `{args[1]}`')
 				return
-		messg = ''
-		
-		if i(splits, 0) == 'pygame':
-			doclink = "https://www.pygame.org/docs"
-			if len(splits) > 1:
-				doclink += '/ref/' + i(splits, 1).lower() + ".html"
-				doclink += "#"
-				doclink += "".join([s+"." for s in splits])[:-1]
-			messg += 'Online documentation: ' + doclink + '\n'
-		messg += str(obj.__doc__).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
+		messg = str(obj.__doc__).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 
 		if len(messg) + 6 > 2048:
 			await sendEmbed(msg.channel, f'Documentation for {args[1]}', '```' + messg[:2038] + ' ...```')
 			return
 		else:
 			messg = '```' + messg + '```\n\n'
+
+		if i(splits, 0) == 'pygame':
+			doclink = "https://www.pygame.org/docs"
+			if len(splits) > 1:
+				doclink += '/ref/' + i(splits, 1).lower() + ".html"
+				doclink += "#"
+				doclink += "".join([s+"." for s in splits])[:-1]
+			messg = 'Online documentation: ' + doclink + '\n' + messg
 
 		for ob in objs.keys():
 			if ob.startswith('__'):
@@ -159,7 +158,7 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 
 		start = time.time()
 		returned = await execSandbox(ret, 5 if is_priv else 2)
-		duration = returned.duration                          # the execution time of the script alone
+		duration = returned.duration # the execution time of the script alone
 		
 		if not returned.exc:
 			if type(returned.img) is pygame.Surface:
@@ -167,6 +166,8 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				await msg.channel.send(file=discord.File(f'temp{start}.png'))
 				os.remove(f'temp{start}.png')
 			str_repr = str(returned.text).replace("```", "\u200e‎`\u200e`\u200e‎`\u200e‎‎")
+			if str_repr == '':
+				str_repr = ' '
 			
 			if len(str_repr) + 6 > 2048:
 				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
@@ -174,12 +175,12 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr + '```')
 		
 		else:
-			exp = '```' + type(returned.exc).__name__.replace("`", "\u200e‎`\u200e‎") + ': ' + i(returned.exc.args, 0).replace("`", "\u200e`") + '```'
-			
-			if len(exp) > 2048:
-				await sendEmbed(msg.channel, 'An exception occured!', exp[:2044] + ' ...')
+			exp = type(returned.exc).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in returned.exc.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
+
+			if len(exp) + 6 > 2048:
+				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, 'An exception occured!', exp)
+				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp + '```')
 	
 	elif i(args, 0) == 'pet' and len(args) == 1:
 		pet_anger -= (time.time() - last_pet - pet_interval) * (pet_anger / jumpscare_threshold) - pet_cost
