@@ -18,6 +18,7 @@ for key in dir(builtins):
 	if key not in disallowed_builtins:
 		filtered_builtins[key] = getattr(builtins, key)
 
+
 class FilteredPygame:
 	Surface = pygame.Surface
 	Rect = pygame.Rect
@@ -35,7 +36,6 @@ class FilteredPygame:
 
 	class constants:
 		pass
-
 
 
 del FilteredPygame.mask.__loader__
@@ -72,6 +72,7 @@ del random.__spec__
 
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
+
 
 async def execSandbox(code, timeout = 5, max_memory = 2**28):
 	class output:

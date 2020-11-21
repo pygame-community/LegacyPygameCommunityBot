@@ -12,10 +12,12 @@ prefix = 'pg!'
 admin_roles = [772521884373614603, 772508687256125440, 772849669591400501, 757845292526731274, 757845497795838004]
 priv_roles = [757846873930203218, 757845720819826718, 774473681325785098, 772537232594698271, 778205389942030377]
 admin_users = [414330602930700288, 265154376409153537, 444116866944991236, 590160104871952387]
+competence_roles = [772536799926157312, 772536976262823947, 772536976262823947, 772537033078997002]
 allowed_servers = [772505616680878080, 757729636045160618]
 
 introch_id = 774916117881159681
 intro_channel = None
+
 
 @bot.event
 async def on_ready():
@@ -38,17 +40,22 @@ async def on_ready():
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="in discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
 
+
 @bot.event
 async def on_member_remove(user: discord.Member):
 	print('somebody left')
 	await util.sendEmbed(intro_channel, '', f'{user} left!')
 
+
 @bot.event
 async def on_message(msg: discord.Message):
 	if msg.author.bot:
 		return
+
 	if type(msg.channel) == discord.DMChannel:
 		await msg.channel.send('Please do commands at the server!')
+		return
+
 	if msg.content.startswith(prefix):
 		is_admin = False
 		is_priv = False
@@ -64,6 +71,16 @@ async def on_message(msg: discord.Message):
 				await commands.user_command(msg, util.split(msg.content[len(prefix):]), prefix, is_priv, False)
 		except discord.errors.Forbidden:
 			pass
+
+	if msg.channel.guild.id == 772505616680878080:
+		has_a_competence_role = False
+		for role in msg.author.roles:
+			if role.id in competence_roles:
+				has_a_competence_role = True
+
+		if not has_a_competence_role:
+			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+
 
 with open('token.txt') as token:
 	bot.run(token.read())

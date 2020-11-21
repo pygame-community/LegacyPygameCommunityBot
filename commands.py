@@ -45,6 +45,7 @@ for module in pkgs:
 	except:
 		pass
 
+
 async def admin_command(msg, args, prefix):
 	if i(args, 0) == 'eval' and len(args) > 1:
 		
@@ -83,6 +84,7 @@ async def admin_command(msg, args, prefix):
 	
 	else:
 		await user_command(msg, args, prefix, True, True)
+
 
 async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 	global last_pet, pet_anger
