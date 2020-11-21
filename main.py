@@ -76,7 +76,9 @@ async def on_message(msg: discord.Message):
 				has_a_competence_role = True
 
 		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772816508015083552]: # PGC #pygame, #beginners-help
-			await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+			mg = await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
+			await asyncio.sleep(5)
+			await mg.delete()
 
 
 with open('token.txt') as token:

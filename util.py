@@ -53,7 +53,7 @@ def filterID(mention):
 
 # Sends an embed with a much more tight function
 async def sendEmbed(channel, title, description, color=0xFFFFAA):
-	await channel.send(embed=discord.Embed(title=title, description=description, color=color))
+	return await channel.send(embed=discord.Embed(title=title, description=description, color=color))
 
 class ThreadWithTrace(threading.Thread):
 	def __init__(self, *args, **keywords):
