@@ -1,5 +1,5 @@
 # PygameCommunityBot
-The alt pygame community discord bot
+The alt pygame community discord bot<br/>
 [The Discord Server](https://discord.gg/kD2Qq9tbKm)
 
 ## Commands
