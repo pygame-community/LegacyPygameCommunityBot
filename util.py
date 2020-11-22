@@ -25,7 +25,7 @@ def split(com):
 	return spl
 
 
-def formatTime(t: float, decimal_places=3):
+def formatTime(t: float, decimal_places=4):
 	dec = 10**decimal_places
 
 	if t < 1e-09:
