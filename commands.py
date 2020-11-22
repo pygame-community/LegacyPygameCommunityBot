@@ -163,7 +163,10 @@ async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
 		if not returned.exc:
 			if type(returned.img) is pygame.Surface:
 				pygame.image.save(returned.img, f'temp{start}.png')
-				await msg.channel.send(file=discord.File(f'temp{start}.png'))
+				if os.path.getsize(f'temp{start}.png') < 2**22:
+					await msg.channel.send(file=discord.File(f'temp{start}.png'))
+				else:
+					await sendEmbed(msg.channel, 'Image cannot be sent', 'The image file size is >4MiB')
 				os.remove(f'temp{start}.png')
 			str_repr = str(returned.text).replace("```", "\u200e‎`\u200e`\u200e‎`\u200e‎‎")
 			if str_repr == '':
