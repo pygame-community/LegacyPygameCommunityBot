@@ -76,8 +76,8 @@ async def on_message(msg: discord.Message):
 				has_a_competence_role = True
 
 		if not has_a_competence_role and msg.channel.id in [772507303781859348, 772816508015083552]: # PGC #pygame, #beginners-help
-			mg = await util.sendEmbed(msg.channel, 'What are you?', 'Are you a beginner, intermediate, pro, or a contributor in pygame? Please choose in <#772535163195228200>')
-			await asyncio.sleep(10)
+			mg = await util.sendEmbed(msg.channel, 'Get more roles!', 'Hey there, are you a beginner, intermediate or pro in pygame, or even a contributor? Tell Carl-Bot in <#772535163195228200>!')
+			await asyncio.sleep(15)
 			await mg.delete()
 
 

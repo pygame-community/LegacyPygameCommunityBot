@@ -29,18 +29,31 @@ def formatTime(t: float, decimal_places=3):
 	dec = 10**decimal_places
 
 	if t < 1e-09:
-		return f"{int(t*1e+09*dec)/dec} ps"
-
+		return f"{int(t*1e+12*dec)/dec} ps"
 	elif t < 1e-06:
 		return f"{int(t*1e+09*dec)/dec} ns"
-
 	elif t < 1e-03:
 		return f"{int(t*1e+06*dec)/dec} \u03bcs"
-
 	elif t < 1.0:
 		return f"{int(t*1e+03*dec)/dec} ms"
 
-	return f"{int(t*1e+03*dec)/dec} s"
+	return f"{int(t*dec)/dec} s"
+
+
+def formatByte(b: int, decimal_places=3):
+	dec = 10**decimal_places
+
+	if b < 1e+03:
+		return f"{int(b*dec)/dec} B"
+	elif b < 1e+06:
+		return f"{int(b*1e-03*dec)/dec} KB"
+	elif b < 1e+09:
+		return f"{int(b*1e-06*dec)/dec} MB"
+	elif b < 1e+12:
+		return f"{int(b*1e-09*dec)/dec} GB"
+
+
+
 
 
 # Filters mention to get ID '<@!6969>' to 6969
@@ -100,4 +113,10 @@ def print(*values, sep=" ", end="\\n"):
 
 INCLUDE_FUNCTIONS = {
 	"print": SCRIPT_PRINT
+}
+
+
+ROLE_PROMPT = {
+	"title": [],
+	"message": []
 }

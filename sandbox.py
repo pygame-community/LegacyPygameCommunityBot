@@ -99,7 +99,6 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 		glob = allowed_globals.copy()
 		try:
 			included_funcs = "\n".join( INCLUDE_FUNCTIONS[func_name] for func_name in INCLUDE_FUNCTIONS.keys() )
-			
 			compiled_code = compile( f"{included_funcs}\n{code}", "<string>", mode='exec' )
 
 			script_start = time.perf_counter()
@@ -108,6 +107,7 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 		
 		except Exception as e:
 			output.exc = e
+		
 		glob.clear()
 		gc.collect()
 	thread = ThreadWithTrace(target=execThread)
