@@ -77,7 +77,7 @@ async def admin_command(msg, args, prefix):
 	
 	elif i(args, 0) == 'heap' and len(args) == 1:
 		mem = process.memory_info().rss
-		await sendEmbed(msg.channel, 'Total memory used:', f"{formatByte(mem, 4)}\n({mem} B)")
+		await sendEmbed(msg.channel, 'Total memory used:', f"**{formatByte(mem, 4)}**\n({mem} B)")
 	
 	elif i(args, 0) == 'stop' and len(args) == 1:
 		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
