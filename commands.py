@@ -2,7 +2,7 @@ import sys, os, socket, re, threading
 import asyncio, discord, json, time, psutil
 from typing import Union
 
-from util import safeSub as i, filterID, sendEmbed, formatTime
+from util import safeSub as i, filterID, sendEmbed, formatTime, formatByte
 from sandbox import execSandbox
 
 import pygame, numpy, math, cmath, pickle, pkg_resources, timeit, string, itertools, re, builtins
@@ -76,7 +76,8 @@ async def admin_command(msg, args, prefix):
 		await msg.delete()
 	
 	elif i(args, 0) == 'heap' and len(args) == 1:
-		await sendEmbed(msg.channel, 'Total memory used', f'{process.memory_info().rss} B')
+		mem = process.memory_info().rss
+		await sendEmbed(msg.channel, 'Total memory used:', f"{formatByte(mem, 4)}\n({mem} B)")
 	
 	elif i(args, 0) == 'stop' and len(args) == 1:
 		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
