@@ -3,58 +3,39 @@ import discord, pygame, numpy, threading
 from typing import Union
 
 # Safe subscripting
-def safeSub(li, ind):
+def safeSub(li: list, ind: int):
 	try:
 		return li[ind]
-	except:
+	except IndexError:
 		return ''
 
-# Split
-def split(com):
-	spl = []
-	tm = ''
-	for c in com:
-		if c in [' ', '\n']:
-			if tm != '':
-				spl.append(tm)
-				tm = ''
-		else:
-			tm += c
-	if tm != '':
-		spl.append(tm)
-	return spl
-
-
+# Formats time with a prefix
 def formatTime(t: float, decimal_places=4):
 	dec = 10**decimal_places
 
 	if t < 1e-09:
-		return f"{int(t*1e+12*dec)/dec} ps"
+		return f'{int(t*1e+12*dec)/dec} ps'
 	elif t < 1e-06:
-		return f"{int(t*1e+09*dec)/dec} ns"
+		return f'{int(t*1e+09*dec)/dec} ns'
 	elif t < 1e-03:
-		return f"{int(t*1e+06*dec)/dec} \u03bcs"
+		return f'{int(t*1e+06*dec)/dec} \u03bcs'
 	elif t < 1.0:
-		return f"{int(t*1e+03*dec)/dec} ms"
+		return f'{int(t*1e+03*dec)/dec} ms'
 
-	return f"{int(t*dec)/dec} s"
+	return f'{int(t*dec)/dec} s'
 
-
+# Formats memory size with a prefix
 def formatByte(b: int, decimal_places=3):
 	dec = 10**decimal_places
 
 	if b < 1e+03:
-		return f"{int(b*dec)/dec} B"
+		return f'{int(b*dec)/dec} B'
 	elif b < 1e+06:
-		return f"{int(b*1e-03*dec)/dec} KB"
+		return f'{int(b*1e-03*dec)/dec} KB'
 	elif b < 1e+09:
-		return f"{int(b*1e-06*dec)/dec} MB"
-	elif b < 1e+12:
-		return f"{int(b*1e-09*dec)/dec} GB"
-
-
-
-
+		return f'{int(b*1e-06*dec)/dec} MB'
+	else:
+		return f'{int(b*1e-09*dec)/dec} GB'
 
 # Filters mention to get ID '<@!6969>' to 6969
 def filterID(mention):
@@ -68,6 +49,7 @@ def filterID(mention):
 async def sendEmbed(channel, title, description, color=0xFFFFAA):
 	return await channel.send(embed=discord.Embed(title=title, description=description, color=color))
 
+# Modified thread with a kill method
 class ThreadWithTrace(threading.Thread):
 	def __init__(self, *args, **keywords):
 		threading.Thread.__init__(self, *args, **keywords)
@@ -97,26 +79,3 @@ class ThreadWithTrace(threading.Thread):
 
 	def kill(self):
 		self.killed = True
-
-
-SCRIPT_PRINT = """
-
-def print(*values, sep=" ", end="\\n"):
-	values = list(values)
-	output.text = str(output.text)
-	
-	for i in range(len(values)):
-		values[i] = str(values[i])
-		output.text += sep.join(values) + end
-
-"""
-
-INCLUDE_FUNCTIONS = {
-	"print": SCRIPT_PRINT
-}
-
-
-ROLE_PROMPT = {
-	"title": [],
-	"message": []
-}

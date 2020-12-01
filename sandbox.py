@@ -1,11 +1,11 @@
-import pygame.gfxdraw
-import pygame, math, cmath, time, os
+import pygame, pygame.gfxdraw, math, cmath, time, os
 import builtins, asyncio, numpy
 import types, threading, psutil, gc
 
-from util import ThreadWithTrace, INCLUDE_FUNCTIONS
+from util import ThreadWithTrace
+from constants import INCLUDE_FUNCTIONS
 
-# extras
+# Extra modules
 import timeit, random, string, itertools, re, builtins
 
 process = psutil.Process(os.getpid())
@@ -41,7 +41,6 @@ class FilteredPygame:
 	class constants:
 		pass
 
-
 del FilteredPygame.mask.__loader__
 del FilteredPygame.math.__loader__
 del FilteredPygame.transform.__loader__
@@ -72,15 +71,13 @@ allowed_globals = {
 for module in allowed_globals.keys():
 	del allowed_globals[module].__loader__, allowed_globals[module].__spec__
 
-allowed_globals["__builtins__"] = {}
-allowed_globals["pygame"] = FilteredPygame
+allowed_globals['__builtins__'] = {}
+allowed_globals['pygame'] = FilteredPygame
 
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
 
-
-
-async def execSandbox(code, timeout = 5, max_memory = 2**28):
+async def execSandbox(code: str, timeout=5, max_memory=2**28):
 	class output:
 		text = ''
 		img = None
@@ -91,15 +88,13 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 
 	for il in ['__subclasses__', '__loader__', '__bases__', 'mro']:
 		if il in code:
-			class YouAreSusException(Exception):
-				pass
-			raise YouAreSusException('Uh oh... stinky.. poo, ahahahahh, whose tryna breakout of the sandbox??!!')
+			raise Exception('no u')
 
 	def execThread():
 		glob = allowed_globals.copy()
 		try:
 			included_funcs = "\n".join( INCLUDE_FUNCTIONS[func_name] for func_name in INCLUDE_FUNCTIONS.keys() )
-			compiled_code = compile( f"{included_funcs}\n{code}", "<string>", mode='exec' )
+			compiled_code = compile( f'{included_funcs}\n{code}', '<string>', mode='exec')
 
 			script_start = time.perf_counter()
 			exec(compiled_code, glob)
@@ -122,6 +117,7 @@ async def execSandbox(code, timeout = 5, max_memory = 2**28):
 			output.exc = RuntimeError(f'The bot\'s memory has taken up to {max_memory} bytes!')
 			break
 		await asyncio.sleep(0.05) # Let the bot do other async things
+
 	thread.kill()
 	thread.join()
 	return output

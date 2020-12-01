@@ -13,7 +13,7 @@ pet_cost = 0.1
 jumpscare_threshold = 20.0
 pet_interval = 60.0
 
-doc_modules = {       # Modules to provide documentation for
+doc_modules = { # Modules to provide documentation for
 	'pygame': pygame,
 	'numpy': numpy,
 	'discord': discord,
@@ -45,8 +45,7 @@ for module in pkgs:
 	except:
 		pass
 
-
-async def admin_command(msg, args, prefix):
+async def admin_command(msg: discord.Message, args: list, prefix: str):
 	if i(args, 0) == 'eval' and len(args) > 1:
 		
 		try:
@@ -86,8 +85,7 @@ async def admin_command(msg, args, prefix):
 	else:
 		await user_command(msg, args, prefix, True, True)
 
-
-async def user_command(msg, args, prefix, is_priv = False, is_admin = False):
+async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False):
 	global last_pet, pet_anger
 	
 	if i(args, 0) == 'doc' and len(args) == 2:
