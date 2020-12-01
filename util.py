@@ -38,12 +38,8 @@ def formatByte(b: int, decimal_places=3):
 		return f'{int(b*1e-09*dec)/dec} GB'
 
 # Filters mention to get ID '<@!6969>' to 6969
-def filterID(mention):
-	a = mention.split('<')
-	a = ''.join(a).split('@')
-	a = ''.join(a).split('!')
-	a = ''.join(''.join(a).split('>'))
-	return a
+def filterID(mention: str):
+	return mention.replace('<', '').replace('@', '').replace('!', '').replace('>', '')
 
 # Sends an embed with a much more tight function
 async def sendEmbed(channel, title, description, color=0xFFFFAA):
