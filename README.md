@@ -1,5 +1,5 @@
 # PygameCommunityBot
-The unofficial [pygame community](https://discord.gg/kD2Qq9tbKm) discord bot<br/>
+The unofficial [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot<br/>
 
 ## Commands
 > `pg!doc {module.submodule.class.method}` searches the docstring of the module/submodule/class/method/function <br/>
