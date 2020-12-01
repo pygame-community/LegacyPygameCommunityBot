@@ -9,9 +9,16 @@ os.environ['SDL_VIDEODRIVER'] = 'dummy'
 pygame.init()
 dummy = pygame.display.set_mode((69, 69))
 bot = discord.Client()
+noted_channels = {}
+
 
 @bot.event
 async def on_ready():
+	channels = []
+	for channel in CHANNEL_LINKS.keys():
+		channels.append(CHANNEL_LINKS[channel])
+	channels = set(channels)
+
 	print('PygameBot ready!\nThe bot is in:')
 	for server in bot.guilds:
 		if server.id not in ALLOWED_SERVERS:
@@ -20,12 +27,15 @@ async def on_ready():
 		print('-', server.name)
 		for ch in server.channels:
 			print('  +', ch.name)
+			if ch.id in channels:
+				noted_channels[ch.id] = ch
 
 	while True:
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
 		await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="in discord.io/pygame_community"))
 		await asyncio.sleep(2.5)
+
 
 @bot.event
 async def on_message(msg: discord.Message):
@@ -35,6 +45,16 @@ async def on_message(msg: discord.Message):
 	if type(msg.channel) == discord.DMChannel:
 		await msg.channel.send('Please do commands at the server!')
 		return
+
+	if msg.channel.id in CHANNEL_LINKS.keys():
+		fmsg = f'**<{msg.author}>** {msg.content}'
+		if len(fmsg) > 2000:
+			await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg[:1996] + ' ...')
+		else:
+			await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg)
+
+		if msg.content.startswith(PREFIX):
+			await util.sendEmbed(msg.channel, 'Executing commands in a linked channel', 'WARNING: The command output wouldn\'t be visible from the other side!')
 
 	if msg.content.startswith(PREFIX):
 		is_admin = False

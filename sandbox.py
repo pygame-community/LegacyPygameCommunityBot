@@ -23,6 +23,7 @@ for key in dir(builtins):
 		filtered_builtins[key] = getattr(builtins, key)
 filtered_builtins['__build_class__'] = builtins.__build_class__
 
+
 class FilteredPygame:
 	Surface = pygame.Surface
 	Rect = pygame.Rect
@@ -76,6 +77,7 @@ allowed_globals['pygame'] = FilteredPygame
 
 for k in filtered_builtins.keys():
 	allowed_globals[k] = filtered_builtins[k]
+
 
 async def execSandbox(code: str, timeout=5, max_memory=2**28):
 	class output:
