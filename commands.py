@@ -1,19 +1,36 @@
-import sys, os, socket, re, threading
-import asyncio, discord, json, time, psutil
-from typing import Union
+import asyncio
+from types import ModuleType
 
-from util import safeSub as i, filterID, sendEmbed, formatTime, formatByte
+import discord
+import json
+import os
+import psutil
+import socket
+import sys
+import threading
+import time
+
+import builtins
+import itertools
+import math
+import numpy
+import pickle
+import pkg_resources
+import pygame
+import re
+import string
+import timeit
+
 from sandbox import execSandbox
+from util import safeSub as i, sendEmbed, formatTime, formatByte
 
-import pygame, numpy, math, cmath, pickle, pkg_resources, timeit, string, itertools, re, builtins
+last_pet: float = time.time() - 3600
+pet_anger: float = 0.1
+pet_cost: float = 0.1
+jumpscare_threshold: float = 20.0
+pet_interval: float = 60.0
 
-last_pet = time.time() - 3600
-pet_anger = 0.1
-pet_cost = 0.1
-jumpscare_threshold = 20.0
-pet_interval = 60.0
-
-doc_modules = { # Modules to provide documentation for
+doc_modules: dict = { # Modules to provide documentation for
 	'pygame': pygame,
 	'numpy': numpy,
 	'discord': discord,
@@ -34,15 +51,15 @@ doc_modules = { # Modules to provide documentation for
 }
 
 for module in sys.modules.keys():
-	doc_modules[module] = sys.modules[module]
+	doc_modules[module]: ModuleType = sys.modules[module]
 
 pkgs = sorted([i.key for i in pkg_resources.working_set])
-process = psutil.Process(os.getpid())
+process: psutil.Process = psutil.Process(pid=os.getpid())
 
 for module in pkgs:
 	try:
 		doc_modules[module] = __import__(module.replace('-', '_'))
-	except:
+	except:  # TODO: add possible exceptions
 		pass
 
 async def admin_command(msg: discord.Message, args: list, prefix: str):
