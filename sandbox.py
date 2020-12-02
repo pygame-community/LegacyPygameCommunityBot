@@ -28,16 +28,35 @@ class FilteredPygame:
 	Surface = pygame.Surface
 	Rect = pygame.Rect
 	Color = pygame.Color
+	PixelArray = pygame.PixelArray
 	draw = pygame.draw
 	gfxdraw = pygame.gfxdraw
 	transform = pygame.transform
 	mask = pygame.mask
 	math = pygame.math
+	version = pygame.version
+	
+	class freetype:
+		get_error = pygame.freetype.get_error
+		get_version = pygame.freetype.get_version
+		get_cache_size = pygame.freetype.get_cache_size
+		get_default_resolution = pygame.freetype.get_default_resolution
+		set_default_resolution = pygame.freetype.set_default_resolution
+		SysFont = pygame.freetype.SysFont
+		get_default_font = pygame.freetype.get_default_font
+		Font = pygame.freetype.Font
 
 	class image:
 		fromstring = pygame.image.fromstring
 		tostring = pygame.image.tostring
 		frombuffer = pygame.image.frombuffer
+
+	class font:
+		get_default_font = pygame.font.get_default_font
+		get_fonts = pygame.font.get_fonts
+		match_font = pygame.font.match_font
+		SysFont = pygame.font.SysFont
+		Font = pygame.font.Font
 
 	class constants:
 		pass
@@ -47,12 +66,14 @@ del FilteredPygame.math.__loader__
 del FilteredPygame.transform.__loader__
 del FilteredPygame.draw.__loader__
 del FilteredPygame.gfxdraw.__loader__
+del FilteredPygame.version.__loader__
 
 del FilteredPygame.mask.__spec__
 del FilteredPygame.math.__spec__
 del FilteredPygame.transform.__spec__
 del FilteredPygame.draw.__spec__
 del FilteredPygame.gfxdraw.__spec__
+del FilteredPygame.version.__spec__
 
 for const in pygame.constants.__all__:
 	setattr(FilteredPygame.constants, f'{const}', pygame.constants.__dict__[const])
