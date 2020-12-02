@@ -2,7 +2,7 @@ import sys, os, socket, re, threading
 import asyncio, discord, json, time, psutil
 from typing import Union
 
-from util import safeSub as i, filterID, sendEmbed, formatTime, formatByte
+from util import safeSub, filterID, sendEmbed, formatTime, formatByte
 from sandbox import execSandbox
 
 import pygame, numpy, math, cmath, pickle, pkg_resources, timeit, string, itertools, re, builtins
@@ -47,7 +47,7 @@ for module in pkgs:
 
 
 async def admin_command(msg: discord.Message, args: list, prefix: str):
-	if i(args, 0) == 'eval' and len(args) > 1:
+	if safeSub(args, 0) == 'eval' and len(args) > 1:
 		
 		try:
 			script = compile(msg.content[len(prefix) + 5:], "<string>", "eval")   # compile script first
@@ -58,28 +58,28 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
 
 			ev = repr(raw_eval).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 			
-			if len(ev) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev[:2038] + ' ...```')
+			if len(ev) + 7 > 2048:
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```\n' + ev[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```' + ev + '```')
+				await sendEmbed(msg.channel, f'Return output (code executed in {formatTime(script_duration)}):', '```\n' + ev + '```')
 		
 		except Exception as e:
 			exp = type(e).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in e.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
 			
-			if len(exp) + 6 > 2048:
-				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp[:2038] + ' ...```')
+			if len(exp) + 7 > 2048:
+				await sendEmbed(msg.channel, 'An exception occured!', '```\n' + exp[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp + '```')
+				await sendEmbed(msg.channel, 'An exception occured!', '```\n' + exp + '```')
 	
-	elif i(args, 0) == 'sudo' and len(args) > 1:
+	elif safeSub(args, 0) == 'sudo' and len(args) > 1:
 		await msg.channel.send(msg.content[len(prefix) + 5:])
 		await msg.delete()
 	
-	elif i(args, 0) == 'heap' and len(args) == 1:
+	elif safeSub(args, 0) == 'heap' and len(args) == 1:
 		mem = process.memory_info().rss
 		await sendEmbed(msg.channel, 'Total memory used:', f"**{formatByte(mem, 4)}**\n({mem} B)")
 	
-	elif i(args, 0) == 'stop' and len(args) == 1:
+	elif safeSub(args, 0) == 'stop' and len(args) == 1:
 		await sendEmbed(msg.channel, 'Stopping bot...', 'Change da world,\nMy final message,\nGoodbye.')
 		sys.exit(1)
 	
@@ -90,10 +90,10 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
 async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False):
 	global last_pet, pet_anger
 	
-	if i(args, 0) == 'doc' and len(args) == 2:
+	if safeSub(args, 0) == 'doc' and len(args) == 2:
 		splits = args[1].split('.')
 		
-		if i(splits, 0) not in doc_modules:
+		if safeSub(splits, 0) not in doc_modules:
 			await sendEmbed(msg.channel, f'Unknown module!', f'No such module is available for its documentation')
 			return
 		objs = doc_modules
@@ -111,16 +111,16 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 				return
 		messg = str(obj.__doc__).replace('```', '\u200e‎`\u200e‎`\u200e‎`\u200e‎')
 
-		if len(messg) + 6 > 2048:
-			await sendEmbed(msg.channel, f'Documentation for {args[1]}', '```' + messg[:2038] + ' ...```')
+		if len(messg) + 7 > 2048:
+			await sendEmbed(msg.channel, f'Documentation for {args[1]}', '```\n' + messg[:2038] + ' ...```')
 			return
 		else:
-			messg = '```' + messg + '```\n\n'
+			messg = '```\n' + messg + '```\n\n'
 
-		if i(splits, 0) == 'pygame':
+		if safeSub(splits, 0) == 'pygame':
 			doclink = "https://www.pygame.org/docs"
 			if len(splits) > 1:
-				doclink += '/ref/' + i(splits, 1).lower() + ".html"
+				doclink += '/ref/' + safeSub(splits, 1).lower() + ".html"
 				doclink += "#"
 				doclink += "".join([s+"." for s in splits])[:-1]
 			messg = 'Online documentation: ' + doclink + '\n' + messg
@@ -137,7 +137,7 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 		else:
 			await sendEmbed(msg.channel, f'Documentation for {args[1]}', messg)
 
-	elif i(args, 0) == 'exec' and len(args) > 1:
+	elif safeSub(args, 0) == 'exec' and len(args) > 1:
 		code = msg.content[len(prefix) + 5:]
 		ret = ''
 
@@ -173,20 +173,20 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 			if str_repr == '':
 				str_repr = ' '
 			
-			if len(str_repr) + 6 > 2048:
-				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr[:2038] + ' ...```')
+			if len(str_repr) + 7 > 2048:
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```\n' + str_repr[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```' + str_repr + '```')
+				await sendEmbed(msg.channel, f'Returned text (code executed in {formatTime(duration)}):', '```\n' + str_repr + '```')
 		
 		else:
 			exp = type(returned.exc).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e") + ': ' + ", ".join([str(t) for t in returned.exc.args]).replace("```", "\u200e‎`\u200e`\u200e`\u200e")
 
-			if len(exp) + 6 > 2048:
-				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp[:2038] + ' ...```')
+			if len(exp) + 7 > 2048:
+				await sendEmbed(msg.channel, 'An exception occured!', '```\n' + exp[:2038] + ' ...```')
 			else:
-				await sendEmbed(msg.channel, 'An exception occured!', '```' + exp + '```')
+				await sendEmbed(msg.channel, 'An exception occured!', '```\n' + exp + '```')
 	
-	elif i(args, 0) == 'pet' and len(args) == 1:
+	elif safeSub(args, 0) == 'pet' and len(args) == 1:
 		pet_anger -= (time.time() - last_pet - pet_interval) * (pet_anger / jumpscare_threshold) - pet_cost
 		
 		if pet_anger < pet_cost:
@@ -198,5 +198,5 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 		else:
 			await msg.channel.send(file=discord.File('save/pet.gif'))
 	
-	elif i(args, 0) == 'vibecheck' and len(args) == 1:
+	elif safeSub(args, 0) == 'vibecheck' and len(args) == 1:
 		await sendEmbed(msg.channel, 'Vibe Check, snek?', f'Previous petting anger: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago')
