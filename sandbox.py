@@ -28,16 +28,13 @@ class FilteredPygame:
 	Surface = pygame.Surface
 	Rect = pygame.Rect
 	Color = pygame.Color
-	# PixelArray = pygame.PixelArray  # comment for now, include later with numpy
+	PixelArray = pygame.PixelArray
 	draw = pygame.draw
 	gfxdraw = pygame.gfxdraw
 	transform = pygame.transform
 	mask = pygame.mask
 	math = pygame.math
 	version = pygame.version
-	sprite = pygame.sprite
-	# pixelcopy = pygame.pixelcopy  # comment for now, include later with numpy
-	# surfarray = pygame.surfarray  # comment for now, include later with numpy
 	
 	class freetype:
 		get_error = pygame.freetype.get_error
@@ -70,9 +67,6 @@ del FilteredPygame.transform.__loader__
 del FilteredPygame.draw.__loader__
 del FilteredPygame.gfxdraw.__loader__
 del FilteredPygame.version.__loader__
-del FilteredPygame.sprite.__loader__
-# del FilteredPygame.pixelcopy.__loader__  # comment for now, include later with numpy
-# del FilteredPygame.surfarray.__loader__  # comment for now, include later with numpy
 
 del FilteredPygame.mask.__spec__
 del FilteredPygame.math.__spec__
@@ -80,9 +74,6 @@ del FilteredPygame.transform.__spec__
 del FilteredPygame.draw.__spec__
 del FilteredPygame.gfxdraw.__spec__
 del FilteredPygame.version.__spec__
-del FilteredPygame.sprite.__spec__
-# del FilteredPygame.pixelcopy.__spec__  # comment for now, include later with numpy
-# del FilteredPygame.surfarray.__spec__  # comment for now, include later with numpy
 
 for const in pygame.constants.__all__:
 	setattr(FilteredPygame.constants, f'{const}', pygame.constants.__dict__[const])
