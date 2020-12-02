@@ -194,9 +194,9 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 		last_pet = time.time()
 		
 		if pet_anger > jumpscare_threshold:
-			await msg.channel.send(file=discord.File('save/die.gif'))
+			await msg.channel.send('https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/die.gif')
 		else:
-			await msg.channel.send(file=discord.File('save/pet.gif'))
+			await msg.channel.send('https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/pet.gif')
 	
 	elif safeSub(args, 0) == 'vibecheck' and len(args) == 1:
 		await sendEmbed(msg.channel, 'Vibe Check, snek?', f'Previous petting anger: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago')
