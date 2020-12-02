@@ -47,7 +47,11 @@ async def on_message(msg: discord.Message):
 		return
 
 	if msg.channel.id in CHANNEL_LINKS.keys():
-		fmsg = f'**<{msg.author}>** {msg.content}'
+		if not msg.attachments:
+			fmsg = f'**<{msg.author}>** {msg.content}'
+		else:
+			fmsg = f'**<{msg.author}>**\n{chr(10).join([attachment.url for attachment in msg.attachments])}\n {msg.content}'
+
 		if len(fmsg) > 2000:
 			await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg[:1996] + ' ...')
 		else:
