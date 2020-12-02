@@ -28,7 +28,7 @@ class FilteredPygame:
 	Surface = pygame.Surface
 	Rect = pygame.Rect
 	Color = pygame.Color
-	PixelArray = pygame.PixelArray
+	# PixelArray = pygame.PixelArray  # comment for now, include later with numpy
 	draw = pygame.draw
 	gfxdraw = pygame.gfxdraw
 	transform = pygame.transform
@@ -36,8 +36,8 @@ class FilteredPygame:
 	math = pygame.math
 	version = pygame.version
 	sprite = pygame.sprite
-	pixelcopy = pygame.pixelcopy
-	surfarray = pygame.surfarray
+	# pixelcopy = pygame.pixelcopy  # comment for now, include later with numpy
+	# surfarray = pygame.surfarray  # comment for now, include later with numpy
 	
 	class freetype:
 		get_error = pygame.freetype.get_error
@@ -97,7 +97,6 @@ allowed_globals = {
 	'timeit': timeit,
 	'string': string,
 	'itertools': itertools,
-	'numpy': numpy,
 }
 
 for module in allowed_globals.keys():
