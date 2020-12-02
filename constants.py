@@ -26,14 +26,9 @@ CHANNEL_LINKS = {
 }
 
 SCRIPT_PRINT = """
-
 def print(*values, sep=" ", end="\\n"):
-	values = list(values)
 	output.text = str(output.text)
-	
-	for i in range(len(values)):
-		values[i] = str(values[i])
-		output.text += sep.join(values) + end
+	output.text += sep.join(map(str, values)) + end
 
 """
 
