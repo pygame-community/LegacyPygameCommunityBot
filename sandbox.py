@@ -1,4 +1,4 @@
-import pygame, pygame.gfxdraw, math, cmath, time, os
+import pygame, pygame.gfxdraw, pygame.freetype, math, cmath, time, os
 import builtins, asyncio, numpy
 import types, threading, psutil, gc
 
@@ -105,13 +105,14 @@ async def execSandbox(code: str, timeout=5, max_memory=2**28):
 		text = ''
 		img = None
 		exc = None
-		duration = None # The script execution time
+		duration = -1 # The script execution time
 
 	allowed_globals['output'] = output
 
 	for il in ['__subclasses__', '__loader__', '__bases__', 'mro']:
 		if il in code:
-			raise Exception('no u')
+			output.exc = Exception('Suspicious Pattern')
+			return output
 
 	def execThread():
 		glob = allowed_globals.copy()
