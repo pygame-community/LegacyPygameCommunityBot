@@ -21,23 +21,23 @@ COMPETENCE_ROLES = {772536799926157312, 772536976262823947, 772537033078997002, 
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
 CHANNEL_LINKS = {
-	783275734915481622: 775317562715406336, # NXT PygameBotDev #chat => PGC #bot-maintenance
-	775317562715406336: 783275734915481622, # PGC #bot-maintenance => NXT PygameBotDev #chat
+    783275734915481622: 775317562715406336, # NXT PygameBotDev #chat => PGC #bot-maintenance
+    775317562715406336: 783275734915481622, # PGC #bot-maintenance => NXT PygameBotDev #chat
 }
 
 SCRIPT_PRINT = """
 def print(*values, sep=" ", end="\\n"):
-	output.text = str(output.text)
-	output.text += sep.join(map(str, values)) + end
+    output.text = str(output.text)
+    output.text += sep.join(map(str, values)) + end
 
 """
 
 INCLUDE_FUNCTIONS = {
-	"print": SCRIPT_PRINT
+    "print": SCRIPT_PRINT
 }
 
 
 ROLE_PROMPT = {
-	"title": [],
-	"message": []
+    "title": [],
+    "message": []
 }
