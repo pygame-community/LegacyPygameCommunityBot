@@ -1,7 +1,6 @@
 # Guide on contributing
 
 > To make the code consistent, contributors must follow these code style guidelines:
-- Use tabs instead of spaces to indent
 - Imports are categorized in a line (eg. multiple imports of builtin libraries `import cmath, math, os, socket, sys`)
 - Use `camelCase` for function and method namings (Except for other libraries that don't)
 - Space out 2 lines at the top of a class or function (Methods are spaced downwards with each other by one line) and one at the bottom if there's no more class/function below them
@@ -13,3 +12,6 @@ a_list = [
 	'Noun', 'Adjective', 'Verb'
 ]
 ```
+
+> Additions:
+- For people that prefer tabs over spaces (like me), there is `tabspace.py` which allows you to change between spaces and tabs. Don't forget to change it to spaces before submitting a PR.
