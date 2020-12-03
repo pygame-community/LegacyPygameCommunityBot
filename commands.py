@@ -161,7 +161,7 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
 		returned = await execSandbox(ret, 5 if is_priv else 2)
 		duration = returned.duration # the execution time of the script alone
 		
-		if not returned.exc:
+		if isinstance(returned.exc, BaseException):
 			if type(returned.img) is pygame.Surface:
 				pygame.image.save(returned.img, f'temp{start}.png')
 				if os.path.getsize(f'temp{start}.png') < 2**22:
