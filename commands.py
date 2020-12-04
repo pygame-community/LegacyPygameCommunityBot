@@ -48,7 +48,6 @@ for module in pkgs:
 
 async def admin_command(msg: discord.Message, args: list, prefix: str):
     if safeSub(args, 0) == 'eval' and len(args) > 1:
-        
         try:
             script = compile(msg.content[len(prefix) + 5:], "<string>", "eval")   # compile script first
 
@@ -161,7 +160,7 @@ async def user_command(msg: discord.Message, args: list, prefix: str, is_priv=Fa
         returned = await execSandbox(ret, 5 if is_priv else 2)
         duration = returned.duration # the execution time of the script alone
         
-        if isinstance(returned.exc, BaseException):
+        if not isinstance(returned.exc, BaseException):
             if type(returned.img) is pygame.Surface:
                 pygame.image.save(returned.img, f'temp{start}.png')
                 if os.path.getsize(f'temp{start}.png') < 2**22:
