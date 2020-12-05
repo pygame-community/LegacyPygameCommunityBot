@@ -1,27 +1,63 @@
-import pygame, pygame.gfxdraw, pygame.freetype, math, cmath, time, os
-import builtins, asyncio, numpy
-import types, threading, psutil, gc
+# TODO: Write documentation what this part does
 
-from util import ThreadWithTrace
-from constants import INCLUDE_FUNCTIONS
+import asyncio
+import builtins
+import cmath
+import gc
+import itertools
+import math
+import os
+import random
+import re
+import string
+import time
 
 # Extra modules
-import timeit, random, string, itertools, re, builtins
+import timeit
+
+import psutil
+import pygame.freetype
+import pygame.gfxdraw
+
+from constants import INCLUDE_FUNCTIONS
+from util import ThreadWithTrace
 
 process = psutil.Process(os.getpid())
 
 filtered_builtins = {}
 disallowed_builtins = (
-    '__debug__', '__doc__', '__import__', '__loader__', '__name__',
-    '__package__', '__spec__', 'copyright', 'credits', 'exit', 'type',
-    'help', 'input', 'license', 'print', 'open', 'quit', 'compile',
-    'exec', 'eval', 'getattr', 'setattr', 'delattr', 'globals', 'locals', 'vars'
+    "__debug__",
+    "__doc__",
+    "__import__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "copyright",
+    "credits",
+    "exit",
+    "type",
+    "help",
+    "input",
+    "license",
+    "print",
+    "open",
+    "quit",
+    "compile",
+    "exec",
+    "eval",
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
 )
 
 for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
-filtered_builtins['__build_class__'] = builtins.__build_class__
+filtered_builtins["__build_class__"] = builtins.__build_class__
 
 
 class FilteredPygame:
@@ -35,7 +71,7 @@ class FilteredPygame:
     mask = pygame.mask
     math = pygame.math
     version = pygame.version
-    
+
     class freetype:
         get_error = pygame.freetype.get_error
         get_version = pygame.freetype.get_version
@@ -61,6 +97,7 @@ class FilteredPygame:
     class constants:
         pass
 
+
 del FilteredPygame.mask.__loader__
 del FilteredPygame.math.__loader__
 del FilteredPygame.transform.__loader__
@@ -76,71 +113,80 @@ del FilteredPygame.gfxdraw.__spec__
 del FilteredPygame.version.__spec__
 
 for const in pygame.constants.__all__:
-    setattr(FilteredPygame.constants, f'{const}', pygame.constants.__dict__[const])
-    setattr(FilteredPygame, f'{const}', pygame.constants.__dict__[const])
+    setattr(FilteredPygame.constants, f"{const}", pygame.constants.__dict__[const])
+    setattr(FilteredPygame, f"{const}", pygame.constants.__dict__[const])
 
 allowed_globals = {
-    'math': math,
-    'cmath': cmath,
-    'random': random,
-    're': re,
-    'time': time,
-    'timeit': timeit,
-    'string': string,
-    'itertools': itertools,
+    "math": math,
+    "cmath": cmath,
+    "random": random,
+    "re": re,
+    "time": time,
+    "timeit": timeit,
+    "string": string,
+    "itertools": itertools,
 }
 
-for module in allowed_globals.keys():
+for module in allowed_globals:
     del allowed_globals[module].__loader__, allowed_globals[module].__spec__
 
-allowed_globals['__builtins__'] = {}
-allowed_globals['pygame'] = FilteredPygame
+allowed_globals["__builtins__"] = {}
+allowed_globals["pygame"] = FilteredPygame
 
-for k in filtered_builtins.keys():
+for k in filtered_builtins:
     allowed_globals[k] = filtered_builtins[k]
 
 
-async def execSandbox(code: str, timeout=5, max_memory=2**28):
+async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     class output:
-        text = ''
+        text = ""
         img = None
         exc = None
-        duration = -1 # The script execution time
+        duration = -1  # The script execution time
 
-    allowed_globals['output'] = output
+    allowed_globals["output"] = output
 
-    for il in ['__subclasses__', '__loader__', '__bases__', 'mro']:
-        if il in code:
-            output.exc = Exception('Suspicious Pattern')
+    for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "mro"]:
+        if illegal_patterns in code:
+            output.exc = Exception("Suspicious Pattern")
             return output
 
-    def execThread():
+    def exec_thread():
         glob = allowed_globals.copy()
         try:
-            included_funcs = "\n".join( INCLUDE_FUNCTIONS[func_name] for func_name in INCLUDE_FUNCTIONS.keys() )
-            compiled_code = compile( f'{included_funcs}\n{code}', '<string>', mode='exec')
+            included_funcs = "\n".join(
+                INCLUDE_FUNCTIONS[func_name] for func_name in INCLUDE_FUNCTIONS
+            )
+            compiled_code = compile(
+                f"{included_funcs}\n{code}", "<string>", mode="exec"
+            )
 
             script_start = time.perf_counter()
-            exec(compiled_code, glob)
+            exec(compiled_code, glob)  # pylint: disable=exec-used
             output.duration = time.perf_counter() - script_start
-        
-        except Exception as e:
-            output.exc = e
-        
+
+        except Exception as ex:
+            output.exc = ex
+
         glob.clear()
         gc.collect()
-    thread = ThreadWithTrace(target=execThread)
+
+    thread = ThreadWithTrace(target=exec_thread)
     thread.start()
 
     start = time.time()
     while thread.is_alive():
         if start + timeout < time.time():
-            output.exc = RuntimeError(f'Sandbox was running for more than the timeout of {timeout} seconds!')
+            output.exc = RuntimeError(
+                f"Sandbox was running for more than the timeout of {timeout} seconds!"
+            )
             break
         if process.memory_info().rss > max_memory:
-            output.exc = RuntimeError(f'The bot\'s memory has taken up to {max_memory} bytes!')
+            output.exc = RuntimeError(
+                f"The bot's memory has taken up to {max_memory} bytes!"
+            )
             break
-        await asyncio.sleep(0.05) # Let the bot do other async things
+        await asyncio.sleep(0.05)  # Let the bot do other async things
 
     thread.kill()
     thread.join()

@@ -19,14 +19,14 @@ import pkg_resources
 import psutil
 import pygame
 
-from sandbox import execSandbox
-from util import formatByte, formatTime, safeSub, sendEmbed
+from sandbox import exec_sandbox
+from util import format_byte, format_time, safe_subscripting, send_embed
 
 last_pet = time.time() - 3600
 pet_anger = 0.1
-pet_cost = 0.1
-jumpscare_threshold = 20.0
-pet_interval = 60.0
+PET_COST = 0.1
+JUMPSCARE_THRESHOLD = 20.0
+PET_INTERVAL = 60.0
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
@@ -48,10 +48,12 @@ doc_modules = {  # Modules to provide documentation for
     "builtins": builtins,
 }
 
-for module in sys.modules.keys():
+for module in sys.modules:
     doc_modules[module] = sys.modules[module]
 
-pkgs = sorted([i.key for i in pkg_resources.working_set])
+pkgs = sorted(
+    [i.key for i in pkg_resources.working_set]
+)  # pylint: disable=not-an-iterable
 process = psutil.Process(os.getpid())
 
 for module in pkgs:
@@ -62,63 +64,66 @@ for module in pkgs:
 
 
 async def admin_command(msg: discord.Message, args: list, prefix: str):
-    if safeSub(args, 0) == "eval" and len(args) > 1:
+    if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
                 msg.content[len(prefix) + 5 :], "<string>", "eval"
             )  # compile script first
 
             script_start = time.perf_counter()
-            raw_eval = eval(script)
+            eval_output = eval(script)  # pylint: disable = eval-used
             script_duration = time.perf_counter() - script_start
 
-            ev = repr(raw_eval).replace("```", "\u200e‎`\u200e‎`\u200e‎`\u200e‎")
+            enhanced_eval_output = repr(eval_output).replace(
+                "```", "\u200e‎`\u200e‎`\u200e‎`\u200e‎"
+            )
 
-            if len(ev) + 7 > 2048:
-                await sendEmbed(
+            # TODO: Create ellipsis functionality
+            if len(enhanced_eval_output) + 7 > 2048:
+                await send_embed(
                     msg.channel,
-                    f"Return output (code executed in {formatTime(script_duration)}):",
-                    "```\n" + ev[:2038] + " ...```",
+                    f"Return output (code executed in {format_time(script_duration)}):",
+                    "```\n" + enhanced_eval_output[:2038] + " ...```",
                 )
             else:
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
-                    f"Return output (code executed in {formatTime(script_duration)}):",
-                    "```\n" + ev + "```",
+                    f"Return output (code executed in {format_time(script_duration)}):",
+                    "```\n" + enhanced_eval_output + "```",
                 )
 
-        except Exception as e:
+        except Exception as ex:
             exp = (
-                type(e).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e")
+                type(ex).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e")
                 + ": "
-                + ", ".join([str(t) for t in e.args]).replace(
+                + ", ".join([str(t) for t in ex.args]).replace(
                     "```", "\u200e‎`\u200e`\u200e`\u200e"
                 )
             )
 
             if len(exp) + 7 > 2048:
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
                     "An exception occured!",
                     "```\n" + exp[:2038] + " ...```",
                 )
             else:
-                await sendEmbed(
+                await send_embed(
                     msg.channel, "An exception occured!", "```\n" + exp + "```"
                 )
 
-    elif safeSub(args, 0) == "sudo" and len(args) > 1:
+    elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
         await msg.channel.send(msg.content[len(prefix) + 5 :])
         await msg.delete()
 
-    elif safeSub(args, 0) == "heap" and len(args) == 1:
+    elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
-        await sendEmbed(
-            msg.channel, "Total memory used:", f"**{formatByte(mem, 4)}**\n({mem} B)"
+        await send_embed(
+            msg.channel, "Total memory used:", f"**{format_byte(mem, 4)}**\n({mem} B)"
         )
 
-    elif safeSub(args, 0) == "stop" and len(args) == 1:
-        await sendEmbed(
+    elif safe_subscripting(args, 0) == "stop" and len(args) == 1:
+        await send_embed(
             msg.channel,
             "Stopping bot...",
             "Change da world,\nMy final message,\nGoodbye.",
@@ -132,30 +137,31 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
 async def user_command(
     msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
+    # TODO: Check possible removal of globals
     global last_pet, pet_anger
 
-    if safeSub(args, 0) == "doc" and len(args) == 2:
+    if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
 
-        if safeSub(splits, 0) not in doc_modules:
-            await sendEmbed(
+        if safe_subscripting(splits, 0) not in doc_modules:
+            await send_embed(
                 msg.channel,
                 "Unknown module!",
                 "No such module is available for its documentation",
             )
             return
-        objs = doc_modules
+        objects = doc_modules
         obj = None
 
         for part in splits:
             try:
-                obj = objs[part]
+                obj = objects[part]
                 try:
-                    objs = vars(obj)
+                    objects = vars(obj)
                 except BaseException:  # TODO: Figure out proper exception
-                    objs = {}
+                    objects = {}
             except BaseException:  # TODO: Figure out proper exception
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
                     "Class/function/sub-module not found!",
                     "There's no such thing here named `{args[1]}`",
@@ -164,27 +170,27 @@ async def user_command(
         messg = str(obj.__doc__).replace("```", "\u200e‎`\u200e‎`\u200e‎`\u200e‎")
 
         if len(messg) + 7 > 2048:
-            await sendEmbed(
+            await send_embed(
                 msg.channel,
                 f"Documentation for {args[1]}",
                 "```\n" + messg[:2038] + " ...```",
             )
             return
-        else:
-            messg = "```\n" + messg + "```\n\n"
 
-        if safeSub(splits, 0) == "pygame":
+        messg = "```\n" + messg + "```\n\n"
+
+        if safe_subscripting(splits, 0) == "pygame":
             doclink = "https://www.pygame.org/docs"
             if len(splits) > 1:
-                doclink += "/ref/" + safeSub(splits, 1).lower() + ".html"
+                doclink += "/ref/" + safe_subscripting(splits, 1).lower() + ".html"
                 doclink += "#"
                 doclink += "".join([s + "." for s in splits])[:-1]
             messg = "Online documentation: " + doclink + "\n" + messg
 
-        for ob in objs.keys():
-            if ob.startswith("__"):
+        for obj in objects:
+            if obj.startswith("__"):
                 continue
-            if type(objs[ob]).__name__ not in (
+            if type(objects[obj]).__name__ not in (
                 "module",
                 "type",
                 "function",
@@ -192,29 +198,30 @@ async def user_command(
                 "builtin_function_or_method",
             ):
                 continue
-            messg += "**" + type(objs[ob]).__name__.upper() + "** `" + ob + "`\n"
+            messg += "**" + type(objects[obj]).__name__.upper() + "** `" + obj + "`\n"
 
         if len(messg) > 2048:
-            await sendEmbed(
+            await send_embed(
                 msg.channel, f"Documentation for {args[1]}", messg[:2044] + " ..."
             )
         else:
-            await sendEmbed(msg.channel, f"Documentation for {args[1]}", messg)
+            await send_embed(msg.channel, f"Documentation for {args[1]}", messg)
 
-    elif safeSub(args, 0) == "exec" and len(args) > 1:
+    elif safe_subscripting(args, 0) == "exec" and len(args) > 1:
         code = msg.content[len(prefix) + 5 :]
         ret = ""
 
-        for x in range(len(code)):
-            if code[x] in [" ", "`", "\n"]:
-                ret = code[x + 1 :]
+        # TODO: Strange construct what this does?
+        for i in range(len(code)):
+            if code[i] in [" ", "`", "\n"]:
+                ret = code[i + 1 :]
             else:
                 break
         code = ret
 
-        for x in reversed(range(len(code))):
-            if code[x] in [" ", "`", "\n"]:
-                ret = code[:x]
+        for i in reversed(range(len(code))):
+            if code[i] in [" ", "`", "\n"]:
+                ret = code[:i]
             else:
                 break
 
@@ -222,16 +229,16 @@ async def user_command(
             ret = ret[3:]
 
         start = time.time()
-        returned = await execSandbox(ret, 5 if is_priv else 2)
+        returned = await exec_sandbox(ret, 5 if is_priv else 2)
         duration = returned.duration  # the execution time of the script alone
 
         if not isinstance(returned.exc, BaseException):
-            if type(returned.img) is pygame.Surface:
+            if isinstance(returned.img, pygame.Surface):
                 pygame.image.save(returned.img, f"temp{start}.png")
                 if os.path.getsize(f"temp{start}.png") < 2 ** 22:
                     await msg.channel.send(file=discord.File(f"temp{start}.png"))
                 else:
-                    await sendEmbed(
+                    await send_embed(
                         msg.channel,
                         "Image cannot be sent",
                         "The image file size is >4MiB",
@@ -244,15 +251,15 @@ async def user_command(
                 str_repr = " "
 
             if len(str_repr) + 7 > 2048:
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
-                    f"Returned text (code executed in {formatTime(duration)}):",
+                    f"Returned text (code executed in {format_time(duration)}):",
                     "```\n" + str_repr[:2038] + " ...```",
                 )
             else:
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
-                    f"Returned text (code executed in {formatTime(duration)}):",
+                    f"Returned text (code executed in {format_time(duration)}):",
                     "```\n" + str_repr + "```",
                 )
 
@@ -268,26 +275,26 @@ async def user_command(
             )
 
             if len(exp) + 7 > 2048:
-                await sendEmbed(
+                await send_embed(
                     msg.channel,
                     "An exception occured!",
                     "```\n" + exp[:2038] + " ...```",
                 )
             else:
-                await sendEmbed(
+                await send_embed(
                     msg.channel, "An exception occured!", "```\n" + exp + "```"
                 )
 
-    elif safeSub(args, 0) == "pet" and len(args) == 1:
-        pet_anger -= (time.time() - last_pet - pet_interval) * (
-            pet_anger / jumpscare_threshold
-        ) - pet_cost
+    elif safe_subscripting(args, 0) == "pet" and len(args) == 1:
+        pet_anger -= (time.time() - last_pet - PET_INTERVAL) * (
+            pet_anger / JUMPSCARE_THRESHOLD
+        ) - PET_COST
 
-        if pet_anger < pet_cost:
-            pet_anger = pet_cost
+        if pet_anger < PET_COST:
+            pet_anger = PET_COST
         last_pet = time.time()
 
-        if pet_anger > jumpscare_threshold:
+        if pet_anger > JUMPSCARE_THRESHOLD:
             await msg.channel.send(
                 "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/die.gif"
             )
@@ -296,9 +303,9 @@ async def user_command(
                 "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/pet.gif"
             )
 
-    elif safeSub(args, 0) == "vibecheck" and len(args) == 1:
-        await sendEmbed(
+    elif safe_subscripting(args, 0) == "vibecheck" and len(args) == 1:
+        await send_embed(
             msg.channel,
             "Vibe Check, snek?",
-            f"Previous petting anger: {pet_anger:.2f}/{jumpscare_threshold:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
+            f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
         )
