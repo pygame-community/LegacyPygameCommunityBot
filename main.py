@@ -28,7 +28,10 @@ noted_channels = {}
 
 @bot.event
 async def on_ready():
-    channels = set(CHANNEL_LINKS.items())
+    channels = []
+    for channel in CHANNEL_LINKS.keys():
+        channels.append(CHANNEL_LINKS[channel])
+    channels = set(channels)
 
     print("PygameBot ready!\nThe bot is in:")
     for server in bot.guilds:
