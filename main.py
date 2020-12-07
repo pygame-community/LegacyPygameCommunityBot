@@ -24,6 +24,7 @@ pygame.init()  # pylint: disable=no-member
 dummy = pygame.display.set_mode((69, 69))
 bot = discord.Client()
 noted_channels = {}
+linked_channels_messages = {}
 
 
 @bot.event
@@ -72,11 +73,11 @@ async def on_message(msg: discord.Message):
             fmsg = f"**<{msg.author}>**\n{chr(10).join([attachment.url for attachment in msg.attachments])}\n {msg.content}"
 
         if len(fmsg) > 2000:
-            await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(
+            linked_channels_messages[msg.id] = await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(
                 fmsg[:1996] + " ..."
             )
         else:
-            await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg)
+            linked_channels_messages[msg.id] = await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg)
 
         if msg.content.startswith(PREFIX):
             await util.send_embed(
@@ -119,6 +120,26 @@ async def on_message(msg: discord.Message):
             )
             await asyncio.sleep(15)
             await response_msg.delete()
+
+
+@bot.event
+async def on_message_edit(old: discord.Message, new: discord.Message):
+    if old.id in linked_channels_messages:
+        if not new.attachments:
+            fmsg = f"**<{new.author}>** {new.content}"
+        else:
+            fmsg = f"**<{new.author}>**\n{chr(10).join([attachment.url for attachment in new.attachments])}\n {new.content}"
+
+        if len(fmsg) > 2000:
+            await linked_channels_messages[old.id].edit(content=fmsg[:1996] + " ...")
+        else:
+            await linked_channels_messages[old.id].edit(content=fmsg)
+
+
+@bot.event
+async def on_message_delete(msg: discord.Message):
+    if msg.id in linked_channels_messages:
+        await linked_channels_messages[msg.id].edit(content=f'**<{msg.author}>** *[Message deleted]*')
 
 
 bot.run(TOKEN)
