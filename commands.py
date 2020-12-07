@@ -75,15 +75,15 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
             script_duration = time.perf_counter() - script_start
 
             enhanced_eval_output = repr(eval_output).replace(
-                "```", "\u200e‎`\u200e‎`\u200e‎`\u200e‎"
+                "```", "\u200e`\u200e`\u200e`\u200e"
             )
 
             # TODO: Create ellipsis functionality
-            if len(enhanced_eval_output) + 7 > 2048:
+            if len(enhanced_eval_output) + 11 > 2048:
                 await send_embed(
                     msg.channel,
                     f"Return output (code executed in {format_time(script_duration)}):",
-                    "```\n" + enhanced_eval_output[:2038] + " ...```",
+                    "```\n" + enhanced_eval_output[:2037] + " ...```",
                 )
             else:
                 await send_embed(
@@ -94,18 +94,18 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
 
         except Exception as ex:
             exp = (
-                type(ex).__name__.replace("```", "\u200e‎`\u200e`\u200e`\u200e")
+                type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
                 + ": "
                 + ", ".join([str(t) for t in ex.args]).replace(
-                    "```", "\u200e‎`\u200e`\u200e`\u200e"
+                    "```", "\u200e`\u200e`\u200e`\u200e"
                 )
             )
 
-            if len(exp) + 7 > 2048:
+            if len(exp) + 11 > 2048:
                 await send_embed(
                     msg.channel,
                     "An exception occured!",
-                    "```\n" + exp[:2038] + " ...```",
+                    "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await send_embed(
@@ -167,13 +167,13 @@ async def user_command(
                     "There's no such thing here named `{args[1]}`",
                 )
                 return
-        messg = str(obj.__doc__).replace("```", "\u200e‎`\u200e‎`\u200e‎`\u200e‎")
+        messg = str(obj.__doc__).replace("```", "\u200e`\u200e`\u200e`\u200e")
 
-        if len(messg) + 7 > 2048:
+        if len(messg) + 11 > 2048:
             await send_embed(
                 msg.channel,
                 f"Documentation for {args[1]}",
-                "```\n" + messg[:2038] + " ...```",
+                "```\n" + messg[:2037] + " ...```",
             )
             return
 
@@ -245,16 +245,16 @@ async def user_command(
                     )
                 os.remove(f"temp{start}.png")
             str_repr = str(returned.text).replace(
-                "```", "\u200e‎`\u200e`\u200e‎`\u200e‎‎"
+                "```", "\u200e`\u200e`\u200e`\u200e"
             )
             if str_repr == "":
                 str_repr = " "
 
-            if len(str_repr) + 7 > 2048:
+            if len(str_repr) + 11 > 2048:
                 await send_embed(
                     msg.channel,
                     f"Returned text (code executed in {format_time(duration)}):",
-                    "```\n" + str_repr[:2038] + " ...```",
+                    "```\n" + str_repr[:2037] + " ...```",
                 )
             else:
                 await send_embed(
@@ -266,19 +266,19 @@ async def user_command(
         else:
             exp = (
                 type(returned.exc).__name__.replace(
-                    "```", "\u200e‎`\u200e`\u200e`\u200e"
+                    "```", "\u200e`\u200e`\u200e`\u200e"
                 )
                 + ": "
                 + ", ".join([str(t) for t in returned.exc.args]).replace(
-                    "```", "\u200e‎`\u200e`\u200e`\u200e"
+                    "```", "\u200e`\u200e`\u200e`\u200e"
                 )
             )
 
-            if len(exp) + 7 > 2048:
+            if len(exp) + 11 > 2048:
                 await send_embed(
                     msg.channel,
                     "An exception occured!",
-                    "```\n" + exp[:2038] + " ...```",
+                    "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await send_embed(
