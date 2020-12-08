@@ -18,12 +18,10 @@ def format_time(seconds: float, decimal_places: int = 4):
         (1.0, "s"),
         (1e-03, "ms"),
         (1e-06, "\u03bcs"),
-        (1e-09, "ns"),
-        (1e-12, "ps"),
     ]:
         if seconds >= fractions:
-            return f"{seconds * 1 / fractions:.0{decimal_places}f} {unit}"
-    return f"{seconds}s"  # Ignores decimal places for lower values
+            return f"{seconds / fractions:.0{decimal_places}f} {unit}"
+    return "very fast"
 
 
 # Formats memory size with a prefix
