@@ -147,13 +147,13 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
         for angle in range(-90, 90):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
             noon_poly.append((s * 460 + 640, -c * 460 + 640))
-        pygame.draw.polygon(image, (255, 255, 192), noon_poly)
+        pygame.draw.polygon(image, (255, 255, 146), noon_poly)
 
         night_poly = []
         for angle in range(90, 270):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
             night_poly.append((s * 460 + 640, -c * 460 + 640))
-        pygame.draw.polygon(image, (0, 0, 64), night_poly)
+        pygame.draw.polygon(image, (0, 32, 96), night_poly)
 
         pygame.draw.circle(image, (0, 0, 0), (640, 640), 480, 32)
 
