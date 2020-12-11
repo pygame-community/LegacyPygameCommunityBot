@@ -56,7 +56,8 @@ INCLUDE_FUNCTIONS = {"print": SCRIPT_PRINT}
 ROLE_PROMPT = {"title": [], "message": []}
 
 CLOCK_TIMEZONES = [
-    (0, 'MegaJC', (128, 0, 192)),
+    (0, 'BaconInvader', (161, 255, 84)),
+    (3600, 'MegaJC', (128, 0, 192)),
     (3600 * 2, 'jtiai', (240, 140, 200)),
     (3600 * 5.5, 'Ankith', (240,140,0)),
     (3600 * 7, 'Avaxar', (64, 255, 192))
