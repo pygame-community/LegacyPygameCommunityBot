@@ -6,18 +6,7 @@ import pygame
 
 import commands
 import util
-from constants import (
-    CHANNEL_LINKS,
-    ALLOWED_SERVERS,
-    PREFIX,
-    ADMIN_ROLES,
-    PRIV_ROLES,
-    ADMIN_USERS,
-    PGCOMMUNITY,
-    COMPETENCE_ROLES,
-    PYGAME_CHANNELS,
-    TOKEN,
-)
+from constants import *
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()  # pylint: disable=no-member

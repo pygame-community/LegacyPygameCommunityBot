@@ -18,9 +18,11 @@ import numpy
 import pkg_resources
 import psutil
 import pygame
+import pygame.gfxdraw
 
 from sandbox import exec_sandbox
 from util import format_byte, format_time, safe_subscripting, send_embed
+from constants import *
 
 last_pet = time.time() - 3600
 pet_anger = 0.1
@@ -59,7 +61,7 @@ process = psutil.Process(os.getpid())
 for module in pkgs:
     try:
         doc_modules[module] = __import__(module.replace("-", "_"))
-    except BaseException:  # TODO: Find out true exception here
+    except BaseException:
         pass
 
 
@@ -129,6 +131,44 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
             "Change da world,\nMy final message,\nGoodbye.",
         )
         sys.exit(1)
+
+    elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
+        image = pygame.Surface((1280, 1280)).convert_alpha()
+        font = pygame.font.Font("save/tahoma.ttf", 36)
+        texts = []
+        t = time.time()
+        font.bold = True
+
+        image.fill((0, 0, 0, 0))
+
+        noon_poly = []
+        for angle in range(-90, 90):
+            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
+            noon_poly.append((s * 460 + 640, -c * 460 + 640))
+        pygame.draw.polygon(image, (255, 255, 128), noon_poly)
+
+        night_poly = []
+        for angle in range(90, 270):
+            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
+            night_poly.append((s * 460 + 640, -c * 460 + 640))
+        pygame.draw.polygon(image, (0, 0, 128), night_poly)
+
+        pygame.draw.circle(image, (0, 0, 0), (640, 640), 480, 32)
+
+        for offset, name, color in CLOCK_TIMEZONES:
+            angle = (t + offset) % 86400 / 86400 * 360 + 180
+            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
+            pygame.draw.line(image, color, (640, 640), (s * 420 + 640, -c * 420 + 640), 32)
+            text = font.render(name, True, (128, 128, 0))
+            texts.append((text, (s * 360 + 640 - text.get_width() // 2, -c * 360 + 640 - text.get_height() // 2)))
+        pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
+
+        for text, pos in texts:
+            image.blit(text, pos)
+
+        pygame.image.save(image, f"temp{t}.png")
+        await msg.channel.send(file=discord.File(f"temp{t}.png"))
+        os.remove(f"temp{t}.png")
 
     else:
         await user_command(msg, args, prefix, True, True)

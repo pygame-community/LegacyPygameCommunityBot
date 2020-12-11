@@ -54,3 +54,10 @@ INCLUDE_FUNCTIONS = {"print": SCRIPT_PRINT}
 
 
 ROLE_PROMPT = {"title": [], "message": []}
+
+CLOCK_TIMEZONES = [
+    (0, 'GMT BaconInvader, MegaJC', (255, 0, 64)),
+    (3600 * 2, 'GMT+2 jtiai', (0, 0, 128)),
+    (3600 * 5.5, 'GMT+5.30 Ankith', (128, 255, 0)),
+    (3600 * 7, 'GMT+7 Avaxar', (64, 255, 255))
+]
