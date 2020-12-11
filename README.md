@@ -4,6 +4,8 @@ The unofficial [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot<br/
 ## Commands
 > `pg!doc {module.submodule.class.method}` searches the docstring of the module/submodule/class/method/function <br/>
 > `pg!exec {code}` executes the code in a sandbox with restrictions.
+> `pg!clock` sees the current clock of Admins, Moderators, Wizards, and Helpfulies.
+> `pg!pet` `pg!vibecheck` yes
 
 Write the code inside a Python code block:
 ```py \n [your code] ```.

@@ -326,24 +326,24 @@ async def user_command(
         noon_poly = []
         for angle in range(-90, 90):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            noon_poly.append((s * 460 + 640, -c * 460 + 640))
+            noon_poly.append((s * 620 + 640, -c * 620 + 640))
         pygame.draw.polygon(image, (255, 255, 146), noon_poly)
 
         night_poly = []
         for angle in range(90, 270):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            night_poly.append((s * 460 + 640, -c * 460 + 640))
+            night_poly.append((s * 620 + 640, -c * 620 + 640))
         pygame.draw.polygon(image, (0, 32, 96), night_poly)
 
-        pygame.draw.circle(image, (0, 0, 0), (640, 640), 480, 32)
+        pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
 
         for offset, name, color in CLOCK_TIMEZONES:
             angle = (t + offset) % 86400 / 86400 * 360 + 180
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            pygame.draw.line(image, color, (640, 640), (s * 420 + 640, -c * 420 + 640), 32)
+            pygame.draw.line(image, color, (640, 640), (s * 560 + 640, -c * 560 + 640), 32)
             color = 255 - random.randint(0, 86)
             text = font.render(name, True, (color, 0, 0))
-            texts.append((text, (s * 360 + 640 - text.get_width() // 2, -c * 360 + 640 - text.get_height() // 2)))
+            texts.append((text, (s * 500 + 640 - text.get_width() // 2, -c * 500 + 640 - text.get_height() // 2)))
         pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
 
         for text, pos in texts:
@@ -352,4 +352,4 @@ async def user_command(
         pygame.image.save(image, f"temp{t}.png")
         await msg.channel.send(file=discord.File(f"temp{t}.png"))
         os.remove(f"temp{t}.png")
-    
+
