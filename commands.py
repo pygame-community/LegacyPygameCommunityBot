@@ -5,6 +5,7 @@ import json
 import math
 import os
 import pickle
+import random
 import re
 import socket
 import string
@@ -39,6 +40,7 @@ doc_modules = {  # Modules to provide documentation for
     "sys": sys,
     "os": os,
     "socket": socket,
+    "random": random,
     "re": re,
     "math": math,
     "pickle": pickle,
@@ -145,13 +147,13 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
         for angle in range(-90, 90):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
             noon_poly.append((s * 460 + 640, -c * 460 + 640))
-        pygame.draw.polygon(image, (255, 255, 128), noon_poly)
+        pygame.draw.polygon(image, (255, 255, 192), noon_poly)
 
         night_poly = []
         for angle in range(90, 270):
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
             night_poly.append((s * 460 + 640, -c * 460 + 640))
-        pygame.draw.polygon(image, (0, 0, 128), night_poly)
+        pygame.draw.polygon(image, (0, 0, 64), night_poly)
 
         pygame.draw.circle(image, (0, 0, 0), (640, 640), 480, 32)
 
@@ -159,7 +161,8 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
             angle = (t + offset) % 86400 / 86400 * 360 + 180
             s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
             pygame.draw.line(image, color, (640, 640), (s * 420 + 640, -c * 420 + 640), 32)
-            text = font.render(name, True, (128, 128, 0))
+            color = 255 - random.randint(0, 86)
+            text = font.render(name, True, (color, 0, 0))
             texts.append((text, (s * 360 + 640 - text.get_width() // 2, -c * 360 + 640 - text.get_height() // 2)))
         pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
 
