@@ -30,7 +30,6 @@ disallowed_builtins = (
     "__doc__",
     "__import__",
     "__loader__",
-    "__name__",
     "__package__",
     "__spec__",
     "copyright",
@@ -57,7 +56,6 @@ disallowed_builtins = (
 for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
-filtered_builtins["__build_class__"] = builtins.__build_class__
 
 
 class FilteredPygame:
@@ -130,7 +128,7 @@ allowed_globals = {
 for module in allowed_globals:
     del allowed_globals[module].__loader__, allowed_globals[module].__spec__
 
-allowed_globals["__builtins__"] = {}
+allowed_globals["__builtins__"] = filtered_builtins
 allowed_globals["pygame"] = FilteredPygame
 
 for k in filtered_builtins:
