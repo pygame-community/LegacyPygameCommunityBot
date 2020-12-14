@@ -322,19 +322,8 @@ async def user_command(
         font.bold = True
 
         image.fill((0, 0, 0, 0))
-
-        noon_poly = []
-        for angle in range(-90, 90):
-            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            noon_poly.append((s * 620 + 640, -c * 620 + 640))
-        pygame.draw.polygon(image, (255, 255, 146), noon_poly)
-
-        night_poly = []
-        for angle in range(90, 270):
-            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            night_poly.append((s * 620 + 640, -c * 620 + 640))
-        pygame.draw.polygon(image, (0, 32, 96), night_poly)
-
+        pygame.draw.circle(image, (255, 255, 146), (640, 640), 600, draw_top_left=True, draw_top_right=True)
+        pygame.draw.circle(image, (0, 32, 96), (640, 640), 600, draw_bottom_left=True, draw_bottom_right=True)
         pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
 
         for offset, name, color in CLOCK_TIMEZONES:
