@@ -144,7 +144,8 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
 
     allowed_globals["output"] = output
 
-    for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__", "mro"]:
+    for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__",
+                             "__getattribute__", "__setattr__", "__delattr_", "mro"]:
         if illegal_patterns in code:
             output.exc = Exception("Suspicious Pattern")
             return output
