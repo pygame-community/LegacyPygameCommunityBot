@@ -343,4 +343,4 @@ async def user_command(
         os.remove(f"temp{t}.png")
 
     elif safe_subscripting(args, 0) == "version" and len(args) == 1:
-        await send_embed(msg.channel, 'Current bot\'s version', f'`VERSION`')
+        await send_embed(msg.channel, 'Current bot\'s version', f'`{VERSION}`')
