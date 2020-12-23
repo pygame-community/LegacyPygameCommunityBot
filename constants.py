@@ -41,8 +41,8 @@ COMPETENCE_ROLES = {
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
 CHANNEL_LINKS = {
-    783275734915481622: 775317562715406336,  # NXT PygameBotDev #chat => PGC #bot-maintenance
-    775317562715406336: 783275734915481622,  # PGC #bot-maintenance => NXT PygameBotDev #chat
+    791176841150332959: 775317562715406336,  # NXT Gateway #pygame-community-bot=> PGC #bot-maintenance
+    775317562715406336: 791176841150332959,  # PGC #bot-maintenance => NXT Gateway #pygame-community-bot
 }
 
 SCRIPT_PRINT = """
