@@ -22,7 +22,7 @@ import pygame
 import pygame.gfxdraw
 
 from sandbox import exec_sandbox
-from util import format_byte, format_time, safe_subscripting, send_embed
+from util import format_byte, format_time, safe_subscripting, send_embed, user_clock
 from constants import *
 
 last_pet = time.time() - 3600
@@ -315,32 +315,13 @@ async def user_command(
         )
 
     elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
-        image = pygame.Surface((1280, 1280)).convert_alpha()
-        font = pygame.font.Font("save/tahoma.ttf", 36)
-        texts = []
         t = time.time()
-        font.bold = True
-
-        image.fill((0, 0, 0, 0))
-        pygame.draw.circle(image, (255, 255, 146), (640, 640), 600, draw_top_left=True, draw_top_right=True)
-        pygame.draw.circle(image, (0, 32, 96), (640, 640), 600, draw_bottom_left=True, draw_bottom_right=True)
-        pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
-
-        for offset, name, color in CLOCK_TIMEZONES:
-            angle = (t + offset) % 86400 / 86400 * 360 + 180
-            s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-            pygame.draw.line(image, color, (640, 640), (s * 560 + 640, -c * 560 + 640), 32)
-            color = 255 - random.randint(0, 86)
-            text = font.render(name, True, (color, 0, 0))
-            texts.append((text, (s * 500 + 640 - text.get_width() // 2, -c * 500 + 640 - text.get_height() // 2)))
-        pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
-
-        for text, pos in texts:
-            image.blit(text, pos)
-
+        image = user_clock(CLOCK_TIMEZONES, t)
+        
         pygame.image.save(image, f"temp{t}.png")
         await msg.channel.send(file=discord.File(f"temp{t}.png"))
         os.remove(f"temp{t}.png")
+        
 
     elif safe_subscripting(args, 0) == "version" and len(args) == 1:
         await send_embed(msg.channel, 'Current bot\'s version', f'`{VERSION}`')
