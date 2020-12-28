@@ -215,10 +215,10 @@ async def user_command(
         code = msg.content[len(prefix) + 5 :]
         ret = ""
 
-        # TODO: Strange construct what this does?
+        # Filters code block
         for i in range(len(code)):
             if code[i] in [" ", "`", "\n"]:
-                ret = code[i + 1 :]
+                ret = code[i + 1:]
             else:
                 break
         code = ret
@@ -231,6 +231,9 @@ async def user_command(
 
         if ret.startswith("py\n"):
             ret = ret[3:]
+
+        if ret.startswith("python\n"):
+            ret = ret[7:]
 
         start = time.time()
         returned = await exec_sandbox(ret, 5 if is_priv else 2)
@@ -252,7 +255,7 @@ async def user_command(
                 "```", "\u200e`\u200e`\u200e`\u200e"
             )
             if str_repr == "":
-                str_repr = " "
+                return
 
             if len(str_repr) + 11 > 2048:
                 await send_embed(

@@ -12,24 +12,20 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()  # pylint: disable=no-member
 dummy = pygame.display.set_mode((69, 69))
 bot = discord.Client()
-noted_channels = {}
-linked_channels_messages = {}
+log_channel: discord.TextChannel
 
 
 @bot.event
 async def on_ready():
-    channels = set(CHANNEL_LINKS.values())
+    global log_channel
 
     print("PygameBot ready!\nThe bot is in:")
     for server in bot.guilds:
-        if server.id not in ALLOWED_SERVERS:
-            await server.leave()
-            continue
         print("-", server.name)
         for channel in server.channels:
             print("  +", channel.name)
-            if channel.id in channels:
-                noted_channels[channel.id] = channel
+            if channel.id == LOG_CHANNEL:
+                log_channel = channel
 
     while True:
         await bot.change_presence(
@@ -51,51 +47,37 @@ async def on_message(msg: discord.Message):
     if msg.author.bot:
         return
 
-    if isinstance(msg.channel, discord.DMChannel):
-        await msg.channel.send("Please do commands at the server!")
-        return
-
-    if msg.channel.id in CHANNEL_LINKS.keys():
-        if not msg.attachments:
-            fmsg = f"**<{msg.author}>** {msg.content}"
-        else:
-            fmsg = f"**<{msg.author}>**\n{chr(10).join([attachment.url for attachment in msg.attachments])}\n {msg.content}"
-
-        if len(fmsg) > 2000:
-            linked_channels_messages[msg.id] = await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(
-                fmsg[:1996] + " ..."
-            )
-        else:
-            linked_channels_messages[msg.id] = await noted_channels[CHANNEL_LINKS[msg.channel.id]].send(fmsg)
-
-        if msg.content.startswith(PREFIX):
-            await util.send_embed(
-                msg.channel,
-                "Executing commands in a linked channel",
-                "WARNING: The command output wouldn't be visible from the other side!",
-            )
-
     if msg.content.startswith(PREFIX):
+        await util.send_embed(
+            log_channel,
+            f"Command invoked by {msg.author} / {msg.author.id} in DM" if isinstance(msg.channel, discord.DMChannel) else
+                f"Command invoked by {msg.author} / {msg.author.id}",
+            msg.content,
+        )
+
         is_admin = False
         is_priv = False
-        for role in msg.author.roles:
-            if role.id in ADMIN_ROLES:
-                is_admin = True
-            elif role.id in PRIV_ROLES:
-                is_priv = True
+
+        if not isinstance(msg.channel, discord.DMChannel):
+            for role in msg.author.roles:
+                if role.id in ADMIN_ROLES:
+                    is_admin = True
+                elif role.id in PRIV_ROLES:
+                    is_priv = True
+
         try:
             if is_admin or (msg.author.id in ADMIN_USERS):
                 await commands.admin_command(
-                    msg, msg.content[len(PREFIX) :].split(), PREFIX
+                    msg, msg.content[len(PREFIX):].split(), PREFIX
                 )
             else:
                 await commands.user_command(
-                    msg, msg.content[len(PREFIX) :].split(), PREFIX, is_priv, False
+                    msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv, False
                 )
         except discord.errors.Forbidden:
             pass
 
-    if msg.channel.guild.id == PGCOMMUNITY:
+    if not isinstance(msg.channel, discord.DMChannel):
         has_a_competence_role = False
         for role in msg.author.roles:
             if role.id in COMPETENCE_ROLES:
@@ -109,26 +91,6 @@ async def on_message(msg: discord.Message):
             )
             await asyncio.sleep(15)
             await response_msg.delete()
-
-
-@bot.event
-async def on_message_edit(old: discord.Message, new: discord.Message):
-    if old.id in linked_channels_messages:
-        if not new.attachments:
-            fmsg = f"**<{new.author}>** {new.content}"
-        else:
-            fmsg = f"**<{new.author}>**\n{chr(10).join([attachment.url for attachment in new.attachments])}\n {new.content}"
-
-        if len(fmsg) > 2000:
-            await linked_channels_messages[old.id].edit(content=fmsg[:1996] + " ...")
-        else:
-            await linked_channels_messages[old.id].edit(content=fmsg)
-
-
-@bot.event
-async def on_message_delete(msg: discord.Message):
-    if msg.id in linked_channels_messages:
-        await linked_channels_messages[msg.id].edit(content=f'**<{msg.author}>** *[Message deleted]*')
 
 
 bot.run(TOKEN)
