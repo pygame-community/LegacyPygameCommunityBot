@@ -151,7 +151,7 @@ async def user_command(
             await send_embed(
                 msg.channel,
                 "Unknown module!",
-                "No such module is available for its documentation",
+                "No such module is available for its documentation.",
             )
             return
         objects = doc_modules
@@ -164,7 +164,7 @@ async def user_command(
                     objects = vars(obj)
                 except BaseException:  # TODO: Figure out proper exception
                     objects = {}
-            except BaseException:  # TODO: Figure out proper exception
+            except KeyError:
                 await send_embed(
                     msg.channel,
                     "Class/function/sub-module not found!",
