@@ -132,7 +132,7 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
             "Stopping bot...",
             "Change da world,\nMy final message,\nGoodbye.",
         )
-        sys.exit(1)
+        sys.exit(0)
 
     else:
         await user_command(msg, args, prefix, True, True)
