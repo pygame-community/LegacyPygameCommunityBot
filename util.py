@@ -46,7 +46,7 @@ def format_byte(size: int, decimal_places=3):
 
 # Filters mention to get ID '<@!6969>' to 6969
 def filter_id(mention: str):
-    return mention.replace("<", "").replace("@", "").replace("!", "").replace(">", "")
+    return mention.replace("<", "").replace("@", "").replace("!", "").replace(">", "").replace(" ", "")
 
 
 # Sends an embed with a much more tight function

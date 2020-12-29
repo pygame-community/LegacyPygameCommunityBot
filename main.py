@@ -11,13 +11,18 @@ from constants import *
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()  # pylint: disable=no-member
 dummy = pygame.display.set_mode((69, 69))
+
 bot = discord.Client()
+
 log_channel: discord.TextChannel
+blocklist_channel: discord.TextChannel
+
+blocked_users = []
 
 
 @bot.event
 async def on_ready():
-    global log_channel
+    global log_channel, blocklist_channel
 
     print("PygameBot ready!\nThe bot is in:")
     for server in bot.guilds:
@@ -26,6 +31,15 @@ async def on_ready():
             print("  +", channel.name)
             if channel.id == LOG_CHANNEL:
                 log_channel = channel
+            if channel.id == BLOCKLIST_CHANNEL:
+                blocklist_channel = channel
+
+    blocked_user_ids = await blocklist_channel.history(limit=4294967296).flatten()
+    for msg in blocked_user_ids:
+        try:
+            blocked_users.append(int(util.filter_id(msg.content)))
+        except Exception:
+            pass
 
     while True:
         await bot.change_presence(
@@ -44,10 +58,24 @@ async def on_ready():
 
 @bot.event
 async def on_message(msg: discord.Message):
+    if msg.channel.id == BLOCKLIST_CHANNEL:
+        try:
+            blocked_users.append(int(util.filter_id(msg.content)))
+        except Exception:
+            pass
+
     if msg.author.bot:
         return
 
     if msg.content.startswith(PREFIX):
+        if msg.author.id in blocked_users:
+            await util.send_embed(
+                msg.channel,
+                "You are blocked from using the bot",
+                "If you're unsure why you are blocked, please contact an admin/moderator"
+            )
+            return
+
         await util.send_embed(
             log_channel,
             f"Command invoked by {msg.author} / {msg.author.id} in DM" if isinstance(msg.channel, discord.DMChannel) else
@@ -92,5 +120,27 @@ async def on_message(msg: discord.Message):
             await asyncio.sleep(15)
             await response_msg.delete()
 
+
+@bot.event
+async def on_message_delete(msg: discord.Message):
+    if msg.channel.id == BLOCKLIST_CHANNEL:
+        try:
+            blocked_users.remove(int(util.filter_id(msg.content)))
+        except Exception:
+            pass
+
+
+@bot.event
+async def on_message_edit(old: discord.Message, new: discord.Message):
+    if old.channel.id == BLOCKLIST_CHANNEL:
+        try:
+            blocked_users.remove(int(util.filter_id(old.content)))
+        except Exception:
+            pass
+
+        try:
+            blocked_users.append(int(util.filter_id(new.content)))
+        except Exception:
+            pass
 
 bot.run(TOKEN)

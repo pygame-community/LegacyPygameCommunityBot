@@ -2,7 +2,9 @@ TOKEN = open("token.txt").read()
 PREFIX = "pg!"
 
 VERSION = "1.0.1"
+
 LOG_CHANNEL = 793250875471822930
+BLOCKLIST_CHANNEL = 793269297954422804
 
 # PGC Admin, PGC Moderator, PGC Wizards, NXT Admin, NXT Moderator, NXT PG Bot Developers
 ADMIN_ROLES = {
