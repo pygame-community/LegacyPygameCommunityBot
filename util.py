@@ -108,7 +108,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
 
 def user_clock(CLOCK_TIMEZONES, t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
-    font = pygame.font.Font(None, 36)
+    font = pygame.font.Font("save/tahoma.ttf", 36)
     texts = []
     
     font.bold = True
@@ -121,7 +121,7 @@ def user_clock(CLOCK_TIMEZONES, t):
     for offset, name, color in CLOCK_TIMEZONES:
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-        pygame.draw.polygon(image, color, generate_arrow_points((640, 640), (s * 560, -c * 560), tip_thickness_mul=2, tip_to_base_ratio=0.75))
+        pygame.draw.polygon(image, color, generate_arrow_points((640, 640), (s * 560, -c * 560), tip_thickness_mul=2, tip_to_base_ratio=3/4))
         color = 255 - random.randint(0, 86)
         text = font.render(name, True, (color, 0, 0))
         texts.append((text, (s * 500 + 640 - text.get_width() // 2, -c * 500 + 640 - text.get_height() // 2)))
