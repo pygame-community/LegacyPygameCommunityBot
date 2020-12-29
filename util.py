@@ -107,9 +107,6 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
 
 
 
-
-
-
 def user_clock(CLOCK_TIMEZONES, t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
     font = pygame.font.Font("save/tahoma.ttf", 36)
