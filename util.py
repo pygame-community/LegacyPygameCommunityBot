@@ -76,7 +76,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
 
     vec_length = (arrow_vec2d[0]*arrow_vec2d[0] + arrow_vec2d[1]*arrow_vec2d[1])**0.5
 
-    if not (arrow_vec2d[0] and not arrow_vec2d[1]) or not vec_length:
+    if not vec_length:
         return ((0,0),)*7
 
     mvp_norm = (-arrow_vec2d[1]/vec_length, arrow_vec2d[0]/vec_length)
@@ -105,9 +105,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
     return ((int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)), (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)), (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)), (int(point0[0]+px), int(point0[1]+py)))
 
 
-
-
-def user_clock(CLOCK_TIMEZONES, time):
+def user_clock(CLOCK_TIMEZONES, t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
     font = pygame.font.Font("save/tahoma.ttf", 36)
     texts = []
@@ -120,9 +118,9 @@ def user_clock(CLOCK_TIMEZONES, time):
     pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
 
     for offset, name, color in CLOCK_TIMEZONES:
-        angle = (time + offset) % 86400 / 86400 * 360 + 180
+        angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-        pygame.draw.polygon(image, color, generate_arrow_points((640, 640), (s * 560, -c * 560), tip_to_base_ratio=2/3))
+        pygame.draw.polygon(image, color, generate_arrow_points((640, 640), (s * 560, -c * 560), tip_thickness_mul=2, tip_to_base_ratio=3/4))
         color = 255 - random.randint(0, 86)
         text = font.render(name, True, (color, 0, 0))
         texts.append((text, (s * 500 + 640 - text.get_width() // 2, -c * 500 + 640 - text.get_height() // 2)))
