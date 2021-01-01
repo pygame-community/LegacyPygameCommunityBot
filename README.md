@@ -14,3 +14,10 @@ The unofficial [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 - The sandbox automatically shut off if the bot's total memory usage is over 268435456 bytes, by default.
 - Imports and specific built-in functions are removed. Several modules are pre-imported, such as: `pygame` `math` `cmath` `random` `re` `time` `timeit` `string` `itertools`.
 - To output something, there's `output.text` which gives the text output (The `print` is re-implemented which concatenates the the `value` argument to `output.text` plus the specified `sep` and `end` arguments) as a `str` and `output.img` which gives the image output as a `pygame.Surface`.
+
+## Admin commands
+- `pg!eval {code}` evaluate a one line code (The code shouldn't be inside a code block) without any container/limitation, helpful for debugging.
+- `pg!sudo {message}` speaks back the message as if the bot's the one who's talking.
+- `pg!emsudo {hex}, {title}, {body}` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
+- `pg!heap` returns the application's total memory usage.
+- `pg!stop` stops the bot.
