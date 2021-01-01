@@ -19,6 +19,7 @@ import pkg_resources
 import psutil
 import pygame
 import pygame.gfxdraw
+import pygame._sdl2
 
 from sandbox import exec_sandbox
 from util import format_byte, format_time, safe_subscripting, send_embed, user_clock
@@ -186,7 +187,7 @@ async def user_command(
                 await send_embed(
                     msg.channel,
                     "Class/function/sub-module not found!",
-                    "There's no such thing here named `{args[1]}`",
+                    f"There's no such thing here named `{args[1]}`",
                 )
                 return
         messg = str(obj.__doc__).replace("```", "\u200e`\u200e`\u200e`\u200e")
