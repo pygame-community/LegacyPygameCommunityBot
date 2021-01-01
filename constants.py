@@ -13,16 +13,16 @@ ADMIN_ROLES = {
     772849669591400501,
 }
 
-# PGC Specialties, PGC Helpfulies, NXT Developers
+# PGC Specialties, PGC Helpfulies
 PRIV_ROLES = {774473681325785098, 778205389942030377}
 
-# AvaxarXapaxa, BaconInvader, MegaJC, Neuxbane, Ankith
+# AvaxarXapaxa, BaconInvader, MegaJC, Ankith, jtiai
 ADMIN_USERS = {
     414330602930700288,
     265154376409153537,
     444116866944991236,
-    590160104871952387,
     763015391710281729,
+    630837607537836062
 }
 
 # PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor

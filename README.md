@@ -1,8 +1,7 @@
 # PygameCommunityBot
-The unofficial [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
+The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 
 ## User commands
-
 - `pg!doc {module.submodule.class.method}` gives the documentation docstring from the specified module, submodule, class, function or method.
 - `pg!exec {code}` executes the code argument (The code must be inside a code block, otherwise it won't work).
 - `pg!clock` sends a 24 hour clock which shows the current time for listed users.
@@ -21,3 +20,21 @@ The unofficial [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 - `pg!emsudo {hex}, {title}, {body}` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
 - `pg!heap` returns the application's total memory usage.
 - `pg!stop` stops the bot.
+
+
+## Setting up the bot
+This is a guide on how to set up this bot for your own server, we appreciate it if you credit us and link the discord server!
+- Make a discord bot application [here](https://discord.com/developers/applications)
+- Make sure you have python installed, and install these dependencies: `discord.py`, `pygame`, and `psutil`
+- Create a `token.txt` file containing your bot application's token
+- Now, you need to modify the attributes of the bot
+
+## Modifying the bot
+To modify attributes about the bot, you can edit `constants.py`
+- `LOG_CHANNEL`, put the channel ID of your specified log channel where it sends the invoked commands ran by users
+- `BLOCKLIST_CHANNEL`, put the channel ID of the channel that you would fill up with user IDs that'll be blocked from using the bot
+- `ADMIN_ROLES`, put the admin roles' ID that could invoke admin commands
+- `ADMIN_USERS`, put the admin users' ID that could invoke admin commands
+- `PRIV_ROLES`, put the priviledged roles' ID that could invoke user commands with additional features
+- `COMPETENCE_ROLES` `PYGAME_CHANNELS`,  these are [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) specific things, you can leave these ones empty
+- `CLOCK_TIMEZONES`, put the list of timezones and names the clock would display `(GMT_OFFSET_SECONDS, NAME, RGB_COLOR)`

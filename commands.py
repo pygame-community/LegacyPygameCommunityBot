@@ -15,7 +15,6 @@ import time
 import timeit
 
 import discord
-import numpy
 import pkg_resources
 import psutil
 import pygame
@@ -33,7 +32,6 @@ PET_INTERVAL = 60.0
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
-    "numpy": numpy,
     "discord": discord,
     "asyncio": asyncio,
     "json": json,
