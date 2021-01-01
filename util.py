@@ -63,7 +63,6 @@ async def send_embed(channel, title, description, color=0xFFFFAA):
     )
 
 
-
 def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.0, tip_thickness_mul=0.75, tip_to_base_ratio=2.0/3.0):
     """
     Generates an arrow polygon

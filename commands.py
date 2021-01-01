@@ -120,6 +120,26 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
         await msg.channel.send(msg.content[len(prefix) + 5 :])
         await msg.delete()
 
+    elif safe_subscripting(args, 0) == "emsudo" and len(args) > 1:
+        try:
+            argss = eval(msg.content[len(prefix) + 7:])
+
+            if len(argss) == 2:
+                await send_embed(msg.channel, argss[0], argss[1])
+            elif len(argss) == 3:
+                await send_embed(msg.channel, argss[1], argss[2], argss[0])
+
+            await msg.delete()
+        except Exception as ex:
+            exp = (
+                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    + ": "
+                    + ", ".join([str(t) for t in ex.args]).replace(
+                    "```", "\u200e`\u200e`\u200e`\u200e"
+            )
+            )
+            await send_embed(msg.channel, 'Could not send the embed!', f'```\n{exp}```')
+
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
         await send_embed(
