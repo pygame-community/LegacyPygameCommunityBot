@@ -81,7 +81,6 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
                 "```", "\u200e`\u200e`\u200e`\u200e"
             )
 
-            # TODO: Create ellipsis functionality
             if len(enhanced_eval_output) + 11 > 2048:
                 await send_embed(
                     msg.channel,
@@ -127,6 +126,8 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
                 await send_embed(msg.channel, argss[0], argss[1])
             elif len(argss) == 3:
                 await send_embed(msg.channel, argss[1], argss[2], argss[0])
+            elif len(argss) == 4:
+                await send_embed(msg.channel, argss[1], argss[2], argss[0], argss[3])
 
             await msg.delete()
         except Exception as ex:

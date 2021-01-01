@@ -57,9 +57,13 @@ def filter_id(mention: str):
 
 
 # Sends an embed with a much more tight function
-async def send_embed(channel, title, description, color=0xFFFFAA):
+async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None):
+    embed = discord.Embed(title=title, description=description, color=color)
+    if url_image:
+        embed.set_image(url=url_image)
+
     return await channel.send(
-        embed=discord.Embed(title=title, description=description, color=color)
+        embed=embed
     )
 
 

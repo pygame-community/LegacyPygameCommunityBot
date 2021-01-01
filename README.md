@@ -17,7 +17,7 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 ## Admin commands
 - `pg!eval {code}` evaluate a one line code (The code shouldn't be inside a code block) without any container/limitation, helpful for debugging.
 - `pg!sudo {message}` speaks back the message as if the bot's the one who's talking.
-- `pg!emsudo {hex}, {title}, {body}` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
+- `pg!emsudo {hex}, {title}, {body}, {image_url}` `pg!emsudo {hex}, {title}, {body}` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
 - `pg!heap` returns the application's total memory usage.
 - `pg!stop` stops the bot.
 
