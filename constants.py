@@ -21,8 +21,7 @@ ADMIN_USERS = {
     414330602930700288,
     265154376409153537,
     444116866944991236,
-    763015391710281729,
-    630837607537836062
+    763015391710281729
 }
 
 # PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor
@@ -52,7 +51,6 @@ CLOCK_TIMEZONES = [
     (3600 * -5, 'MichaelCPalmer', (200, 140, 120)),
     (0, 'BaconInvader', (161, 255, 84)),
     (3600, 'MegaJC', (128, 0, 192)),
-    (3600 * 2, 'jtiai', (240, 140, 200)),
     (3600 * 3, 'k4dir', (158, 110, 255)),
     (3600 * 7, 'Avaxar', (64, 255, 192))
 ]
