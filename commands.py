@@ -22,7 +22,7 @@ import pygame.gfxdraw
 import pygame._sdl2
 
 from sandbox import exec_sandbox
-from util import format_byte, format_time, safe_subscripting, send_embed, user_clock
+from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, user_clock
 from constants import *
 
 last_pet = time.time() - 3600
@@ -115,8 +115,33 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
                 )
 
     elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
-        await msg.channel.send(msg.content[len(prefix) + 5 :])
-        await msg.delete()
+        try:
+            await msg.channel.send(msg.content[len(prefix) + 5 :])
+            await msg.delete()
+        except Exception as ex:
+            exp = (
+                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    + ": "
+                    + ", ".join([str(t) for t in ex.args]).replace(
+                "```", "\u200e`\u200e`\u200e`\u200e"
+            )
+            )
+            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+
+    elif safe_subscripting(args, 0) == "sudo-edit" and len(args) > 2:
+        try:
+            edit_msg = await msg.channel.fetch_message(int(filter_id(args[1])))
+            await edit_msg.edit(content=msg.content[msg.content.find(args[2]):])
+            await msg.delete()
+        except Exception as ex:
+            exp = (
+                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    + ": "
+                    + ", ".join([str(t) for t in ex.args]).replace(
+                "```", "\u200e`\u200e`\u200e`\u200e"
+            )
+            )
+            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "emsudo" and len(args) > 1:
         try:
@@ -138,7 +163,30 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
                     "```", "\u200e`\u200e`\u200e`\u200e"
             )
             )
-            await send_embed(msg.channel, 'Could not send the embed!', f'```\n{exp}```')
+            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+
+    elif safe_subscripting(args, 0) == "emsudo-edit" and len(args) > 1:
+        try:
+            argss = eval(msg.content[len(prefix) + 12:])
+            edit_msg = await msg.channel.fetch_message(argss[0])
+
+            if len(argss) == 3:
+                await edit_embed(edit_msg, argss[1], argss[2])
+            elif len(argss) == 4:
+                await edit_embed(edit_msg, argss[2], argss[3], argss[1])
+            elif len(argss) > 4:
+                await edit_embed(edit_msg, argss[2], argss[3], argss[1], argss[4])
+
+            await msg.delete()
+        except Exception as ex:
+            exp = (
+                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    + ": "
+                    + ", ".join([str(t) for t in ex.args]).replace(
+                    "```", "\u200e`\u200e`\u200e`\u200e"
+            )
+            )
+            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
@@ -274,7 +322,7 @@ async def user_command(
             str_repr = str(returned.text).replace(
                 "```", "\u200e`\u200e`\u200e`\u200e"
             )
-            if str_repr == "":
+            if not str_repr and isinstance(returned.img, pygame.Surface):
                 return
 
             if len(str_repr) + 11 > 2048:
@@ -344,7 +392,6 @@ async def user_command(
         pygame.image.save(image, f"temp{t}.png")
         await msg.channel.send(file=discord.File(f"temp{t}.png"))
         os.remove(f"temp{t}.png")
-        
 
     elif safe_subscripting(args, 0) == "version" and len(args) == 1:
         await send_embed(msg.channel, 'Current bot\'s version', f'`{VERSION}`')
