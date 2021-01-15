@@ -18,6 +18,8 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 - `pg!eval {code}` evaluate a one line code (The code shouldn't be inside a code block) without any container/limitation, helpful for debugging.
 - `pg!sudo {message}` speaks back the message as if the bot's the one who's talking.
 - `pg!emsudo {hex}, {title}, {body}, {image_url}` `pg!emsudo {hex}, {title}, {body}` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
+- `pg!sudo-edit {message_id} {message}` edits a message that was sent from the bot by the message ID.
+- `pg!emsudo-edit {message_id}, {hex}, {title}, {body}, {image_url}` `pg!emsudo-edit {message_id}, {hex}, {title}, {body}` `pg!emsudo-edit {message_id}, {title}, {body}` edits the embed of a message that was sent from the bot by the message ID.
 - `pg!heap` returns the application's total memory usage.
 - `pg!stop` stops the bot.
 
