@@ -10,7 +10,6 @@ import pygame
 from constants import CLOCK_TIMEZONES
 
 
-
 # Safe subscripting
 def safe_subscripting(list_: list, index: int):
     try:
@@ -51,9 +50,28 @@ def format_byte(size: int, decimal_places=3):
     return f"{int(size * 1e-09 * dec) / dec} GB"
 
 
+# Splits message string by 2000 characters with safe newline splitting
+def split_long_message(message: str):
+    split_output = []
+    lines = message.split('\n')
+    temp = ""
+
+    for line in lines:
+        if len(temp) + len(line) + 1 > 2000:
+            split_output.append(temp[:-1])
+            temp = line + '\n'
+        else:
+            temp += line + '\n'
+
+    if temp:
+        split_output.append(temp)
+
+    return split_output
+
+
 # Filters mention to get ID '<@!6969>' to 6969
 def filter_id(mention: str):
-    return mention.replace("<", "").replace("@", "").replace("!", "").replace(">", "").replace(" ", "")
+    return mention.replace("<", "").replace("@", "").replace("&", "").replace("#", "").replace("!", "").replace(">", "").replace(" ", "")
 
 
 # Edits the embed of a message with a much more tight function
@@ -65,6 +83,7 @@ async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None
     return await message.edit(
         embed=embed
     )
+
 
 # Sends an embed with a much more tight function
 async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None):
@@ -104,8 +123,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
     point5 = (point4[0] + mvpstl[0], point4[1] + mvpstl[1])
     point6 = (point5[0] + ((-arrow_vec2d[0])*tip_to_base_ratio), point5[1] + ((-arrow_vec2d[1])*tip_to_base_ratio))
 
-    return ((int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)), (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)), (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)), (int(point0[0]+px), int(point0[1]+py)))
-
+    return (int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)), (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)), (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)), (int(point0[0]+px), int(point0[1]+py))
 
 
 def user_clock(CLOCK_TIMEZONES, t):

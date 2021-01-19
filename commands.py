@@ -22,7 +22,7 @@ import pygame.gfxdraw
 import pygame._sdl2
 
 from sandbox import exec_sandbox
-from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, user_clock
+from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, split_long_message, user_clock
 from constants import *
 
 last_pet = time.time() - 3600
@@ -66,7 +66,7 @@ for module in pkgs:
         pass
 
 
-async def admin_command(msg: discord.Message, args: list, prefix: str):
+async def admin_command(client: discord.Client, msg: discord.Message, args: list, prefix: str):
     if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
@@ -188,6 +188,60 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
             )
             await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
+    elif safe_subscripting(args, 0) == "archive" and len(args) == 4:
+        try:
+            origin_channel_id = int(filter_id(args[1]))
+            quantity = int(args[2])
+            destination_channel_id = int(filter_id(args[3]))
+
+            origin_channel = None
+            destination_channel = None
+
+            for channel in client.get_all_channels():
+                if channel.id == origin_channel_id:
+                    origin_channel = channel
+                elif channel.id == destination_channel_id:
+                    destination_channel = channel
+
+            if not origin_channel:
+                await send_embed(msg.channel, 'Cannot execute command', 'Invalid origin channel!')
+                return
+            elif not destination_channel:
+                await send_embed(msg.channel, 'Cannot execute command', 'Invalid destination channel!')
+                return
+
+            messages = await origin_channel.history(limit=quantity + 1).flatten()
+            messages.reverse()
+
+            message_list = []
+            for message in messages:
+                triple_block_quote = '```'
+                escaped_code_block_quote = '\u200e`\u200e`\u200e`\u200e'
+                newline = '\n'
+                message_list.append(
+                    f"**AUTHOR**: {message.author}\n" +
+                    f"**AUTHOR ID**: {message.author.id}\n" +
+                    f"**MESSAGE ID**: {message.id}\n" +
+                    (f"**MESSAGE CONTENT**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
+                    (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
+                    (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{embed.description.replace(triple_block_quote, escaped_code_block_quote)}```{newline}    **Image URL**: {embed.image.url}' for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
+                )
+
+            archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
+            archive_list = split_long_message(archive_str)
+
+            for message in archive_list:
+                await destination_channel.send(message)
+        except Exception as ex:
+            exp = (
+                type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                + ": "
+                + ", ".join([str(t) for t in ex.args]).replace(
+                "```", "\u200e`\u200e`\u200e`\u200e"
+            )
+            )
+            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
         await send_embed(
@@ -203,11 +257,11 @@ async def admin_command(msg: discord.Message, args: list, prefix: str):
         sys.exit(0)
 
     else:
-        await user_command(msg, args, prefix, True, True)
+        await user_command(client, msg, args, prefix, True, True)
 
 
 async def user_command(
-    msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
+    client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
     # TODO: Check possible removal of globals
     global last_pet, pet_anger

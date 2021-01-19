@@ -96,11 +96,11 @@ async def on_message(msg: discord.Message):
         try:
             if is_admin or (msg.author.id in ADMIN_USERS):
                 await commands.admin_command(
-                    msg, msg.content[len(PREFIX):].split(), PREFIX
+                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX
                 )
             else:
                 await commands.user_command(
-                    msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv, False
+                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv, False
                 )
         except discord.errors.Forbidden:
             pass
@@ -126,7 +126,7 @@ async def on_message_delete(msg: discord.Message):
     if msg.channel.id == BLOCKLIST_CHANNEL:
         try:
             blocked_users.remove(int(util.filter_id(msg.content)))
-        except Exception:
+        except ValueError:
             pass
 
 
@@ -135,12 +135,9 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
     if old.channel.id == BLOCKLIST_CHANNEL:
         try:
             blocked_users.remove(int(util.filter_id(old.content)))
-        except Exception:
+        except ValueError:
             pass
 
-        try:
-            blocked_users.append(int(util.filter_id(new.content)))
-        except Exception:
-            pass
+        blocked_users.append(int(util.filter_id(new.content)))
 
 bot.run(TOKEN)
