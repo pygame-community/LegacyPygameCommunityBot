@@ -200,7 +200,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             for channel in client.get_all_channels():
                 if channel.id == origin_channel_id:
                     origin_channel = channel
-                elif channel.id == destination_channel_id:
+                if channel.id == destination_channel_id:
                     destination_channel = channel
 
             if not origin_channel:
@@ -219,7 +219,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 escaped_code_block_quote = '\u200e`\u200e`\u200e`\u200e'
                 newline = '\n'
                 message_list.append(
-                    f"**AUTHOR**: {message.author} ({message.author.mention}) [message.author.id]\n" +
+                    f"**AUTHOR**: {message.author} ({message.author.mention}) [{message.author.id}]\n" +
                     (f"**MESSAGE**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
                     (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
                     (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, escaped_code_block_quote)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
