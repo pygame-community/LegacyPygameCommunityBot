@@ -20,7 +20,7 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 - `pg!emsudo {hex}, {title}, {body}, [image_url]` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
 - `pg!sudo-edit {message_id} {message}` edits a message that was sent from the bot by the message ID.
 - `pg!emsudo-edit {message_id}, {hex}, {title}, {body}, [image_url]` `pg!emsudo-edit {message_id}, {title}, {body}` edits the embed of a message that was sent from the bot by the message ID.
-- `pg!archive {origin_channel} {quantity} {destination_channel}` Gets `quantity` amount of the latest messages from `origin_channel` and resends it/"archives" it with the messages' details (Such as the author and their ID, message ID, attachments, embeds).
+- `pg!archive {origin_channel} {quantity} {destination_channel}` Gets `quantity` amount of the latest messages from `origin_channel` and resends it/"archives" it with the messages' details (Such as the author and their ID, attachments, embeds).
 - `pg!heap` returns the application's total memory usage.
 - `pg!stop` stops the bot.
 

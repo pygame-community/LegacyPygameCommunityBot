@@ -210,7 +210,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 await send_embed(msg.channel, 'Cannot execute command', 'Invalid destination channel!')
                 return
 
-            messages = await origin_channel.history(limit=quantity + 1).flatten()
+            messages = await origin_channel.history(limit=quantity).flatten()
             messages.reverse()
 
             message_list = []
@@ -219,13 +219,12 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 escaped_code_block_quote = '\u200e`\u200e`\u200e`\u200e'
                 newline = '\n'
                 message_list.append(
-                    f"**AUTHOR**: {message.author}\n" +
-                    f"**AUTHOR ID**: {message.author.id}\n" +
-                    f"**MESSAGE ID**: {message.id}\n" +
-                    (f"**MESSAGE CONTENT**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
+                    f"**AUTHOR**: {message.author} ({message.author.mention}) [message.author.id]\n" +
+                    (f"**MESSAGE**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
                     (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
-                    (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{embed.description.replace(triple_block_quote, escaped_code_block_quote)}```{newline}    **Image URL**: {embed.image.url}' for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
+                    (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, escaped_code_block_quote)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
                 )
+                asyncio.sleep(0.01) # Lets the bot do other things
 
             archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
             archive_list = split_long_message(archive_str)
