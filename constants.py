@@ -6,7 +6,7 @@ VERSION = "1.1.1"
 LOG_CHANNEL = 793250875471822930
 BLOCKLIST_CHANNEL = 793269297954422804
 
-# PGC Admin, PGC Moderator, PGC Wizards, NXT Admin, NXT Moderator, NXT PG Bot Developers
+# PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
     772521884373614603,
     772508687256125440,
@@ -16,7 +16,7 @@ ADMIN_ROLES = {
 # PGC Specialties, PGC Helpfulies
 PRIV_ROLES = {774473681325785098, 778205389942030377}
 
-# AvaxarXapaxa, BaconInvader, MegaJC, Ankith, jtiai
+# AvaxarXapaxa, BaconInvader, MegaJC, Ankith
 ADMIN_USERS = {
     414330602930700288,
     265154376409153537,
