@@ -413,6 +413,22 @@ async def user_command(
                     msg.channel, "An exception occured!", "```\n" + exp + "```"
                 )
 
+    elif safe_subscripting(args, 0) == "reskek" and len(args) == 1:
+        try:
+            emojis = await msg.guild.fetch_emojis()
+            for emoji in emojis:
+                if emoji.name == "pg_kekw":
+                    await emoji.delete()
+        except Exception:
+            pass
+
+        try:
+            with open("save/pg_kekw.png", "rb") as f:
+                await msg.guild.create_custom_emoji(name="pg_kekw", image=f.read())
+            await send_embed(msg.channel, "Restored pg_kekw :D", "")
+        except Exception:
+            await send_embed(msg.channel, "Failed to restore pg_kekw :C", "")
+
     elif safe_subscripting(args, 0) == "pet" and len(args) == 1:
         pet_anger -= (time.time() - last_pet - PET_INTERVAL) * (
             pet_anger / JUMPSCARE_THRESHOLD
