@@ -12,9 +12,6 @@ import re
 import string
 import time
 
-# Extra modules
-import timeit
-
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
@@ -120,7 +117,6 @@ allowed_globals = {
     "random": random,
     "re": re,
     "time": time,
-    "timeit": timeit,
     "string": string,
     "itertools": itertools,
 }
