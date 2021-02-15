@@ -140,7 +140,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
 
     return (int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)), (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)), (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)), (int(point0[0]+px), int(point0[1]+py))
 
-#print a user clock for special activity members
+#generate a 24 hour clock for special server roles
 def user_clock(CLOCK_TIMEZONES, t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
     font = pygame.font.Font("save/tahoma.ttf", 36)
