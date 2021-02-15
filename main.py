@@ -67,9 +67,9 @@ async def on_message(msg: discord.Message):
     if msg.author.bot:
         return
         
-    if ":pg_bonk:" in msg.content and not msg.content.startswith(PREFIX):
-        boncc_rate += msg.content.count(":pg_bonk:") - msg.content.count("\:pg_bonk:")
-        if msg.content.count(":pg_bonk:") - msg.content.count("\:pg_bonk:") > BONCC_THRESHOLD / 2 or boncc_rate > BONCC_THRESHOLD:
+    if BONK in msg.content and not msg.content.startswith(PREFIX):
+        boncc_rate += msg.content.count(BONK)
+        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or boncc_rate > BONCC_THRESHOLD:
             await send_embed(
                 msg.channel,
                 "Did you hit the snek?",

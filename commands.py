@@ -35,6 +35,7 @@ PET_INTERVAL = 60.0
 
 # boncc variables and constants
 boncc_rate = 0
+BONK = "<:pg_bonk:780423317718302781>"
 SORRY_CHANCE = 0.5
 BONCC_THRESHOLD = 100
 
