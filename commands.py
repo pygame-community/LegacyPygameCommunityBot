@@ -25,11 +25,18 @@ from sandbox import exec_sandbox
 from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, split_long_message, user_clock
 from constants import *
 
+
+# pet variables and constants
 last_pet = time.time() - 3600
 pet_anger = 0.1
 PET_COST = 0.1
 JUMPSCARE_THRESHOLD = 20.0
 PET_INTERVAL = 60.0
+
+# boncc variables and constants
+boncc_rate = 0
+SORRY_CHANCE = 0.5
+BONCC_THRESHOLD = 100
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
@@ -453,6 +460,35 @@ async def user_command(
             "Vibe Check, snek?",
             f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
         )
+    
+    elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
+        if random.random() < SORRY_CHANCE:
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_rate}"
+            )
+            boncc_rate -= 10
+        else:
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                f"How did you dare to boncc a snake?\nBold of you to assume I will apologize you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
+            )
+    
+    elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
+        if boncc_rate:
+            await send_embed(
+                msg.channel,
+                "The snek is right",
+                "Please, don't hit the snek"
+                )
+        else:
+            await send_embed(
+                msg.channel,
+                "The snek is hurted and angry:",
+                f"The boncc rate is {boncc_rate}"
+                )
 
     elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
         t = time.time()
