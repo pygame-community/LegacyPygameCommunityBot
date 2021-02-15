@@ -7,7 +7,7 @@ import threading
 
 import discord
 import pygame
-from constants import CLOCK_TIMEZONES
+from constants import CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
 
 
 # Safe subscripting
@@ -95,6 +95,21 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
         embed=embed
     )
 
+# Formats a message to be archived
+async def format_archive_messages(messages):
+    formatted_msgs = []
+    for message in messages:
+        triple_block_quote = '```'
+        newline = '\n'
+        formatted_msgs.append(
+            f"**AUTHOR**: {message.author} ({message.author.mention}) [{message.author.id}]\n" +
+            (f"**MESSAGE**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
+            (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
+            (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, ESC_CODE_BLOCK_QUOTE)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
+        )
+        asyncio.sleep(0.01) # Lets the bot do other things
+    
+    return formatted_msgs
 
 def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.0, tip_thickness_mul=0.75, tip_to_base_ratio=2.0/3.0):
     """
@@ -125,7 +140,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
 
     return (int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)), (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)), (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)), (int(point0[0]+px), int(point0[1]+py))
 
-
+#print a user clock for special activity members
 def user_clock(CLOCK_TIMEZONES, t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
     font = pygame.font.Font("save/tahoma.ttf", 36)
