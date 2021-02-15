@@ -474,7 +474,7 @@ async def user_command(
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"How did you dare to boncc a snake?\nBold of you to assume I will apologize you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
+                f"How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
             )
     
     elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
