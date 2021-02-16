@@ -68,15 +68,15 @@ async def on_message(msg: discord.Message):
         return
         
     if BONK in msg.content and not msg.content.startswith(PREFIX):
-        boncc_rate += msg.content.count(BONK)
-        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or boncc_rate > BONCC_THRESHOLD:
+        commands.boncc_rate += msg.content.count(BONK)
+        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or commands.boncc_rate > BONCC_THRESHOLD:
             await send_embed(
                 msg.channel,
                 "Did you hit the snek?",
                 "You mortal mammal! How you dare to boncc a snake?"
             )
-        if boncc_rate > 2 * BONCC_THRESHOLD:
-            boncc_rate = BONCC_THRESHOLD
+        if commands.boncc_rate > 2 * BONCC_THRESHOLD:
+            commands.boncc_rate = BONCC_THRESHOLD
         
     if msg.content.startswith(PREFIX):
         if msg.author.id in blocked_users:

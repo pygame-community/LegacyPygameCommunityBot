@@ -254,7 +254,7 @@ async def user_command(
     client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
     # TODO: Check possible removal of globals
-    global last_pet, pet_anger
+    global last_pet, pet_anger, boncc_rate
 
     if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
@@ -452,7 +452,7 @@ async def user_command(
         else:
             await send_embed(
                 msg.channel,
-                "The snek is hurted and angry:",
+                "The snek is hurted and angry.",
                 f"The boncc rate is {boncc_rate}"
                 )
 
