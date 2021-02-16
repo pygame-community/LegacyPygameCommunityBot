@@ -26,18 +26,10 @@ from util import edit_embed, filter_id, format_byte, format_time, safe_subscript
 from constants import *
 
 
-# pet variables and constants
+# Pet and BONCC command variables
 last_pet = time.time() - 3600
 pet_anger = 0.1
-PET_COST = 0.1
-JUMPSCARE_THRESHOLD = 20.0
-PET_INTERVAL = 60.0
-
-# boncc variables and constants
 boncc_rate = 0
-BONK = "<:pg_bonk:780423317718302781>"
-SORRY_CHANCE = 0.5
-BONCC_THRESHOLD = 100
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
