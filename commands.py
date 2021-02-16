@@ -29,7 +29,7 @@ from constants import *
 # Pet and BONCC command variables
 last_pet = time.time() - 3600
 pet_anger = 0.1
-boncc_rate = 0
+boncc_count = 0
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
@@ -263,7 +263,7 @@ async def user_command(
     client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
     # TODO: Check possible removal of globals
-    global last_pet, pet_anger, boncc_rate
+    global last_pet, pet_anger, boncc_count
 
     if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
@@ -456,27 +456,27 @@ async def user_command(
     
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
         if random.random() < SORRY_CHANCE:
+            boncc_count -= BONCC_PARDON
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_rate}"
+                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_count}"
             )
-            boncc_rate -= 10
         else:
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
                 f"""How did you dare to boncc a snake?
                 Bold of you to assume I would apologize to you, two-feet-standing being!
-                The boncc rate is {boncc_rate}"""
+                The boncc rate is {boncc_count}"""
             )
     
     elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
-        if boncc_rate:
+        if boncc_count:
             await send_embed(
                 msg.channel,
                 "The snek is hurted and angry:",
-                f"The boncc rate is {boncc_rate}"
+                f"The boncc rate is {boncc_count}"
                 )
         else:
             await send_embed(
