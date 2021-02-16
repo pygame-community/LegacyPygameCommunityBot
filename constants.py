@@ -35,6 +35,18 @@ COMPETENCE_ROLES = {
 # PGC #pygame, #beginners-help
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
+
+# String Constants
+
+ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
+
+
+EXP_TITLES = [
+    'An exception occurred while trying to execute the command:',
+    'An exception occured:',
+]
+
+
 SCRIPT_PRINT = """
 def print(*values, sep=" ", end="\\n"):
     output.text = str(output.text)

@@ -1,6 +1,7 @@
 import asyncio
 import builtins
 import itertools
+import importlib
 import json
 import math
 import os
@@ -22,7 +23,7 @@ import pygame.gfxdraw
 import pygame._sdl2
 
 from sandbox import exec_sandbox
-from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, split_long_message, user_clock
+from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, split_long_message, user_clock, format_archive_messages
 from constants import *
 
 last_pet = time.time() - 3600
@@ -67,6 +68,7 @@ for module in pkgs:
 
 
 async def admin_command(client: discord.Client, msg: discord.Message, args: list, prefix: str):
+    
     if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
@@ -78,7 +80,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             script_duration = time.perf_counter() - script_start
 
             enhanced_eval_output = repr(eval_output).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
+                "```", ESC_CODE_BLOCK_QUOTE
             )
 
             if len(enhanced_eval_output) + 11 > 2048:
@@ -96,22 +98,22 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
         except Exception as ex:
             exp = (
-                type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
-                + ": "
-                + ", ".join([str(t) for t in ex.args]).replace(
-                    "```", "\u200e`\u200e`\u200e`\u200e"
-                )
+                    type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
+                    + ": "
+                    + ", ".join(str(t) for t in ex.args).replace(
+                        "```", ESC_CODE_BLOCK_QUOTE
+                    )
             )
 
             if len(exp) + 11 > 2048:
                 await send_embed(
                     msg.channel,
-                    "An exception occured!",
+                    EXP_TITLES[1],
                     "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await send_embed(
-                    msg.channel, "An exception occured!", "```\n" + exp + "```"
+                    msg.channel, EXP_TITLES[1], "```\n" + exp + "```"
                 )
 
     elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
@@ -120,13 +122,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             await msg.delete()
         except Exception as ex:
             exp = (
-                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
                     + ": "
-                    + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
+                    + ", ".join(str(t) for t in ex.args).replace(
+                    "```", ESC_CODE_BLOCK_QUOTE
+                    )
             )
-            )
-            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[0], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "sudo-edit" and len(args) > 2:
         try:
@@ -135,13 +137,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             await msg.delete()
         except Exception as ex:
             exp = (
-                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
                     + ": "
-                    + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
+                    + ", ".join(str(t) for t in ex.args).replace(
+                    "```", ESC_CODE_BLOCK_QUOTE
+                    )
             )
-            )
-            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[0], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "emsudo" and len(args) > 1:
         try:
@@ -157,13 +159,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             await msg.delete()
         except Exception as ex:
             exp = (
-                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
                     + ": "
-                    + ", ".join([str(t) for t in ex.args]).replace(
-                    "```", "\u200e`\u200e`\u200e`\u200e"
+                    + ", ".join(str(t) for t in ex.args).replace(
+                    "```", ESC_CODE_BLOCK_QUOTE
+                    )
             )
-            )
-            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "emsudo-edit" and len(args) > 1:
         try:
@@ -180,13 +182,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             await msg.delete()
         except Exception as ex:
             exp = (
-                    type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                    type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
                     + ": "
-                    + ", ".join([str(t) for t in ex.args]).replace(
-                    "```", "\u200e`\u200e`\u200e`\u200e"
+                    + ", ".join(str(t) for t in ex.args).replace(
+                    "```", ESC_CODE_BLOCK_QUOTE
+                    )
             )
-            )
-            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "archive" and len(args) == 4:
         try:
@@ -204,42 +206,31 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     destination_channel = channel
 
             if not origin_channel:
-                await send_embed(msg.channel, 'Cannot execute command', 'Invalid origin channel!')
+                await send_embed(msg.channel, 'Cannot execute command:', 'Invalid origin channel!')
                 return
             elif not destination_channel:
-                await send_embed(msg.channel, 'Cannot execute command', 'Invalid destination channel!')
+                await send_embed(msg.channel, 'Cannot execute command:', 'Invalid destination channel!')
                 return
 
             messages = await origin_channel.history(limit=quantity).flatten()
             messages.reverse()
-
-            message_list = []
-            for message in messages:
-                triple_block_quote = '```'
-                escaped_code_block_quote = '\u200e`\u200e`\u200e`\u200e'
-                newline = '\n'
-                message_list.append(
-                    f"**AUTHOR**: {message.author} ({message.author.mention}) [{message.author.id}]\n" +
-                    (f"**MESSAGE**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
-                    (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
-                    (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, escaped_code_block_quote)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
-                )
-                asyncio.sleep(0.01) # Lets the bot do other things
-
+            message_list = format_archive_messages(messages)
+            
             archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
             archive_list = split_long_message(archive_str)
 
             for message in archive_list:
                 await destination_channel.send(message)
+            
         except Exception as ex:
             exp = (
-                type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
+                type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
                 + ": "
-                + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
+                + ", ".join(str(t) for t in ex.args).replace(
+                "```", ESC_CODE_BLOCK_QUOTE
+                )
             )
-            )
-            await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
@@ -292,7 +283,7 @@ async def user_command(
                     f"There's no such thing here named `{args[1]}`",
                 )
                 return
-        messg = str(obj.__doc__).replace("```", "\u200e`\u200e`\u200e`\u200e")
+        messg = str(obj.__doc__).replace("```", ESC_CODE_BLOCK_QUOTE)
 
         if len(messg) + 11 > 2048:
             await send_embed(
@@ -312,16 +303,12 @@ async def user_command(
                 doclink += "".join([s + "." for s in splits])[:-1]
             messg = "Online documentation: " + doclink + "\n" + messg
 
+        allowed_obj_names = set(("module", "type", "function", "method_descriptor", "builtin_function_or_method"))
+        
         for obj in objects:
             if obj.startswith("__"):
                 continue
-            if type(objects[obj]).__name__ not in (
-                "module",
-                "type",
-                "function",
-                "method_descriptor",
-                "builtin_function_or_method",
-            ):
+            if type(objects[obj]).__name__ not in allowed_obj_names:
                 continue
             messg += "**" + type(objects[obj]).__name__.upper() + "** `" + obj + "`\n"
 
@@ -336,16 +323,18 @@ async def user_command(
         code = msg.content[len(prefix) + 5 :]
         ret = ""
 
+        filter_chars = (" ", "`", "\n")
+
         # Filters code block
         for i in range(len(code)):
-            if code[i] in [" ", "`", "\n"]:
+            if code[i] in filter_chars:
                 ret = code[i + 1:]
             else:
                 break
         code = ret
 
         for i in reversed(range(len(code))):
-            if code[i] in [" ", "`", "\n"]:
+            if code[i] in filter_chars:
                 ret = code[:i]
             else:
                 break
@@ -356,7 +345,7 @@ async def user_command(
         if ret.startswith("python\n"):
             ret = ret[7:]
 
-        start = time.time()
+        start = time.perf_counter()
         returned = await exec_sandbox(ret, 5 if is_priv else 2)
         duration = returned.duration  # the execution time of the script alone
 
@@ -368,12 +357,12 @@ async def user_command(
                 else:
                     await send_embed(
                         msg.channel,
-                        "Image cannot be sent",
-                        "The image file size is >4MiB",
+                        "Image cannot be sent:",
+                        "The image file size is above 4MiB",
                     )
                 os.remove(f"temp{start}.png")
             str_repr = str(returned.text).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
+                "```", ESC_CODE_BLOCK_QUOTE
             )
             if not str_repr and isinstance(returned.img, pygame.Surface):
                 return
@@ -394,40 +383,24 @@ async def user_command(
         else:
             exp = (
                 type(returned.exc).__name__.replace(
-                    "```", "\u200e`\u200e`\u200e`\u200e"
+                    "```", ESC_CODE_BLOCK_QUOTE
                 )
                 + ": "
-                + ", ".join([str(t) for t in returned.exc.args]).replace(
-                    "```", "\u200e`\u200e`\u200e`\u200e"
+                + ", ".join(str(t) for t in returned.exc.args).replace(
+                    "```", ESC_CODE_BLOCK_QUOTE
                 )
             )
 
             if len(exp) + 11 > 2048:
                 await send_embed(
                     msg.channel,
-                    "An exception occured!",
+                    EXP_TITLES[1],
                     "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await send_embed(
-                    msg.channel, "An exception occured!", "```\n" + exp + "```"
+                    msg.channel, EXP_TITLES[1], "```\n" + exp + "```"
                 )
-
-    elif safe_subscripting(args, 0) == "reskek" and len(args) == 1:
-        try:
-            emojis = await msg.guild.fetch_emojis()
-            for emoji in emojis:
-                if emoji.name == "pg_kekw":
-                    await emoji.delete()
-        except Exception:
-            pass
-
-        try:
-            with open("save/pg_kekw.png", "rb") as f:
-                await msg.guild.create_custom_emoji(name="pg_kekw", image=f.read())
-            await send_embed(msg.channel, "Restored pg_kekw :D", "")
-        except Exception:
-            await send_embed(msg.channel, "Failed to restore pg_kekw :C", "")
 
     elif safe_subscripting(args, 0) == "pet" and len(args) == 1:
         pet_anger -= (time.time() - last_pet - PET_INTERVAL) * (
