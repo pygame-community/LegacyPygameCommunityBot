@@ -455,23 +455,33 @@ async def user_command(
         )
     
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
-        if random.random() < SORRY_CHANCE:
-            boncc_count -= BONCC_PARDON
-            await send_embed(
-                msg.channel,
-                "Ask forgiveness from snek?",
-                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_count}"
-            )
+        if msg.author.id == BONCC_FATHER:
+            boncc_count = 0
+                await send_embed(
+                    msg.channel,
+                    "snek respects dad",
+                    "the count is now 0"
+                )
         else:
-            await send_embed(
-                msg.channel,
-                "Ask forgiveness from snek?",
-                f"""How did you dare to boncc a snake?
-                Bold of you to assume I would apologize to you, two-feet-standing being!
-                The boncc rate is {boncc_count}"""
-            )
+            if random.random() < SORRY_CHANCE:
+                boncc_count -= BONCC_PARDON
+                if boncc_count < 0:
+                    boncc_count = 0
+                await send_embed(
+                    msg.channel,
+                    "Ask forgiveness from snek?",
+                    f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_count}"
+                )
+            else:
+                await send_embed(
+                    msg.channel,
+                    "Ask forgiveness from snek?",
+                    f"""How did you dare to boncc a snake?
+                    Bold of you to assume I would apologize to you, two-feet-standing being!
+                    The boncc rate is {boncc_count}"""
+                )
     
-    elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
+    elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
         if boncc_count:
             await send_embed(
                 msg.channel,
