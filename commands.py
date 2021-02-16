@@ -70,7 +70,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
     if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
-                msg.content[len(prefix) + 5 :], "<string>", "eval"
+                msg.content[len(prefix) + 5:], "<string>", "eval"
             )  # compile script first
 
             script_start = time.perf_counter()
@@ -116,15 +116,15 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
     elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
         try:
-            await msg.channel.send(msg.content[len(prefix) + 5 :])
+            await msg.channel.send(msg.content[len(prefix) + 5:])
             await msg.delete()
         except Exception as ex:
             exp = (
                     type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
                     + ": "
                     + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
-            )
+                        "```", "\u200e`\u200e`\u200e`\u200e"
+                    )
             )
             await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
@@ -138,8 +138,8 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
                     + ": "
                     + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
-            )
+                        "```", "\u200e`\u200e`\u200e`\u200e"
+                    )
             )
             await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
@@ -236,8 +236,8 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 type(ex).__name__.replace("```", "\u200e`\u200e`\u200e`\u200e")
                 + ": "
                 + ", ".join([str(t) for t in ex.args]).replace(
-                "```", "\u200e`\u200e`\u200e`\u200e"
-            )
+                    "```", "\u200e`\u200e`\u200e`\u200e"
+                )
             )
             await send_embed(msg.channel, 'An exception occurred whilst trying to execute command!', f'```\n{exp}```')
 
@@ -263,7 +263,7 @@ async def user_command(
     client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
     # TODO: Check possible removal of globals
-    global last_pet, pet_anger
+    global last_pet, pet_anger, boncc_rate
 
     if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
@@ -333,7 +333,7 @@ async def user_command(
             await send_embed(msg.channel, f"Documentation for {args[1]}", messg)
 
     elif safe_subscripting(args, 0) == "exec" and len(args) > 1:
-        code = msg.content[len(prefix) + 5 :]
+        code = msg.content[len(prefix) + 5:]
         ret = ""
 
         # Filters code block
@@ -466,21 +466,23 @@ async def user_command(
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
+                f"""How did you dare to boncc a snake?
+                Bold of you to assume I would apologize to you, two-feet-standing being!
+                The boncc rate is {boncc_rate}"""
             )
     
     elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
         if boncc_rate:
             await send_embed(
                 msg.channel,
-                "The snek is right",
-                "Please, don't hit the snek"
+                "The snek is hurted and angry:",
+                f"The boncc rate is {boncc_rate}"
                 )
         else:
             await send_embed(
                 msg.channel,
-                "The snek is hurted and angry:",
-                f"The boncc rate is {boncc_rate}"
+                "The snek is right",
+                "Please, don't hit the snek"
                 )
 
     elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
