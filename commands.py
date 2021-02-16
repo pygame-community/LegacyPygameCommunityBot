@@ -455,29 +455,21 @@ async def user_command(
         )
     
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
-        if msg.author.id == BONCC_FATHER:
-            boncc_count = 0
-                await send_embed(
-                    msg.channel,
-                    "snek respects dad",
-                    "the count is now 0"
-                )
+        if random.random() < SORRY_CHANCE:
+            boncc_count -= BONCC_PARDON
+            if boncc_count < 0:
+                boncc_count = 0
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                f"""Your pythonic lord accepts your apology.\nNow go to code again.\nThe bonccrate is {boncc_count}"""
+            )
         else:
-            if random.random() < SORRY_CHANCE:
-                boncc_count -= BONCC_PARDON
-                if boncc_count < 0:
-                    boncc_count = 0
-                await send_embed(
-                    msg.channel,
-                    "Ask forgiveness from snek?",
-                    f"""Your pythonic lord accepts your apology.\nNow go to code again.\nThe bonccrate is {boncc_count}"""
-                )
-            else:
-                await send_embed(
-                    msg.channel,
-                    "Ask forgiveness from snek?",
-                    f"""How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_count}"""
-                )
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                f"""How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_count}"""
+            )
     
     elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
         if boncc_count:
