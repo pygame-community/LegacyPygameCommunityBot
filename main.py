@@ -4,9 +4,9 @@ import os
 import discord
 import pygame
 
-import commands
-import util
-from constants import *
+import pgbot.commands
+import pgbot.util
+from pgbot.constants import *
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()  # pylint: disable=no-member
@@ -37,8 +37,8 @@ async def on_ready():
     blocked_user_ids = await blocklist_channel.history(limit=4294967296).flatten()
     for msg in blocked_user_ids:
         try:
-            blocked_users.append(int(util.filter_id(msg.content)))
-        except Exception:
+            blocked_users.append(pgbot.util.filter_id(msg.content))
+        except ValueError:
             pass
 
     while True:
@@ -60,37 +60,38 @@ async def on_ready():
 async def on_message(msg: discord.Message):
     if msg.channel.id == BLOCKLIST_CHANNEL:
         try:
-            blocked_users.append(int(util.filter_id(msg.content)))
-        except Exception:
+            blocked_users.append(pgbot.util.filter_id(msg.content))
+        except ValueError:
             pass
 
     if msg.author.bot:
         return
         
     if BONK in msg.content and not msg.content.startswith(PREFIX):
-        commands.boncc_rate += msg.content.count(BONK)
-        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or commands.boncc_rate > BONCC_THRESHOLD:
+        pgbot.commands.boncc_rate += msg.content.count(BONK)
+        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or pgbot.commands.boncc_rate > BONCC_THRESHOLD:
             await send_embed(
                 msg.channel,
                 "Did you hit the snek?",
                 "You mortal mammal! How you dare to boncc a snake?"
             )
-        if commands.boncc_rate > 2 * BONCC_THRESHOLD:
-            commands.boncc_rate = BONCC_THRESHOLD
+        if pgbot.commands.boncc_rate > 2 * BONCC_THRESHOLD:
+            pgbot.commands.boncc_rate = BONCC_THRESHOLD
         
     if msg.content.startswith(PREFIX):
         if msg.author.id in blocked_users:
-            await util.send_embed(
+            await pgbot.util.send_embed(
                 msg.channel,
                 "You are blocked from using the bot",
-                "If you're unsure why you are blocked, please contact an admin/moderator"
+                "If you're unsure why you are blocked, please contact " + \
+                "an admin/moderator"
             )
             return
-
-        await util.send_embed(
+        
+        in_dm = " in DM" if isinstance(msg.channel, discord.DMChannel) else ""
+        await pgbot.util.send_embed(
             log_channel,
-            f"Command invoked by {msg.author} / {msg.author.id} in DM" if isinstance(msg.channel, discord.DMChannel) else
-                f"Command invoked by {msg.author} / {msg.author.id}",
+            f"Command invoked by {msg.author} / {msg.author.id}{in_dm}" 
             msg.content,
         )
 
@@ -106,11 +107,11 @@ async def on_message(msg: discord.Message):
 
         try:
             if is_admin or (msg.author.id in ADMIN_USERS):
-                await commands.admin_command(
+                await pgbot.commands.admin_command(
                     bot, msg, msg.content[len(PREFIX):].split(), PREFIX
                 )
             else:
-                await commands.user_command(
+                await pgbot.commands.user_command(
                     bot, msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv, False
                 )
         except discord.errors.Forbidden:
@@ -123,10 +124,11 @@ async def on_message(msg: discord.Message):
                 has_a_competence_role = True
 
         if not has_a_competence_role and msg.channel.id in PYGAME_CHANNELS:
-            response_msg = await util.send_embed(
+            response_msg = await pgbot.util.send_embed(
                 msg.channel,
                 "Get more roles!",
-                "Hey there, are you a beginner, intermediate or pro in pygame, or even a contributor? Tell Carl-Bot in <#772535163195228200>!",
+                "Hey there, are you a beginner, intermediate or pro in pygame, " + \
+                "or even a contributor? Tell Carl-Bot in <#772535163195228200>!",
             )
             await asyncio.sleep(15)
             await response_msg.delete()
@@ -136,7 +138,7 @@ async def on_message(msg: discord.Message):
 async def on_message_delete(msg: discord.Message):
     if msg.channel.id == BLOCKLIST_CHANNEL:
         try:
-            blocked_users.remove(int(util.filter_id(msg.content)))
+            blocked_users.remove(pgbot.util.filter_id(msg.content))
         except ValueError:
             pass
 
@@ -145,10 +147,11 @@ async def on_message_delete(msg: discord.Message):
 async def on_message_edit(old: discord.Message, new: discord.Message):
     if old.channel.id == BLOCKLIST_CHANNEL:
         try:
-            blocked_users.remove(int(util.filter_id(old.content)))
+            blocked_users.remove(pgbot.util.filter_id(old.content))
+            blocked_users.append(pgbot.util.filter_id(new.content))
         except ValueError:
             pass
 
-        blocked_users.append(int(util.filter_id(new.content)))
 
-bot.run(TOKEN)
+if __name__ == "__main__":
+    bot.run(TOKEN)
