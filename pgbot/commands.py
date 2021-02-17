@@ -22,15 +22,25 @@ import pygame
 import pygame.gfxdraw
 import pygame._sdl2
 
-from sandbox import exec_sandbox
-from util import edit_embed, filter_id, format_byte, format_time, safe_subscripting, send_embed, split_long_message, user_clock, format_archive_messages
-from constants import *
+from pgbot.sandbox import exec_sandbox
+from pgbot.util import (
+    edit_embed,
+    filter_id,
+    format_byte,
+    format_time,
+    safe_subscripting,
+    send_embed,
+    split_long_message,
+    user_clock,
+    format_archive_messages
+)
+from pgbot.constants import *
 
 
 # Pet and BONCC command variables
 last_pet = time.time() - 3600
 pet_anger = 0.1
-boncc_rate = 0
+boncc_count = 0
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
@@ -55,9 +65,7 @@ doc_modules = {  # Modules to provide documentation for
 for module in sys.modules:
     doc_modules[module] = sys.modules[module]
 
-pkgs = sorted(
-    [i.key for i in pkg_resources.working_set]
-)  # pylint: disable=not-an-iterable
+pkgs = sorted(i.key for i in pkg_resources.working_set)  # pylint: disable=not-an-iterable
 process = psutil.Process(os.getpid())
 
 for module in pkgs:
@@ -68,11 +76,10 @@ for module in pkgs:
 
 
 async def admin_command(client: discord.Client, msg: discord.Message, args: list, prefix: str):
-    
     if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
-                msg.content[len(prefix) + 5 :], "<string>", "eval"
+                msg.content[len(prefix) + 5:], "<string>", "eval"
             )  # compile script first
 
             script_start = time.perf_counter()
@@ -118,7 +125,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
     elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
         try:
-            await msg.channel.send(msg.content[len(prefix) + 5 :])
+            await msg.channel.send(msg.content[len(prefix) + 5:])
             await msg.delete()
         except Exception as ex:
             exp = (
@@ -132,7 +139,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
     elif safe_subscripting(args, 0) == "sudo-edit" and len(args) > 2:
         try:
-            edit_msg = await msg.channel.fetch_message(int(filter_id(args[1])))
+            edit_msg = await msg.channel.fetch_message(filter_id(args[1]))
             await edit_msg.edit(content=msg.content[msg.content.find(args[2]):])
             await msg.delete()
         except Exception as ex:
@@ -165,7 +172,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     "```", ESC_CODE_BLOCK_QUOTE
                     )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "emsudo-edit" and len(args) > 1:
         try:
@@ -188,13 +195,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     "```", ESC_CODE_BLOCK_QUOTE
                     )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "archive" and len(args) == 4:
         try:
-            origin_channel_id = int(filter_id(args[1]))
+            origin_channel_id = filter_id(args[1])
             quantity = int(args[2])
-            destination_channel_id = int(filter_id(args[3]))
+            destination_channel_id = filter_id(args[3])
 
             origin_channel = None
             destination_channel = None
@@ -206,22 +213,24 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     destination_channel = channel
 
             if not origin_channel:
-                await send_embed(msg.channel, 'Cannot execute command:', 'Invalid origin channel!')
+                await send_embed(msg.channel, 'Cannot execute command:',
+                                 'Invalid origin channel!')
                 return
             elif not destination_channel:
-                await send_embed(msg.channel, 'Cannot execute command:', 'Invalid destination channel!')
+                await send_embed(msg.channel, 'Cannot execute command:',
+                                 'Invalid destination channel!')
                 return
 
             messages = await origin_channel.history(limit=quantity).flatten()
             messages.reverse()
             message_list = format_archive_messages(messages)
-            
+
             archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
             archive_list = split_long_message(archive_str)
 
             for message in archive_list:
                 await destination_channel.send(message)
-            
+
         except Exception as ex:
             exp = (
                 type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
@@ -230,7 +239,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 "```", ESC_CODE_BLOCK_QUOTE
                 )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
@@ -247,14 +256,14 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
         sys.exit(0)
 
     else:
-        await user_command(client, msg, args, prefix, True, True)
+        await user_command(client, msg, args, prefix, True)
 
 
 async def user_command(
-    client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
+    client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False
 ):
     # TODO: Check possible removal of globals
-    global last_pet, pet_anger, boncc_rate
+    global last_pet, pet_anger, boncc_count
 
     if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
@@ -303,8 +312,14 @@ async def user_command(
                 doclink += "".join([s + "." for s in splits])[:-1]
             messg = "Online documentation: " + doclink + "\n" + messg
 
-        allowed_obj_names = set(("module", "type", "function", "method_descriptor", "builtin_function_or_method"))
-        
+        allowed_obj_names = {
+            "module",
+            "type",
+            "function",
+            "method_descriptor",
+            "builtin_function_or_method"
+        }
+
         for obj in objects:
             if obj.startswith("__"):
                 continue
@@ -320,7 +335,7 @@ async def user_command(
             await send_embed(msg.channel, f"Documentation for {args[1]}", messg)
 
     elif safe_subscripting(args, 0) == "exec" and len(args) > 1:
-        code = msg.content[len(prefix) + 5 :]
+        code = msg.content[len(prefix) + 5:]
         ret = ""
 
         filter_chars = (" ", "`", "\n")
@@ -346,7 +361,7 @@ async def user_command(
             ret = ret[7:]
 
         start = time.perf_counter()
-        returned = await exec_sandbox(ret, 5 if is_priv else 2)
+        returned = await exec_sandbox(ret, 10 if is_priv else 5)
         duration = returned.duration  # the execution time of the script alone
 
         if not isinstance(returned.exc, BaseException):
@@ -361,6 +376,7 @@ async def user_command(
                         "The image file size is above 4MiB",
                     )
                 os.remove(f"temp{start}.png")
+
             str_repr = str(returned.text).replace(
                 "```", ESC_CODE_BLOCK_QUOTE
             )
@@ -411,56 +427,65 @@ async def user_command(
             pet_anger = PET_COST
         last_pet = time.time()
 
-        if pet_anger > JUMPSCARE_THRESHOLD:
-            await msg.channel.send(
-                "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/die.gif"
-            )
-        else:
-            await msg.channel.send(
-                "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/save/pet.gif"
-            )
+        fname = "die.gif" if pet_anger > JUMPSCARE_THRESHOLD else "pet.gif"
+        await msg.channel.send(
+            "https://raw.githubusercontent.com/AvaxarXapaxa/" + \
+            f"PygameCommunityBot/main/assets/images/{fname}"
+        )
 
     elif safe_subscripting(args, 0) == "vibecheck" and len(args) == 1:
         await send_embed(
             msg.channel,
             "Vibe Check, snek?",
-            f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
+            f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}" + \
+            f"\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
         )
-    
+
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
-        if random.random() < SORRY_CHANCE:
+        if not boncc_count:
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_rate}"
+                "Snek is happy. Awww, don't be sorry."
             )
-            boncc_rate -= 10
+            return
+
+        if random.random() < SORRY_CHANCE:
+            boncc_count -= BONCC_PARDON
+            if boncc_count < 0:
+                boncc_count = 0
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                "Your pythonic lord accepts your apology.\n" + \
+                f"Now go to code again.\nThe boncc count is {boncc_count}"
+            )
         else:
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
+                "How did you dare to boncc a snake?\nBold of you to assume " + \
+                "I would apologize to you, two-feet-standing being!\nThe " + \
+                f"boncc count is {boncc_count}"
             )
-    
-    elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
-        if boncc_rate:
+
+    elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
+        if boncc_count:
+            await send_embed(
+                msg.channel,
+                "The snek is hurt and angry:",
+                f"The boncc count is {boncc_count}"
+                )
+        else:
             await send_embed(
                 msg.channel,
                 "The snek is right",
                 "Please, don't hit the snek"
                 )
-        else:
-            await send_embed(
-                msg.channel,
-                "The snek is hurted and angry.",
-                f"The boncc rate is {boncc_rate}"
-                )
 
     elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
         t = time.time()
-        image = user_clock(CLOCK_TIMEZONES, t)
-        
-        pygame.image.save(image, f"temp{t}.png")
+        pygame.image.save(user_clock(t), f"temp{t}.png")
         await msg.channel.send(file=discord.File(f"temp{t}.png"))
         os.remove(f"temp{t}.png")
 

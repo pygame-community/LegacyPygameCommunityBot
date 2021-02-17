@@ -1,7 +1,7 @@
 TOKEN = open("token.txt").read()
 PREFIX = "pg!"
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 
 LOG_CHANNEL = 793250875471822930
 BLOCKLIST_CHANNEL = 793269297954422804
@@ -14,7 +14,8 @@ PET_INTERVAL = 60.0
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
 SORRY_CHANCE = 0.5
-BONCC_THRESHOLD = 100
+BONCC_THRESHOLD = 10
+BONCC_PARDON = 3
 
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
@@ -45,29 +46,23 @@ COMPETENCE_ROLES = {
 # PGC #pygame, #beginners-help
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
-
 # String Constants
-
 ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
-
 
 EXP_TITLES = [
     'An exception occurred while trying to execute the command:',
     'An exception occured:',
 ]
 
+ROLE_PROMPT = {"title": [], "message": []}
 
-SCRIPT_PRINT = """
+
+INCLUDE_FUNCTIONS = """
 def print(*values, sep=" ", end="\\n"):
+    global output
     output.text = str(output.text)
     output.text += sep.join(map(str, values)) + end
-
 """
-
-INCLUDE_FUNCTIONS = {"print": SCRIPT_PRINT}
-
-
-ROLE_PROMPT = {"title": [], "message": []}
 
 CLOCK_TIMEZONES = [
     (3600 * -5, 'MichaelCPalmer', (200, 140, 120)),
