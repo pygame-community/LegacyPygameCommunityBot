@@ -154,7 +154,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
 
 # Ankith26 : TODO - SOMEONE PLEASE REFACTOR THIS FUNCTION I TRIED AND GAVE UP
-async def format_archive_messages(messages):
+def format_archive_messages(messages):
     """
     Formats a message to be archived
     """
