@@ -31,14 +31,14 @@ def pg_exec(code: str, globals_: dict):
     
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
-        raise PgExecError(f"SyntaxError at line {e.lineno}\n  " + \
+        raise PgExecBot(f"SyntaxError at line {e.lineno}\n  " + \
                           e.text + '\n' + offsetarrow + e.msg)
     
     except Exception as err:
         ename = err.__class__.__name__
         detail = err.args[0]
         lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-        raise PgExecError(f"{ename} at line {lineno}: {detail}")
+        raise PgExecBot(f"{ename} at line {lineno}: {detail}")
 
 
 def safe_subscripting(list_: list, index: int):
