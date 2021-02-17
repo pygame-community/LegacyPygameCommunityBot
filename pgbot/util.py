@@ -9,25 +9,39 @@ import traceback
 
 import discord
 import pygame
-from pgbot.constants import INCLUDE_FUNCTIONS, CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
+from pgbot.constants import CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
 
 
 class PgExecBot(Exception):
+    """
+    Base class for pg!exec exceptions
+    """
     pass
+
+
+def pgexec_print(*values, sep=" ", end="\n"):
+    """
+    custom print function for pg!exec
+    """
+    output.text = str(output.text)
+    output.text += sep.join(map(str, values)) + end
 
 
 def pg_exec(code: str, globals_: dict):
     """
-    exec wrapper used for pg!exec, with much better error reporting
+    exec wrapper used for pg!exec, with better error reporting
     """
     try:
-        compiled_code = compile(
-            f"{INCLUDE_FUNCTIONS}\n{code}", "<string>", mode="exec"
-        )
-
         script_start = time.perf_counter()
-        exec(compiled_code, globals_)
+        exec(code, globals_)
         return time.perf_counter() - script_start
+    
+    except ImportError:
+        raise PgExecBot(
+            "Oopsies! The bot's exec function doesn't support importing " + \
+            "external modules. Don't worry, many modules are pre-imported " + \
+            "for you already! Just re-run your code, without the import statements"
+        )
     
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
@@ -145,6 +159,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     )
 
 
+# Ankith26 : TODO - SOMEONE PLEASE REFACTOR THIS FUNCTION I TRIED AND GAVE UP
 async def format_archive_messages(messages):
     """
     Formats a message to be archived
@@ -198,7 +213,7 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
             points[5][i] - arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
         )
     )
-    return reversed(points)
+    return tuple(reversed(points))
 
 
 def user_clock(t):
