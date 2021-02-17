@@ -16,7 +16,7 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from pgbot.util import ThreadWithTrace, pg_exec
+from pgbot.util import ThreadWithTrace, PgExecBot, pg_exec, pgexec_print
 
 process = psutil.Process(os.getpid())
 
@@ -52,6 +52,9 @@ disallowed_builtins = (
 for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
+
+# patch in custom print function
+filtered_builtins["print"] = pgexec_print
 
 
 class FilteredPygame:
@@ -107,8 +110,8 @@ del FilteredPygame.gfxdraw.__spec__
 del FilteredPygame.version.__spec__
 
 for const in pygame.constants.__all__:
-    setattr(FilteredPygame.constants, f"{const}", pygame.constants.__dict__[const])
-    setattr(FilteredPygame, f"{const}", pygame.constants.__dict__[const])
+    setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
+    setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
 allowed_globals = {
     "math": math,
@@ -142,7 +145,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__",
                              "__getattribute__", "__setattr__", "__delattr_", "mro"]:
         if illegal_patterns in code:
-            output.exc = Exception("Suspicious Pattern")
+            output.exc = PgExecBot("Suspicious Pattern")
             return output
 
     def exec_thread():
@@ -161,12 +164,12 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     start = time.time()
     while thread.is_alive():
         if start + timeout < time.time():
-            output.exc = RuntimeError(
+            output.exc = PgExecBot(
                 f"Sandbox was running for more than the timeout of {timeout} seconds!"
             )
             break
         if process.memory_info().rss > max_memory:
-            output.exc = RuntimeError(
+            output.exc = PgExecBot(
                 f"The bot's memory has taken up to {max_memory} bytes!"
             )
             break

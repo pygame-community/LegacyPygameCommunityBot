@@ -56,13 +56,6 @@ EXP_TITLES = [
     'An exception occured:',
 ]
 
-INCLUDE_FUNCTIONS = """
-def print(*values, sep=" ", end="\\n"):
-    output.text = str(output.text)
-    output.text += sep.join(map(str, values)) + end
-
-"""
-
 ROLE_PROMPT = {"title": [], "message": []}
 
 CLOCK_TIMEZONES = [

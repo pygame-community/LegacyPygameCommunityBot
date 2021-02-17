@@ -440,7 +440,8 @@ async def user_command(
         await send_embed(
             msg.channel,
             "Vibe Check, snek?",
-            f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
+            f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}" + \
+            f"\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
         )
     
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
@@ -451,13 +452,16 @@ async def user_command(
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"""Your pythonic lord accepts your apology.\nNow go to code again.\nThe bonccrate is {boncc_count}"""
+                "Your pythonic lord accepts your apology.\n" + \
+                f"Now go to code again.\nThe bonccrate is {boncc_count}"
             )
         else:
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"""How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_count}"""
+                "How did you dare to boncc a snake?\nBold of you to assume " + \
+                "I would apologize to you, two-feet-standing being!\nThe " + \
+                f"boncc count is {boncc_count}"
             )
     
     elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
