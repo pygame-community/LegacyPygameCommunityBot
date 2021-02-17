@@ -40,7 +40,7 @@ from pgbot.constants import *
 # Pet and BONCC command variables
 last_pet = time.time() - 3600
 pet_anger = 0.1
-boncc_rate = 0
+boncc_count = 0
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
@@ -79,7 +79,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
     if safe_subscripting(args, 0) == "eval" and len(args) > 1:
         try:
             script = compile(
-                msg.content[len(prefix) + 5 :], "<string>", "eval"
+                msg.content[len(prefix) + 5:], "<string>", "eval"
             )  # compile script first
 
             script_start = time.perf_counter()
@@ -125,7 +125,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
     elif safe_subscripting(args, 0) == "sudo" and len(args) > 1:
         try:
-            await msg.channel.send(msg.content[len(prefix) + 5 :])
+            await msg.channel.send(msg.content[len(prefix) + 5:])
             await msg.delete()
         except Exception as ex:
             exp = (
@@ -263,7 +263,7 @@ async def user_command(
     client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
 ):
     # TODO: Check possible removal of globals
-    global last_pet, pet_anger, boncc_rate
+    global last_pet, pet_anger, boncc_count
 
     if safe_subscripting(args, 0) == "doc" and len(args) == 2:
         splits = args[1].split(".")
@@ -335,7 +335,7 @@ async def user_command(
             await send_embed(msg.channel, f"Documentation for {args[1]}", messg)
 
     elif safe_subscripting(args, 0) == "exec" and len(args) > 1:
-        code = msg.content[len(prefix) + 5 :]
+        code = msg.content[len(prefix) + 5:]
         ret = ""
 
         filter_chars = (" ", "`", "\n")
@@ -445,31 +445,33 @@ async def user_command(
     
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
         if random.random() < SORRY_CHANCE:
+            boncc_count -= BONCC_PARDON
+            if boncc_count < 0:
+                boncc_count = 0
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"Your pythonic lord accepts your apologize.\nNow go to code again.\nThe bonccrate is {boncc_rate}"
+                f"""Your pythonic lord accepts your apology.\nNow go to code again.\nThe bonccrate is {boncc_count}"""
             )
-            boncc_rate -= 10
         else:
             await send_embed(
                 msg.channel,
                 "Ask forgiveness from snek?",
-                f"How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_rate}"
+                f"""How did you dare to boncc a snake?\nBold of you to assume I would apologize to you, two-feet-standing being!\nThe boncc rate is {boncc_count}"""
             )
     
-    elif safe_subscripting(args, 0) == "bonccrate" and len(args) == 1:
-        if boncc_rate:
+    elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
+        if boncc_count:
             await send_embed(
                 msg.channel,
-                "The snek is right",
-                "Please, don't hit the snek"
+                "The snek is hurted and angry:",
+                f"The boncc rate is {boncc_count}"
                 )
         else:
             await send_embed(
                 msg.channel,
-                "The snek is hurted and angry.",
-                f"The boncc rate is {boncc_rate}"
+                "The snek is right",
+                "Please, don't hit the snek"
                 )
 
     elif safe_subscripting(args, 0) == "clock" and len(args) == 1:
