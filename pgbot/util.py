@@ -9,7 +9,7 @@ import traceback
 
 import discord
 import pygame
-from pgbot.constants import CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
+from pgbot.constants import INCLUDE_FUNCTIONS, CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
 
 
 class PgExecBot(Exception):
