@@ -224,13 +224,13 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
             messages = await origin_channel.history(limit=quantity).flatten()
             messages.reverse()
             message_list = format_archive_messages(messages)
-            
+
             archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
             archive_list = split_long_message(archive_str)
 
             for message in archive_list:
                 await destination_channel.send(message)
-            
+
         except Exception as ex:
             exp = (
                 type(ex).__name__.replace("```", ESC_CODE_BLOCK_QUOTE)
@@ -256,11 +256,11 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
         sys.exit(0)
 
     else:
-        await user_command(client, msg, args, prefix, True, True)
+        await user_command(client, msg, args, prefix, True)
 
 
 async def user_command(
-    client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False, is_admin=False
+    client: discord.Client, msg: discord.Message, args: list, prefix: str, is_priv=False
 ):
     # TODO: Check possible removal of globals
     global last_pet, pet_anger, boncc_count
@@ -319,7 +319,7 @@ async def user_command(
             "method_descriptor",
             "builtin_function_or_method"
         }
-        
+
         for obj in objects:
             if obj.startswith("__"):
                 continue
@@ -376,7 +376,7 @@ async def user_command(
                         "The image file size is above 4MiB",
                     )
                 os.remove(f"temp{start}.png")
-                
+
             str_repr = str(returned.text).replace(
                 "```", ESC_CODE_BLOCK_QUOTE
             )
@@ -427,14 +427,11 @@ async def user_command(
             pet_anger = PET_COST
         last_pet = time.time()
 
-        if pet_anger > JUMPSCARE_THRESHOLD:
-            await msg.channel.send(
-                "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/assets/images/die.gif"
-            )
-        else:
-            await msg.channel.send(
-                "https://raw.githubusercontent.com/AvaxarXapaxa/PygameCommunityBot/main/assets/images/pet.gif"
-            )
+        fname = "die.gif" if pet_anger > JUMPSCARE_THRESHOLD else "pet.gif"
+        await msg.channel.send(
+            "https://raw.githubusercontent.com/AvaxarXapaxa/" + \
+            f"PygameCommunityBot/main/assets/images/{fname}"
+        )
 
     elif safe_subscripting(args, 0) == "vibecheck" and len(args) == 1:
         await send_embed(
@@ -443,8 +440,16 @@ async def user_command(
             f"Previous petting anger: {pet_anger:.2f}/{JUMPSCARE_THRESHOLD:.2f}" + \
             f"\nIt was last pet {time.time() - last_pet:.2f} second(s) ago",
         )
-    
+
     elif safe_subscripting(args, 0) == "sorry" and len(args) == 1:
+        if not boncc_count:
+            await send_embed(
+                msg.channel,
+                "Ask forgiveness from snek?",
+                "Snek is happy. Awww, don't be sorry."
+            )
+            return
+
         if random.random() < SORRY_CHANCE:
             boncc_count -= BONCC_PARDON
             if boncc_count < 0:
@@ -463,7 +468,7 @@ async def user_command(
                 "I would apologize to you, two-feet-standing being!\nThe " + \
                 f"boncc count is {boncc_count}"
             )
-    
+
     elif safe_subscripting(args, 0) == "boncccheck" and len(args) == 1:
         if boncc_count:
             await send_embed(

@@ -35,19 +35,19 @@ def pg_exec(code: str, globals_: dict):
         script_start = time.perf_counter()
         exec(code, globals_)
         return time.perf_counter() - script_start
-    
+
     except ImportError:
         raise PgExecBot(
             "Oopsies! The bot's exec function doesn't support importing " + \
             "external modules. Don't worry, many modules are pre-imported " + \
             "for you already! Just re-run your code, without the import statements"
         )
-    
+
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
         raise PgExecBot(f"SyntaxError at line {e.lineno}\n  " + \
                           e.text + '\n' + offsetarrow + e.msg)
-    
+
     except Exception as err:
         ename = err.__class__.__name__
         detail = err.args[0]
@@ -175,19 +175,18 @@ async def format_archive_messages(messages):
             (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, ESC_CODE_BLOCK_QUOTE)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
         )
         asyncio.sleep(0.01) # Lets the bot do other things
-    
+
     return formatted_msgs
 
 
-def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.0, tip_thickness_mul=0.75, tip_to_base_ratio=2.0/3.0):
+def generate_arrow_points(center, arrow_vector, thickness=5.0, size_multiplier=1.0, tip_thickness_mul=0.75, tip_to_base_ratio=2.0/3.0):
     """
     Generates an arrow polygon
     """
     thickness *= size_multiplier
-    
-    px, py = point
-    arrow_vec2d = (arrow_vector[0] * size_multiplier, arrow_vector[1] * size_multiplier)
-    vec_length = (arrow_vec2d[0] * arrow_vec2d[0] + arrow_vec2d[1] * arrow_vec2d[1]) ** 0.5
+
+    arrow_vec2d = [arrow_vector[i] * size_multiplier for i in range(2)]
+    vec_length = (arrow_vec2d[0] ** 2 + arrow_vec2d[1] ** 2) ** 0.5
 
     if not vec_length:
         return ((0, 0),) * 7
@@ -195,25 +194,30 @@ def generate_arrow_points(point, arrow_vector, thickness=5.0, size_multiplier=1.
     mvp_norm = (-arrow_vec2d[1] / vec_length, arrow_vec2d[0] / vec_length)
     thickness_part = thickness * tip_thickness_mul
     mvpstl = (mvp_norm[0] * thickness_part,  mvp_norm[1] * thickness_part)
-    
+
     points = []
 
-    points.append(tuple(mvp_norm[i] * thickness for i in range(2)))
-    points.append(tuple(
-            points[0][i] - arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
-        )
+    points.append([mvp_norm[i] * thickness for i in range(2)])
+    points.append([
+            points[0][i] + arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
+        ]
     )
-    points.append(tuple(points[1][i] + mvpstl[i] for i in range(2)))
+    points.append([points[1][i] + mvpstl[i] for i in range(2)])
     points.append(arrow_vec2d)
 
     mulp4 = (thickness + thickness_part) * 2.0
-    points.append(tuple(points[2][i] - mvp_norm[i] * mulp4 for i in range(2)))
-    points.append(tuple(points[4][i] + mvpstl[i] for i in range(2)))
-    points.append(tuple(
+    points.append([points[2][i] - mvp_norm[i] * mulp4 for i in range(2)])
+    points.append([points[4][i] + mvpstl[i] for i in range(2)])
+    points.append([
             points[5][i] - arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
-        )
+        ]
     )
-    return tuple(reversed(points))
+    for point in points:
+        for i in range(2):
+            point[i] += center[i]
+            point[i] = int(point[i])
+
+    return points
 
 
 def user_clock(t):
@@ -223,7 +227,7 @@ def user_clock(t):
     image = pygame.Surface((1280, 1280)).convert_alpha()
     font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 36)
     texts = []
-    
+
     font.bold = True
 
     image.fill((0, 0, 0, 0))
@@ -231,13 +235,13 @@ def user_clock(t):
                        draw_top_left=True, draw_top_right=True)
     pygame.draw.circle(image, (0, 32, 96), (640, 640), 600,
                        draw_bottom_left=True, draw_bottom_right=True)
-    
+
     pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
 
     for offset, name, color in CLOCK_TIMEZONES:
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-        
+
         pygame.draw.polygon(
             image, color,
             generate_arrow_points(
