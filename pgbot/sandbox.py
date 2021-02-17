@@ -154,7 +154,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
             output.duration = pg_exec(code, glob)
         except Exception as exc:
             output.exc = exc
-            
+
         glob.clear()
         gc.collect()
 

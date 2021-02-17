@@ -66,7 +66,7 @@ async def on_message(msg: discord.Message):
 
     if msg.author.bot:
         return
-        
+
     if BONK in msg.content and not msg.content.startswith(PREFIX):
         pgbot.commands.boncc_count += msg.content.count(BONK)
         if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or pgbot.commands.boncc_count > BONCC_THRESHOLD:
@@ -77,7 +77,7 @@ async def on_message(msg: discord.Message):
             )
         if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
             pgbot.commands.boncc_count = BONCC_THRESHOLD
-        
+
     if msg.content.startswith(PREFIX):
         if msg.author.id in blocked_users:
             await pgbot.util.send_embed(
@@ -87,7 +87,7 @@ async def on_message(msg: discord.Message):
                 "an admin/moderator"
             )
             return
-        
+
         in_dm = " in DM" if isinstance(msg.channel, discord.DMChannel) else ""
         await pgbot.util.send_embed(
             log_channel,
@@ -112,7 +112,7 @@ async def on_message(msg: discord.Message):
                 )
             else:
                 await pgbot.commands.user_command(
-                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv, False
+                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv
                 )
         except discord.errors.Forbidden:
             pass
