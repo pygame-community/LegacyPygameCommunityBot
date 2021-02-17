@@ -16,7 +16,7 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from pgbot.util import ThreadWithTrace, PgExecBot, pg_exec, pgexec_print
+from pgbot.util import ThreadWithTrace, PgExecBot, pg_exec
 
 process = psutil.Process(os.getpid())
 
@@ -52,9 +52,6 @@ disallowed_builtins = (
 for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
-
-# patch in custom print function
-filtered_builtins["print"] = pgexec_print
 
 
 class FilteredPygame:
@@ -133,13 +130,16 @@ for k in filtered_builtins:
     allowed_globals[k] = filtered_builtins[k]
 
 
-async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
-    class output:
-        text = ""
-        img = None
-        exc = None
-        duration = -1  # The script execution time
+class Output:
+    def __init__(self):
+        self.text = ""
+        self.img = None
+        self.exc = None
+        self.duration = -1  # The script execution time
 
+
+async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
+    output = Output()
     allowed_globals["output"] = output
 
     for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__",

@@ -14,8 +14,8 @@ PET_INTERVAL = 60.0
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
 SORRY_CHANCE = 0.5
-BONCC_THRESHOLD = 100
-BONCC_PARDON = 10
+BONCC_THRESHOLD = 10
+BONCC_PARDON = 3
 
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
@@ -55,6 +55,14 @@ EXP_TITLES = [
 ]
 
 ROLE_PROMPT = {"title": [], "message": []}
+
+
+INCLUDE_FUNCTIONS = """
+def print(*values, sep=" ", end="\\n"):
+    global output
+    output.text = str(output.text)
+    output.text += sep.join(map(str, values)) + end
+"""
 
 CLOCK_TIMEZONES = [
     (3600 * -5, 'MichaelCPalmer', (200, 140, 120)),

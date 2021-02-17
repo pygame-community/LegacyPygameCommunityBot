@@ -76,7 +76,7 @@ async def on_message(msg: discord.Message):
                 "You mortal mammal! How you dare to boncc a snake?"
             )
         if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
-            pgbot.commands.boncc_count = BONCC_THRESHOLD
+            pgbot.commands.boncc_count = 2 * BONCC_THRESHOLD
 
     if msg.content.startswith(PREFIX):
         if msg.author.id in blocked_users:
