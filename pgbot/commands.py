@@ -223,7 +223,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
 
             messages = await origin_channel.history(limit=quantity).flatten()
             messages.reverse()
-            message_list = format_archive_messages(messages)
+            message_list = await format_archive_messages(messages)
 
             archive_str = f"+{'='*40}+\n" + f"+{'='*40}+\n".join(message_list) + f"+{'='*40}+\n"
             archive_list = split_long_message(archive_str)

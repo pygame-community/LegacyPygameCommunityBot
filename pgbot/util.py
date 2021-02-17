@@ -154,7 +154,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
 
 # Ankith26 : TODO - SOMEONE PLEASE REFACTOR THIS FUNCTION I TRIED AND GAVE UP
-def format_archive_messages(messages):
+async def format_archive_messages(messages):
     """
     Formats a message to be archived
     """
@@ -168,7 +168,7 @@ def format_archive_messages(messages):
             (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
             (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, ESC_CODE_BLOCK_QUOTE)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
         )
-        asyncio.sleep(0.01) # Lets the bot do other things
+        await asyncio.sleep(0.01) # Lets the bot do other things
 
     return formatted_msgs
 
