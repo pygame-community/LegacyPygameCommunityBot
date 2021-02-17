@@ -16,8 +16,7 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from pgbot.constants import INCLUDE_FUNCTIONS
-from pgbot.util import ThreadWithTrace
+from pgbot.util import ThreadWithTrace, pg_exec
 
 process = psutil.Process(os.getpid())
 
@@ -149,17 +148,10 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     def exec_thread():
         glob = allowed_globals.copy()
         try:
-            compiled_code = compile(
-                f"{INCLUDE_FUNCTIONS}\n{code}", "<string>", mode="exec"
-            )
-
-            script_start = time.perf_counter()
-            exec(compiled_code, glob)  # pylint: disable=exec-used
-            output.duration = time.perf_counter() - script_start
-
-        except Exception as ex:
-            output.exc = ex
-
+            output.duration = pg_exec(code, glob)
+        except Exception as exc:
+            output.exc = exc
+            
         glob.clear()
         gc.collect()
 

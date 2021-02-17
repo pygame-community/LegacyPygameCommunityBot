@@ -3,12 +3,42 @@ import math
 import os
 import random
 import sys
-import time
 import threading
+import time
+import traceback
 
 import discord
 import pygame
-from pgbot.constants import CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
+from pgbot.constants import INCLUDE_FUNCTIONS, CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
+
+
+class PgExecBot(Exception):
+    pass
+
+
+def pg_exec(code: str, globals_: dict):
+    """
+    exec wrapper used for pg!exec, with much better error reporting
+    """
+    try:
+        compiled_code = compile(
+            f"{INCLUDE_FUNCTIONS}\n{code}", "<string>", mode="exec"
+        )
+
+        script_start = time.perf_counter()
+        exec(compiled_code, globals_)
+        return time.perf_counter() - script_start
+    
+    except SyntaxError as e:
+        offsetarrow = " " * e.offset + "^\n"
+        raise PgExecError(f"SyntaxError at line {e.lineno}\n  " + \
+                          e.text + '\n' + offsetarrow + e.msg)
+    
+    except Exception as err:
+        ename = err.__class__.__name__
+        detail = err.args[0]
+        lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
+        raise PgExecError(f"{ename} at line {lineno}: {detail}")
 
 
 def safe_subscripting(list_: list, index: int):

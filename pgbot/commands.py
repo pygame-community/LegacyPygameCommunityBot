@@ -361,7 +361,7 @@ async def user_command(
             ret = ret[7:]
 
         start = time.perf_counter()
-        returned = await exec_sandbox(ret, 5 if is_priv else 2)
+        returned = await exec_sandbox(ret, 10 if is_priv else 5)
         duration = returned.duration  # the execution time of the script alone
 
         if not isinstance(returned.exc, BaseException):
