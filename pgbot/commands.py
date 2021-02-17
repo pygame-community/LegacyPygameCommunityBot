@@ -172,7 +172,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     "```", ESC_CODE_BLOCK_QUOTE
                     )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "emsudo-edit" and len(args) > 1:
         try:
@@ -195,7 +195,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                     "```", ESC_CODE_BLOCK_QUOTE
                     )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "archive" and len(args) == 4:
         try:
@@ -239,7 +239,7 @@ async def admin_command(client: discord.Client, msg: discord.Message, args: list
                 "```", ESC_CODE_BLOCK_QUOTE
                 )
             )
-            await send_embed(msg.channel, EXP_TITLES, f'```\n{exp}```')
+            await send_embed(msg.channel, EXP_TITLES[1], f'```\n{exp}```')
 
     elif safe_subscripting(args, 0) == "heap" and len(args) == 1:
         mem = process.memory_info().rss
@@ -458,7 +458,7 @@ async def user_command(
                 msg.channel,
                 "Ask forgiveness from snek?",
                 "Your pythonic lord accepts your apology.\n" + \
-                f"Now go to code again.\nThe bonccrate is {boncc_count}"
+                f"Now go to code again.\nThe boncc count is {boncc_count}"
             )
         else:
             await send_embed(
@@ -473,8 +473,8 @@ async def user_command(
         if boncc_count:
             await send_embed(
                 msg.channel,
-                "The snek is hurted and angry:",
-                f"The boncc rate is {boncc_count}"
+                "The snek is hurt and angry:",
+                f"The boncc count is {boncc_count}"
                 )
         else:
             await send_embed(

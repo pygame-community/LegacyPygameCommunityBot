@@ -9,7 +9,7 @@ import traceback
 
 import discord
 import pygame
-from pgbot.constants import CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
+from pgbot.constants import INCLUDE_FUNCTIONS, CLOCK_TIMEZONES, ESC_CODE_BLOCK_QUOTE
 
 
 class PgExecBot(Exception):
@@ -19,21 +19,13 @@ class PgExecBot(Exception):
     pass
 
 
-def pgexec_print(*values, sep=" ", end="\n"):
-    """
-    custom print function for pg!exec
-    """
-    output.text = str(output.text)
-    output.text += sep.join(map(str, values)) + end
-
-
 def pg_exec(code: str, globals_: dict):
     """
     exec wrapper used for pg!exec, with better error reporting
     """
     try:
         script_start = time.perf_counter()
-        exec(code, globals_)
+        exec(f"{INCLUDE_FUNCTIONS}{code}", globals_)
         return time.perf_counter() - script_start
 
     except ImportError:
@@ -45,14 +37,16 @@ def pg_exec(code: str, globals_: dict):
 
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
-        raise PgExecBot(f"SyntaxError at line {e.lineno}\n  " + \
+        lineno = e.lineno - INCLUDE_FUNCTIONS.count("\n")
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " + \
                           e.text + '\n' + offsetarrow + e.msg)
 
     except Exception as err:
         ename = err.__class__.__name__
-        detail = err.args[0]
-        lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-        raise PgExecBot(f"{ename} at line {lineno}: {detail}")
+        details = err.args[0]
+        lineno = (traceback.extract_tb(sys.exc_info()[-1])[-1][1]
+                  - INCLUDE_FUNCTIONS.count("\n"))
+        raise PgExecBot(f"{ename} at line {lineno}: {details}")
 
 
 def safe_subscripting(list_: list, index: int):
