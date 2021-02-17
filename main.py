@@ -91,7 +91,7 @@ async def on_message(msg: discord.Message):
         in_dm = " in DM" if isinstance(msg.channel, discord.DMChannel) else ""
         await pgbot.util.send_embed(
             log_channel,
-            f"Command invoked by {msg.author} / {msg.author.id}{in_dm}" 
+            f"Command invoked by {msg.author} / {msg.author.id}{in_dm}",
             msg.content,
         )
 
