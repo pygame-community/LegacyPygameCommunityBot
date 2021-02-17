@@ -1,7 +1,7 @@
 TOKEN = open("token.txt").read()
 PREFIX = "pg!"
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 
 LOG_CHANNEL = 793250875471822930
 BLOCKLIST_CHANNEL = 793269297954422804
@@ -48,7 +48,6 @@ PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
 
 # String Constants
-
 ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
 
 
@@ -57,16 +56,12 @@ EXP_TITLES = [
     'An exception occured:',
 ]
 
-
-SCRIPT_PRINT = """
+INCLUDE_FUNCTIONS = """
 def print(*values, sep=" ", end="\\n"):
     output.text = str(output.text)
     output.text += sep.join(map(str, values)) + end
 
 """
-
-INCLUDE_FUNCTIONS = {"print": SCRIPT_PRINT}
-
 
 ROLE_PROMPT = {"title": [], "message": []}
 
