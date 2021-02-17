@@ -173,45 +173,44 @@ async def format_archive_messages(messages):
     return formatted_msgs
 
 
-def generate_arrow_points(center, arrow_vector, thickness=5.0, size_multiplier=1.0, tip_thickness_mul=0.75, tip_to_base_ratio=2.0/3.0):
+def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0/3.0):
     """
-    Generates an arrow polygon
+    Flexible function for calculating the coordinates for an arrow polygon defined by a position and direction vector
+    The coordinate points for the arrow polygon are calculated in a clockwise order, but returned in reverse.
+
+    Returns a tuple containing the 2d coordinates of an arrow polygon.
+
     """
     thickness *= size_multiplier
+    
+    px, py = position
 
-    arrow_vec2d = [arrow_vector[i] * size_multiplier for i in range(2)]
-    vec_length = (arrow_vec2d[0] ** 2 + arrow_vec2d[1] ** 2) ** 0.5
+    arr_vec = (arrow_vector[0] * size_multiplier, arrow_vector[1] * size_multiplier)    # scale up the original arrow vector describing the arrow's direction
+    vec_length = (arr_vec[0]**2 + arr_vec[1]**2)**0.5
 
     if not vec_length:
-        return ((0, 0),) * 7
+        return ((0,0),)*7
 
-    mvp_norm = (-arrow_vec2d[1] / vec_length, arrow_vec2d[0] / vec_length)
-    thickness_part = thickness * tip_thickness_mul
-    mvpstl = (mvp_norm[0] * thickness_part,  mvp_norm[1] * thickness_part)
+    avp_norm = (-arr_vec[1] / vec_length, arr_vec[0] / vec_length)                   # normalize the perpendicular arrow vector
+    arrow_head_width = thickness * arrow_head_width_mul                              # multiply the arrow body width by the arrow head thickness multiplier
+    avp_scaled = ( avp_norm[0] * arrow_head_width,  avp_norm[1] * arrow_head_width ) # scale up the normalized perpendicular arrow vector
 
-    points = []
+    point0 = ( avp_norm[0] * thickness,  avp_norm[1] * thickness )
+    point1 = ( point0[0] + arr_vec[0] * tip_to_base_ratio, point0[1] + arr_vec[1] * tip_to_base_ratio )
+    point2 = (point1[0] + avp_scaled[0], point1[1] + avp_scaled[1])
+    point3 = arr_vec                                                                 # tip of the arrow
 
-    points.append([mvp_norm[i] * thickness for i in range(2)])
-    points.append([
-            points[0][i] + arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
-        ]
-    )
-    points.append([points[1][i] + mvpstl[i] for i in range(2)])
-    points.append(arrow_vec2d)
+    mulp4 = -(thickness * 2.0+arrow_head_width * 2.0)                                # multiplier to mirror the normalized perpendicular arrow vector
+    point4 = (point2[0] + avp_norm[0] * mulp4, point2[1] + avp_norm[1] * mulp4)
+    point5 = (point4[0] + avp_scaled[0], point4[1] + avp_scaled[1])
+    point6 = (point5[0] + ((-arr_vec[0]) * tip_to_base_ratio), point5[1] + ((-arr_vec[1]) * tip_to_base_ratio))
 
-    mulp4 = (thickness + thickness_part) * 2.0
-    points.append([points[2][i] - mvp_norm[i] * mulp4 for i in range(2)])
-    points.append([points[4][i] + mvpstl[i] for i in range(2)])
-    points.append([
-            points[5][i] - arrow_vec2d[i] * tip_to_base_ratio for i in range(2)
-        ]
-    )
-    for point in points:
-        for i in range(2):
-            point[i] += center[i]
-            point[i] = int(point[i])
-
-    return points
+    return (
+            (int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)),
+            (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)),
+            (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)),
+            (int(point0[0]+px), int(point0[1]+py))
+           )
 
 
 def user_clock(t):
@@ -240,7 +239,7 @@ def user_clock(t):
             image, color,
             generate_arrow_points(
                 (640, 640), (s * 560, -c * 560),
-                thickness=5, tip_thickness_mul=2,
+                thickness=5, arrow_head_width_mul=2,
                 tip_to_base_ratio=0.1
             )
         )
