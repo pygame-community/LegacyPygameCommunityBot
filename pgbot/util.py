@@ -175,42 +175,80 @@ async def format_archive_messages(messages):
 
 def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0/3.0):
     """
-    Flexible function for calculating the coordinates for an arrow polygon defined by a position and direction vector
-    The coordinate points for the arrow polygon are calculated in a clockwise order, but returned in reverse.
+    Flexible function for calculating the coordinates
+    for an arrow polygon defined by a position and direction
+    vector. The coordinate points for the arrow polygon
+    are calculated in a clockwise order,
+    but returned in reverse.
 
     Returns a tuple containing the 2d coordinates of an arrow polygon.
-
     """
+
     thickness *= size_multiplier
-    
     px, py = position
 
-    arr_vec = (arrow_vector[0] * size_multiplier, arrow_vector[1] * size_multiplier)    # scale up the original arrow vector describing the arrow's direction
-    vec_length = (arr_vec[0]**2 + arr_vec[1]**2)**0.5
-
+    arr_vec = (
+        arrow_vector[0] * size_multiplier,
+        arrow_vector[1] * size_multiplier
+    ) # scale up the original arrow vector describing the arrow's direction
+    
+    vec_length = (arr_vec[0] ** 2 + arr_vec[1] **2 ) ** 0.5
     if not vec_length:
-        return ((0,0),)*7
+        return ((0, 0), ) * 7
 
-    avp_norm = (-arr_vec[1] / vec_length, arr_vec[0] / vec_length)                   # normalize the perpendicular arrow vector
-    arrow_head_width = thickness * arrow_head_width_mul                              # multiply the arrow body width by the arrow head thickness multiplier
-    avp_scaled = ( avp_norm[0] * arrow_head_width,  avp_norm[1] * arrow_head_width ) # scale up the normalized perpendicular arrow vector
+    avp_norm = (
+        -arr_vec[1] / vec_length,
+        arr_vec[0] / vec_length
+    )  # normalize the perpendicular arrow vector
 
-    point0 = ( avp_norm[0] * thickness,  avp_norm[1] * thickness )
-    point1 = ( point0[0] + arr_vec[0] * tip_to_base_ratio, point0[1] + arr_vec[1] * tip_to_base_ratio )
-    point2 = (point1[0] + avp_scaled[0], point1[1] + avp_scaled[1])
-    point3 = arr_vec                                                                 # tip of the arrow
+    arrow_head_width = thickness * arrow_head_width_mul
+    # multiply the arrow body width by the arrow head thickness multiplier
 
-    mulp4 = -(thickness * 2.0+arrow_head_width * 2.0)                                # multiplier to mirror the normalized perpendicular arrow vector
-    point4 = (point2[0] + avp_norm[0] * mulp4, point2[1] + avp_norm[1] * mulp4)
-    point5 = (point4[0] + avp_scaled[0], point4[1] + avp_scaled[1])
-    point6 = (point5[0] + ((-arr_vec[0]) * tip_to_base_ratio), point5[1] + ((-arr_vec[1]) * tip_to_base_ratio))
+    avp_scaled = (
+        avp_norm[0] * arrow_head_width, 
+        avp_norm[1] * arrow_head_width
+    ) # scale up the normalized perpendicular arrow vector
+
+    point0 = (
+        avp_norm[0] * thickness,
+        avp_norm[1] * thickness
+    )
+
+    point1 = (
+        point0[0] + arr_vec[0] * tip_to_base_ratio,
+        point0[1] + arr_vec[1] * tip_to_base_ratio
+    )
+
+    point2 = (
+        point1[0] + avp_scaled[0],
+        point1[1] + avp_scaled[1]
+    )
+
+    point3 = arr_vec  # tip of the arrow
+    mulp4 = -(thickness * 2.0 + arrow_head_width * 2.0)
+    # multiplier to mirror the normalized perpendicular arrow vector
+
+    point4 = (
+        point2[0] + avp_norm[0] * mulp4,
+        point2[1] + avp_norm[1] * mulp4
+    )
+    
+    point5 = (
+        point4[0] + avp_scaled[0],
+        point4[1] + avp_scaled[1]
+    )
+    
+    point6 = (
+        point5[0] + ((-arr_vec[0]) * tip_to_base_ratio),
+        point5[1] + ((-arr_vec[1]) * tip_to_base_ratio)
+    )
 
     return (
-            (int(point6[0]+px), int(point6[1]+py)), (int(point5[0]+px), int(point5[1]+py)),
-            (int(point4[0]+px), int(point4[1]+py)), (int(point3[0]+px), int(point3[1]+py)),
-            (int(point2[0]+px), int(point2[1]+py)), (int(point1[0]+px), int(point1[1]+py)),
-            (int(point0[0]+px), int(point0[1]+py))
-           )
+        (int(point6[0] + px), int(point6[1] + py)), (int(point5[0] + px), int(point5[1] + py)),
+        (int(point4[0] + px), int(point4[1] + py)), (int(point3[0] + px), int(point3[1] + py)),
+        (int(point2[0] + px), int(point2[1] + py)), (int(point1[0] + px), int(point1[1] + py)),
+        (int(point0[0] + px), int(point0[1] + py))
+    )
 
 
 def user_clock(t):
