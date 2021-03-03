@@ -66,7 +66,7 @@ ROLE_PROMPT = {
     
     "message": [
         "Hey there {0}, are you a beginner, intermediate or pro in pygame, or even a contributor?\n" +\
-        "Tell <@!235148962103951360> in <#772535163195228200>!"       
+        "Tell <@!235148962103951360> in <#772535163195228200>!",       
     ]
 }
 
