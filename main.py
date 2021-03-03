@@ -124,13 +124,17 @@ async def on_message(msg: discord.Message):
                 has_a_competence_role = True
 
         if not has_a_competence_role and msg.channel.id in PYGAME_CHANNELS:
+            muted_role = discord.utils.get(msg.guild.roles, id=MUTED_ROLE)
+            await msg.author.add_roles(muted_role)
+            
             response_msg = await pgbot.util.send_embed(
                 msg.channel,
                 "Get more roles!",
-                "Hey there, are you a beginner, intermediate or pro in pygame, " + \
+                f"Hey there {msg.author.mention}, are you a beginner, intermediate or pro in pygame, " + \
                 "or even a contributor? Tell Carl-Bot in <#772535163195228200>!",
             )
-            await asyncio.sleep(15)
+            await asyncio.sleep(30)
+            await msg.author.remove_roles(muted_role)
             await response_msg.delete()
 
 
