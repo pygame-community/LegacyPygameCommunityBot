@@ -77,7 +77,7 @@ async def on_message(msg: discord.Message):
                 "You mortal mammal! How you dare to boncc a snake?"
             )
             await msg.channel.send(PG_ANGRY_AN)
-            
+
         if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
             pgbot.commands.boncc_count = 2 * BONCC_THRESHOLD
 
@@ -133,7 +133,7 @@ async def on_message(msg: discord.Message):
             response_msg = await pgbot.util.send_embed(
                 msg.channel,
                 random.choice(ROLE_PROMPT["title"]),
-                random.choice(ROLE_PROMPT["message"])
+                random.choice(ROLE_PROMPT["message"]).format(msg.author.mention)
             )
             await asyncio.sleep(30)
             await msg.author.remove_roles(muted_role)
