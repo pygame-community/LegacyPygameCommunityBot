@@ -77,6 +77,7 @@ async def on_message(msg: discord.Message):
                 "You mortal mammal! How you dare to boncc a snake?"
             )
             await msg.channel.send(PG_ANGRY_AN)
+            
         if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
             pgbot.commands.boncc_count = 2 * BONCC_THRESHOLD
 
