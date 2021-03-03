@@ -7,6 +7,7 @@ import pygame
 import pgbot.commands
 import pgbot.util
 from pgbot.constants import *
+import random
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()  # pylint: disable=no-member
@@ -75,6 +76,7 @@ async def on_message(msg: discord.Message):
                 "Did you hit the snek?",
                 "You mortal mammal! How you dare to boncc a snake?"
             )
+            await msg.channel.send(PG_ANGRY_AN)
         if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
             pgbot.commands.boncc_count = 2 * BONCC_THRESHOLD
 
@@ -129,9 +131,8 @@ async def on_message(msg: discord.Message):
             
             response_msg = await pgbot.util.send_embed(
                 msg.channel,
-                "Get more roles!",
-                f"Hey there {msg.author.mention}, are you a beginner, intermediate or pro in pygame, " + \
-                "or even a contributor? Tell Carl-Bot in <#772535163195228200>!",
+                random.choice(ROLE_PROMPT["title"]),
+                random.choice(ROLE_PROMPT["message"])
             )
             await asyncio.sleep(30)
             await msg.author.remove_roles(muted_role)

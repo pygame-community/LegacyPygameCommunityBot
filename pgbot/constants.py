@@ -13,6 +13,7 @@ PET_INTERVAL = 60.0
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
+PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
 SORRY_CHANCE = 0.5
 BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
@@ -56,7 +57,18 @@ EXP_TITLES = [
     'An exception occured:',
 ]
 
-ROLE_PROMPT = {"title": [], "message": []}
+ROLE_PROMPT = {
+    "title": [
+        "Get more roles",
+        "You need more roles for this channel (It's written everywhere!)",
+        "I won't stop until you get more roles"
+    ],
+    
+    "message": [
+        "Hey there {0}, are you a beginner, intermediate or pro in pygame, or even a contributor?" +\
+        "Tell <@!235148962103951360> in <#772535163195228200>!"       
+    ]
+}
 
 
 INCLUDE_FUNCTIONS = """
