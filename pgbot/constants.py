@@ -65,7 +65,7 @@ ROLE_PROMPT = {
     ],
     
     "message": [
-        "Hey there {0}, are you a beginner, intermediate or pro in pygame, or even a contributor?\n" +\
+        "Hey there {0}, are you a <@&772536799926157312>, <@&772536976262823947> or a <@&772537033078997002>, or even a <@&772537232594698271>?\n" +\
         "Tell <@!235148962103951360> in <#772535163195228200>!",       
     ]
 }
