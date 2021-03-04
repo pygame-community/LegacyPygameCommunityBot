@@ -418,6 +418,14 @@ async def user_command(
                     msg.channel, EXP_TITLES[1], "```\n" + exp + "```"
                 )
 
+    elif safe_subscripting(args, 0) == "help" and len(args) == 1:
+        await send_embed(
+            msg.channel,
+            BOT_HELP_PROMPT["title"][0],
+            BOT_HELP_PROMPT["message"][0],
+            BOT_HELP_PROMPT["color"][0]
+        )
+
     elif safe_subscripting(args, 0) == "pet" and len(args) == 1:
         pet_anger -= (time.time() - last_pet - PET_INTERVAL) * (
             pet_anger / JUMPSCARE_THRESHOLD
