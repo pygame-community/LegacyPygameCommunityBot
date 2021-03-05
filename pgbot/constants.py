@@ -116,7 +116,7 @@ My command prefix is `pg`.
 !boncccheck
 ```
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Get Help:**__
 `pg!help` - Ask me for help
 
@@ -124,20 +124,20 @@ __**Get Help:**__
 
 `pg!clock` - 24 Hour Clock showing @ Helpfulie ☉ 's who are available to help
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Run Code:**__
 `pg!exec {python code block}` - Run python code in an isolated environment. `import` is not available. Various methods of builtin objects have been disabled for security reasons. The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
 
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting [**here.**](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-__**Play With Me :snake::**__
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+__**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
 
 `pg!vibecheck` - Check my mood.
 
-`pg!sorry` - You were hitting me, :pg_bonk: . and you're now trying to apologize? Let's see what I'll say :unamused:
+`pg!sorry` - You were hitting me, "<:pg_bonk:780423317718302781>" and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!boncccheck` -  Check how many times you have done me harm.
     """],
