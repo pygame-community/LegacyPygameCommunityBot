@@ -6,6 +6,8 @@ VERSION = "1.2.0"
 LOG_CHANNEL = 793250875471822930
 BLOCKLIST_CHANNEL = 793269297954422804
 
+BOT_ID = 772788653326860288
+
 # Pet command constants
 PET_COST = 0.1
 JUMPSCARE_THRESHOLD = 20.0
@@ -65,7 +67,7 @@ ROLE_PROMPT = {
     ],
     
     "message": [
-        "Hey there {0}, are you a <@&772536799926157312>, <@&772536976262823947> or a <@&772537033078997002>, or even a <@&772537232594698271>?\n" +\
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro, or even a @ Pygame Contributor?\n" +\
         "Tell <@!235148962103951360> in <#772535163195228200>!",       
     ]
 }
@@ -94,7 +96,7 @@ BOT_HELP_PROMPT = {
     ],
     
     "message": ["""
-Hey there, do you want to use @Pygame Community Bot#1457 ?
+Hey there, do you want to use <@772788653326860288> ?
 My command prefix is `pg`.
 
 **Get Help**
@@ -116,7 +118,7 @@ My command prefix is `pg`.
 !boncccheck
 ```
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Get Help:**__
 `pg!help` - Ask me for help
 
@@ -124,20 +126,20 @@ __**Get Help:**__
 
 `pg!clock` - 24 Hour Clock showing @ Helpfulie ☉ 's who are available to help
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Run Code:**__
 `pg!exec {python code block}` - Run python code in an isolated environment. `import` is not available. Various methods of builtin objects have been disabled for security reasons. The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
 
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting [**here.**](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-__**Play With Me :snake::**__
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+__**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
 
 `pg!vibecheck` - Check my mood.
 
-`pg!sorry` - You were hitting me, :pg_bonk: . and you're now trying to apologize? Let's see what I'll say :unamused:
+`pg!sorry` - You were hitting me, "<:pg_bonk:780423317718302781>" and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!boncccheck` -  Check how many times you have done me harm.
     """],
