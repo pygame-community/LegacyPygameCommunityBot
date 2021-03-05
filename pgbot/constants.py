@@ -6,6 +6,8 @@ VERSION = "1.2.0"
 LOG_CHANNEL = 793250875471822930
 BLOCKLIST_CHANNEL = 793269297954422804
 
+BOT_ID = 772788653326860288
+
 # Pet command constants
 PET_COST = 0.1
 JUMPSCARE_THRESHOLD = 20.0
@@ -65,7 +67,7 @@ ROLE_PROMPT = {
     ],
     
     "message": [
-        "Hey there {0}, are you a <@&772536799926157312>, <@&772536976262823947> or a <@&772537033078997002>, or even a <@&772537232594698271>?\n" +\
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro, or even a @ Pygame Contributor?\n" +\
         "Tell <@!235148962103951360> in <#772535163195228200>!",       
     ]
 }
@@ -94,7 +96,7 @@ BOT_HELP_PROMPT = {
     ],
     
     "message": ["""
-Hey there, do you want to use @Pygame Community Bot#1457 ?
+Hey there, do you want to use <@772788653326860288> ?
 My command prefix is `pg`.
 
 **Get Help**
