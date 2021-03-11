@@ -1,4 +1,5 @@
-TOKEN = open("token.txt").read()
+import os
+TOKEN = os.environ.get("TOKEN", "")
 PREFIX = "pg!"
 
 VERSION = "1.2.0"
