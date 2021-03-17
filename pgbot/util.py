@@ -251,53 +251,6 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     )
 
 
-def user_clock(t):
-    """
-    Generate a 24 hour clock for special server roles
-    """
-    image = pygame.Surface((1280, 1280)).convert_alpha()
-    font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 36)
-    texts = []
-
-    font.bold = True
-
-    image.fill((0, 0, 0, 0))
-    pygame.draw.circle(image, (255, 255, 146), (640, 640), 600,
-                       draw_top_left=True, draw_top_right=True)
-    pygame.draw.circle(image, (0, 32, 96), (640, 640), 600,
-                       draw_bottom_left=True, draw_bottom_right=True)
-
-    pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
-
-    for offset, name, color in CLOCK_TIMEZONES:
-        angle = (t + offset) % 86400 / 86400 * 360 + 180
-        s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
-
-        pygame.draw.polygon(
-            image, color,
-            generate_arrow_points(
-                (640, 640), (s * 560, -c * 560),
-                thickness=5, arrow_head_width_mul=2,
-                tip_to_base_ratio=0.1
-            )
-        )
-        color = 255 - random.randint(0, 86)
-        text = font.render(name, True, (color, 0, 0))
-        texts.append(
-            (
-                text,
-                (s * 500 + 640 - text.get_width() // 2,
-                -c * 500 + 640 - text.get_height() // 2)
-            )
-        )
-    pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
-
-    for text, pos in texts:
-        image.blit(text, pos)
-
-    return image
-
-
 class ThreadWithTrace(threading.Thread):
     """
     Modified thread with a kill method
