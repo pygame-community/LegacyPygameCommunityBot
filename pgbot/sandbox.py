@@ -1,5 +1,3 @@
-# TODO: Write documentation what this part does
-
 import asyncio
 import builtins
 import cmath
@@ -11,12 +9,88 @@ import random
 import re
 import string
 import time
+import traceback
+import threading
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from pgbot.util import ThreadWithTrace, PgExecBot, pg_exec
+from . import (
+    common,
+    util
+)
+
+
+class PgExecBot(Exception):
+    """
+    Base class for pg!exec exceptions
+    """
+    pass
+
+
+def pg_exec(code: str, globals_: dict):
+    """
+    exec wrapper used for pg!exec, with better error reporting
+    """
+    try:
+        script_start = time.perf_counter()
+        exec(f"{common.INCLUDE_FUNCTIONS}{code}", globals_)
+        return time.perf_counter() - script_start
+
+    except ImportError:
+        raise PgExecBot(
+            "Oopsies! The bot's exec function doesn't support importing " + \
+            "external modules. Don't worry, many modules are pre-imported " + \
+            "for you already! Just re-run your code, without the import statements"
+        )
+
+    except SyntaxError as e:
+        offsetarrow = " " * e.offset + "^\n"
+        lineno = e.lineno - common.INCLUDE_FUNCTIONS.count("\n")
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " + \
+                          e.text + '\n' + offsetarrow + e.msg)
+
+    except Exception as err:
+        ename = err.__class__.__name__
+        details = err.args[0]
+        lineno = (traceback.extract_tb(sys.exc_info()[-1])[-1][1]
+                  - common.INCLUDE_FUNCTIONS.count("\n"))
+        raise PgExecBot(f"{ename} at line {lineno}: {details}")
+
+
+class ThreadWithTrace(threading.Thread):
+    """
+    Modified thread with a kill method
+    """
+    def __init__(self, *args, **keywords):
+        threading.Thread.__init__(self, *args, **keywords)
+        self.killed = False
+
+    def start(self):
+        self.__run_backup = self.run
+        self.run = self.__run
+        threading.Thread.start(self)
+
+    def __run(self):
+        sys.settrace(self.global_trace)
+        self.__run_backup()
+        self.run = self.__run_backup
+
+    def global_trace(self, frame, event, arg):
+        if event == "call":
+            return self.local_trace
+        return None
+
+    def local_trace(self, frame, event, arg):
+        if self.killed:
+            if event == "line":
+                raise SystemExit()
+        return self.local_trace
+
+    def kill(self):
+        self.killed = True
+
 
 process = psutil.Process(os.getpid())
 
