@@ -1,7 +1,1 @@
-from . import (
-    common,
-    util,
-    commands,
-    moderation,
-    sandbox
-)
+from . import commands, common, moderation, sandbox, util

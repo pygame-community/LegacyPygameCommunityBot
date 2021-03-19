@@ -1,48 +1,40 @@
 import asyncio
 import os
 import random
-import sys
 
 import discord
 import pygame
 
-from pgbot import *
+from pgbot import commands, common, moderation, util
 
-
-# Aliases
-bot = common.bot
-
-
-def setup():
-    os.environ["SDL_VIDEODRIVER"] = "dummy"
-    pygame.init()
-    common.window = pygame.display.set_mode((1, 1))
-
-
-def main():
-    setup()
-    common.bot.run(common.TOKEN)
-
-
-@bot.event
+@common.bot.event
 async def on_ready():
+    """
+    Startup routines when the bot starts
+    """
     print("The PygameCommunityBot is now online!")
     print("The bot is present in these server(s):")
-    for server in bot.guilds:
+    for server in common.bot.guilds:
         print("-", server.name)
         for channel in server.channels:
             print("+", channel.name)
             if channel.id == common.LOG_CHANNEL_ID:
                 common.log_channel = channel
+            if channel.id == common.ARRIVALS_CHANNEL_ID:
+                common.arrivals_channel = channel
+            if channel.id == common.GUIDE_CHANNEL_ID:
+                common.guide_channel = channel
+            if channel.id == common.ROLES_CHANNEL_ID:
+                common.roles_channel = channel
 
     while True:
-        await bot.change_presence(
+        await common.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
-        await bot.change_presence(
+        await common.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.playing, name="in discord.io/pygame_community"
             )
@@ -50,8 +42,28 @@ async def on_ready():
         await asyncio.sleep(2.5)
 
 
-@bot.event
+@common.bot.event
+async def on_member_join(member):
+    greet = random.choice(["Hi", "Hello", "Welcome", "Greetings", "Howdy"])
+    act = random.choice(
+        ["have fun", "have fun with pygame", "enjoy", "enjoy your stay"]
+    )
+    check = random.choice(
+        ["Checkout", "Make sure to checkout", "Take a look at", "See"]
+    )
+    grab = random.choice(["grab", "get", "take"])
+
+    await common.arrivals_channel.send(
+        f"{greet} {member.mention}! {check} our {common.guide_channel.mention}, " + \
+        f"{grab} some {common.roles_channel.mention} and {act}!"
+    )
+
+
+@common.bot.event
 async def on_message(msg: discord.Message):
+    """
+    This function is called for every message by user.
+    """
     if msg.author.bot:
         return
 
@@ -75,19 +87,26 @@ async def on_message(msg: discord.Message):
             pass
 
 
-@bot.event
+@common.bot.event
 async def on_message_delete(msg: discord.Message):
+    """
+    This function is called for every message deleted by user.
+    """
     if msg.id in common.cmd_logs.keys():
         del common.cmd_logs[msg.id]
-    elif msg.author.id == bot.user.id:
+
+    elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
             if common.cmd_logs[log].id == msg.id:
                 del common.cmd_logs[log]
                 return
 
 
-@bot.event
+@common.bot.event
 async def on_message_edit(old: discord.Message, new: discord.Message):
+    """
+    This function is called for every message edited by user.
+    """
     if new.author.bot:
         return
 
@@ -103,6 +122,16 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
 
 
 if __name__ == "__main__":
-    main()
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    common.window = pygame.display.set_mode((1, 1))
+
+    try:
+        common.bot.run(common.TOKEN)
+    except discord.errors.PrivilegedIntentsRequired:
+        # Rather than failing when correct intents are not set, try to run
+        # without them
+        common.bot = discord.Client()
+        common.bot.run(common.TOKEN)
 else:
     raise ImportError("This is not a module")
