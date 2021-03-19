@@ -75,10 +75,7 @@ async def on_message(msg: discord.Message):
 @bot.event
 async def on_message_delete(msg: discord.Message):
     if msg.id in common.cmd_logs.keys():
-        try:
-            await common.cmd_logs[msg.id].delete()
-        except discord.HTTPException:
-            pass
+        del common.cmd_logs[msg.id]
 
 
 @bot.event
