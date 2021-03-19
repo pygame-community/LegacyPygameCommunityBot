@@ -88,3 +88,8 @@ def print(*values, sep=" ", end="\\n"):
     output.text = str(output.text)
     output.text += sep.join(map(str, values)) + end
 """
+
+EXP_TITLES = [
+    'An exception occurred while trying to execute the command:',
+    'An exception occured:',
+]
