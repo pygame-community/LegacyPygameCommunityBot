@@ -201,7 +201,7 @@ async def emsudo_edit_cmd(invoke_msg: discord.Message, response_msg: discord.Mes
 
 @export_command("archive", 3)
 async def archive_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
-    origin, quantity, destination = int(args[0]), int(args[1]), int(args[2])
+    origin, quantity, destination = int(util.filter_id(args[0])), int(args[1]), int(util.filter_id(args[2]))
 
     origin_channel = None
     destination_channel = None

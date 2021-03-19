@@ -140,12 +140,14 @@ async def pet_cmd(invoke_msg: discord.Message, response_msg: discord.Message, ar
     emotion.last_pet = time.time()
 
     fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
-    await invoke_msg.channel.send(
+    await util.edit_embed(
+        response_msg,
+        "",
+        "",
+        0xFFFFAA,
         "https://raw.githubusercontent.com/PygameCommunityDiscord/"
         f"PygameCommunityBot/main/assets/images/{fname}"
     )
-
-    await response_msg.delete()
 
 
 @export_command("vibecheck", 0)

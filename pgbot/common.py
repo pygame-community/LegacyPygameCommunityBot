@@ -128,7 +128,7 @@ My command prefix is `pg`.
 !pet
 !vibecheck
 !sorry
-!boncccheck
+!bonkcheck
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Get Help:**__
