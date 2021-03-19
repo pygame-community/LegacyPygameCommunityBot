@@ -1,9 +1,13 @@
-import asyncio
 import random
 
+import asyncio
 import discord
 
-from . import common, emotion, util
+from . import (
+    common,
+    emotion,
+    util
+)
 
 
 async def check_sus(msg: discord.Message):

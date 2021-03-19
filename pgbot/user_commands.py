@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 import time
@@ -6,227 +5,202 @@ import time
 import discord
 import pygame
 
-from . import clock, common, docs, emotion, sandbox, util
+from . import (
+    common,
+    clock,
+    docs,
+    emotion,
+    util,
+    sandbox
+)
 
-class UserCommand:
-    """
-    Base class to handle user commands.
-    """
-    def __init__(self):
-        """
-        Initialise UserCommand class
-        """
-        # Create a dictionary of command names and respective handler functions
-        self.cmds_and_funcs = {}
-        for i in dir(self):
-            if i.startswith("cmd_"):
-                self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
 
-    def handle_cmd(
-        self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv
-    ):
-        """
-        Calles the appropriate sub function to handle commands.
-        Must return True on successful command execution, False otherwise
-        """
-        self.invoke_msg = invoke_msg
-        self.response_msg = resp_msg
+EXPORTED_COMMANDS = {}
 
-        cmd_str = invoke_msg.content[len(common.PREFIX):].lstrip()
-        self.args = cmd_str.split()
-        cmd = self.args.pop(0)
-        self.string = cmd_str[len(cmd):].strip()
-        self.is_priv = is_priv
 
-        try:
-            asyncio.create_task(self.cmds_and_funcs[cmd]())
-            return True
-        except (KeyError, RuntimeError):
-            return False
+def export_command(identifier: str, args: int):
+    def decorator_handler(func):
+        global EXPORTED_COMMANDS
+        EXPORTED_COMMANDS[list(EXPORTED_COMMANDS.keys())[-1]]["function"] = func
+        return func
 
-    def check_args(self, minarg, maxarg=None):
-        """
-        A utility for a function to check that the correct number of args were
-        passed
-        """
-        if maxarg is None:
-            maxarg = minarg
+    global EXPORTED_COMMANDS
+    EXPORTED_COMMANDS[identifier] = {
+        "args": args
+    }
+    return decorator_handler
 
-        if not (minarg <= len(self.args) <= maxarg):
-            raise RuntimeError()
 
-    async def cmd_version(self):
-        self.check_args(0)
-        await util.edit_embed(
-            self.response_msg, "Current bot's version", f"`{common.VERSION}`"
-        )
+@export_command("version", 0)
+async def version_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(response_msg, "Current bot's version", f"`{common.VERSION}`")
 
-    async def cmd_clock(self):
-        self.check_args(0)
 
-        t = time.time()
-        pygame.image.save(clock.user_clock(t), f"temp{t}.png")
-        common.cmd_logs[self.invoke_msg.id] = \
-            await self.response_msg.channel.send(
-                file=discord.File(f"temp{t}.png")
-            )
-        await self.response_msg.delete()
-        os.remove(f"temp{t}.png")
+@export_command("clock", 0)
+async def clock_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    t = time.time()
+    pygame.image.save(clock.user_clock(t), f"temp{t}.png")
+    common.cmd_logs[invoke_msg.id] = await response_msg.channel.send(file=discord.File(f"temp{t}.png"))
+    await response_msg.delete()
+    os.remove(f"temp{t}.png")
 
-    async def cmd_doc(self):
-        self.check_args(1)
 
-        title, body = docs.get(self.args[0])
-        await util.edit_embed(self.response_msg, title, body)
+@export_command("doc", 1)
+async def docs_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    title, body = docs.get(args[0])
+    await util.edit_embed(response_msg, title, body)
 
-    async def cmd_exec(self):
-        code = self.string.lstrip('`').rstrip('`')
-        if code.startswith("python\n"):
-            code = code[7:]
-        elif code.startswith("py\n"):
-            code = code[3:]
 
-        start = time.perf_counter()
-        returned = await sandbox.exec_sandbox(code, 10 if self.is_priv else 5)
-        duration = returned.duration  # the execution time of the script alone
+@export_command("exec", -1)
+async def exec_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string, _duration=5):
+    code = string.lstrip().rstrip().lstrip('`').rstrip('`')
+    if code.startswith("python\n"):
+        code = code[7:]
+    elif code.startswith("py\n"):
+        code = code[3:]
 
-        if not isinstance(returned.exc, BaseException):
-            if isinstance(returned.img, pygame.Surface):
-                pygame.image.save(returned.img, f"temp{start}.png")
-                if os.path.getsize(f"temp{start}.png") < 2 ** 22:
-                    await self.response_msg.channel.send(
-                        file=discord.File(f"temp{start}.png")
-                    )
-                else:
-                    await util.edit_embed(
-                        self.response_msg,
-                        "Image cannot be sent:",
-                        "The image file size is above 4MiB",
-                    )
-                os.remove(f"temp{start}.png")
+    start = time.perf_counter()
+    returned = await sandbox.exec_sandbox(code, _duration)
+    duration = returned.duration  # the execution time of the script alone
 
-            str_repr = str(returned.text).replace(
-                "```", common.ESC_CODE_BLOCK_QUOTE
-            )
-
-            # if not str_repr and isinstance(returned.img, pygame.Surface):
-            #     return
-
-            if len(str_repr) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr[:2037] + " ...```",
-                )
+    if not isinstance(returned.exc, BaseException):
+        if isinstance(returned.img, pygame.Surface):
+            pygame.image.save(returned.img, f"temp{start}.png")
+            if os.path.getsize(f"temp{start}.png") < 2 ** 22:
+                await response_msg.channel.send(file=discord.File(f"temp{start}.png"))
             else:
                 await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr + "```",
+                    response_msg,
+                    "Image cannot be sent:",
+                    "The image file size is above 4MiB",
                 )
+            os.remove(f"temp{start}.png")
 
-        else:
-            exp = (
-                    type(returned.exc).__name__.replace(
-                        "```", common.ESC_CODE_BLOCK_QUOTE
-                    )
-                    + ": "
-                    + ", ".join(str(t) for t in returned.exc.args).replace(
-                "```", common.ESC_CODE_BLOCK_QUOTE
-            )
-            )
-
-            if len(exp) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXP_TITLES[1],
-                    "```\n" + exp[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXP_TITLES[1],
-                    "```\n" + exp + "```"
-                )
-
-    async def cmd_help(self):
-        self.check_args(0)
-        await util.edit_embed(
-            self.response_msg,
-            common.BOT_HELP_PROMPT["title"][0],
-            common.BOT_HELP_PROMPT["message"][0],
-            common.BOT_HELP_PROMPT["color"][0]
+        str_repr = str(returned.text).replace(
+            "```", common.ESC_CODE_BLOCK_QUOTE
         )
 
-    async def cmd_pet(self):
-        self.check_args(0)
-        emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
-                emotion.pet_anger / common.JUMPSCARE_THRESHOLD
-        ) - common.PET_COST
+        # if not str_repr and isinstance(returned.img, pygame.Surface):
+        #     return
 
-        if emotion.pet_anger < common.PET_COST:
-            emotion.pet_anger = common.PET_COST
-        emotion.last_pet = time.time()
-
-        fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
-        await util.edit_embed(
-            self.response_msg,
-            "",
-            "",
-            0xFFFFAA,
-            "https://raw.githubusercontent.com/PygameCommunityDiscord/"
-            f"PygameCommunityBot/main/assets/images/{fname}"
-        )
-
-    async def cmd_vibecheck(self):
-        self.check_args(0)
-        await util.edit_embed(
-            self.response_msg,
-            "Vibe Check, snek?",
-            f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" + \
-            f"\nIt was last pet {time.time() - emotion.last_pet:.2f} second(s) ago",
-        )
-
-    async def cmd_sorry(self):
-        self.check_args(0)
-        if not emotion.boncc_count:
+        if len(str_repr) + 11 > 2048:
             await util.edit_embed(
-                self.response_msg,
-                "Ask forgiveness from snek?",
-                "Snek is happy. Awww, don't be sorry."
-            )
-            return
-
-        if random.random() < common.SORRY_CHANCE:
-            emotion.boncc_count -= common.BONCC_PARDON
-            if emotion.boncc_count < 0:
-                emotion.boncc_count = 0
-            await util.edit_embed(
-                self.response_msg,
-                "Ask forgiveness from snek?",
-                "Your pythonic lord accepts your apology.\n" + \
-                f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
+                response_msg,
+                f"Returned text (code executed in {util.format_time(duration)}):",
+                "```\n" + str_repr[:2037] + " ...```",
             )
         else:
             await util.edit_embed(
-                self.response_msg,
-                "Ask forgiveness from snek?",
-                "How did you dare to boncc a snake?\nBold of you to assume " + \
-                "I would apologize to you, two-feet-standing being!\nThe " + \
-                f"boncc count is {emotion.boncc_count}"
+                response_msg,
+                f"Returned text (code executed in {util.format_time(duration)}):",
+                "```\n" + str_repr + "```",
             )
 
-    async def cmd_bonkcheck(self):
-        self.check_args(0)
-        if emotion.boncc_count:
+    else:
+        exp = (
+                type(returned.exc).__name__.replace(
+                    "```", common.ESC_CODE_BLOCK_QUOTE
+                )
+                + ": "
+                + ", ".join(str(t) for t in returned.exc.args).replace(
+            "```", common.ESC_CODE_BLOCK_QUOTE
+        )
+        )
+
+        if len(exp) + 11 > 2048:
             await util.edit_embed(
-                self.response_msg,
-                "The snek is hurt and angry:",
-                f"The boncc count is {emotion.boncc_count}"
+                response_msg,
+                common.EXP_TITLES[1],
+                "```\n" + exp[:2037] + " ...```",
             )
         else:
             await util.edit_embed(
-                self.response_msg,
-                "The snek is right",
-                "Please, don't hit the snek"
+                response_msg, common.EXP_TITLES[1], "```\n" + exp + "```"
             )
+
+
+@export_command("help", 0)
+async def help_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(
+        response_msg,
+        common.BOT_HELP_PROMPT["title"][0],
+        common.BOT_HELP_PROMPT["message"][0],
+        common.BOT_HELP_PROMPT["color"][0]
+    )
+
+
+@export_command("pet", 0)
+async def pet_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
+            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+    ) - common.PET_COST
+
+    if emotion.pet_anger < common.PET_COST:
+        emotion.pet_anger = common.PET_COST
+    emotion.last_pet = time.time()
+
+    fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
+    await util.edit_embed(
+        response_msg,
+        "",
+        "",
+        0xFFFFAA,
+        "https://raw.githubusercontent.com/PygameCommunityDiscord/"
+        f"PygameCommunityBot/main/assets/images/{fname}"
+    )
+
+
+@export_command("vibecheck", 0)
+async def vibecheck_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(
+        response_msg,
+        "Vibe Check, snek?",
+        f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" + \
+        f"\nIt was last pet {time.time() - emotion.last_pet:.2f} second(s) ago",
+    )
+
+
+@export_command("sorry", 0)
+async def sorry_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    if not emotion.boncc_count:
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "Snek is happy. Awww, don't be sorry."
+        )
+        return
+
+    if random.random() < common.SORRY_CHANCE:
+        emotion.boncc_count -= common.BONCC_PARDON
+        if emotion.boncc_count < 0:
+            emotion.boncc_count = 0
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "Your pythonic lord accepts your apology.\n" + \
+            f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
+        )
+    else:
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "How did you dare to boncc a snake?\nBold of you to assume " + \
+            "I would apologize to you, two-feet-standing being!\nThe " + \
+            f"boncc count is {emotion.boncc_count}"
+        )
+
+
+@export_command("bonkcheck", 0)
+async def bonkcheck_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    if emotion.boncc_count:
+        await util.edit_embed(
+            response_msg,
+            "The snek is hurt and angry:",
+            f"The boncc count is {emotion.boncc_count}"
+        )
+    else:
+        await util.edit_embed(
+            response_msg,
+            "The snek is right",
+            "Please, don't hit the snek"
+        )

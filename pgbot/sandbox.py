@@ -8,16 +8,19 @@ import os
 import random
 import re
 import string
-import sys
-import threading
 import time
 import traceback
+import threading
+import sys
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from . import common, util
+from . import (
+    common,
+    util
+)
 
 
 class PgExecBot(Exception):

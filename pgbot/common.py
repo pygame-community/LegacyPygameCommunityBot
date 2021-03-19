@@ -5,15 +5,10 @@ import pygame
 
 
 # For commonly used variables
-ints = discord.Intents.default()
-ints.members = True  # needed for on_member_join
-bot = discord.Client(intents=ints)
+bot = discord.Client()
 window = pygame.Surface((1, 1))  # This will later be redefined
 
 log_channel: discord.TextChannel
-arrivals_channel: discord.TextChannel
-roles_channel: discord.TextChannel
-guide_channel: discord.TextChannel
 
 cmd_logs = {}
 
@@ -35,11 +30,7 @@ VERSION = "1.3"
 TOKEN = os.environ["TOKEN"]
 PREFIX = "pg!"
 
-ROLES_CHANNEL_ID = 772535163195228200
-GUIDE_CHANNEL_ID = 772528306615615500
-ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
-
 MUTED_ROLE = 772534687302156301
 
 # PGC Admin, PGC Moderator, PGC Wizards
@@ -57,15 +48,13 @@ ADMIN_USERS = {
     763015391710281729
 }
 
-# Specialties, Helpfulies, Verified pygame contributors, Server Boosters
+# PGC Specialties, PGC Helpfulies
 PRIV_ROLES = {
     774473681325785098,
-    778205389942030377,
-    780440736457031702,
-    787473199088533504,
+    778205389942030377
 }
 
-# Beginner, Regular, Pro, Contributor
+# PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor
 COMPETENCE_ROLES = {
     772536799926157312,
     772536976262823947,
@@ -98,7 +87,7 @@ ROLE_PROMPT = {
     ],
 
     "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro,"
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro," 
         "or even a @ Pygame Contributor?\n"  # Broke down line limit
         "Tell <@!235148962103951360> in <#772535163195228200>!",
     ]
