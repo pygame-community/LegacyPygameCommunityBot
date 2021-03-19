@@ -1,11 +1,9 @@
-import os
 import math
+import os
 
 import pygame
 
-from .common import (
-    CLOCK_TIMEZONES
-)
+from .common import CLOCK_TIMEZONES
 
 
 def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0/3.0):
@@ -78,9 +76,12 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     )
 
     return (
-        (int(point6[0] + px), int(point6[1] + py)), (int(point5[0] + px), int(point5[1] + py)),
-        (int(point4[0] + px), int(point4[1] + py)), (int(point3[0] + px), int(point3[1] + py)),
-        (int(point2[0] + px), int(point2[1] + py)), (int(point1[0] + px), int(point1[1] + py)),
+        (int(point6[0] + px), int(point6[1] + py)),
+        (int(point5[0] + px), int(point5[1] + py)),
+        (int(point4[0] + px), int(point4[1] + py)),
+        (int(point3[0] + px), int(point3[1] + py)),
+        (int(point2[0] + px), int(point2[1] + py)),
+        (int(point1[0] + px), int(point1[1] + py)),
         (int(point0[0] + px), int(point0[1] + py))
     )
 

@@ -1,12 +1,10 @@
+import asyncio
 import sys
 import time
 
-import asyncio
 import discord
 
-from . import (
-    common
-)
+from . import common
 
 
 def format_time(seconds: float, decimal_places: int = 4):

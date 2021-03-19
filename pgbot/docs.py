@@ -1,7 +1,7 @@
 import asyncio
 import builtins
-import itertools
 import importlib
+import itertools
 import json
 import math
 import os
@@ -19,13 +19,10 @@ import discord
 import pkg_resources
 import psutil
 import pygame
-import pygame.gfxdraw
 import pygame._sdl2
+import pygame.gfxdraw
 
-from . import (
-    common
-)
-
+from . import common
 
 doc_modules = {  # Modules to provide documentation for
     "pygame": pygame,
