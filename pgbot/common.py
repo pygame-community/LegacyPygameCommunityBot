@@ -139,7 +139,7 @@ __**Get Help:**__
 __**Run Code:**__
 `pg!exec {python code block}` - Run python code in an isolated environment. `import` is not available. Various methods of builtin objects have been disabled for security reasons. The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
 If you want me to run your code, use Discord's code block syntax.
-Learn more about Discord code formatting [**here.**](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)
+Learn more about Discord code formatting **[here](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
