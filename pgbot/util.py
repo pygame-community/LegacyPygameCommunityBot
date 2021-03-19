@@ -191,7 +191,7 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
         arrow_vector[0] * size_multiplier,
         arrow_vector[1] * size_multiplier
     ) # scale up the original arrow vector describing the arrow's direction
-    
+
     vec_length = (arr_vec[0] ** 2 + arr_vec[1] **2 ) ** 0.5
     if not vec_length:
         return ((0, 0), ) * 7
@@ -232,12 +232,12 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
         point2[0] + avp_norm[0] * mulp4,
         point2[1] + avp_norm[1] * mulp4
     )
-    
+
     point5 = (
         point4[0] + avp_scaled[0],
         point4[1] + avp_scaled[1]
     )
-    
+
     point6 = (
         point5[0] + ((-arr_vec[0]) * tip_to_base_ratio),
         point5[1] + ((-arr_vec[1]) * tip_to_base_ratio)
@@ -255,10 +255,11 @@ def user_clock(t):
     """
     Generate a 24 hour clock for special server roles
     """
-    image = pygame.Surface((1280, 1280)).convert_alpha()
-    font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 36)
-    texts = []
-
+    font_size = 60
+    names_per_column = 5
+    image_height = 1280 + font_size * names_per_column
+    image = pygame.Surface((1280, image_height)).convert_alpha()
+    font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), font_size-10)
     font.bold = True
 
     image.fill((0, 0, 0, 0))
@@ -269,6 +270,7 @@ def user_clock(t):
 
     pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
 
+    tx = ty = 0
     for offset, name, color in CLOCK_TIMEZONES:
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
@@ -281,19 +283,23 @@ def user_clock(t):
                 tip_to_base_ratio=0.1
             )
         )
-        color = 255 - random.randint(0, 86)
-        text = font.render(name, True, (color, 0, 0))
-        texts.append(
-            (
-                text,
-                (s * 500 + 640 - text.get_width() // 2,
-                -c * 500 + 640 - text.get_height() // 2)
-            )
-        )
-    pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
 
-    for text, pos in texts:
-        image.blit(text, pos)
+        pygame.draw.rect(image, color, (600 + tx, 1280 + ty, 20, font_size))
+
+        time_h = int((t + offset) // 3600 % 24)
+        time_m = int((t + offset) // 60 % 60)
+        text_to_render = f"{name} - {str(time_h).zfill(2)}:{str(time_m).zfill(2)}"
+
+        text = font.render(text_to_render, True, color)
+        text_rect = text.get_rect(midleft=(tx, 1280 + ty + font_size / 2))
+        image.blit(text, text_rect)
+
+        ty += font_size
+        if 1280 + ty + font_size > image_height:
+            ty = 0
+            tx += 640
+
+    pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
 
     return image
 

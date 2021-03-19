@@ -1,4 +1,5 @@
-TOKEN = open("token.txt").read()
+import os
+TOKEN = os.environ.get("TOKEN", "")
 PREFIX = "pg!"
 
 VERSION = "1.2.0"
@@ -65,7 +66,7 @@ ROLE_PROMPT = {
         "You need more roles for this channel (It's written everywhere!)",
         "I won't stop until you get more roles"
     ],
-    
+
     "message": [
         "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro, or even a @ Pygame Contributor?\n" +\
         "Tell <@!235148962103951360> in <#772535163195228200>!",       
@@ -81,12 +82,15 @@ def print(*values, sep=" ", end="\\n"):
 """
 
 CLOCK_TIMEZONES = [
-    (3600 * -5, 'MichaelCPalmer', (200, 140, 120)),
-    (0, 'BaconInvader', (161, 255, 84)),
-    (3600, 'MegaJC', (128, 0, 192)),
-    (3600 * 3, 'k4dir', (158, 110, 255)),
-    (3600 * 5.5, 'Ankith', (240,140,0)),
-    (3600 * 7, 'Avaxar', (64, 255, 192))
+    (3600 * -4, 'Ghast', (176, 111, 90)),
+    (0, 'BaconInvader', (123, 196, 63)),
+    (3600, 'MegaJC', (229, 25, 247)),
+    (3600, 'bydariogamer', (229, 25, 247)),
+    (3600, 'zoldalma', (229, 25, 247)),
+    (3600 * 2, 'CozyFractal', (255, 28, 28)),
+    (3600 * 3, 'k4dir', (66, 135, 245)),
+    (3600 * 5.5, 'Ankith', (240, 140, 0)),
+    (3600 * 7, 'Avaxar', (64, 255, 192)),
 ]
 
 
@@ -94,7 +98,7 @@ BOT_HELP_PROMPT = {
     "title": [
         "Help",
     ],
-    
+
     "message": ["""
 Hey there, do you want to use <@772788653326860288> ?
 My command prefix is `pg`.
