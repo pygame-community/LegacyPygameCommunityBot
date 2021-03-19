@@ -8,7 +8,7 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 - `pg!pet` pets the snek.
 - `pg!vibecheck` too much petting? Check if snek is **angery**.
 - `pg!sorry` Uh... sorry for bonking you there bud.
-- `pg!boncccheck` "How many times have you caused me harm?!"
+- `pg!bonkcheck` "How many times have you caused me harm?!"
 
 #### Sandbox specifications
 - The sandbox has a timeout timer for executed code of 5 seconds for normal users and 10 seconds for privileged users.

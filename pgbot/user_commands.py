@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 import discord
@@ -126,3 +127,78 @@ async def help_cmd(invoke_msg: discord.Message, response_msg: discord.Message, a
         common.BOT_HELP_PROMPT["message"][0],
         common.BOT_HELP_PROMPT["color"][0]
     )
+
+
+@export_command("pet", 0)
+async def pet_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
+            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+    ) - common.PET_COST
+
+    if emotion.pet_anger < common.PET_COST:
+        emotion.pet_anger = common.PET_COST
+    emotion.last_pet = time.time()
+
+    fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
+    await invoke_msg.channel.send(
+        "https://raw.githubusercontent.com/PygameCommunityDiscord/"
+        f"PygameCommunityBot/main/assets/images/{fname}"
+    )
+
+    await response_msg.delete()
+
+
+@export_command("vibecheck", 0)
+async def vibecheck_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(
+        response_msg,
+        "Vibe Check, snek?",
+        f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" + \
+        f"\nIt was last pet {time.time() - emotion.last_pet:.2f} second(s) ago",
+    )
+
+
+@export_command("sorry", 0)
+async def sorry_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    if not emotion.boncc_count:
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "Snek is happy. Awww, don't be sorry."
+        )
+        return
+
+    if random.random() < common.SORRY_CHANCE:
+        emotion.boncc_count -= common.BONCC_PARDON
+        if emotion.boncc_count < 0:
+            emotion.boncc_count = 0
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "Your pythonic lord accepts your apology.\n" + \
+            f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
+        )
+    else:
+        await util.edit_embed(
+            response_msg,
+            "Ask forgiveness from snek?",
+            "How did you dare to boncc a snake?\nBold of you to assume " + \
+            "I would apologize to you, two-feet-standing being!\nThe " + \
+            f"boncc count is {emotion.boncc_count}"
+        )
+
+
+@export_command("bonkcheck", 0)
+async def bonkcheck_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    if emotion.boncc_count:
+        await util.edit_embed(
+            response_msg,
+            "The snek is hurt and angry:",
+            f"The boncc count is {emotion.boncc_count}"
+        )
+    else:
+        await util.edit_embed(
+            response_msg,
+            "The snek is right",
+            "Please, don't hit the snek"
+        )

@@ -76,6 +76,11 @@ async def on_message(msg: discord.Message):
 async def on_message_delete(msg: discord.Message):
     if msg.id in common.cmd_logs.keys():
         del common.cmd_logs[msg.id]
+    elif msg.author.id == bot.user.id:
+        for log in common.cmd_logs.keys():
+            if common.cmd_logs[log].id == msg.id:
+                del common.cmd_logs[log]
+                return
 
 
 @bot.event

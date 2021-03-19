@@ -12,6 +12,19 @@ log_channel: discord.TextChannel
 
 cmd_logs = {}
 
+# Misc
+# Pet command constants
+PET_COST = 0.1
+JUMPSCARE_THRESHOLD = 20.0
+PET_INTERVAL = 60.0
+
+# BONCC quiky stuff
+BONK = "<:pg_bonk:780423317718302781>"
+PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
+SORRY_CHANCE = 0.5
+BONCC_THRESHOLD = 10
+BONCC_PARDON = 3
+
 # Constants
 VERSION = "1.0"
 TOKEN = os.environ["TOKEN"]
@@ -133,7 +146,7 @@ __**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
 `pg!vibecheck` - Check my mood.
 `pg!sorry` - You were hitting me, "<:pg_bonk:780423317718302781>" and you're now trying to apologize? Let's see what I'll say :unamused:
-`pg!boncccheck` -  Check how many times you have done me harm.
+`pg!bonkcheck` -  Check how many times you have done me harm.
     """],
 
     "color": [0xFF00FF]
