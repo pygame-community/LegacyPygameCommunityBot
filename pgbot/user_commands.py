@@ -22,6 +22,7 @@ def export_command(identifier: str, args: int):
     def decorator_handler(func):
         global EXPORTED_COMMANDS
         EXPORTED_COMMANDS[list(EXPORTED_COMMANDS.keys())[-1]]["function"] = func
+        return func
 
     global EXPORTED_COMMANDS
     EXPORTED_COMMANDS[identifier] = {
