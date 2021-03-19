@@ -67,7 +67,10 @@ async def on_message(msg: discord.Message):
             )
 
             await commands.handle(msg, response)
+
             common.cmd_logs[msg.id] = response
+            if len(common.cmd_logs) > 100:
+                del common.cmd_logs[common.cmd_logs.keys()[0]]
         except discord.HTTPException:
             pass
 
