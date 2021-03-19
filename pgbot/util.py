@@ -30,19 +30,15 @@ def format_time(seconds: float, decimal_places: int = 4):
 
 
 def format_byte(size: int, decimal_places=3):
-    """
-    Formats memory size with a prefix
-    """
-    dec = 10 ** decimal_places
-
+    """Formats a given size and outputs a string equivalent to B, KB, MB, or GB"""
     if size < 1e03:
-        return f"{int(size * dec) / dec} B"
+        return f"{round(size, decimal_places)} B"
     if size < 1e06:
-        return f"{int(size * 1e-03 * dec) / dec} KB"
+        return f"{round(size / 1e3, decimal_places)} KB"
     if size < 1e09:
-        return f"{int(size * 1e-06 * dec) / dec} MB"
+        return f"{round(size / 1e6, decimal_places)} MB"
 
-    return f"{int(size * 1e-09 * dec) / dec} GB"
+    return f"{round(size / 1e9, decimal_places)} GB"
 
 
 def split_long_message(message: str):
@@ -74,6 +70,7 @@ def filter_id(mention: str):
     """
     for char in ("<", ">", "@", "&", "#", "!", " "):
         mention = mention.replace(char, "")
+
     return int(mention)
 
 
