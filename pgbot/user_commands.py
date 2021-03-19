@@ -7,6 +7,7 @@ import pygame
 from . import (
     common,
     clock,
+    docs,
     util
 )
 
@@ -39,3 +40,9 @@ async def clock_cmd(invoke_msg: discord.Message, response_msg: discord.Message, 
     common.cmd_logs[invoke_msg.id] = await response_msg.channel.send(file=discord.File(f"temp{t}.png"))
     await response_msg.delete()
     os.remove(f"temp{t}.png")
+
+
+@export_command("doc", 1)
+async def docs_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    title, body = docs.get(args[0])
+    await util.edit_embed(response_msg, title, body)
