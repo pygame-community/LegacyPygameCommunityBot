@@ -52,7 +52,7 @@ async def docs_cmd(invoke_msg: discord.Message, response_msg: discord.Message, a
 
 
 @export_command("exec", -1)
-async def exec_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+async def exec_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string, _duration=5):
     code = string.lstrip().rstrip().lstrip('`').rstrip('`')
     if code.startswith("python\n"):
         code = code[7:]
@@ -60,7 +60,7 @@ async def exec_cmd(invoke_msg: discord.Message, response_msg: discord.Message, a
         code = code[3:]
 
     start = time.perf_counter()
-    returned = await sandbox.exec_sandbox(code, 5)
+    returned = await sandbox.exec_sandbox(code, _duration)
     duration = returned.duration  # the execution time of the script alone
 
     if not isinstance(returned.exc, BaseException):
