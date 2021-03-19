@@ -5,6 +5,7 @@ import discord
 
 from . import (
     common,
+    emotion,
     util
 )
 
@@ -31,5 +32,7 @@ async def check_sus(msg: discord.Message):
         await msg.author.remove_roles(muted_role)
         await response_msg.delete()
         return True
+
+
 
     return False
