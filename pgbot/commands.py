@@ -36,20 +36,26 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
 
     try:
         if is_admin:
-            for command in admin_commands.EXPORTED_COMMANDS:
-                if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
-                    await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
+            if cmd_args[0] in admin_commands.EXPORTED_COMMANDS.keys():
+                command = admin_commands.EXPORTED_COMMANDS[cmd_args[0]]
+                if command["args"] == -1 or command["args"] == len(cmd_args) - 1:
+                    await command["function"](invoke_msg, response_msg, cmd_args[1:],
+                                              cmd_str[len(cmd_args[0]):].lstrip())
                     return
 
         if is_priv:
-            for command in priv_commands.EXPORTED_COMMANDS:
-                if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
-                    await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
+            if cmd_args[0] in priv_commands.EXPORTED_COMMANDS.keys():
+                command = priv_commands.EXPORTED_COMMANDS[cmd_args[0]]
+                if command["args"] == -1 or command["args"] == len(cmd_args) - 1:
+                    await command["function"](invoke_msg, response_msg, cmd_args[1:],
+                                              cmd_str[len(cmd_args[0]):].lstrip())
                     return
 
-        for command in user_commands.EXPORTED_COMMANDS:
-            if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
-                await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
+        if cmd_args[0] in user_commands.EXPORTED_COMMANDS.keys():
+            command = user_commands.EXPORTED_COMMANDS[cmd_args[0]]
+            if command["args"] == -1 or command["args"] == len(cmd_args) - 1:
+                await command["function"](invoke_msg, response_msg, cmd_args[1:],
+                                          cmd_str[len(cmd_args[0]):].lstrip())
                 return
     except Exception as exc:
         await util.edit_embed(
@@ -57,6 +63,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             "An unhandled exception occurred while handling your command!",
             f"{type(exc).__name__}: {', '.join(exc.args)}"
         )
+        return
 
     await util.edit_embed(
         response_msg,

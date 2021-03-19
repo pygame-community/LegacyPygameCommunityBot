@@ -14,19 +14,18 @@ from . import (
 
 
 process = psutil.Process(os.getpid())
-EXPORTED_COMMANDS = []
+EXPORTED_COMMANDS = {}
 
 
 def export_command(identifier: str, args: int):
     def decorator_handler(func):
         global EXPORTED_COMMANDS
-        EXPORTED_COMMANDS[-1]["function"] = func
+        EXPORTED_COMMANDS[list(EXPORTED_COMMANDS.keys())[-1]]["function"] = func
 
     global EXPORTED_COMMANDS
-    EXPORTED_COMMANDS.append({
-        "identifier": identifier,
+    EXPORTED_COMMANDS[identifier] = {
         "args": args
-    })
+    }
     return decorator_handler
 
 
