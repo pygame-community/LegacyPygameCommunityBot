@@ -11,6 +11,7 @@ import string
 import time
 import traceback
 import threading
+import sys
 
 import psutil
 import pygame.freetype

@@ -12,8 +12,6 @@ log_channel: discord.TextChannel
 
 cmd_logs = {}
 
-# Misc
-
 # Constants
 VERSION = "1.0"
 TOKEN = os.environ["TOKEN"]

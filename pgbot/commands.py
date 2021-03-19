@@ -41,7 +41,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
                 return
 
     if is_priv:
-        for command in admin_commands.EXPORTED_COMMANDS:
+        for command in priv_commands.EXPORTED_COMMANDS:
             if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
                 await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
                 return
