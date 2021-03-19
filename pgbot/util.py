@@ -108,12 +108,43 @@ async def format_archive_messages(messages):
     formatted_msgs = []
     for message in messages:
         triple_block_quote = '```'
-        newline = '\n'
+
+        author = f"{message.author} ({message.author.mention}) [{message.author.id}]"
+        content = message.content.replace('\n', '\n> ') if message.content else None
+
+        if message.attachments:
+            attachment_list = []
+            for i, attachment in enumerate(message.attachments):
+                filename = repr(attachment.filename)
+                attachment_list.append(
+                    f'{i+1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
+            attachments = '\n> '.join(attachment_list)
+        else:
+            attachments = ""
+
+        if message.embeds:
+            embed_list = []
+            for i, embed in enumerate(message.embeds):
+                if isinstance(embed, discord.Embed):
+                    if isinstance(embed.description, str):
+                        desc = embed.description.replace(
+                            triple_block_quote, common.ESC_CODE_BLOCK_QUOTE)
+                    else:
+                        desc = '\n'
+
+                    embed_list.append(
+                        f'{i+1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
+                else:
+                    embed_list.append('\n')
+            embeds = '\n> '.join(embed_list)
+        else:
+            embeds = ""
+
         formatted_msgs.append(
-            f"**AUTHOR**: {message.author} ({message.author.mention}) [{message.author.id}]\n" +
-            (f"**MESSAGE**: \n> {f'{newline}> '.join(message.content.split(newline))}\n" if message.content else "") +
-            (f"**ATTACHMENT(S)**: \n> {f'{newline}> '.join(newline.join([f'{i+1}:{newline}    **Name**: {repr(attachment.filename)}{newline}    **URL**: {attachment.url}' for i, attachment in enumerate(message.attachments)]).split(newline))}\n" if message.attachments else "") +
-            (f"**EMBED(S)**: \n> {f'{newline}> '.join(newline.join([(f'{i+1}:{newline}    **Title**: {embed.title}{newline}    **Description**: ```{newline}{(embed.description if isinstance(embed.description, str) else newline).replace(triple_block_quote, common.ESC_CODE_BLOCK_QUOTE)}```{newline}    **Image URL**: {embed.image.url}' if isinstance(embed, discord.Embed) else newline) for i, embed in enumerate(message.embeds)]).split(newline))}\n" if message.embeds else "")
+            f"""**AUTHOR**: {author}
+            **MESSAGE**: \n> {content}
+            **ATTACHMENT(S)**: \n> {attachments}
+            **EMBED(S)**: \n> {embeds}"""
         )
         await asyncio.sleep(0.01)  # Lets the bot do other things
 
