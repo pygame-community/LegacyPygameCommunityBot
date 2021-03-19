@@ -77,7 +77,8 @@ ROLE_PROMPT = {
     ],
 
     "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro, or even a @ Pygame Contributor?\n" +
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro," 
+        "or even a @ Pygame Contributor?\n"  # Broke down line limit
         "Tell <@!235148962103951360> in <#772535163195228200>!",
     ]
 }

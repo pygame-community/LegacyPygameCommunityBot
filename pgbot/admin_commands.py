@@ -1,6 +1,9 @@
+import os
 import time
+import sys
 
 import discord
+import psutil
 import pygame
 
 from . import (
@@ -10,6 +13,7 @@ from . import (
 )
 
 
+process = psutil.Process(os.getpid())
 EXPORTED_COMMANDS = []
 
 
@@ -72,3 +76,30 @@ async def eval_cmd(invoke_msg: discord.Message, response_msg: discord.Message, a
             await util.edit_embed(
                 response_msg, common.EXP_TITLES[1], "```\n" + exp + "```"
             )
+
+
+@export_command("sudo", -1)
+async def sudo_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await invoke_msg.channel.send(string)
+    await response_msg.delete()
+    await invoke_msg.delete()
+
+
+@export_command("heap", 0)
+async def heap_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    mem = process.memory_info().rss
+    await util.edit_embed(
+        response_msg,
+        "Total memory used:",
+        f"**{util.format_byte(mem, 4)}**\n({mem} B)"
+    )
+
+
+@export_command("stop", 0)
+async def stop_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(
+        response_msg,
+        "Stopping bot...",
+        "Change da world,\nMy final message,\nGoodbye."
+    )
+    sys.exit(0)
