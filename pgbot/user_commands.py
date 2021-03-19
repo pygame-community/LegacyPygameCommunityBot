@@ -116,3 +116,13 @@ async def exec_cmd(invoke_msg: discord.Message, response_msg: discord.Message, a
             await util.edit_embed(
                 response_msg, common.EXP_TITLES[1], "```\n" + exp + "```"
             )
+
+
+@export_command("help", 0)
+async def help_cmd(invoke_msg: discord.Message, response_msg: discord.Message, args, string):
+    await util.edit_embed(
+        response_msg,
+        common.BOT_HELP_PROMPT["title"][0],
+        common.BOT_HELP_PROMPT["message"][0],
+        common.BOT_HELP_PROMPT["color"][0]
+    )

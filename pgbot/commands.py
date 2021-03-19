@@ -34,22 +34,29 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             elif role.id in common.PRIV_ROLES:
                 is_priv = True
 
-    if is_admin:
-        for command in admin_commands.EXPORTED_COMMANDS:
+    try:
+        if is_admin:
+            for command in admin_commands.EXPORTED_COMMANDS:
+                if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
+                    await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
+                    return
+
+        if is_priv:
+            for command in priv_commands.EXPORTED_COMMANDS:
+                if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
+                    await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
+                    return
+
+        for command in user_commands.EXPORTED_COMMANDS:
             if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
                 await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
                 return
-
-    if is_priv:
-        for command in priv_commands.EXPORTED_COMMANDS:
-            if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
-                await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
-                return
-
-    for command in user_commands.EXPORTED_COMMANDS:
-        if command["identifier"] == cmd_args[0] and (command["args"] == -1 or command["args"] == len(cmd_args) - 1):
-            await command["function"](invoke_msg, response_msg, cmd_args[1:], cmd_str[len(cmd_args[0]):].lstrip())
-            return
+    except Exception as exc:
+        await util.edit_embed(
+            response_msg,
+            "An unhandled exception occurred while handling your command!",
+            f"{type(exc).__name__}: {', '.join(exc.args)}"
+        )
 
     await util.edit_embed(
         response_msg,
