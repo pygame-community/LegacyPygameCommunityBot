@@ -26,12 +26,11 @@ BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
 
 # Constants
-VERSION = "1.0"
+VERSION = "1.3"
 TOKEN = os.environ["TOKEN"]
-PREFIX = os.environ["PREFIX"]
+PREFIX = "pg!"
 
-LOG_CHANNEL_ID = int(os.environ["LOG_CHANNEL_ID"])
-
+LOG_CHANNEL_ID = 793250875471822930
 MUTED_ROLE = 772534687302156301
 
 # PGC Admin, PGC Moderator, PGC Wizards
