@@ -1,14 +1,18 @@
 import os
-TOKEN = os.environ.get("TOKEN", "")
-PREFIX = "pg!"
 
-VERSION = "1.2.0"
+import discord
+import pygame
 
-LOG_CHANNEL = 793250875471822930
-BLOCKLIST_CHANNEL = 793269297954422804
 
-BOT_ID = 772788653326860288
+# For commonly used variables
+bot = discord.Client()
+window = pygame.Surface((1, 1))  # This will later be redefined
 
+log_channel: discord.TextChannel
+
+cmd_logs = {}
+
+# Misc
 # Pet command constants
 PET_COST = 0.1
 JUMPSCARE_THRESHOLD = 20.0
@@ -21,6 +25,14 @@ SORRY_CHANCE = 0.5
 BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
 
+# Constants
+VERSION = "1.3"
+TOKEN = os.environ["TOKEN"]
+PREFIX = "pg!"
+
+LOG_CHANNEL_ID = 793250875471822930
+MUTED_ROLE = 772534687302156301
+
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
     772521884373614603,
@@ -28,17 +40,18 @@ ADMIN_ROLES = {
     772849669591400501,
 }
 
-# PGC Specialties, PGC Helpfulies
-PRIV_ROLES = {774473681325785098, 778205389942030377}
-
-MUTED_ROLE = 772534687302156301
-
 # AvaxarXapaxa, BaconInvader, MegaJC, Ankith
 ADMIN_USERS = {
     414330602930700288,
     265154376409153537,
     444116866944991236,
     763015391710281729
+}
+
+# PGC Specialties, PGC Helpfulies
+PRIV_ROLES = {
+    774473681325785098,
+    778205389942030377
 }
 
 # PGC pygame beginner, PGC pygame regular, PGC pygame pro, PGC pygame contributor
@@ -52,35 +65,6 @@ COMPETENCE_ROLES = {
 # PGC #pygame, #beginners-help
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
-# String Constants
-ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
-
-EXP_TITLES = [
-    'An exception occurred while trying to execute the command:',
-    'An exception occured:',
-]
-
-ROLE_PROMPT = {
-    "title": [
-        "Get more roles",
-        "You need more roles for this channel (It's written everywhere!)",
-        "I won't stop until you get more roles"
-    ],
-
-    "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro, or even a @ Pygame Contributor?\n" +\
-        "Tell <@!235148962103951360> in <#772535163195228200>!",       
-    ]
-}
-
-
-INCLUDE_FUNCTIONS = """
-def print(*values, sep=" ", end="\\n"):
-    global output
-    output.text = str(output.text)
-    output.text += sep.join(map(str, values)) + end
-"""
-
 CLOCK_TIMEZONES = [
     (3600 * -4, 'Ghast', (176, 111, 90)),
     (0, 'BaconInvader', (123, 196, 63)),
@@ -93,6 +77,33 @@ CLOCK_TIMEZONES = [
     (3600 * 7, 'Avaxar', (64, 255, 192)),
 ]
 
+ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
+
+ROLE_PROMPT = {
+    "title": [
+        "Get more roles",
+        "You need more roles for this channel (It's written everywhere!)",
+        "I won't stop until you get more roles"
+    ],
+
+    "message": [
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro," 
+        "or even a @ Pygame Contributor?\n"  # Broke down line limit
+        "Tell <@!235148962103951360> in <#772535163195228200>!",
+    ]
+}
+
+INCLUDE_FUNCTIONS = """
+def print(*values, sep=" ", end="\\n"):
+    global output
+    output.text = str(output.text)
+    output.text += sep.join(map(str, values)) + end
+"""
+
+EXP_TITLES = [
+    'An exception occurred while trying to execute the command:',
+    'An exception occured:',
+]
 
 BOT_HELP_PROMPT = {
     "title": [
@@ -102,7 +113,6 @@ BOT_HELP_PROMPT = {
     "message": ["""
 Hey there, do you want to use <@772788653326860288> ?
 My command prefix is `pg`.
-
 **Get Help**
 ```
 !help
@@ -113,7 +123,6 @@ My command prefix is `pg`.
 ```
 !exec
 ```
-
 **Play With Me :snake:**
 ```
 !pet
@@ -121,31 +130,22 @@ My command prefix is `pg`.
 !sorry
 !boncccheck
 ```
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Get Help:**__
 `pg!help` - Ask me for help
-
 `pg!doc {module.Class.method}` - Look up the docstring of a Python/Pygame object, e.g `builtins.string` or `pygame.Rect`
-
 `pg!clock` - 24 Hour Clock showing @ Helpfulie ☉ 's who are available to help
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Run Code:**__
 `pg!exec {python code block}` - Run python code in an isolated environment. `import` is not available. Various methods of builtin objects have been disabled for security reasons. The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
-
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting [**here.**](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
-
 `pg!vibecheck` - Check my mood.
-
 `pg!sorry` - You were hitting me, "<:pg_bonk:780423317718302781>" and you're now trying to apologize? Let's see what I'll say :unamused:
-
-`pg!boncccheck` -  Check how many times you have done me harm.
+`pg!bonkcheck` -  Check how many times you have done me harm.
     """],
 
     "color": [0xFF00FF]
