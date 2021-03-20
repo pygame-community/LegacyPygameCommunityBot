@@ -61,7 +61,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
         await util.edit_embed(
             response_msg,
             "An unhandled exception occurred while handling your command!",
-            f"{type(exc).__name__}: {', '.join(exc.args)}"
+            f"{type(exc).__name__}: {', '.join([str(i) for i in exc.args])}"
         )
         return
 
