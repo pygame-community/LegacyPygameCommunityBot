@@ -100,7 +100,6 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     )
 
 
-# Ankith26 : TODO - SOMEONE PLEASE REFACTOR THIS FUNCTION I TRIED AND GAVE UP
 async def format_archive_messages(messages):
     """
     Formats a message to be archived
@@ -141,10 +140,10 @@ async def format_archive_messages(messages):
             embeds = ""
 
         formatted_msgs.append(
-            f"""**AUTHOR**: {author}
-            **MESSAGE**: \n> {content}
-            **ATTACHMENT(S)**: \n> {attachments}
-            **EMBED(S)**: \n> {embeds}"""
+            f"**AUTHOR**: {author}\n" +
+            (f"**MESSAGE**: \n> {content}\n" if content else "") +
+            (f"**ATTACHMENT(S)**: \n> {attachments}\n" if message.attachments else "") +
+            (f"**EMBED(S)**: \n> {embeds}\n" if message.embeds else "")
         )
         await asyncio.sleep(0.01)  # Lets the bot do other things
 
