@@ -56,12 +56,18 @@ class UserCommand:
             raise RuntimeError()
 
     async def cmd_version(self):
+        """
+        Implement pg!version, to report bot version
+        """
         self.check_args(0)
         await util.edit_embed(
             self.response_msg, "Current bot's version", f"`{common.VERSION}`"
         )
 
     async def cmd_clock(self):
+        """
+        Implement pg!clock, to display a clock of helpfulies/mods/wizards
+        """
         self.check_args(0)
 
         t = time.time()
@@ -74,12 +80,18 @@ class UserCommand:
         os.remove(f"temp{t}.png")
 
     async def cmd_doc(self):
+        """
+        Implement pg!doc, to view documentation
+        """
         self.check_args(1)
 
         title, body = docs.get(self.args[0])
         await util.edit_embed(self.response_msg, title, body)
 
     async def cmd_exec(self):
+        """
+        Implement pg!exec, for execution of python code
+        """
         code = self.string.lstrip('`').rstrip('`')
         if code.startswith("python\n"):
             code = code[7:]
@@ -150,6 +162,9 @@ class UserCommand:
                 )
 
     async def cmd_help(self):
+        """
+        Implement pg!help, to display a help message
+        """
         self.check_args(0)
         await util.edit_embed(
             self.response_msg,
@@ -159,6 +174,9 @@ class UserCommand:
         )
 
     async def cmd_pet(self):
+        """
+        Implement pg!pet, to pet the bot
+        """
         self.check_args(0)
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
                 emotion.pet_anger / common.JUMPSCARE_THRESHOLD
@@ -179,6 +197,9 @@ class UserCommand:
         )
 
     async def cmd_vibecheck(self):
+        """
+        Implement pg!vibecheck, to check if the bot is angry
+        """
         self.check_args(0)
         await util.edit_embed(
             self.response_msg,
@@ -188,6 +209,9 @@ class UserCommand:
         )
 
     async def cmd_sorry(self):
+        """
+        Implement pg!sorry, to ask forgiveness from the bot after bonccing it
+        """
         self.check_args(0)
         if not emotion.boncc_count:
             await util.edit_embed(
@@ -217,6 +241,9 @@ class UserCommand:
             )
 
     async def cmd_bonkcheck(self):
+        """
+        Implement pg!bonkcheck, to check how much the snek has been boncced
+        """
         self.check_args(0)
         if emotion.boncc_count:
             await util.edit_embed(

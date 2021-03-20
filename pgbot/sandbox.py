@@ -17,7 +17,7 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from . import common, util
+from . import common
 
 
 class PgExecBot(Exception):
@@ -127,6 +127,9 @@ for key in dir(builtins):
 
 
 class FilteredPygame:
+    """
+    pygame module in a sandbox
+    """
     Surface = pygame.Surface
     Rect = pygame.Rect
     Color = pygame.Color
@@ -203,6 +206,9 @@ for k in filtered_builtins:
 
 
 class Output:
+    """
+    Output class for posting relevent data through discord
+    """
     def __init__(self):
         self.text = ""
         self.img = None
@@ -211,6 +217,9 @@ class Output:
 
 
 async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
+    """
+    Helper to run pg!exec code in a sandbox
+    """
     output = Output()
     allowed_globals["output"] = output
 

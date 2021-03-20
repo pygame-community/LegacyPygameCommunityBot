@@ -17,7 +17,6 @@ import timeit
 
 import discord
 import pkg_resources
-import psutil
 import pygame
 import pygame._sdl2
 import pygame.gfxdraw
@@ -57,6 +56,9 @@ for module in pkgs:
 
 
 def get(name):
+    """
+    Helper function to get docs
+    """
     splits = name.split(".")
 
     if splits[0] not in doc_modules:
@@ -73,7 +75,10 @@ def get(name):
             except BaseException:  # TODO: Figure out proper exception
                 objects = {}
         except KeyError:
-            return "Class/function/sub-module not found!", f"There's no such thing here named `{name}`"
+            return (
+                "Class/function/sub-module not found!", 
+                f"There's no such thing here named `{name}`"
+            )
 
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
 

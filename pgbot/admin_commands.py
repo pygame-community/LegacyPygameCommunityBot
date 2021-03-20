@@ -2,10 +2,9 @@ import os
 import sys
 import time
 
-import discord
 import psutil
 
-from . import user_commands, clock, common, util
+from . import user_commands, common, util
 
 process = psutil.Process(os.getpid())
 
@@ -16,6 +15,9 @@ class AdminCommand(user_commands.UserCommand):
     implements some more
     """
     async def cmd_eval(self):
+        """
+        Implement pg!eval, for admins to run arbitrary code on the bot
+        """
         try:
             script = compile(
                 self.string, "<string>", "eval"
@@ -62,19 +64,28 @@ class AdminCommand(user_commands.UserCommand):
                 )
 
     async def cmd_sudo(self):
+        """
+        Implement pg!sudo, for admins to send messages via the bot
+        """
         await self.invoke_msg.channel.send(self.string)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
     async def cmd_sudo_edit(self):
+        """
+        Implement pg!sudo_edit, for admins to edit messages via the bot
+        """
         edit_msg = await self.invoke_msg.channel.fetch_message(
             util.filter_id(self.args[0])
         )
-        await edit_msg.edit(content=self.string[self.string.find(self.args[1]):])
+        await edit_msg.edit(content=self.string[len(self.args[0]) + 1:])
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
     async def cmd_heap(self):
+        """
+        Implement pg!heap, for admins to check memory taken up by the bot
+        """
         self.check_args(0)
         mem = process.memory_info().rss
         await util.edit_embed(
@@ -84,6 +95,9 @@ class AdminCommand(user_commands.UserCommand):
         )
 
     async def cmd_stop(self):
+        """
+        Implement pg!stop, for admins to stop the bot
+        """
         self.check_args(0)
         await util.edit_embed(
             self.response_msg,
@@ -93,6 +107,9 @@ class AdminCommand(user_commands.UserCommand):
         sys.exit(0)
 
     async def cmd_emsudo(self):
+        """
+        Implement pg!emsudo, for admins to send images via the bot
+        """
         args = eval(self.string)
 
         if len(args) == 1:
@@ -122,11 +139,21 @@ class AdminCommand(user_commands.UserCommand):
                 args[2],
                 args[3]
             )
+        else:
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+            )
+            return
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
     async def cmd_emsudo_edit(self):
+        """
+        Implement pg!emsudo_edit, for admins to edit images via the bot
+        """
         args = eval(self.string)
         edit_msg = await self.invoke_msg.channel.fetch_message(
             util.filter_id(args[0])
@@ -159,11 +186,21 @@ class AdminCommand(user_commands.UserCommand):
                 args[3],
                 args[4]
             )
+        else:
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+            )
+            return
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
     async def cmd_archive(self):
+        """
+        Implement pg!archive, for admins to archive messages
+        """
         self.check_args(3)
         origin = int(util.filter_id(self.args[0]))
         quantity = int(self.args[1])

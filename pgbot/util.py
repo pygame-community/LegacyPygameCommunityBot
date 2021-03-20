@@ -28,7 +28,9 @@ def format_time(seconds: float, decimal_places: int = 4):
 
 
 def format_byte(size: int, decimal_places=3):
-    """Formats a given size and outputs a string equivalent to B, KB, MB, or GB"""
+    """
+    Formats a given size and outputs a string equivalent to B, KB, MB, or GB
+    """
     if size < 1e03:
         return f"{round(size, decimal_places)} B"
     if size < 1e06:
@@ -80,9 +82,7 @@ async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None
     if url_image:
         embed.set_image(url=url_image)
 
-    return await message.edit(
-        embed=embed
-    )
+    return await message.edit(embed=embed)
 
 
 async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None):
@@ -93,9 +93,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     if url_image:
         embed.set_image(url=url_image)
 
-    return await channel.send(
-        embed=embed
-    )
+    return await channel.send(embed=embed)
 
 
 async def format_archive_messages(messages):

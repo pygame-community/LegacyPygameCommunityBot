@@ -17,7 +17,7 @@ async def on_ready():
     for server in common.bot.guilds:
         print("-", server.name)
         for channel in server.channels:
-            print("+", channel.name)
+            print(" +", channel.name)
             if channel.id == common.LOG_CHANNEL_ID:
                 common.log_channel = channel
             if channel.id == common.ARRIVALS_CHANNEL_ID:
@@ -30,20 +30,25 @@ async def on_ready():
     while True:
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.watching, name="discord.io/pygame_community"
+                type=discord.ActivityType.watching, 
+                name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.playing, name="in discord.io/pygame_community"
+                type=discord.ActivityType.playing, 
+                name="in discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
 
 
 @common.bot.event
-async def on_member_join(member):
+async def on_member_join(member: discord.Member):
+    """
+    This function handles the greet message when a new member joins
+    """
     greet = random.choice(["Hi", "Hello", "Welcome", "Greetings", "Howdy"])
     act = random.choice(
         ["have fun", "have fun with pygame", "enjoy", "enjoy your stay"]
@@ -53,6 +58,7 @@ async def on_member_join(member):
     )
     grab = random.choice(["grab", "get", "take"])
 
+    # We can't use embed here, because the newly joined member won't be pinged
     await common.arrivals_channel.send(
         f"{greet} {member.mention}! {check} our {common.guide_channel.mention}, " + \
         f"{grab} some {common.roles_channel.mention} and {act}!"
@@ -125,13 +131,6 @@ if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()
     common.window = pygame.display.set_mode((1, 1))
-
-    try:
-        common.bot.run(common.TOKEN)
-    except discord.errors.PrivilegedIntentsRequired:
-        # Rather than failing when correct intents are not set, try to run
-        # without them
-        common.bot = discord.Client()
-        common.bot.run(common.TOKEN)
+    common.bot.run(common.TOKEN)
 else:
     raise ImportError("This is not a module")
