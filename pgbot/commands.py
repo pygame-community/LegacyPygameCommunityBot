@@ -20,17 +20,22 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
     is_priv = False
 
     if invoke_msg.author.id in common.ADMIN_USERS:
-        is_admin = is_priv = True
+        is_admin = True
     else:
         for role in invoke_msg.author.roles:
             if role.id in common.ADMIN_ROLES:
-                is_admin = is_priv = True
+                is_admin = True
+                break
             elif role.id in common.PRIV_ROLES:
                 is_priv = True
 
     try:
-        cmdobj = admincmd if is_admin else usercmd
-        if not cmdobj.handle_cmd(invoke_msg, response_msg, is_priv):
+        if is_admin:
+            ret = await admincmd.handle_cmd(invoke_msg, response_msg, True)
+        else:
+            ret = await usercmd.handle_cmd(invoke_msg, response_msg, is_priv)
+            
+        if not ret:
             await util.edit_embed(
                 response_msg,
                 "Invalid command!",

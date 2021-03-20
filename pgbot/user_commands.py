@@ -22,7 +22,7 @@ class UserCommand:
             if i.startswith("cmd_"):
                 self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
 
-    def handle_cmd(
+    async def handle_cmd(
         self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv
     ):
         """
@@ -39,7 +39,7 @@ class UserCommand:
         self.is_priv = is_priv
 
         try:
-            asyncio.create_task(self.cmds_and_funcs[cmd]())
+            await self.cmds_and_funcs[cmd]()
             return True
         except (KeyError, RuntimeError):
             return False
