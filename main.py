@@ -58,10 +58,17 @@ async def on_member_join(member: discord.Member):
     )
     grab = random.choice(["grab", "get", "take"])
 
+    # This function is called right when a member joins, even before the member
+    # finishes the join screening. So we wait for that to happen and then send 
+    # the message
+    while member.pending:
+        await asyncio.sleep(3)
+
     # We can't use embed here, because the newly joined member won't be pinged
     await common.arrivals_channel.send(
-        f"{greet} {member.mention}! {check} our {common.guide_channel.mention}, " + \
-        f"{grab} some {common.roles_channel.mention} and {act}!"
+        f"{greet} {member.mention}! {check} our " + \
+        f"{common.guide_channel.mention}, {grab} some " + \
+        f"{common.roles_channel.mention} and {act}!"
     )
 
 
