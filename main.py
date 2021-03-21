@@ -1,163 +1,143 @@
 import asyncio
 import os
+import random
 
 import discord
 import pygame
 
-import pgbot.commands
-import pgbot.util
-from pgbot.constants import *
-import random
+from pgbot import commands, common, moderation, util
 
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-pygame.init()  # pylint: disable=no-member
-dummy = pygame.display.set_mode((69, 69))
-
-bot = discord.Client()
-
-log_channel: discord.TextChannel
-blocklist_channel: discord.TextChannel
-
-blocked_users = []
-
-
-@bot.event
+@common.bot.event
 async def on_ready():
-    global log_channel, blocklist_channel
-
-    print("PygameBot ready!\nThe bot is in:")
-    for server in bot.guilds:
+    """
+    Startup routines when the bot starts
+    """
+    print("The PygameCommunityBot is now online!")
+    print("The bot is present in these server(s):")
+    for server in common.bot.guilds:
         print("-", server.name)
         for channel in server.channels:
-            print("  +", channel.name)
-            if channel.id == LOG_CHANNEL:
-                log_channel = channel
-            if channel.id == BLOCKLIST_CHANNEL:
-                blocklist_channel = channel
-
-    blocked_user_ids = await blocklist_channel.history(limit=4294967296).flatten()
-    for msg in blocked_user_ids:
-        try:
-            blocked_users.append(pgbot.util.filter_id(msg.content))
-        except ValueError:
-            pass
+            print(" +", channel.name)
+            if channel.id == common.LOG_CHANNEL_ID:
+                common.log_channel = channel
+            if channel.id == common.ARRIVALS_CHANNEL_ID:
+                common.arrivals_channel = channel
+            if channel.id == common.GUIDE_CHANNEL_ID:
+                common.guide_channel = channel
+            if channel.id == common.ROLES_CHANNEL_ID:
+                common.roles_channel = channel
 
     while True:
-        await bot.change_presence(
+        await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.watching, name="discord.io/pygame_community"
+                type=discord.ActivityType.watching, 
+                name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
-        await bot.change_presence(
+        await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.playing, name="in discord.io/pygame_community"
+                type=discord.ActivityType.playing, 
+                name="in discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
 
 
-@bot.event
+@common.bot.event
+async def on_member_join(member: discord.Member):
+    """
+    This function handles the greet message when a new member joins
+    """
+    greet = random.choice(["Hi", "Hello", "Welcome", "Greetings", "Howdy"])
+    act = random.choice(
+        ["have fun", "have fun with pygame", "enjoy", "enjoy your stay"]
+    )
+    check = random.choice(
+        ["Checkout", "Make sure to checkout", "Take a look at", "See"]
+    )
+    grab = random.choice(["grab", "get", "take"])
+
+    # This function is called right when a member joins, even before the member
+    # finishes the join screening. So we wait for that to happen and then send 
+    # the message
+    while member.pending:
+        await asyncio.sleep(3)
+
+    # We can't use embed here, because the newly joined member won't be pinged
+    await common.arrivals_channel.send(
+        f"{greet} {member.mention}! {check} our " + \
+        f"{common.guide_channel.mention}, {grab} some " + \
+        f"{common.roles_channel.mention} and {act}!"
+    )
+
+
+@common.bot.event
 async def on_message(msg: discord.Message):
-    if msg.channel.id == BLOCKLIST_CHANNEL:
-        try:
-            blocked_users.append(pgbot.util.filter_id(msg.content))
-        except ValueError:
-            pass
-
+    """
+    This function is called for every message by user.
+    """
     if msg.author.bot:
         return
 
-    if BONK in msg.content and not msg.content.startswith(PREFIX):
-        pgbot.commands.boncc_count += msg.content.count(BONK)
-        if msg.content.count(BONK) > BONCC_THRESHOLD / 2 or pgbot.commands.boncc_count > BONCC_THRESHOLD:
-            await pgbot.util.send_embed(
-                msg.channel,
-                "Did you hit the snek?",
-                "You mortal mammal! How you dare to boncc a snake?"
-            )
-            await msg.channel.send(PG_ANGRY_AN)
+    if await moderation.check_sus(msg):
+        return
 
-        if pgbot.commands.boncc_count > 2 * BONCC_THRESHOLD:
-            pgbot.commands.boncc_count = 2 * BONCC_THRESHOLD
-
-    if msg.content.startswith(PREFIX):
-        if msg.author.id in blocked_users:
-            await pgbot.util.send_embed(
-                msg.channel,
-                "You are blocked from using the bot",
-                "If you're unsure why you are blocked, please contact " + \
-                "an admin/moderator"
-            )
-            return
-
-        in_dm = " in DM" if isinstance(msg.channel, discord.DMChannel) else ""
-        await pgbot.util.send_embed(
-            log_channel,
-            f"Command invoked by {msg.author} / {msg.author.id}{in_dm}",
-            msg.content,
-        )
-
-        is_admin = False
-        is_priv = False
-
-        if not isinstance(msg.channel, discord.DMChannel):
-            for role in msg.author.roles:
-                if role.id in ADMIN_ROLES:
-                    is_admin = True
-                elif role.id in PRIV_ROLES:
-                    is_priv = True
-
+    if msg.content.startswith(common.PREFIX):
         try:
-            if is_admin or (msg.author.id in ADMIN_USERS):
-                await pgbot.commands.admin_command(
-                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX
-                )
-            else:
-                await pgbot.commands.user_command(
-                    bot, msg, msg.content[len(PREFIX):].split(), PREFIX, is_priv
-                )
-        except discord.errors.Forbidden:
+            response = await util.send_embed(
+                msg.channel,
+                "Your command is being processed!",
+                ""
+            )
+
+            await commands.handle(msg, response)
+
+            common.cmd_logs[msg.id] = response
+            if len(common.cmd_logs) > 100:
+                del common.cmd_logs[common.cmd_logs.keys()[0]]
+        except discord.HTTPException:
             pass
 
-    if not isinstance(msg.channel, discord.DMChannel):
-        has_a_competence_role = False
-        for role in msg.author.roles:
-            if role.id in COMPETENCE_ROLES:
-                has_a_competence_role = True
 
-        if not has_a_competence_role and msg.channel.id in PYGAME_CHANNELS:
-            muted_role = discord.utils.get(msg.guild.roles, id=MUTED_ROLE)
-            await msg.author.add_roles(muted_role)
-            
-            response_msg = await pgbot.util.send_embed(
-                msg.channel,
-                random.choice(ROLE_PROMPT["title"]),
-                random.choice(ROLE_PROMPT["message"]).format(msg.author.mention)
-            )
-            await asyncio.sleep(30)
-            await msg.author.remove_roles(muted_role)
-            await response_msg.delete()
-
-
-@bot.event
+@common.bot.event
 async def on_message_delete(msg: discord.Message):
-    if msg.channel.id == BLOCKLIST_CHANNEL:
-        try:
-            blocked_users.remove(pgbot.util.filter_id(msg.content))
-        except ValueError:
-            pass
+    """
+    This function is called for every message deleted by user.
+    """
+    if msg.id in common.cmd_logs.keys():
+        del common.cmd_logs[msg.id]
+
+    elif msg.author.id == common.bot.user.id:
+        for log in common.cmd_logs.keys():
+            if common.cmd_logs[log].id == msg.id:
+                del common.cmd_logs[log]
+                return
 
 
-@bot.event
+@common.bot.event
 async def on_message_edit(old: discord.Message, new: discord.Message):
-    if old.channel.id == BLOCKLIST_CHANNEL:
+    """
+    This function is called for every message edited by user.
+    """
+    if new.author.bot:
+        return
+
+    if await moderation.check_sus(new):
+        return
+
+    if new.content.startswith(common.PREFIX):
         try:
-            blocked_users.remove(pgbot.util.filter_id(old.content))
-            blocked_users.append(pgbot.util.filter_id(new.content))
-        except ValueError:
+            if new.id in common.cmd_logs.keys():
+                await commands.handle(new, common.cmd_logs[new.id])
+        except discord.HTTPException:
             pass
 
 
 if __name__ == "__main__":
-    bot.run(TOKEN)
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    common.window = pygame.display.set_mode((1, 1))
+    common.bot.run(common.TOKEN)
+else:
+    raise ImportError("This is not a module")
