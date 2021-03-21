@@ -17,6 +17,9 @@ guide_channel: discord.TextChannel
 
 cmd_logs = {}
 
+
+BOT_ID = 772788653326860288
+
 # Misc
 # Pet command constants
 PET_COST = 0.1
@@ -73,7 +76,7 @@ COMPETENCE_ROLES = {
     772537232594698271,
 }
 
-# PGC #pygame, #beginners-help
+# PGC #regulars-pygame-help, #beginners-help
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
 CLOCK_TIMEZONES = [
@@ -116,13 +119,47 @@ EXP_TITLES = [
     'An exception occured:',
 ]
 
-BOT_HELP_PROMPT = {
-    "title": [
-        "Help",
-    ],
 
-    "message": ["""
-Hey there, do you want to use <@772788653326860288> ?
+
+
+BOT_WELCOME_MSG = {
+    "greet": (
+        "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
+        "Howdy", "Hi there, ", "Hey there", "*Hisssssss* Who's that? It's",
+        "*Hisssssss* Welcome", "Hello there, ", "Ooooh! Hello", "Hi there,",
+        "*Hisssss* Do I see a new user? *hisss*\nWelcome to our wonderful chatroom",
+    ),
+
+    "check": (
+        "Check out our", "Make sure to check out",
+        "Take a look at our", "See our", "Please see our",
+        "Be sure to read our", "Be sure to check the",
+        "Be sure to check out our",
+    ),
+
+    "grab": (
+        "grab", "get", "take", "grab some shiny", "get some fancy", "get some",
+        "then get yourself some cool", "then get yourself some", "take some",
+        "then take some", "then take some", "then take some fancy",
+        "then grab some shiny",
+    ),
+
+    "end": (
+        "and have fun!", "then have fun with pygame!", "then have fun with pygame! *hisssssss*",
+        "and have a nice time!", "and enjoy your stay!", "and have fun here!",
+        "and have fun with pygame!", "and have fun with pygame! *hisssss*",
+        "and have fun here! *hisssss*",
+    ),
+
+
+}
+BOT_HELP_PROMPT = {
+    "title": (
+        "Help",
+    ),
+
+    "message": (f"""
+Hey there, do you want to use <@{BOT_ID}> ?
 My command prefix is `pg`.
 **Get Help**
 ```
@@ -144,20 +181,22 @@ My command prefix is `pg`.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Get Help:**__
 `pg!help` - Ask me for help
-`pg!doc {module.Class.method}` - Look up the docstring of a Python/Pygame object, e.g `builtins.string` or `pygame.Rect`
+`pg!doc [module.Class.method]` - Look up the docstring of a Python/Pygame object, e.g `builtins.string` or `pygame.Rect`
 `pg!clock` - 24 Hour Clock showing @ Helpfulie ☉ 's who are available to help
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Run Code:**__
-`pg!exec {python code block}` - Run python code in an isolated environment. `import` is not available. Various methods of builtin objects have been disabled for security reasons. The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
+`pg!exec [python code block]` - Run python code in an isolated environment.
+`import` is not available. Various methods of builtin objects have been disabled for security reasons.
+The available preimported modules are: `math, cmath, random, re, time, string, itertools, pygame`.
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting **[here](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 __**Play With Me :snake: :**__
 `pg!pet` - Pet me :3 . Don't pet me too much or I will get mad.
 `pg!vibecheck` - Check my mood.
-`pg!sorry` - You were hitting me, "<:pg_bonk:780423317718302781>" and you're now trying to apologize? Let's see what I'll say :unamused:
+`pg!sorry` - You were hitting me {BONK}, and you're now trying to apologize? Let's see what I'll say :unamused:
 `pg!bonkcheck` -  Check how many times you have done me harm.
-    """],
+    """),
 
-    "color": [0xFF00FF]
+    "color": (0xFF00FF,)
 }
