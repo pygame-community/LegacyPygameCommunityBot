@@ -49,14 +49,11 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
-    greet = random.choice(["Hi", "Hello", "Welcome", "Greetings", "Howdy"])
-    act = random.choice(
-        ["have fun", "have fun with pygame", "enjoy", "enjoy your stay"]
-    )
-    check = random.choice(
-        ["Checkout", "Make sure to checkout", "Take a look at", "See"]
-    )
-    grab = random.choice(["grab", "get", "take"])
+    greet = random.choice(common.BOT_WELCOME_MSG["greet"])
+    check = random.choice(common.BOT_WELCOME_MSG["check"])
+ 
+    grab = random.choice(common.BOT_WELCOME_MSG["grab"])
+    end = random.choice(common.BOT_WELCOME_MSG["end"])
 
     # This function is called right when a member joins, even before the member
     # finishes the join screening. So we wait for that to happen and then send 
@@ -66,9 +63,9 @@ async def on_member_join(member: discord.Member):
 
     # We can't use embed here, because the newly joined member won't be pinged
     await common.arrivals_channel.send(
-        f"{greet} {member.mention}! {check} our " + \
-        f"{common.guide_channel.mention}, {grab} some " + \
-        f"{common.roles_channel.mention} and {act}!"
+        f"{greet} {member.mention}! {check} " + \
+        f"{common.guide_channel.mention}, {grab} " + \
+        f"{common.roles_channel.mention}, {end}"
     )
 
 
