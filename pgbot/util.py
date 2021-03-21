@@ -116,7 +116,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
         embed.set_image(url=url_image)
 
     for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[3])
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
 
     return await channel.send(embed=embed)
 
