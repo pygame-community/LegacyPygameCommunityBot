@@ -132,12 +132,32 @@ class AdminCommand(user_commands.UserCommand):
                 args[2]
             )
         elif len(args) == 4:
+            if isinstance(args[3], list):
+                fields = util.get_embed_fields(args[3])
+                await util.send_embed(
+                    self.invoke_msg.channel,
+                    args[0],
+                    args[1],
+                    args[2],
+                    fields=fields
+                )
+            else:
+                await util.send_embed(
+                    self.invoke_msg.channel,
+                    args[0],
+                    args[1],
+                    args[2],
+                    args[3]
+                )
+        elif len(args) == 5:
+            fields = util.get_embed_fields(args[3])
             await util.send_embed(
                 self.invoke_msg.channel,
                 args[0],
                 args[1],
                 args[2],
-                args[3]
+                args[3],
+                fields=fields
             )
         else:
             await util.edit_embed(
