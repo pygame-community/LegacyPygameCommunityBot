@@ -19,7 +19,7 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 ## Admin commands
 - `pg!eval {code}` evaluate a one line code (The code shouldn't be inside a code block) without any container/limitation, helpful for debugging.
 - `pg!sudo {message}` speaks back the message as if the bot's the one who's talking.
-- `pg!emsudo {title}, {body}, {hex}, [image_url]` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content.
+- `pg!emsudo {title}, {body}, {hex}, [image_url] [fields]` `pg!emsudo {title}, {body}` sends an embed back with the arguments such as the hex color, title, and the body content. The fields argument must be a list of strings with the following format: `<Field|Title|desc.[|isinline=False]>`.
 - `pg!sudo_edit {message_id} {message}` edits a message that was sent from the bot by the message ID.
 - `pg!emsudo_edit {message_id}, {title}, {body}, {hex}, [image_url]` `pg!emsudo-edit {message_id}, {title}, {body}` edits the embed of a message that was sent from the bot by the message ID.
 - `pg!archive {origin_channel} {quantity} {destination_channel}` Gets `quantity` amount of the latest messages from `origin_channel` and resends it/"archives" it with the messages' details (Such as the author and their ID, attachments, embeds).
