@@ -1,6 +1,5 @@
 import asyncio
-import sys
-import time
+import re
 
 import discord
 
@@ -74,6 +73,29 @@ def filter_id(mention: str):
     return int(mention)
 
 
+def get_embed_fields(messages):
+    # syntax: <Field|Title|desc.[|inline=False]>
+    field_regex = r"(<Field\|.*\|.*(\|True|\|False|)>)"
+    field_datas = []
+
+    for message in messages:
+        field_list = re.split(field_regex, message)
+        for field in field_list:
+            if field:
+                field = field[1:-1]
+                field_data = field.split("|")
+
+                if len(field_data) not in [3, 4]:
+                    continue
+                if len(field_data) == 3:
+                    field_data.append("")
+
+                field_data[3] = True if field_data[3] == "True" else False
+
+                field_datas.append(field_data[1:])
+
+    return field_datas
+
 async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None):
     """
     Edits the embed of a message with a much more tight function
@@ -85,13 +107,16 @@ async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None
     return await message.edit(embed=embed)
 
 
-async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None):
+async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None, fields=[]):
     """
     Sends an embed with a much more tight function
     """
     embed = discord.Embed(title=title, description=description, color=color)
     if url_image:
         embed.set_image(url=url_image)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[3])
 
     return await channel.send(embed=embed)
 
