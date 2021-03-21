@@ -1,5 +1,6 @@
 import asyncio
 import builtins
+import collections
 import importlib
 import itertools
 import json
@@ -14,6 +15,7 @@ import sys
 import threading
 import time
 import timeit
+
 
 import discord
 import pkg_resources
@@ -41,6 +43,11 @@ doc_modules = {  # Modules to provide documentation for
     "string": string,
     "itertools": itertools,
     "builtins": builtins,
+    "gc": gc,
+    "pickle": pickle,
+    "collections": collections,
+    "discord": discord,
+
 }
 
 for module in sys.modules:
