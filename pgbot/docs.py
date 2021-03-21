@@ -1,5 +1,6 @@
 import asyncio
 import builtins
+import cmath
 import collections
 import gc
 import importlib
@@ -17,7 +18,6 @@ import sys
 import threading
 import time
 import timeit
-
 
 import discord
 import pkg_resources
@@ -38,6 +38,7 @@ doc_modules = {  # Modules to provide documentation for
     "random": random,
     "re": re,
     "math": math,
+    "cmath": cmath,
     "pickle": pickle,
     "threading": threading,
     "time": time,
@@ -49,6 +50,7 @@ doc_modules = {  # Modules to provide documentation for
     "pickle": pickle,
     "collections": collections,
     "discord": discord,
+    "sqlite3": sqlite3,
 
 }
 
