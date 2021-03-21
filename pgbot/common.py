@@ -196,7 +196,8 @@ __**Play With Me :snake: :**__
 `pg!vibecheck` - Check my mood.
 `pg!sorry` - You were hitting me {BONK}, and you're now trying to apologize? Let's see what I'll say :unamused:
 `pg!bonkcheck` -  Check how many times you have done me harm.
-    """),
+    """,
+    ),
 
     "color": (0xFF00FF,)
 }
