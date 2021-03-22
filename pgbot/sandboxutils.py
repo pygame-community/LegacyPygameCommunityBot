@@ -10,7 +10,6 @@ class Output:
 
 
 class SandboxFunctionsObject:
-
     public_functions = (
         "print",
     )
