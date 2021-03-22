@@ -47,9 +47,7 @@ doc_modules = {  # Modules to provide documentation for
     "itertools": itertools,
     "builtins": builtins,
     "gc": gc,
-    "pickle": pickle,
     "collections": collections,
-    "discord": discord,
     "sqlite3": sqlite3,
 
 }

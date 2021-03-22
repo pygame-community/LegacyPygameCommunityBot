@@ -39,7 +39,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             await util.edit_embed(
                 response_msg,
                 "Invalid command!",
-                "Have you spelt the command name right and put the " + \
+                "Have you spelt the command name right and put the " +
                 "appropriate amount of arguments?"
             )
 

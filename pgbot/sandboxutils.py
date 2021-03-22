@@ -13,6 +13,7 @@ class SandboxFunctionsObject:
     public_functions = (
         "print",
     )
+
     def __init__(self):
         self.output = Output()
 
