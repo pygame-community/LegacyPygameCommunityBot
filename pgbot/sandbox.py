@@ -16,9 +16,10 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
+from . import sandboxutils
 from . import common
-from sandboxutils import SandboxFunctionsObject
 
+SandboxFunctionsObject = sandboxutils.SandboxFunctionsObject
 
 class PgExecBot(Exception):
     """
