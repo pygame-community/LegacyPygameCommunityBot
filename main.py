@@ -63,7 +63,7 @@ async def on_member_join(member: discord.Member):
 
     # We can't use embed here, because the newly joined member won't be pinged
     await common.arrivals_channel.send(
-        f"{greet} {member.mention}! {check} {common.guide_channel.mention}{grab}"+\
+        f"{greet} {member.mention}! {check} {common.guide_channel.mention}{grab} "+\
         f"{common.roles_channel.mention}{end}"
     )
 
