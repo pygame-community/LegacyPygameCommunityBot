@@ -55,12 +55,12 @@ class AdminCommand(user_commands.UserCommand):
             if len(exp) + 11 > 2048:
                 await util.edit_embed(
                     self.response_msg,
-                    common.EXP_TITLES[1],
+                    common.EXC_TITLES[1],
                     "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await util.edit_embed(
-                    self.response_msg, common.EXP_TITLES[1], "```\n" + exp + "```"
+                    self.response_msg, common.EXC_TITLES[1], "```\n" + exp + "```"
                 )
 
     async def cmd_sudo(self):
