@@ -107,14 +107,8 @@ ROLE_PROMPT = {
     ]
 }
 
-INCLUDE_FUNCTIONS = """
-def print(*values, sep=" ", end="\\n"):
-    global output
-    output.text = str(output.text)
-    output.text += sep.join(map(str, values)) + end
-"""
 
-EXP_TITLES = [
+EXC_TITLES = [
     'An exception occurred while trying to execute the command:',
     'An exception occured:',
 ]
@@ -153,6 +147,13 @@ BOT_WELCOME_MSG = {
 
 
 }
+
+
+ILLEGAL_ATTRIBUTES = (
+    "__subclasses__", "__loader__", "__bases__", "__code__",
+    "__getattribute__", "__setattr__", "__delattr_", "mro",
+    "__class__", "__dict__"
+)
 
 BOT_HELP_PROMPT = {
     "title": (
