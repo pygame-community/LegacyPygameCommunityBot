@@ -216,7 +216,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     allowed_globals["output"] = output
 
     for func_name in sandbox_funcs.public_functions:
-        allowed_globals[func_name] = sandbox_funcs.__dict__[func_name]
+        allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
 
     for ill_attr in common.ILLEGAL_ATTRIBUTES:
         if ill_attr in code:
