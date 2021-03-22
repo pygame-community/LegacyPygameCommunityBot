@@ -17,7 +17,6 @@ guide_channel: discord.TextChannel
 
 cmd_logs = {}
 
-
 BOT_ID = 772788653326860288
 
 # Misc
@@ -107,20 +106,10 @@ ROLE_PROMPT = {
     ]
 }
 
-INCLUDE_FUNCTIONS = """
-def print(*values, sep=" ", end="\\n"):
-    global output
-    output.text = str(output.text)
-    output.text += sep.join(map(str, values)) + end
-"""
-
 EXC_TITLES = [
     'An exception occurred while trying to execute the command:',
     'An exception occured:',
 ]
-
-
-
 
 BOT_WELCOME_MSG = {
     "greet": (
@@ -153,7 +142,6 @@ BOT_WELCOME_MSG = {
 
 
 }
-
 
 ILLEGAL_ATTRIBUTES = (
     "__subclasses__", "__loader__", "__bases__", "__code__",
