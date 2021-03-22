@@ -206,7 +206,7 @@ class UserCommand:
             self.response_msg,
             "Vibe Check, snek?",
             f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" +
-            f"\nIt was last pet {util.format_long_time(time.time() - emotion.last_pet):.2f} second(s) ago",
+            f"\nIt was last pet {util.format_long_time(time.time() - emotion.last_pet):.2f} ago",
         )
 
     async def cmd_sorry(self):
