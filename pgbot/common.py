@@ -126,33 +126,34 @@ BOT_WELCOME_MSG = {
     "greet": (
         "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
         "Howdy", "Hi there, ", "Hey there", "*Hisssssss* Who's that? It's",
-        "*Hisssssss* Welcome", "Hello there, ", "Ooooh! Hello", "Hi there,",
-        "*Hisssss* Do I see a new user? *hisss*\nWelcome to our wonderful chatroom",
+        "*Hisssssss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
+        "*Hisssss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
     ),
 
     "check": (
-        "Check out our", "Make sure to check out",
+        "Check out our", "Make sure to check out the",
         "Take a look at our", "See our", "Please see our",
         "Be sure to read our", "Be sure to check the",
         "Be sure to check out our",
     ),
 
     "grab": (
-        "grab", "get", "take", "grab some shiny", "get some fancy", "get some",
-        "then get yourself some cool", "then get yourself some", "take some",
-        "then take some", "then take some", "then take some fancy",
-        "then grab some shiny",
+        ", grab", ". Then get some", ", take", ", then grab yourself some shiny", ". Get some fancy", ", get some",
+        ", then get yourself some cool", ", then get yourself some", ", take some",
+        ", then take some", ", then take some", ". Then go take some fancy",
+        ", then grab some shiny",
     ),
 
     "end": (
-        "and have fun!", "then have fun with pygame!", "then have fun with pygame! *hisssssss*",
-        "and have a nice time!", "and enjoy your stay!", "and have fun here!",
-        "and have fun with pygame!", "and have fun with pygame! *hisssss*",
-        "and have fun here! *hisssss*",
+        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hisssssss*",
+        " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
+        " and have fun with pygame!", " and have fun with pygame! *hisssss*",
+        " and have fun here! *hisssss*",
     ),
 
 
 }
+
 BOT_HELP_PROMPT = {
     "title": (
         "Help",
