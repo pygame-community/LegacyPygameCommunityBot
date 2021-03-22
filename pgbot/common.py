@@ -107,6 +107,12 @@ ROLE_PROMPT = {
     ]
 }
 
+INCLUDE_FUNCTIONS = """
+def print(*values, sep=" ", end="\\n"):
+    global output
+    output.text = str(output.text)
+    output.text += sep.join(map(str, values)) + end
+"""
 
 EXC_TITLES = [
     'An exception occurred while trying to execute the command:',

@@ -16,10 +16,11 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from . import sandboxutils
 from . import common
+from . import sandboxutils
 
 SandboxFunctionsObject = sandboxutils.SandboxFunctionsObject
+
 
 class PgExecBot(Exception):
     """
@@ -32,10 +33,9 @@ def pg_exec(code: str, globals_: dict):
     """
     exec wrapper used for pg!exec, with better error reporting
     """
-    compiled_code = compile(code, "<string>", "exec")
     try:
         script_start = time.perf_counter()
-        exec(compiled_code, globals_)
+        exec(f"{common.INCLUDE_FUNCTIONS}{code}", globals_)
         return time.perf_counter() - script_start
 
     except ImportError:
@@ -46,16 +46,16 @@ def pg_exec(code: str, globals_: dict):
         )
 
     except SyntaxError as e:
-        ename = e.__class__.__name__
-        details = e.args[0]
-        lineno = sys.exc_info()[-1].tb_lineno
-        print(f"{ename} at line {lineno}: {details}")
+        offsetarrow = " " * e.offset + "^\n"
+        lineno = e.lineno - common.INCLUDE_FUNCTIONS.count("\n")
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " + \
+                          e.text + '\n' + offsetarrow + e.msg)
 
     except Exception as err:
         ename = err.__class__.__name__
         details = err.args[0]
-        lineno = sys.exc_info()[-1].tb_lineno
-        print(f"{ename} at line {lineno}: {details}")
+        lineno = sys.exc_info()[-1].tb_lineno - common.INCLUDE_FUNCTIONS.count("\n")
+        raise PgExecBot(f"{ename} at line {lineno}: {details}")
 
 
 class ThreadWithTrace(threading.Thread):
@@ -206,6 +206,17 @@ for k in filtered_builtins:
     allowed_globals[k] = filtered_builtins[k]
 
 
+class Output:
+    """
+    Output class for posting relevent data through discord
+    """
+    def __init__(self):
+        self.text = ""
+        self.img = None
+        self.exc = None
+        self.duration = -1  # The script execution time
+
+
 async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     """
     Helper to run pg!exec code in a sandbox
@@ -222,7 +233,6 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
         if ill_attr in code:
             output.exc = PgExecBot("Suspicious Pattern")
             return output
-    
 
     def exec_thread():
         glob = allowed_globals.copy()
