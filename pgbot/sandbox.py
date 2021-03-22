@@ -11,7 +11,6 @@ import string
 import sys
 import threading
 import time
-import traceback
 
 import psutil
 import pygame.freetype
@@ -52,8 +51,7 @@ def pg_exec(code: str, globals_: dict):
     except Exception as err:
         ename = err.__class__.__name__
         details = err.args[0]
-        lineno = (traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-                  - common.INCLUDE_FUNCTIONS.count("\n"))
+        lineno = sys.exc_info()[-1].tb_lineno - common.INCLUDE_FUNCTIONS.count("\n")
         raise PgExecBot(f"{ename} at line {lineno}: {details}")
 
 
