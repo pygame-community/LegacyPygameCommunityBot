@@ -78,14 +78,23 @@ def get(name):
 
     for part in splits:
         try:
-            obj = objects[part]
+            try:
+                is_builtin = getattr(builtins, part)
+            except AttributeError:
+                is_builtin = False
+
+            if is_builtin:
+                obj = is_builin
+            else:
+                obj = objects[part]
+
             try:
                 objects = vars(obj)
             except BaseException:  # TODO: Figure out proper exception
                 objects = {}
         except KeyError:
             return (
-                "Class/function/sub-module not found!", 
+                "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
             )
 
