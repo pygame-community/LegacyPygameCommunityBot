@@ -105,7 +105,6 @@ ROLE_PROMPT = {
     ]
 }
 
-
 EXC_TITLES = [
     'An exception occurred while trying to execute the command:',
     'An exception occured:',
