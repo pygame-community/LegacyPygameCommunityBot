@@ -1,5 +1,8 @@
 import asyncio
 import builtins
+import cmath
+import collections
+import gc
 import importlib
 import itertools
 import json
@@ -9,6 +12,7 @@ import pickle
 import random
 import re
 import socket
+import sqlite3
 import string
 import sys
 import threading
@@ -34,6 +38,7 @@ doc_modules = {  # Modules to provide documentation for
     "random": random,
     "re": re,
     "math": math,
+    "cmath": cmath,
     "pickle": pickle,
     "threading": threading,
     "time": time,
@@ -41,6 +46,10 @@ doc_modules = {  # Modules to provide documentation for
     "string": string,
     "itertools": itertools,
     "builtins": builtins,
+    "gc": gc,
+    "collections": collections,
+    "sqlite3": sqlite3,
+
 }
 
 for module in sys.modules:

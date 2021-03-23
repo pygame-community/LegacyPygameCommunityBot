@@ -1,6 +1,5 @@
 import asyncio
-import sys
-import time
+import re
 
 import discord
 
@@ -25,6 +24,25 @@ def format_time(seconds: float, decimal_places: int = 4):
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
     return f"very fast"
+
+
+def format_long_time(seconds):
+    result = []
+
+    for name, count in (
+            ('weeks', 604800),
+            ('days', 86400),
+            ('hours', 3600),
+            ('minutes', 60),
+            ('seconds', 1),
+    ):
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            if value == 1:
+                name = name[:-1]
+            result.append("{} {}".format(value, name))
+    return ', '.join(result)
 
 
 def format_byte(size: int, decimal_places=3):
@@ -74,6 +92,30 @@ def filter_id(mention: str):
     return int(mention)
 
 
+def get_embed_fields(messages):
+    # syntax: <Field|Title|desc.[|inline=False]>
+    field_regex = r"(<Field\|.*\|.*(\|True|\|False|)>)"
+    field_datas = []
+
+    for message in messages:
+        field_list = re.split(field_regex, message)
+        for field in field_list:
+            if field:
+                field = field[1:-1]
+                field_data = field.split("|")
+
+                if len(field_data) not in [3, 4]:
+                    continue
+                if len(field_data) == 3:
+                    field_data.append("")
+
+                field_data[3] = True if field_data[3] == "True" else False
+
+                field_datas.append(field_data[1:])
+
+    return field_datas
+
+
 async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None):
     """
     Edits the embed of a message with a much more tight function
@@ -85,13 +127,16 @@ async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None
     return await message.edit(embed=embed)
 
 
-async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None):
+async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None, fields=[]):
     """
     Sends an embed with a much more tight function
     """
     embed = discord.Embed(title=title, description=description, color=color)
     if url_image:
         embed.set_image(url=url_image)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
 
     return await channel.send(embed=embed)
 
@@ -112,7 +157,7 @@ async def format_archive_messages(messages):
             for i, attachment in enumerate(message.attachments):
                 filename = repr(attachment.filename)
                 attachment_list.append(
-                    f'{i+1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
+                    f'{i + 1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
             attachments = '\n> '.join(attachment_list)
         else:
             attachments = ""
@@ -128,7 +173,7 @@ async def format_archive_messages(messages):
                         desc = '\n'
 
                     embed_list.append(
-                        f'{i+1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
+                        f'{i + 1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
                 else:
                     embed_list.append('\n')
             embeds = '\n> '.join(embed_list)

@@ -11,13 +11,15 @@ import string
 import sys
 import threading
 import time
-import traceback
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
 from . import common
+from . import sandboxutils
+
+SandboxFunctionsObject = sandboxutils.SandboxFunctionsObject
 
 
 class PgExecBot(Exception):
@@ -31,29 +33,29 @@ def pg_exec(code: str, globals_: dict):
     """
     exec wrapper used for pg!exec, with better error reporting
     """
+    compiled_code = compile(code, "<string>", "exec")
     try:
         script_start = time.perf_counter()
-        exec(f"{common.INCLUDE_FUNCTIONS}{code}", globals_)
+        exec(compiled_code, globals_)
         return time.perf_counter() - script_start
 
     except ImportError:
         raise PgExecBot(
-            "Oopsies! The bot's exec function doesn't support importing " + \
-            "external modules. Don't worry, many modules are pre-imported " + \
+            "Oopsies! The bot's exec function doesn't support importing " +
+            "external modules. Don't worry, many modules are pre-imported " +
             "for you already! Just re-run your code, without the import statements"
         )
 
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
-        lineno = e.lineno - common.INCLUDE_FUNCTIONS.count("\n")
-        raise PgExecBot(f"SyntaxError at line {lineno}\n  " + \
-                          e.text + '\n' + offsetarrow + e.msg)
+        lineno = e.lineno
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " +
+                        e.text + '\n' + offsetarrow + e.msg)
 
     except Exception as err:
         ename = err.__class__.__name__
         details = err.args[0]
-        lineno = (traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-                  - common.INCLUDE_FUNCTIONS.count("\n"))
+        lineno = sys.exc_info()[-1].tb_lineno
         raise PgExecBot(f"{ename} at line {lineno}: {details}")
 
 
@@ -205,28 +207,20 @@ for k in filtered_builtins:
     allowed_globals[k] = filtered_builtins[k]
 
 
-class Output:
-    """
-    Output class for posting relevent data through discord
-    """
-    def __init__(self):
-        self.text = ""
-        self.img = None
-        self.exc = None
-        self.duration = -1  # The script execution time
-
-
 async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     """
     Helper to run pg!exec code in a sandbox
     """
-    output = Output()
+    sandbox_funcs = SandboxFunctionsObject()
+    output = sandbox_funcs.output
+
     allowed_globals["output"] = output
 
-    for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__",
-                             "__getattribute__", "__setattr__", "__delattr_", "mro",
-                             "__class__", "__dict__"]:
-        if illegal_patterns in code:
+    for func_name in sandbox_funcs.public_functions:
+        allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
+
+    for ill_attr in common.ILLEGAL_ATTRIBUTES:
+        if ill_attr in code:
             output.exc = PgExecBot("Suspicious Pattern")
             return output
 

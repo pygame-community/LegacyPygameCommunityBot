@@ -55,12 +55,12 @@ class AdminCommand(user_commands.UserCommand):
             if len(exp) + 11 > 2048:
                 await util.edit_embed(
                     self.response_msg,
-                    common.EXP_TITLES[1],
+                    common.EXC_TITLES[1],
                     "```\n" + exp[:2037] + " ...```",
                 )
             else:
                 await util.edit_embed(
-                    self.response_msg, common.EXP_TITLES[1], "```\n" + exp + "```"
+                    self.response_msg, common.EXC_TITLES[1], "```\n" + exp + "```"
                 )
 
     async def cmd_sudo(self):
@@ -132,12 +132,32 @@ class AdminCommand(user_commands.UserCommand):
                 args[2]
             )
         elif len(args) == 4:
+            if isinstance(args[3], list):
+                fields = util.get_embed_fields(args[3])
+                await util.send_embed(
+                    self.invoke_msg.channel,
+                    args[0],
+                    args[1],
+                    args[2],
+                    fields=fields
+                )
+            else:
+                await util.send_embed(
+                    self.invoke_msg.channel,
+                    args[0],
+                    args[1],
+                    args[2],
+                    args[3]
+                )
+        elif len(args) == 5:
+            fields = util.get_embed_fields(args[3])
             await util.send_embed(
                 self.invoke_msg.channel,
                 args[0],
                 args[1],
                 args[2],
-                args[3]
+                args[3],
+                fields=fields
             )
         else:
             await util.edit_embed(
