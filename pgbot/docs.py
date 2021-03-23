@@ -81,10 +81,10 @@ def get(name):
             try:
                 is_builtin = getattr(builtins, part)
             except AttributeError:
-                is_builtin = False
+                is_builtin = None
 
             if is_builtin:
-                obj = is_builin
+                obj = is_builtin
             else:
                 obj = objects[part]
 
