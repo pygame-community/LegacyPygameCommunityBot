@@ -41,16 +41,16 @@ def pg_exec(code: str, globals_: dict):
 
     except ImportError:
         raise PgExecBot(
-            "Oopsies! The bot's exec function doesn't support importing " + \
-            "external modules. Don't worry, many modules are pre-imported " + \
+            "Oopsies! The bot's exec function doesn't support importing " +
+            "external modules. Don't worry, many modules are pre-imported " +
             "for you already! Just re-run your code, without the import statements"
         )
 
     except SyntaxError as e:
         offsetarrow = " " * e.offset + "^\n"
         lineno = e.lineno
-        raise PgExecBot(f"SyntaxError at line {lineno}\n  " + \
-                          e.text + '\n' + offsetarrow + e.msg)
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " +
+                        e.text + '\n' + offsetarrow + e.msg)
 
     except Exception as err:
         ename = err.__class__.__name__

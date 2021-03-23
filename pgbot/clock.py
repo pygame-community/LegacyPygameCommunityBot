@@ -22,9 +22,9 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     arr_vec = (
         arrow_vector[0] * size_multiplier,
         arrow_vector[1] * size_multiplier
-    ) # scale up the original arrow vector describing the arrow's direction
+    )  # scale up the original arrow vector describing the arrow's direction
 
-    vec_length = (arr_vec[0] ** 2 + arr_vec[1] **2 ) ** 0.5
+    vec_length = (arr_vec[0] ** 2 + arr_vec[1] ** 2) ** 0.5
     if not vec_length:
         return ((0, 0), ) * 7
 
@@ -39,7 +39,7 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     avp_scaled = (
         avp_norm[0] * arrow_head_width,
         avp_norm[1] * arrow_head_width
-    ) # scale up the normalized perpendicular arrow vector
+    )  # scale up the normalized perpendicular arrow vector
 
     point0 = (
         avp_norm[0] * thickness,

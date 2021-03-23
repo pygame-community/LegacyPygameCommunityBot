@@ -48,7 +48,6 @@ doc_modules = {  # Modules to provide documentation for
     "builtins": builtins,
     "gc": gc,
     "collections": collections,
-    "discord": discord,
     "sqlite3": sqlite3,
 
 }
