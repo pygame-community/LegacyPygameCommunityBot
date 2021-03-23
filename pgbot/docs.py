@@ -70,7 +70,12 @@ def get(name):
     """
     splits = name.split(".")
 
-    if splits[0] not in doc_modules:
+    try:
+        is_builtin = bool(getattr(builtins, splits[0]))
+    except AttributeError:
+        is_builtin = False
+
+    if splits[0] not in doc_modules or not is_builtin:
         return "Unknown module!", "No such module is available for its documentation."
 
     objects = doc_modules
