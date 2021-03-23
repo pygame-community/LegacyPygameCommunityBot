@@ -94,9 +94,9 @@ def get(name):
                 objects = {}
         except KeyError:
             return (
-                    "Class/function/sub-module not found!",
-                    f"There's no such thing here named `{name}`"
-                )
+                "Class/function/sub-module not found!",
+                f"There's no such thing here named `{name}`"
+            )
 
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
 
