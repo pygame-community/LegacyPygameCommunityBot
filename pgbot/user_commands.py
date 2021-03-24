@@ -169,9 +169,10 @@ class UserCommand:
         self.check_args(0)
         await util.edit_embed(
             self.response_msg,
-            common.BOT_HELP_PROMPT["title"][0],
-            common.BOT_HELP_PROMPT["message"][0],
-            common.BOT_HELP_PROMPT["color"][0]
+            common.BOT_HELP_PROMPT["title"],
+            common.BOT_HELP_PROMPT["body"],
+            color=common.BOT_HELP_PROMPT["color"],
+            fields=common.BOT_HELP_PROMPT["fields"]
         )
 
     async def cmd_pet(self):
