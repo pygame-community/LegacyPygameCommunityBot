@@ -129,7 +129,7 @@ def get(name):
         "builtin_function_or_method": [],
     }
 
-    formatted_obj_names = {
+    formatted_allowed_obj_names = {
         "module": "Modules",
         "type": "Types",
         "function": "Functions",
@@ -153,7 +153,7 @@ def get(name):
         if not obj_name_list:
             continue
 
-        sub_name = f"\n**{formatted_obj_names[k]}**\n"
+        sub_name = f"\n**{formatted_allowed_obj_names[k]}**\n"
         sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
         messg += f"{sub_name}{sub_values}"
 
