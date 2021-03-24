@@ -199,7 +199,7 @@ class AdminCommand(user_commands.UserCommand):
                 args[3]
             )
         elif len(args) == 5:
-            if isinstance(args[3], list):
+            if isinstance(args[4], list):
                 fields = util.get_embed_fields(args[4])
                 await util.edit_embed(
                     edit_msg,
