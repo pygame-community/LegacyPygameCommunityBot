@@ -179,26 +179,26 @@ class AdminCommand(user_commands.UserCommand):
             util.filter_id(args[0])
         )
 
-        if len(args) == 1:
+        if len(args) == 2:
             await util.edit_embed(
                 edit_msg,
                 args[1],
                 ""
             )
-        elif len(args) == 2:
+        elif len(args) == 3:
             await util.edit_embed(
                 edit_msg,
                 args[1],
                 args[2]
             )
-        elif len(args) == 3:
+        elif len(args) == 4:
             await util.edit_embed(
                 edit_msg,
                 args[1],
                 args[2],
                 args[3]
             )
-        elif len(args) == 4:
+        elif len(args) == 5:
             if isinstance(args[3], list):
                 fields = util.get_embed_fields(args[3])
                 await util.edit_embed(
