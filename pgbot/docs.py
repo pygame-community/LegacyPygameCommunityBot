@@ -136,9 +136,8 @@ def get(name):
         
         allowed_obj_names[obj_type_name].append(obj)
 
-
-        for k in allowed_obj_names:
-            messg += f"\n**{k.upper()}**\n```{"\n".join(cls_or_func for cls_or_func in allowed_obj_names[k])}```\n"
+    for k in allowed_obj_names:
+        messg += f"\n**{k.upper()}**\n```{"\n".join(cls_or_func for cls_or_func in allowed_obj_names[k])}```\n"
         
 
     if len(messg) > 2048:
