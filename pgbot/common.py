@@ -176,8 +176,7 @@ Ask me for help
 Look up the docstring of a Python/Pygame object, e.g `str` or `pygame.Rect`
 
 `pg!clock`
-24 Hour Clock showing
-<@&778205389942030377>'s
+24 Hour Clock showing <@&778205389942030377> 's
 who are available to help
 """, True),
             ("__**Run Code**__", """
@@ -208,7 +207,7 @@ Check my mood.
 You were hitting me :pg_bonk: , and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!bonkcheck`
-Check how many times you have done me harm. Monster.
+Check how many times you have done me harm.
 """, True),
     ),
 }

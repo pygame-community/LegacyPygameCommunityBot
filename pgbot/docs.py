@@ -108,7 +108,7 @@ def get(name):
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
         return f"Documentation for {name}", \
-            f"{name} is a constant with a type of '{obj.__class__.__name__}'" \
+            f"{name} is a constant with a type of `{obj.__class__.__name__}`" \
             "which does not have documentation."
 
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
