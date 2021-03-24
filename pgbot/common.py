@@ -3,7 +3,6 @@ import os
 import discord
 import pygame
 
-
 # For commonly used variables
 ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
@@ -140,7 +139,6 @@ BOT_WELCOME_MSG = {
         " and have fun here! *hisssss*",
     ),
 
-
 }
 
 ILLEGAL_ATTRIBUTES = (
@@ -148,6 +146,9 @@ ILLEGAL_ATTRIBUTES = (
     "__getattribute__", "__setattr__", "__delattr_", "mro",
     "__class__", "__dict__"
 )
+
+
+
 
 BOT_HELP_PROMPT = {
     "title": (
@@ -193,7 +194,7 @@ __**Play With Me :snake: :**__
 `pg!sorry` - You were hitting me {BONK}, and you're now trying to apologize? Let's see what I'll say :unamused:
 `pg!bonkcheck` -  Check how many times you have done me harm.
     """,
-    ),
+                ),
 
     "color": (0xFF00FF,)
 }

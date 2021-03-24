@@ -48,7 +48,6 @@ doc_modules = {  # Modules to provide documentation for
     "builtins": builtins,
     "gc": gc,
     "collections": collections,
-    "discord": discord,
     "sqlite3": sqlite3,
 
 }
@@ -71,7 +70,12 @@ def get(name):
     """
     splits = name.split(".")
 
-    if splits[0] not in doc_modules:
+    try:
+        is_builtin = bool(getattr(builtins, splits[0]))
+    except AttributeError:
+        is_builtin = False
+
+    if splits[0] not in doc_modules and not is_builtin:
         return "Unknown module!", "No such module is available for its documentation."
 
     objects = doc_modules
@@ -79,14 +83,23 @@ def get(name):
 
     for part in splits:
         try:
-            obj = objects[part]
+            try:
+                is_builtin = getattr(builtins, part)
+            except AttributeError:
+                is_builtin = None
+
+            if is_builtin:
+                obj = is_builtin
+            else:
+                obj = objects[part]
+
             try:
                 objects = vars(obj)
             except BaseException:  # TODO: Figure out proper exception
                 objects = {}
         except KeyError:
             return (
-                "Class/function/sub-module not found!", 
+                "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
             )
 

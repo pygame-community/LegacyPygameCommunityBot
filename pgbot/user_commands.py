@@ -8,6 +8,7 @@ import pygame
 
 from . import clock, common, docs, emotion, sandbox, util
 
+
 class UserCommand:
     """
     Base class to handle user commands.
@@ -144,8 +145,8 @@ class UserCommand:
                     )
                     + ": "
                     + ", ".join(str(t) for t in returned.exc.args).replace(
-                "```", common.ESC_CODE_BLOCK_QUOTE
-            )
+                      "```", common.ESC_CODE_BLOCK_QUOTE
+                    )
             )
 
             if len(exp) + 11 > 2048:
@@ -192,7 +193,7 @@ class UserCommand:
             "",
             "",
             0xFFFFAA,
-            "https://raw.githubusercontent.com/PygameCommunityDiscord/" + \
+            "https://raw.githubusercontent.com/PygameCommunityDiscord/" +
             f"PygameCommunityBot/main/assets/images/{fname}"
         )
 
@@ -204,8 +205,8 @@ class UserCommand:
         await util.edit_embed(
             self.response_msg,
             "Vibe Check, snek?",
-            f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" + \
-            f"\nIt was last pet {time.time() - emotion.last_pet:.2f} second(s) ago",
+            f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" +
+            f"\nIt was last pet {util.format_long_time(round(time.time() - emotion.last_pet))} ago",
         )
 
     async def cmd_sorry(self):
@@ -228,15 +229,15 @@ class UserCommand:
             await util.edit_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
-                "Your pythonic lord accepts your apology.\n" + \
+                "Your pythonic lord accepts your apology.\n" +
                 f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
             )
         else:
             await util.edit_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
-                "How did you dare to boncc a snake?\nBold of you to assume " + \
-                "I would apologize to you, two-feet-standing being!\nThe " + \
+                "How did you dare to boncc a snake?\nBold of you to assume " +
+                "I would apologize to you, two-feet-standing being!\nThe " +
                 f"boncc count is {emotion.boncc_count}"
             )
 

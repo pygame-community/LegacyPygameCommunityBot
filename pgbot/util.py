@@ -26,6 +26,25 @@ def format_time(seconds: float, decimal_places: int = 4):
     return f"very fast"
 
 
+def format_long_time(seconds):
+    result = []
+
+    for name, count in (
+            ('weeks', 604800),
+            ('days', 86400),
+            ('hours', 3600),
+            ('minutes', 60),
+            ('seconds', 1),
+    ):
+        value = seconds // count
+        if value:
+            seconds -= value * count
+            if value == 1:
+                name = name[:-1]
+            result.append("{} {}".format(value, name))
+    return ', '.join(result)
+
+
 def format_byte(size: int, decimal_places=3):
     """
     Formats a given size and outputs a string equivalent to B, KB, MB, or GB
@@ -140,7 +159,7 @@ async def format_archive_messages(messages):
             for i, attachment in enumerate(message.attachments):
                 filename = repr(attachment.filename)
                 attachment_list.append(
-                    f'{i+1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
+                    f'{i + 1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
             attachments = '\n> '.join(attachment_list)
         else:
             attachments = ""
@@ -156,7 +175,7 @@ async def format_archive_messages(messages):
                         desc = '\n'
 
                     embed_list.append(
-                        f'{i+1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
+                        f'{i + 1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
                 else:
                     embed_list.append('\n')
             embeds = '\n> '.join(embed_list)
