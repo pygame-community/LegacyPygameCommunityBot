@@ -145,8 +145,10 @@ def get(name):
         if not obj_name_list:
             continue
 
-        messg += f"\n**{k.upper()}**\n"
-        messg += f"\n```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }\n```\n"
+        name = f"\n**{k.upper()}**\n"
+        values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
+        messg += f"{name}{values}"
+
 
     if len(messg) > 2048:
         return f"Documentation for {name}", messg[:2044] + " ..."
