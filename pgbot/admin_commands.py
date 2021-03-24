@@ -176,7 +176,7 @@ class AdminCommand(user_commands.UserCommand):
         """
         args = eval(self.string)
         edit_msg = await self.invoke_msg.channel.fetch_message(
-            util.filter_id(args[0])
+            args[0]
         )
 
         if len(args) == 2:
