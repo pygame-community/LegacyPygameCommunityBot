@@ -27,39 +27,42 @@ import pygame.gfxdraw
 
 from . import common
 
-doc_modules = {  # Modules to provide documentation for
-    "pygame": pygame,
-    "discord": discord,
-    "asyncio": asyncio,
-    "json": json,
-    "sys": sys,
-    "os": os,
-    "socket": socket,
-    "random": random,
-    "re": re,
-    "math": math,
-    "cmath": cmath,
-    "pickle": pickle,
-    "threading": threading,
-    "time": time,
-    "timeit": timeit,
-    "string": string,
-    "itertools": itertools,
-    "builtins": builtins,
-    "gc": gc,
-    "collections": collections,
-    "sqlite3": sqlite3,
+doc_module_tuple = (
+    pygame,
+    discord,
+    asyncio,
+    json,
+    sys,
+    os,
+    socket,
+    random,
+    re,
+    math,
+    cmath,
+    pickle,
+    threading,
+    time,
+    timeit,
+    string,
+    itertools,
+    builtins,
+    gc,
+    collections,
+    sqlite3,
+)
+doc_module_dict = {}
 
-}
+for module_obj in doc_module_tuple:
+    doc_module_dict[module_obj.__name__] = module_obj
 
 for module in sys.modules:
-    doc_modules[module] = sys.modules[module]
+    doc_module_dict[module] = sys.modules[module]
 
 pkgs = sorted(i.key for i in pkg_resources.working_set)
 
 for module in pkgs:
     try:
-        doc_modules[module] = __import__(module.replace("-", "_"))
+        doc_module_dict[module] = __import__(module.replace("-", "_"))
     except BaseException:
         pass
 
@@ -75,10 +78,10 @@ def get(name):
     except AttributeError:
         is_builtin = False
 
-    if splits[0] not in doc_modules and not is_builtin:
+    if splits[0] not in doc_module_dict and not is_builtin:
         return "Unknown module!", "No such module is available for its documentation."
 
-    objects = doc_modules
+    module_objs = dict(doc_module_dict)
     obj = None
 
     for part in splits:
@@ -91,12 +94,12 @@ def get(name):
             if is_builtin:
                 obj = is_builtin
             else:
-                obj = objects[part]
+                obj = module_objs[part]
 
             try:
-                objects = vars(obj)
+                module_objs = vars(obj)
             except BaseException:  # TODO: Figure out proper exception
-                objects = {}
+                module_objs = {}
         except KeyError:
             return (
                 "Class/function/sub-module not found!",
@@ -119,19 +122,23 @@ def get(name):
         messg = "Online documentation: " + doclink + "\n" + messg
 
     allowed_obj_names = {
-        "module",
-        "type",
-        "function",
-        "method_descriptor",
-        "builtin_function_or_method"
+        "module": [],
+        "type": [],
+        "function": [],
+        "method_descriptor": [],
+        "builtin_function_or_method": [],
     }
 
-    for obj in objects:
-        if obj.startswith("__"):
+    for obj in module_objs:
+        obj_type_name = type(module_objs[obj]).__name__
+        if obj.startswith("__") or obj_type_name not in allowed_obj_names:
             continue
-        if type(objects[obj]).__name__ not in allowed_obj_names:
-            continue
-        messg += "**" + type(objects[obj]).__name__.upper() + "** `" + obj + "`\n"
+        
+        allowed_obj_names[obj_type_name].append(obj)
+
+    for k in allowed_obj_names:
+        messg += f"\n**{k.upper()}**\n```{"\n".join(cls_or_func for cls_or_func in allowed_obj_names[k])}```\n"
+        
 
     if len(messg) > 2048:
         return f"Documentation for {name}", messg[:2044] + " ..."
