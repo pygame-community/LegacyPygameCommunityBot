@@ -98,13 +98,18 @@ def get(name):
 
             try:
                 module_objs = vars(obj)
-            except BaseException:  # TODO: Figure out proper exception
+            except TypeError:
                 module_objs = {}
         except KeyError:
             return (
                 "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
             )
+
+    if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
+        return f"Documentation for {name}", \
+            f"{name} is a constant with a type of '{obj.__class__.__name__}'" \
+            "which does not have documentation."
 
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
 
@@ -133,15 +138,14 @@ def get(name):
         obj_type_name = type(module_objs[obj]).__name__
         if obj.startswith("__") or obj_type_name not in allowed_obj_names:
             continue
-        
+
         allowed_obj_names[obj_type_name].append(obj)
 
     NEWLINE = "\n"
-    esc_cbq = common.ESC_CODE_BLOCK_QUOTE
 
     for k in allowed_obj_names:
         obj_name_list = allowed_obj_names[k]
-        
+
         if not obj_name_list:
             continue
 
