@@ -128,6 +128,15 @@ def get(name):
         "method_descriptor": [],
         "builtin_function_or_method": [],
     }
+    
+    formatted_obj_names = {
+        "module": "Modules",
+        "type": "Types",
+        "function": "Functions",
+        "method_descriptor": "Methods",
+        "builtin_function_or_method": "Built-in Functions Or Methods",
+
+    }
 
     for obj in module_objs:
         obj_type_name = type(module_objs[obj]).__name__
@@ -145,7 +154,7 @@ def get(name):
         if not obj_name_list:
             continue
 
-        sub_name = f"\n**{k.upper()}**\n"
+        sub_name = f"\n**{formatted_obj_names[k]}**\n"
         sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
         messg += f"{sub_name}{sub_values}"
 
