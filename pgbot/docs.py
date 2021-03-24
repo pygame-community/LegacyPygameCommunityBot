@@ -145,9 +145,9 @@ def get(name):
         if not obj_name_list:
             continue
 
-        name = f"\n**{k.upper()}**\n"
-        values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
-        messg += f"{name}{values}"
+        sub_name = f"\n**{k.upper()}**\n"
+        sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
+        messg += f"{sub_name}{sub_values}"
 
 
     if len(messg) > 2048:
