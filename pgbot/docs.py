@@ -138,8 +138,15 @@ def get(name):
 
     NEWLINE = "\n"
     esc_cbq = common.ESC_CODE_BLOCK_QUOTE
+
     for k in allowed_obj_names:
-        messg += f"\n**{k.upper()}**\n{esc_cbq}{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k])}{esc_cbq}\n"
+        obj_name_list = allowed_obj_names[k]
+        
+        if not obj_name_list:
+            continue
+
+        messg += f"\n**{k.upper()}**\n"
+        messg += f"\n{esc_cbq}\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }\n{esc_cbq}\n"
 
     if len(messg) > 2048:
         return f"Documentation for {name}", messg[:2044] + " ..."
