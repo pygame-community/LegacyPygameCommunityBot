@@ -158,7 +158,7 @@ Hey there, do you want to use <@{BOT_ID}> ?
 My command prefix is `pg`.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 
-    "color": 0xFF00FF,
+    "color": 0xFFFF00,
 
     "fields": (
                 ("__**Get Help**__", """
