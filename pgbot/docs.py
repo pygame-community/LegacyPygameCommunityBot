@@ -7,6 +7,7 @@ import importlib
 import itertools
 import json
 import math
+import numpy
 import os
 import pickle
 import random
@@ -153,7 +154,7 @@ def get(name):
         if not obj_name_list:
             continue
 
-        sub_name = f"\n**{formatted_allowed_obj_names[k]}**\n"
+        sub_name = f"**{formatted_allowed_obj_names[k]}**\n"
         sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
         messg += f"{sub_name}{sub_values}"
 
