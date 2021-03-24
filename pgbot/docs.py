@@ -146,7 +146,7 @@ def get(name):
             continue
 
         messg += f"\n**{k.upper()}**\n"
-        messg += f"\n{esc_cbq}\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }\n{esc_cbq}\n"
+        messg += f"\n```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }\n```\n"
 
     if len(messg) > 2048:
         return f"Documentation for {name}", messg[:2044] + " ..."
