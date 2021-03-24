@@ -75,7 +75,7 @@ def get(name):
     except AttributeError:
         is_builtin = False
 
-    if splits[0] not in doc_modules or not is_builtin:
+    if splits[0] not in doc_modules and not is_builtin:
         return "Unknown module!", "No such module is available for its documentation."
 
     objects = doc_modules
