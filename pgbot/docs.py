@@ -109,7 +109,7 @@ def get(name):
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
 
     if len(messg) + 11 > 2048:
-        return f"Documentation for {name}", "```\n" + messg[:2037] + " ...```"
+        return f"Documentation for `{name}`", "```\n" + messg[:2037] + " ...```"
 
     messg = "```\n" + messg + "```\n\n"
 
@@ -128,7 +128,7 @@ def get(name):
         "method_descriptor": [],
         "builtin_function_or_method": [],
     }
-    
+
     formatted_obj_names = {
         "module": "Modules",
         "type": "Types",
@@ -146,7 +146,6 @@ def get(name):
         allowed_obj_names[obj_type_name].append(obj)
 
     NEWLINE = "\n"
-    esc_cbq = common.ESC_CODE_BLOCK_QUOTE
 
     for k in allowed_obj_names:
         obj_name_list = allowed_obj_names[k]
@@ -160,6 +159,6 @@ def get(name):
 
 
     if len(messg) > 2048:
-        return f"Documentation for {name}", messg[:2044] + " ..."
+        return f"Documentation for `{name}`", messg[:2044] + " ..."
     else:
-        return f"Documentation for {name}", messg
+        return f"Documentation for `{name}`", messg
