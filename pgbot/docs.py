@@ -109,7 +109,7 @@ def get(name):
     messg = str(obj.__doc__).replace("```", common.ESC_CODE_BLOCK_QUOTE)
 
     if len(messg) + 11 > 2048:
-        return f"Documentation for {name}", "```\n" + messg[:2037] + " ...```"
+        return f"Documentation for `{name}`", "```\n" + messg[:2037] + " ...```"
 
     messg = "```\n" + messg + "```\n\n"
 
@@ -129,6 +129,15 @@ def get(name):
         "builtin_function_or_method": [],
     }
 
+    formatted_allowed_obj_names = {
+        "module": "Modules",
+        "type": "Types",
+        "function": "Functions",
+        "method_descriptor": "Methods",
+        "builtin_function_or_method": "Built-in Functions Or Methods",
+
+    }
+
     for obj in module_objs:
         obj_type_name = type(module_objs[obj]).__name__
         if obj.startswith("__") or obj_type_name not in allowed_obj_names:
@@ -137,7 +146,6 @@ def get(name):
         allowed_obj_names[obj_type_name].append(obj)
 
     NEWLINE = "\n"
-    esc_cbq = common.ESC_CODE_BLOCK_QUOTE
 
     for k in allowed_obj_names:
         obj_name_list = allowed_obj_names[k]
@@ -145,12 +153,12 @@ def get(name):
         if not obj_name_list:
             continue
 
-        sub_name = f"\n**{k.upper()}**\n"
+        sub_name = f"\n**{formatted_allowed_obj_names[k]}**\n"
         sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
         messg += f"{sub_name}{sub_values}"
 
 
     if len(messg) > 2048:
-        return f"Documentation for {name}", messg[:2044] + " ..."
+        return f"Documentation for `{name}`", messg[:2044] + " ..."
     else:
-        return f"Documentation for {name}", messg
+        return f"Documentation for `{name}`", messg
