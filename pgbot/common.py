@@ -156,6 +156,8 @@ BOT_HELP_PROMPT = {
     "body": f"""
 Hey there, do you want to use <@{BOT_ID}> ?
 My command prefix is `pg`.
+If you want me to run your code, use Discord's code block syntax.
+Learn more about Discord code formatting **[HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 
     "color": 0xFFFF00,
@@ -175,7 +177,7 @@ Look up the docstring of a Python/Pygame object, e.g `str` or `pygame.Rect`
 
 `pg!clock`
 24 Hour Clock showing
-@ Helpfulie ☉'s
+<@&778205389942030377>'s
 who are available to help
 """, True),
             ("__**Run Code**__", """
@@ -188,8 +190,6 @@ Run python code in an isolated environment.
 `import` is not available. Various methods of builtin objects have been disabled for security reasons.
 The available preimported modules are:
 `math, cmath, random, re, time, string, itertools, pygame`.
-If you want me to run your code, use Discord's code block syntax.
-Learn more about Discord code formatting **[here](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
 """, True),
             ("__**Play With Me :snake: **__", """
 ```
@@ -205,7 +205,7 @@ Pet me :3 . Don't pet me too much or I will get mad.
 Check my mood.
 
 `pg!sorry`
-You were hitting me :pg_bonk:, and you're now trying to apologize? Let's see what I'll say :unamused:
+You were hitting me :pg_bonk: , and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!bonkcheck`
 Check how many times you have done me harm. Monster.
