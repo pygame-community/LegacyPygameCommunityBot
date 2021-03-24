@@ -7,7 +7,6 @@ import importlib
 import itertools
 import json
 import math
-import numpy
 import os
 import pickle
 import random
@@ -40,7 +39,6 @@ doc_module_tuple = (
     re,
     math,
     cmath,
-    numpy,
     pickle,
     threading,
     time,
