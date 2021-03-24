@@ -40,6 +40,7 @@ doc_module_tuple = (
     re,
     math,
     cmath,
+    numpy,
     pickle,
     threading,
     time,
