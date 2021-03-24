@@ -137,8 +137,9 @@ def get(name):
         allowed_obj_names[obj_type_name].append(obj)
 
     NEWLINE = "\n"
+    esc_cbq = common.ESC_CODE_BLOCK_QUOTE
     for k in allowed_obj_names:
-        messg += f"\n**{k.upper()}**\n```{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k])}```\n"
+        messg += f"\n**{k.upper()}**\n{esc_cbq}{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k])}{esc_cbq}\n"
 
     if len(messg) > 2048:
         return f"Documentation for {name}", messg[:2044] + " ..."
