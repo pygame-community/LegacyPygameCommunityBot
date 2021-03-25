@@ -3,7 +3,6 @@ import builtins
 import cmath
 import itertools
 import math
-import os
 import random
 import re
 import string
@@ -52,8 +51,6 @@ class PgExecBot(Exception):
     """
     pass
 
-
-process = psutil.Process(os.getpid())
 
 filtered_builtins = {}
 disallowed_builtins = (
@@ -195,8 +192,9 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
         except ImportError:
             output.exc = PgExecBot(
                 "Oopsies! The bot's exec function doesn't support importing " +
-                "external modules. Don't worry, many modules are pre-imported " +
-                "for you already! Just re-run your code, without the import statements"
+                "external modules. Don't worry, many modules are pre-" +
+                "imported for you already! Just re-run your code, without " +
+                "the import statements"
             )
 
         except SyntaxError as e:
@@ -213,6 +211,7 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
     
     q.put(output)
 
+
 async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     """
     Helper to run pg!exec code in a sandbox, manages the seperate process that
@@ -225,6 +224,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
         daemon=True  # the process must die when the main process dies
     )
     proc.start()
+    psproc = psutil.Process(proc.pid)
 
     start = time.time()
     while proc.is_alive():
@@ -234,7 +234,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
             proc.kill()
             return output
             
-        if process.memory_info().rss > max_memory:
+        if psproc.memory_info().rss > max_memory:
             output = Output()
             output.exc = PgExecBot(
                 f"The bot's memory has taken up to {max_memory} bytes!"
