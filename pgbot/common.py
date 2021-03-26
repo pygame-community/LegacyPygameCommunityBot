@@ -113,9 +113,9 @@ EXC_TITLES = [
 BOT_WELCOME_MSG = {
     "greet": (
         "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
-        "Howdy", "Hi there, ", "Hey there", "*Hisssssss* Who's that? It's",
-        "*Hisssssss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hisssss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
+        "Howdy", "Hi there, ", "Hey there", "*Hisss* Who's that? It's",
+        "*Hisss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
+        "*Hisss* Do I see a new user?\nWelcome to our wonderful chatroom",
     ),
 
     "check": (
@@ -133,10 +133,10 @@ BOT_WELCOME_MSG = {
     ),
 
     "end": (
-        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hisssssss*",
+        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hiss*",
         " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
-        " and have fun with pygame!", " and have fun with pygame! *hisssss*",
-        " and have fun here! *hisssss*",
+        " and have fun with pygame!", " and have fun with pygame! :: ",
+        " and have fun here! *hiss*",
     ),
 
 }
@@ -183,8 +183,7 @@ who are available to help
 ```
 !exec
 ```
-`pg!exec
-[python code block]`
+`pg!exec [code]`
 Run python code in an isolated environment.
 `import` is not available. Various methods of builtin objects have been disabled for security reasons.
 The available preimported modules are:
@@ -204,7 +203,7 @@ Pet me :3 . Don't pet me too much or I will get mad.
 Check my mood.
 
 `pg!sorry`
-You were hitting me :pg_bonk: , and you're now trying to apologize? Let's see what I'll say :unamused:
+You were hitting me <:pg_bonk:{BONK}> , and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!bonkcheck`
 Check how many times you have done me harm.
