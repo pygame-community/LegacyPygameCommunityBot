@@ -2,8 +2,6 @@ import asyncio
 import os
 import random
 
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-
 import discord
 import pygame
 
@@ -138,3 +136,5 @@ if __name__ == "__main__":
     pygame.init()
     common.window = pygame.display.set_mode((1, 1))
     common.bot.run(common.TOKEN)
+else:
+    raise ImportError("This is not a module")

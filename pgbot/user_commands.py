@@ -139,9 +139,15 @@ class UserCommand:
                 )
 
         else:
-            exp = ", ".join(
-                map(str, returned.exc.args)
-            ).replace("```", common.ESC_CODE_BLOCK_QUOTE)
+            exp = (
+                    type(returned.exc).__name__.replace(
+                        "```", common.ESC_CODE_BLOCK_QUOTE
+                    )
+                    + ": "
+                    + ", ".join(str(t) for t in returned.exc.args).replace(
+                      "```", common.ESC_CODE_BLOCK_QUOTE
+                    )
+            )
 
             if len(exp) + 11 > 2048:
                 await util.edit_embed(
