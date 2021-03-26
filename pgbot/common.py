@@ -135,7 +135,7 @@ BOT_WELCOME_MSG = {
     "end": (
         " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hiss*",
         " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
-        " and have fun with pygame!", " and have fun with pygame! :: ",
+        " and have fun with pygame!", " and have fun with pygame! *hisssss*",
         " and have fun here! *hiss*",
     ),
 

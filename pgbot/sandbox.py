@@ -1,48 +1,25 @@
 import asyncio
 import builtins
 import cmath
+import gc
 import itertools
 import math
+import os
 import random
 import re
 import string
 import sys
-import multiprocessing
+import threading
 import time
-import traceback
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
 from . import common
+from . import sandboxutils
 
-
-class Output:
-    """
-    Output class for posting relevent data through discord
-    """
-    def __init__(self):
-        self.text = ""
-        self.img = None
-        self.exc = None
-        self.duration = -1  # The script execution time
-
-
-class SandboxFunctionsObject:
-    """
-    Wrap custom functions for use in pg!exec
-    """
-    public_functions = (
-        "print",
-    )
-
-    def __init__(self):
-        self.output = Output()
-
-    def print(self, *values, sep=" ", end="\n"):
-        self.output.text = str(self.output.text)
-        self.output.text += sep.join(map(str, values)) + end
+SandboxFunctionsObject = sandboxutils.SandboxFunctionsObject
 
 
 class PgExecBot(Exception):
@@ -51,6 +28,71 @@ class PgExecBot(Exception):
     """
     pass
 
+
+def pg_exec(code: str, globals_: dict):
+    """
+    exec wrapper used for pg!exec, with better error reporting
+    """
+    compiled_code = compile(code, "<string>", "exec")
+    try:
+        script_start = time.perf_counter()
+        exec(compiled_code, globals_)
+        return time.perf_counter() - script_start
+
+    except ImportError:
+        raise PgExecBot(
+            "Oopsies! The bot's exec function doesn't support importing " +
+            "external modules. Don't worry, many modules are pre-imported " +
+            "for you already! Just re-run your code, without the import statements"
+        )
+
+    except SyntaxError as e:
+        offsetarrow = " " * e.offset + "^\n"
+        lineno = e.lineno
+        raise PgExecBot(f"SyntaxError at line {lineno}\n  " +
+                        e.text + '\n' + offsetarrow + e.msg)
+
+    except Exception as err:
+        ename = err.__class__.__name__
+        details = err.args[0]
+        lineno = sys.exc_info()[-1].tb_lineno
+        raise PgExecBot(f"{ename} at line {lineno}: {details}")
+
+
+class ThreadWithTrace(threading.Thread):
+    """
+    Modified thread with a kill method
+    """
+    def __init__(self, *args, **keywords):
+        threading.Thread.__init__(self, *args, **keywords)
+        self.killed = False
+
+    def start(self):
+        self.__run_backup = self.run
+        self.run = self.__run
+        threading.Thread.start(self)
+
+    def __run(self):
+        sys.settrace(self.global_trace)
+        self.__run_backup()
+        self.run = self.__run_backup
+
+    def global_trace(self, frame, event, arg):
+        if event == "call":
+            return self.local_trace
+        return None
+
+    def local_trace(self, frame, event, arg):
+        if self.killed:
+            if event == "line":
+                raise SystemExit()
+        return self.local_trace
+
+    def kill(self):
+        self.killed = True
+
+
+process = psutil.Process(os.getpid())
 
 filtered_builtins = {}
 disallowed_builtins = (
@@ -145,35 +187,34 @@ for const in pygame.constants.__all__:
     setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
+allowed_globals = {
+    "math": math,
+    "cmath": cmath,
+    "random": random,
+    "re": re,
+    "time": time,
+    "string": string,
+    "itertools": itertools,
+}
 
-def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
+for module in allowed_globals:
+    del allowed_globals[module].__loader__, allowed_globals[module].__spec__
+
+allowed_globals["__builtins__"] = filtered_builtins
+allowed_globals["pygame"] = FilteredPygame
+
+for k in filtered_builtins:
+    allowed_globals[k] = filtered_builtins[k]
+
+
+async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     """
-    exec wrapper used for pg!exec, runs in a seperate process. Since this
-    function runs in a seperate Process, keep that in mind if you want to make
-    any changes to this function (that is, do not touch this shit if you don't 
-    know what you are doing)
+    Helper to run pg!exec code in a sandbox
     """
     sandbox_funcs = SandboxFunctionsObject()
     output = sandbox_funcs.output
 
-    allowed_globals = {
-        "math": math,
-        "cmath": cmath,
-        "random": random,
-        "re": re,
-        "time": time,
-        "string": string,
-        "itertools": itertools,
-    }
-
-    for module in allowed_globals:
-        del allowed_globals[module].__loader__, allowed_globals[module].__spec__
-
-    allowed_globals["__builtins__"] = allowed_builtins
-    allowed_globals["pygame"] = FilteredPygame
     allowed_globals["output"] = output
-
-    allowed_globals.update(allowed_builtins)
 
     for func_name in sandbox_funcs.public_functions:
         allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
@@ -181,66 +222,35 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
     for ill_attr in common.ILLEGAL_ATTRIBUTES:
         if ill_attr in code:
             output.exc = PgExecBot("Suspicious Pattern")
-            break
-    else:
-        compiled_code = compile(code, "<string>", "exec")
+            return output
+
+    def exec_thread():
+        glob = allowed_globals.copy()
         try:
-            script_start = time.perf_counter()
-            exec(compiled_code, allowed_globals)
-            output.duration = time.perf_counter() - script_start
+            output.duration = pg_exec(code, glob)
+        except Exception as exc:
+            output.exc = exc
 
-        except ImportError:
-            output.exc = PgExecBot(
-                "Oopsies! The bot's exec function doesn't support importing " +
-                "external modules. Don't worry, many modules are pre-" +
-                "imported for you already! Just re-run your code, without " +
-                "the import statements"
-            )
+        glob.clear()
+        gc.collect()
 
-        except SyntaxError as e:
-            offsetarrow = " " * e.offset + "^\n"
-            output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  " +
-                            e.text + '\n' + offsetarrow + e.msg)
-
-        except Exception as err:
-            ename = err.__class__.__name__
-            details = err.args[0]
-            # Don't try to replace this, otherwise we may get wrong line numbers
-            lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-            output.exc =  PgExecBot(f"{ename} at line {lineno}: {details}")
-    
-    q.put(output)
-
-
-async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
-    """
-    Helper to run pg!exec code in a sandbox, manages the seperate process that
-    runs to execute user code.
-    """
-    q = multiprocessing.Queue(1)
-    proc = multiprocessing.Process(
-        target=pg_exec, 
-        args=(code, filtered_builtins, q),
-        daemon=True  # the process must die when the main process dies
-    )
-    proc.start()
-    psproc = psutil.Process(proc.pid)
+    thread = ThreadWithTrace(target=exec_thread)
+    thread.start()
 
     start = time.time()
-    while proc.is_alive():
+    while thread.is_alive():
         if start + timeout < time.time():
-            output = Output()
-            output.exc = PgExecBot(f"Hit timeout of {timeout} seconds!")
-            proc.kill()
-            return output
-            
-        if psproc.memory_info().rss > max_memory:
-            output = Output()
+            output.exc = PgExecBot(
+                f"Sandbox was running for more than the timeout of {timeout} seconds!"
+            )
+            break
+        if process.memory_info().rss > max_memory:
             output.exc = PgExecBot(
                 f"The bot's memory has taken up to {max_memory} bytes!"
             )
-            proc.kill()
-            return output
+            break
         await asyncio.sleep(0.05)  # Let the bot do other async things
 
-    return q.get()
+    thread.kill()
+    thread.join()
+    return output
