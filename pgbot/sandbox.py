@@ -183,9 +183,9 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
             output.exc = PgExecBot("Suspicious Pattern")
             break
     else:
-        compiled_code = compile(code, "<string>", "exec")
         try:
             script_start = time.perf_counter()
+            compiled_code = compile(code, "<string>", "exec")
             exec(compiled_code, allowed_globals)
             output.duration = time.perf_counter() - script_start
 
