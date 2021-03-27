@@ -146,7 +146,7 @@ for const in pygame.constants.__all__:
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
 
-def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
+def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue):
     """
     exec wrapper used for pg!exec, runs in a seperate process. Since this
     function runs in a seperate Process, keep that in mind if you want to make
@@ -185,8 +185,7 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
     else:
         try:
             script_start = time.perf_counter()
-            compiled_code = compile(code, "<string>", "exec")
-            exec(compiled_code, allowed_globals)
+            exec(code, allowed_globals)
             output.duration = time.perf_counter() - script_start
 
         except ImportError:
@@ -207,12 +206,29 @@ def pg_exec(code: str, allowed_builtins: dict, q: multiprocessing.Queue):
             details = err.args[0]
             # Don't try to replace this, otherwise we may get wrong line numbers
             lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-            output.exc =  PgExecBot(f"{ename} at line {lineno}: {details}")
+            output.exc = PgExecBot(f"{ename} at line {lineno}: {details}")
     
-    q.put(output)
+    # Because output needs to go through queue, we need to sanitize it first
+    # Any random data that gets put in the queue will likely crash the entire bot
+    sanitized_output = Output()
+    if isinstance(output.text, str):
+        sanitized_output.text = output.text
+    
+    if isinstance(output.duration, float):
+        sanitized_output.duration = output.duration
+
+    if isinstance(output.exc, PgExecBot):
+        sanitized_output.exc = output.exc
+    
+    if isinstance(output.img, pygame.Surface):
+        # A surface is not picklable, so handle differently
+        sanitized_output.img = True
+        pygame.image.save(output.img, f"temp{tstamp}.png")
+
+    q.put(sanitized_output)
 
 
-async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
+async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     """
     Helper to run pg!exec code in a sandbox, manages the seperate process that
     runs to execute user code.
@@ -220,7 +236,7 @@ async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
     q = multiprocessing.Queue(1)
     proc = multiprocessing.Process(
         target=pg_exec, 
-        args=(code, filtered_builtins, q),
+        args=(code, tstamp, filtered_builtins, q),
         daemon=True  # the process must die when the main process dies
     )
     proc.start()
