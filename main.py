@@ -29,6 +29,8 @@ async def on_ready():
                 common.guide_channel = channel
             if channel.id == common.ROLES_CHANNEL_ID:
                 common.roles_channel = channel
+            if channel.id == common.ENTRIES_DISCUSSION_CHANNEL_ID:
+                common.entries_discussion_channel = channel
 
     while True:
         await common.bot.change_presence(
@@ -97,6 +99,14 @@ async def on_message(msg: discord.Message):
                 del common.cmd_logs[common.cmd_logs.keys()[0]]
         except discord.HTTPException:
             pass
+
+    if msg.channel.id in common.ENTRY_CHANNELS:
+        if msg.channel.id == common.ENTRY_CHANNELS[0]:
+            entry_type = "Showcase"
+        else:
+            entry_type = "Resource"
+        await common.entries_discussion_channel.send(
+            util.format_entries_message(msg, entry_type))
 
 
 @common.bot.event
