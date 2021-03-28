@@ -143,11 +143,13 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     return await channel.send(embed=embed)
 
 def format_entries_message(message, entry_type):
-    formatted_msg = ""
-    formatted_msg += f"> {entry_type} entry by {message.author.mention}:\n\n"
+    formatted_msg = f"> {entry_type} entry by {message.author.mention}:\n\n"
+
     if message.content:
-        formatted_msg += f"{message.content}\n\n"
+        formatted_msg += f"{message.clean_content}"
+
     if message.attachments:
+        formatted_msg += "\n\n"
         for attachment in message.attachments:
             formatted_msg += f"{attachment.url}\n"
 
