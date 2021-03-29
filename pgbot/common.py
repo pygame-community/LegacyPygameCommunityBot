@@ -14,6 +14,7 @@ arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
 guide_channel: discord.TextChannel
 entries_discussion_channel: discord.TextChannel
+entry_channels = {}
 
 cmd_logs = {}
 
@@ -41,8 +42,10 @@ ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
-#Showcase, Resource
-ENTRY_CHANNELS = [772507247540437032, 810516093273768016]
+ENTRY_CHANNEL_IDS = {
+    "Showcase": 772507247540437032,
+    "Resource": 810516093273768016
+}
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
 MUTED_ROLE = 772534687302156301
