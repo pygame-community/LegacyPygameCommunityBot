@@ -103,7 +103,7 @@ async def on_message(msg: discord.Message):
         except discord.HTTPException:
             pass
 
-    if msg.channel.id in common.ENTRY_CHANNEL_IDS:
+    if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["Showcase"]:
             entry_type = "Showcase"
             color = 0xFF8800
