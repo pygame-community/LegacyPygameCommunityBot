@@ -28,7 +28,7 @@ class AdminCommand(user_commands.UserCommand):
             script_duration = time.perf_counter() - script_start
 
             enhanced_eval_output = repr(eval_output).replace(
-                "```", common.ESC_U200E
+                "```", common.ESC_BACKTICK_3X
             )
 
             if len(enhanced_eval_output) + 11 > 2048:
@@ -45,10 +45,10 @@ class AdminCommand(user_commands.UserCommand):
                 )
         except Exception as ex:
             exp = (
-                    type(ex).__name__.replace("```", common.ESC_U200E)
+                    type(ex).__name__.replace("```", common.ESC_BACKTICK_3X)
                     + ": "
                     + ", ".join(str(t) for t in ex.args).replace(
-                "```", common.ESC_U200E
+                "```", common.ESC_BACKTICK_3X
             )
             )
 

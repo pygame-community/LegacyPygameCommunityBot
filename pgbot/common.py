@@ -43,8 +43,8 @@ GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
 ENTRY_CHANNEL_IDS = {
-    "Showcase": 772507247540437032,
-    "Resource": 810516093273768016
+    "showcase": 772507247540437032,
+    "resource": 810516093273768016
 }
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
@@ -96,7 +96,8 @@ CLOCK_TIMEZONES = [
     (3600 * 7, 'Avaxar', (64, 255, 192)),
 ]
 
-ESC_U200E = "\u200e`\u200e`\u200e`\u200e"
+ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
+ZERO_SPACE = "\u200b"  # U+200B
 
 ROLE_PROMPT = {
     "title": [
@@ -120,9 +121,9 @@ EXC_TITLES = [
 BOT_WELCOME_MSG = {
     "greet": (
         "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
-        "Howdy", "Hi there, ", "Hey there", "*Hisssssss* Who's that? It's",
-        "*Hisssssss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hisssss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
+        "Howdy", "Hi there, ", "Hey there", "*Hiss* Who's that? It's",
+        "*Hisss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
+        "*Hiss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
     ),
 
     "check": (
@@ -140,10 +141,10 @@ BOT_WELCOME_MSG = {
     ),
 
     "end": (
-        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hisssssss*",
+        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hiss* ",
         " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
         " and have fun with pygame!", " and have fun with pygame! *hisssss*",
-        " and have fun here! *hisssss*",
+        " and have fun here! *hissss*",
     ),
 
 }
@@ -211,7 +212,7 @@ Pet me :3 . Don't pet me too much or I will get mad.
 Check my mood.
 
 `pg!sorry`
-You were hitting me :pg_bonk: , and you're now trying to apologize? Let's see what I'll say :unamused:
+You were hitting me <:pg_bonk:780423317718302781>, and you're now trying to apologize? Let's see what I'll say :unamused:
 
 `pg!bonkcheck`
 Check how many times you have done me harm.

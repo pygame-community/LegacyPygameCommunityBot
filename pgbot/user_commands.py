@@ -118,7 +118,7 @@ class UserCommand:
                 os.remove(f"temp{tstamp}.png")
 
             str_repr = str(returned.text).replace(
-                "```", common.ESC_U200E
+                "```", common.ESC_BACKTICK_3X
             )
 
             if len(str_repr) + 11 > 2048:
@@ -137,11 +137,11 @@ class UserCommand:
         else:
             exp = (
                     type(returned.exc).__name__.replace(
-                        "```", common.ESC_U200E
+                        "```", common.ESC_BACKTICK_3X
                     )
                     + ": "
                     + ", ".join(str(t) for t in returned.exc.args).replace(
-                      "```", common.ESC_U200E
+                      "```", common.ESC_BACKTICK_3X
                     )
             )
 

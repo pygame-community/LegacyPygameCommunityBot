@@ -111,7 +111,7 @@ def get(name):
             f"{name} is a constant with a type of `{obj.__class__.__name__}`" \
             " which does not have documentation."
 
-    messg = str(obj.__doc__).replace("```", common.ESC_U200E)
+    messg = str(obj.__doc__).replace("```", common.ESC_BACKTICK_3X)
 
     if len(messg) + 11 > 2048:
         return f"Documentation for `{name}`", "```\n" + messg[:2037] + " ...```"
