@@ -27,6 +27,11 @@ async def on_ready():
                 common.guide_channel = channel
             if channel.id == common.ROLES_CHANNEL_ID:
                 common.roles_channel = channel
+            if channel.id == common.ENTRIES_DISCUSSION_CHANNEL_ID:
+                common.entries_discussion_channel = channel
+            for key, value in common.ENTRY_CHANNEL_IDS.items():
+                if channel.id == value:
+                    common.entry_channels[key] = channel
 
     while True:
         await common.bot.change_presence(
@@ -95,6 +100,23 @@ async def on_message(msg: discord.Message):
                 del common.cmd_logs[common.cmd_logs.keys()[0]]
         except discord.HTTPException:
             pass
+
+    if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
+        if msg.channel.id == common.ENTRY_CHANNEL_IDS["Showcase"]:
+            entry_type = "Showcase"
+            color = 0xFF8800
+        else:
+            entry_type = "Resource"
+            color = 0x0000AA
+
+        title, fields = util.format_entries_message(msg, entry_type)
+        await util.send_embed(
+            common.entries_discussion_channel,
+            title,
+            "",
+            color,
+            fields=fields
+        )
 
 
 @common.bot.event

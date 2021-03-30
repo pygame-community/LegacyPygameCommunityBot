@@ -13,6 +13,8 @@ log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
 guide_channel: discord.TextChannel
+entries_discussion_channel: discord.TextChannel
+entry_channels = {}
 
 cmd_logs = {}
 
@@ -40,6 +42,11 @@ ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
+ENTRY_CHANNEL_IDS = {
+    "Showcase": 772507247540437032,
+    "Resource": 810516093273768016
+}
+ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
 MUTED_ROLE = 772534687302156301
 
@@ -82,7 +89,7 @@ CLOCK_TIMEZONES = [
     (0, 'BaconInvader', (123, 196, 63)),
     (3600, 'MegaJC', (229, 25, 247)),
     (3600, 'bydariogamer', (229, 25, 247)),
-    (3600, 'zoldalma', (229, 25, 247)),
+    (3600 * 2, 'pirosalma', (255, 28, 28)),
     (3600 * 2, 'CozyFractal', (255, 28, 28)),
     (3600 * 3, 'k4dir', (66, 135, 245)),
     (3600 * 5.5, 'Ankith', (240, 140, 0)),

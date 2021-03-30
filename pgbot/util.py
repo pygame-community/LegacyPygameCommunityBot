@@ -142,6 +142,29 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
     return await channel.send(embed=embed)
 
+def format_entries_message(message, entry_type):
+    title = f"New {entry_type} in {common.entry_channels[entry_type].mention}"
+    fields = []
+
+    msg_link = f"[View](https://discordapp.com/channels/ \
+        {message.author.guild.id}/{message.channel.id}/{message.id})"
+
+    attachments = ""
+    if message.attachments:
+        for i, attachment in enumerate(message.attachments):
+            attachments += f" - [Link {i+1}]({attachment.url})\n"
+    else:
+        attachments = "No attachments"
+
+    msg = message.content if message.content else "No description provided."
+
+    fields.append(["**Posted by**", message.author.mention, True])
+    fields.append(["**Original message**", msg_link, True])
+    fields.append(["**Attachments**", attachments, True])
+    fields.append(["**Description**", msg, True])
+
+    return title, fields
+
 
 async def format_archive_messages(messages):
     """
