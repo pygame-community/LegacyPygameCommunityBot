@@ -2,6 +2,8 @@ import asyncio
 import os
 import random
 
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+
 import discord
 import pygame
 
