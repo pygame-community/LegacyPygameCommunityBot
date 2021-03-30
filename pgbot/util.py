@@ -143,11 +143,11 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     return await channel.send(embed=embed)
 
 def format_entries_message(message, entry_type):
-    title = f"New {entry_type} in {common.entry_channels[entry_type].mention}"
+    title = f"New {entry_type.lower()} in # {common.entry_channels[entry_type].name}"
     fields = []
 
-    msg_link = f"[View](https://discordapp.com/channels/ \
-        {message.author.guild.id}/{message.channel.id}/{message.id})"
+    msg_link = "[View](https://discordapp.com/channels/"\
+        f"{message.author.guild.id}/{message.channel.id}/{message.id})"
 
     attachments = ""
     if message.attachments:
