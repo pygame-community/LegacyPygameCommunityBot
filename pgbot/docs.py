@@ -18,6 +18,8 @@ import sys
 import threading
 import time
 import timeit
+import numpy
+import pygame_gui
 
 import discord
 import pkg_resources
@@ -28,27 +30,29 @@ import pygame.gfxdraw
 from . import common
 
 doc_module_tuple = (
-    pygame,
-    discord,
     asyncio,
+    builtins,
+    cmath,
+    collections,
+    discord,
+    gc,
+    itertools,
     json,
-    sys,
+    math,
+    numpy,
     os,
-    socket,
+    pickle,
+    pygame,
+    pygame_gui,
     random,
     re,
-    math,
-    cmath,
-    pickle,
+    socket,
+    sqlite3,
+    string,
+    sys,
     threading,
     time,
     timeit,
-    string,
-    itertools,
-    builtins,
-    gc,
-    collections,
-    sqlite3,
 )
 doc_module_dict = {}
 
