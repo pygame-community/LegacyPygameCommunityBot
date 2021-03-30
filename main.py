@@ -2,8 +2,6 @@ import asyncio
 import os
 import random
 
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-
 import discord
 import pygame
 
@@ -104,11 +102,11 @@ async def on_message(msg: discord.Message):
             pass
 
     if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
-        if msg.channel.id == common.ENTRY_CHANNEL_IDS["Showcase"]:
-            entry_type = "Showcase"
+        if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
+            entry_type = "showcase"
             color = 0xFF8800
         else:
-            entry_type = "Resource"
+            entry_type = "resource"
             color = 0x0000AA
 
         title, fields = util.format_entries_message(msg, entry_type)
@@ -160,3 +158,5 @@ if __name__ == "__main__":
     pygame.init()
     common.window = pygame.display.set_mode((1, 1))
     common.bot.run(common.TOKEN)
+else:
+    raise ImportError("This is not a module")

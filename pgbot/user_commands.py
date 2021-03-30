@@ -118,7 +118,7 @@ class UserCommand:
                 os.remove(f"temp{tstamp}.png")
 
             str_repr = str(returned.text).replace(
-                "```", common.ESC_CODE_BLOCK_QUOTE
+                "```", common.ESC_BACKTICK_3X
             )
 
             if len(str_repr) + 11 > 2048:

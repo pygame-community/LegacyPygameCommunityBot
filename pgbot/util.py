@@ -143,7 +143,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     return await channel.send(embed=embed)
 
 def format_entries_message(message, entry_type):
-    title = f"New {entry_type.lower()} in # {common.entry_channels[entry_type].name}"
+    title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 
     msg_link = "[View](https://discordapp.com/channels/"\
@@ -159,7 +159,7 @@ def format_entries_message(message, entry_type):
     msg = message.content if message.content else "No description provided."
 
     fields.append(["**Posted by**", message.author.mention, True])
-    fields.append(["**Original message**", msg_link, True])
+    fields.append(["**Original msg.**", msg_link, True])
     fields.append(["**Attachments**", attachments, True])
     fields.append(["**Description**", msg, True])
 
@@ -193,7 +193,7 @@ async def format_archive_messages(messages):
                 if isinstance(embed, discord.Embed):
                     if isinstance(embed.description, str):
                         desc = embed.description.replace(
-                            triple_block_quote, common.ESC_CODE_BLOCK_QUOTE)
+                            triple_block_quote, common.ESC_BACKTICK_3X)
                     else:
                         desc = '\n'
 
