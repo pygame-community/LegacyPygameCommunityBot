@@ -260,4 +260,3 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
         await asyncio.sleep(0.05)  # Let the bot do other async things
 
     return q.get()
-    
