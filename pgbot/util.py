@@ -193,7 +193,7 @@ async def format_archive_messages(messages):
                 if isinstance(embed, discord.Embed):
                     if isinstance(embed.description, str):
                         desc = embed.description.replace(
-                            triple_block_quote, common.ESC_CODE_BLOCK_QUOTE)
+                            triple_block_quote, common.ESC_U200E)
                     else:
                         desc = '\n'
 

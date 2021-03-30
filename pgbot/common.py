@@ -96,7 +96,7 @@ CLOCK_TIMEZONES = [
     (3600 * 7, 'Avaxar', (64, 255, 192)),
 ]
 
-ESC_CODE_BLOCK_QUOTE = "\u200e`\u200e`\u200e`\u200e"
+ESC_U200E = "\u200e`\u200e`\u200e`\u200e"
 
 ROLE_PROMPT = {
     "title": [
