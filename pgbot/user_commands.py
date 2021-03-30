@@ -99,16 +99,15 @@ class UserCommand:
         elif code.startswith("py\n"):
             code = code[3:]
 
-        start = time.perf_counter()
-        returned = await sandbox.exec_sandbox(code, 10 if self.is_priv else 5)
+        tstamp = time.perf_counter_ns()
+        returned = await sandbox.exec_sandbox(code, tstamp, 10 if self.is_priv else 5)
         duration = returned.duration  # the execution time of the script alone
 
-        if not isinstance(returned.exc, BaseException):
-            if isinstance(returned.img, pygame.Surface):
-                pygame.image.save(returned.img, f"temp{start}.png")
-                if os.path.getsize(f"temp{start}.png") < 2 ** 22:
+        if returned.exc is None:
+            if returned.img:
+                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
                     await self.response_msg.channel.send(
-                        file=discord.File(f"temp{start}.png")
+                        file=discord.File(f"temp{tstamp}.png")
                     )
                 else:
                     await util.edit_embed(
@@ -116,14 +115,11 @@ class UserCommand:
                         "Image cannot be sent:",
                         "The image file size is above 4MiB",
                     )
-                os.remove(f"temp{start}.png")
+                os.remove(f"temp{tstamp}.png")
 
             str_repr = str(returned.text).replace(
                 "```", common.ESC_CODE_BLOCK_QUOTE
             )
-
-            # if not str_repr and isinstance(returned.img, pygame.Surface):
-            #     return
 
             if len(str_repr) + 11 > 2048:
                 await util.edit_embed(
