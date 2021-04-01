@@ -199,7 +199,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         except SyntaxError as e:
             offsetarrow = " " * e.offset + "^\n"
             output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  " +
-                            e.text + '\n' + offsetarrow + e.msg)
+                                   e.text + '\n' + offsetarrow + e.msg)
 
         except Exception as err:
             ename = err.__class__.__name__

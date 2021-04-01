@@ -14,6 +14,7 @@ class AdminCommand(user_commands.UserCommand):
     Base class to handle admin commands. Inherits all user commands, and also
     implements some more
     """
+
     async def cmd_eval(self):
         """
         Implement pg!eval, for admins to run arbitrary code on the bot

@@ -166,7 +166,6 @@ def get(name):
         sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
         messg += f"{sub_name}{sub_values}"
 
-
     if len(messg) > 2048:
         return f"Documentation for `{name}`", messg[:2044] + " ..."
     else:
