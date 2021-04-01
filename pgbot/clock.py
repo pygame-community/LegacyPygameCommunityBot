@@ -104,6 +104,15 @@ def user_clock(t):
                        draw_bottom_left=True, draw_bottom_right=True)
 
     pygame.draw.circle(image, (0, 0, 0), (640, 640), 620, 32)
+    time_6 = font.render("06:00", True, (0, 32, 96))
+    time_12 = font.render("12:00", True, (0, 32, 96))
+    time_18 = font.render("18:00", True, (0, 32, 96))
+    time_0 = font.render("00:00", True, (255, 255, 146))
+
+    actual_times = [(60, image_height // 2 - 210), (565, 60), (1060, image_height // 2 - 210), (565, image_height // 2 + 370)]
+
+    for time, actual_time in zip([time_6, time_12, time_18, time_0], actual_times):
+        image.blit(time, actual_time)
 
     tx = ty = 0
     for offset, name, color in CLOCK_TIMEZONES:

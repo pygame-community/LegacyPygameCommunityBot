@@ -115,6 +115,7 @@ def get_embed_fields(messages):
 
     return field_datas
 
+
 async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None, fields=[]):
     """
     Edits the embed of a message with a much more tight function
@@ -141,6 +142,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
         embed.add_field(name=field[0], value=field[1], inline=field[2])
 
     return await channel.send(embed=embed)
+
 
 def format_entries_message(message, entry_type):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
