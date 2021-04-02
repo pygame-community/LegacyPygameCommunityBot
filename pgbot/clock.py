@@ -109,7 +109,7 @@ def user_clock(t):
     time_18 = font.render("18:00", True, (0, 32, 96))
     time_0 = font.render("00:00", True, (255, 255, 146))
 
-    actual_times = [(60, image_height // 2 - 210), (565, 60), (1060, image_height // 2 - 210), (565, image_height // 2 + 370)]
+    actual_times = [(60, 580), (565, 60), (1060, 580), (565, 1160)]
 
     for time, actual_time in zip([time_6, time_12, time_18, time_0], actual_times):
         image.blit(time, actual_time)
