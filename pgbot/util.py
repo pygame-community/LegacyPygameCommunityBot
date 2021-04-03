@@ -27,6 +27,9 @@ def format_time(seconds: float, decimal_places: int = 4):
 
 
 def format_long_time(seconds):
+    """
+    Formats time in seconds to minutes, hours, days etc
+    """
     result = []
 
     for name, count in (
@@ -93,6 +96,9 @@ def filter_id(mention: str):
 
 
 def get_embed_fields(messages):
+    """
+    Helper to get embed fields
+    """
     # syntax: <Field|Title|desc.[|inline=False]>
     field_regex = r"(<Field\|.*\|.*(\|True|\|False|)>)"
     field_datas = []
@@ -145,6 +151,9 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
 
 def format_entries_message(message, entry_type):
+    """
+    Helper to format entries message
+    """
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 

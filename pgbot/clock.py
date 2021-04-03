@@ -2,8 +2,102 @@ import math
 import os
 
 import pygame
+import psycopg2
 
-from .common import CLOCK_TIMEZONES
+
+conn = None
+
+
+def init_db():
+    """
+    Init DB connection. Call this function only once.
+    """
+    global conn
+    conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode='require')
+
+
+def fix_clock_table():
+    """
+    Unused function. Calling this would reset the clock table in the DB to it's
+    initial state. This is mostly not needed, except if DB things go wrong, this
+    would be a handy reset and a backup
+    """
+    cur = conn.cursor()
+    cur.execute("DROP TABLE clock;")
+    cur.execute(
+        "CREATE TABLE clock (id bigint, name text, tz real, col bigint);"
+    )
+
+    cols = map(
+        lambda x: f"({x[1]}, '{x[2]}', {x[0]}, {int(pygame.Color(x[3]))})", [
+            (-4.0, 393203385995755530, 'Ghast', (59, 222, 4)),
+            (0.0, 265154376409153537, 'Baconinvader', (214, 124, 6)),
+            (2.0, 540955840409239572, 'pirosalma', (255, 28, 28)),
+            (2.0, 444116866944991236, 'Mega_JC', (189, 82, 235)),
+            (2.0, 691691416799150152, 'bydariogamer', (104, 171, 149)),
+            (2.0, 430566197868625920, 'CozyFractal', (112, 12, 194)),
+            (3.0, 311542309252497409, 'k4dir', (212, 36, 203)),
+            (5.5, 763015391710281729, 'Ankith', (6, 197, 214)),
+            (7.0, 414330602930700288, 'Avaxar', (56, 181, 125)),
+        ]
+    )
+
+    cur.execute(
+        f"INSERT INTO clock (id, name, tz, col) VALUES {', '.join(cols)};"
+    )
+    conn.commit()
+
+
+def get_clock_db(fields):
+    """
+    Get a list of output from the DB, after executing SELECT query.
+    """
+    cur = conn.cursor()
+    cur.execute(f"SELECT {fields} FROM clock;")
+    return cur.fetchall()
+
+
+def get_clock_data():
+    """
+    get clockdata from DB, for use in the clck fuction
+    """
+    tz_and_col = {}
+    ret = []
+
+    for name, offset, col in get_clock_db("name, tz, col"):
+        # To give same colors for people on same timezones
+        if offset in tz_and_col:
+            col = tz_and_col[offset]
+        else:
+            tz_and_col[offset] = col
+
+        ret.append((int(offset * 3600), name, pygame.Color(col)))
+
+    return sorted(ret, key=lambda x: x[0])
+
+
+def update_clock_members(action, mem, tz=0.0, col=0):
+    """
+    Update data of people on clock, on DB
+    """
+    if action == "add":
+        cmd = "INSERT INTO clock (id, name, tz, col) VALUES " + \
+            f"({mem.id}, '{mem.display_name}', {tz}, {col});"
+
+    else:
+        if action.startswith("update"):
+            cmd = f"UPDATE clock SET tz = {tz}, name = '{mem.display_name}'"
+            if action.endswith("col"):
+                cmd += f", col = {col}"
+
+        elif action == "remove":
+            cmd = f"DELETE from clock"
+
+        cmd += f" WHERE id = {mem.id};"
+
+    cur = conn.cursor()
+    cur.execute(cmd)
+    conn.commit()
 
 
 def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0/3.0):
@@ -115,7 +209,7 @@ def user_clock(t):
         image.blit(time, actual_time)
 
     tx = ty = 0
-    for offset, name, color in CLOCK_TIMEZONES:
+    for offset, name, color in get_clock_data():
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
 

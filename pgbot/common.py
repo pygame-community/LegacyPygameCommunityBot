@@ -84,18 +84,6 @@ COMPETENCE_ROLES = {
 # PGC #regulars-pygame-help, #beginners-help
 PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
 
-CLOCK_TIMEZONES = [
-    (3600 * -4, 'Ghast', (176, 111, 90)),
-    (0, 'BaconInvader', (123, 196, 63)),
-    (3600 * 2, 'MegaJC', (255, 28, 28)),
-    (3600 * 2, 'bydariogamer', (255, 28, 28)),
-    (3600 * 2, 'pirosalma', (255, 28, 28)),
-    (3600 * 2, 'CozyFractal', (255, 28, 28)),
-    (3600 * 3, 'k4dir', (66, 135, 245)),
-    (3600 * 5.5, 'Ankith', (240, 140, 0)),
-    (3600 * 7, 'Avaxar', (64, 255, 192)),
-]
-
 ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
 

@@ -3,10 +3,21 @@ import sys
 import time
 
 import psutil
+import pygame
 
-from . import user_commands, common, util
+from . import common, clock, user_commands, util
 
 process = psutil.Process(os.getpid())
+
+
+class DummyMember:
+    """
+    Dummy replacement for discord.User
+    """
+    def __init__(self, uid, name):
+        self.id = uid
+        self.name = name
+        self.display_name = name
 
 
 class AdminCommand(user_commands.UserCommand):
@@ -14,6 +25,25 @@ class AdminCommand(user_commands.UserCommand):
     Base class to handle admin commands. Inherits all user commands, and also
     implements some more
     """
+    async def cmd_clock(self):
+        """
+        Implement admin variant of pg!clock
+        """
+        if len(self.args) > 3 and self.args[0] == "id":
+            self.args.pop(0)
+            uid = util.filter_id(self.args.pop(0))
+            member = DummyMember(uid, self.args.pop(0))
+
+            if len(self.args) == 3 and self.args[0] == "add":
+                col = int(pygame.Color(self.args[2]))
+                clock.update_clock_members(
+                    "add", member, float(self.args[1]), col
+                )
+                self.args.clear()
+
+            await super().cmd_clock(member)
+        else:
+            await super().cmd_clock()
 
     async def cmd_eval(self):
         """

@@ -150,7 +150,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     """
     exec wrapper used for pg!exec, runs in a seperate process. Since this
     function runs in a seperate Process, keep that in mind if you want to make
-    any changes to this function (that is, do not touch this shit if you don't 
+    any changes to this function (that is, do not touch this shit if you don't
     know what you are doing)
     """
     sandbox_funcs = SandboxFunctionsObject()
@@ -199,7 +199,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         except SyntaxError as e:
             offsetarrow = " " * e.offset + "^\n"
             output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  " +
-                                   e.text + '\n' + offsetarrow + e.msg)
+                                   e.text + offsetarrow + e.msg)
 
         except Exception as err:
             ename = err.__class__.__name__
@@ -207,19 +207,19 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
             # Don't try to replace this, otherwise we may get wrong line numbers
             lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
             output.exc = PgExecBot(f"{ename} at line {lineno}: {details}")
-    
+
     # Because output needs to go through queue, we need to sanitize it first
     # Any random data that gets put in the queue will likely crash the entire bot
     sanitized_output = Output()
     if isinstance(output.text, str):
         sanitized_output.text = output.text
-    
+
     if isinstance(output.duration, float):
         sanitized_output.duration = output.duration
 
     if isinstance(output.exc, PgExecBot):
         sanitized_output.exc = output.exc
-    
+
     if isinstance(output.img, pygame.Surface):
         # A surface is not picklable, so handle differently
         sanitized_output.img = True
@@ -235,7 +235,7 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     """
     q = multiprocessing.Queue(1)
     proc = multiprocessing.Process(
-        target=pg_exec, 
+        target=pg_exec,
         args=(code, tstamp, filtered_builtins, q),
         daemon=True  # the process must die when the main process dies
     )
@@ -249,7 +249,7 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
             output.exc = PgExecBot(f"Hit timeout of {timeout} seconds!")
             proc.kill()
             return output
-            
+
         if psproc.memory_info().rss > max_memory:
             output = Output()
             output.exc = PgExecBot(

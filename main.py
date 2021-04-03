@@ -7,7 +7,7 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import discord
 import pygame
 
-from pgbot import commands, common, moderation, util
+from pgbot import commands, clock, common, moderation, util
 
 
 @common.bot.event
@@ -38,14 +38,14 @@ async def on_ready():
     while True:
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.watching, 
+                type=discord.ActivityType.watching,
                 name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.playing, 
+                type=discord.ActivityType.playing,
                 name="in discord.io/pygame_community"
             )
         )
@@ -59,12 +59,12 @@ async def on_member_join(member: discord.Member):
     """
     greet = random.choice(common.BOT_WELCOME_MSG["greet"])
     check = random.choice(common.BOT_WELCOME_MSG["check"])
- 
+
     grab = random.choice(common.BOT_WELCOME_MSG["grab"])
     end = random.choice(common.BOT_WELCOME_MSG["end"])
 
     # This function is called right when a member joins, even before the member
-    # finishes the join screening. So we wait for that to happen and then send 
+    # finishes the join screening. So we wait for that to happen and then send
     # the message
     while member.pending:
         await asyncio.sleep(3)
@@ -159,6 +159,5 @@ if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()
     common.window = pygame.display.set_mode((1, 1))
+    clock.init_db()
     common.bot.run(common.TOKEN)
-else:
-    raise ImportError("This is not a module")

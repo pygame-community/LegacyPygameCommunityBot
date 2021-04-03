@@ -19,6 +19,7 @@ class UserCommand:
         """
         # Create a dictionary of command names and respective handler functions
         self.cmds_and_funcs = {}
+
         for i in dir(self):
             if i.startswith("cmd_"):
                 self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
@@ -65,14 +66,44 @@ class UserCommand:
             self.response_msg, "Current bot's version", f"`{common.VERSION}`"
         )
 
-    async def cmd_clock(self):
+    async def cmd_clock(self, member=None):
         """
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        self.check_args(0)
-
+        self.check_args(0, 3)
         t = time.time()
+
+        if len(self.args):
+            if member is None:
+                member = self.invoke_msg.author
+
+                # Only people on clock can run clock with extra args
+                if (member.id,) not in clock.get_clock_db("id"):
+                    raise RuntimeError()
+
+            if len(self.args) == 1 and self.args[0] == "remove":
+                clock.update_clock_members("remove", member)
+
+            elif self.args[0] == "update":
+                if len(self.args) == 2:
+                    clock.update_clock_members(
+                        "update", member, float(self.args[1])
+                    )
+
+                elif len(self.args) == 3:
+                    col = int(pygame.Color(self.args[2]))
+                    clock.update_clock_members(
+                        "updatecol", member, float(self.args[1]), col
+                    )
+
+                else:
+                    raise RuntimeError()
+
+            else:
+                raise RuntimeError()
+
         pygame.image.save(clock.user_clock(t), f"temp{t}.png")
+
         common.cmd_logs[self.invoke_msg.id] = \
             await self.response_msg.channel.send(
                 file=discord.File(f"temp{t}.png")

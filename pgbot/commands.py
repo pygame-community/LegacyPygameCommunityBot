@@ -34,7 +34,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             ret = await admincmd.handle_cmd(invoke_msg, response_msg, True)
         else:
             ret = await usercmd.handle_cmd(invoke_msg, response_msg, is_priv)
-            
+
         if not ret:
             await util.edit_embed(
                 response_msg,
