@@ -58,41 +58,19 @@ class AdminCommand(user_commands.UserCommand):
             eval_output = eval(script)  # pylint: disable = eval-used
             script_duration = time.perf_counter() - script_start
 
-            enhanced_eval_output = repr(eval_output).replace(
-                "```", common.ESC_BACKTICK_3X
+            await util.edit_embed(
+                self.response_msg,
+                f"Return output (code executed in {util.format_time(script_duration)}):",
+                util.format_code_block(repr(eval_output)),
             )
-
-            if len(enhanced_eval_output) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Return output (code executed in {util.format_time(script_duration)}):",
-                    "```\n" + enhanced_eval_output[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Return output (code executed in {util.format_time(script_duration)}):",
-                    "```\n" + enhanced_eval_output + "```",
-                )
+            
         except Exception as ex:
-            exp = (
-                    type(ex).__name__.replace("```", common.ESC_BACKTICK_3X)
-                    + ": "
-                    + ", ".join(str(t) for t in ex.args).replace(
-                "```", common.ESC_BACKTICK_3X
+            exp = type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
+            await util.edit_embed(
+                self.response_msg,
+                common.EXC_TITLES[1],
+                util.format_code_block(exp),
             )
-            )
-
-            if len(exp) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg, common.EXC_TITLES[1], "```\n" + exp + "```"
-                )
 
     async def cmd_sudo(self):
         """

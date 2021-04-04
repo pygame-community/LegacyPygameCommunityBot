@@ -124,7 +124,7 @@ class UserCommand:
         """
         Implement pg!exec, for execution of python code
         """
-        code = self.string.lstrip('`').rstrip('`')
+        code = self.string.strip('`')
         if code.startswith("python\n"):
             code = code[7:]
         elif code.startswith("py\n"):
@@ -148,40 +148,18 @@ class UserCommand:
                     )
                 os.remove(f"temp{tstamp}.png")
 
-            str_repr = str(returned.text).replace(
-                "```", common.ESC_BACKTICK_3X
+            await util.edit_embed(
+                self.response_msg,
+                f"Returned text (code executed in {util.format_time(duration)}):",
+                util.format_code_block(returned.text),
             )
 
-            if len(str_repr) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr + "```",
-                )
-
         else:
-            exp = ", ".join(
-                map(str, returned.exc.args)
-            ).replace("```", common.ESC_BACKTICK_3X)
-
-            if len(exp) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp + "```"
-                )
+            await util.edit_embed(
+                self.response_msg,
+                common.EXC_TITLES[1],
+                util.format_code_block(", ".join(map(str, returned.exc.args))),
+            )
 
     async def cmd_help(self):
         """

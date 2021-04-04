@@ -33,18 +33,18 @@ def format_long_time(seconds):
     result = []
 
     for name, count in (
-            ('weeks', 604800),
-            ('days', 86400),
-            ('hours', 3600),
-            ('minutes', 60),
-            ('seconds', 1),
+        ('weeks', 604800),
+        ('days', 86400),
+        ('hours', 3600),
+        ('minutes', 60),
+        ('seconds', 1),
     ):
         value = seconds // count
         if value:
             seconds -= value * count
             if value == 1:
                 name = name[:-1]
-            result.append("{} {}".format(value, name))
+            result.append(f"{value} {name}")
     return ', '.join(result)
 
 
@@ -225,3 +225,14 @@ async def format_archive_messages(messages):
         await asyncio.sleep(0.01)  # Lets the bot do other things
 
     return formatted_msgs
+
+
+def format_code_block(msg, lim=2048):
+    """
+    Format some output into code blocks
+    """
+    msg = msg.replace("```", common.ESC_BACKTICK_3X)
+    if len(msg) > lim - 7:
+        return f"```\n{msg[:lim - 11]} ...```"
+    else:
+        return f"```\n{msg}```"

@@ -59,7 +59,7 @@ def get_clock_db(fields):
 
 def get_clock_data():
     """
-    get clockdata from DB, for use in the clck fuction
+    get clockdata from DB, for use in the clock fuction
     """
     tz_and_col = {}
     ret = []

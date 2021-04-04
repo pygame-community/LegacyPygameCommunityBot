@@ -4,7 +4,8 @@ The [Pygame Community Discord](https://discord.gg/kD2Qq9tbKm) bot
 ## User commands
 - `pg!doc {module.submodule.class.method}` gives the documentation docstring from the specified module, submodule, class, function or method.
 - `pg!exec {code}` executes the code argument (The code must be inside a code block, otherwise it won't work).
-- `pg!clock` sends a 24 hour clock which shows the current time for listed users.
+- `pg!clock` sends a 24 hour clock which shows the current time for listed users. It also takes 
+many optional arguments to be able to modify timezones, add new users, etc.
 - `pg!pet` pets the snek.
 - `pg!vibecheck` too much petting? Check if snek is **angery**.
 - `pg!sorry` Uh... sorry for bonking you there bud.
