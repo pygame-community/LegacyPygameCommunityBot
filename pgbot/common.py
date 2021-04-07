@@ -49,6 +49,7 @@ ENTRY_CHANNEL_IDS = {
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
 MUTED_ROLE = 772534687302156301
+BOT_SUS_ROLE = 829281419125719070
 
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
@@ -154,9 +155,6 @@ ILLEGAL_ATTRIBUTES = (
     "__getattribute__", "__setattr__", "__delattr_", "mro",
     "__class__", "__dict__"
 )
-
-
-
 
 BOT_HELP_PROMPT = {
     "title": "Help",
