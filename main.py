@@ -64,17 +64,26 @@ async def on_member_join(member: discord.Member):
     end = random.choice(common.BOT_WELCOME_MSG["end"])
 
     # This function is called right when a member joins, even before the member
-    # finishes the join screening. So we wait for that to happen and then send 
-    # the message
-    while member.pending:
-        await asyncio.sleep(3)
+    # finishes the join screening. So we wait for that to happen and then send
+    # the message. Wait for a maximum of one hour.
+    if not member.bot:
+        for _ in range(3600):
+            await asyncio.sleep(1)
 
-    # We can't use embed here, because the newly joined member won't be pinged
-    await common.arrivals_channel.send(
-        f"{greet} {member.mention}! {check} {common.guide_channel.mention}{grab} " +
-        f"{common.roles_channel.mention}{end}"
-    )
-
+            if not member.pending:
+                # Don't use embed here, because pings would not work
+                await common.arrivals_channel.send(
+                    f"{greet} {member.mention}! {check} " + \
+                    f"{common.guide_channel.mention}{grab} " + \
+                    f"{common.roles_channel.mention}{end}"
+                )
+                return
+    
+    # Member did not complete screen within an hour of joining. This is sus,
+    # so give sus bot role
+    bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
+    await member.add_roles(bot_sus)
+    
 
 @common.bot.event
 async def on_message(msg: discord.Message):
