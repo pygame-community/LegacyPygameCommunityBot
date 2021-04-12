@@ -73,8 +73,8 @@ async def on_member_join(member: discord.Member):
             if not member.pending:
                 # Don't use embed here, because pings would not work
                 await common.arrivals_channel.send(
-                    f"{greet} {member.mention}! {check} " + \
-                    f"{common.guide_channel.mention}{grab} " + \
+                    f"{greet} {member.mention}! {check} " +
+                    f"{common.guide_channel.mention}{grab} " +
                     f"{common.roles_channel.mention}{end}"
                 )
                 return
