@@ -85,7 +85,7 @@ async def on_member_join(member: discord.Member):
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
 
-    if member.name.lower().strip() == "Nexus":
+    if member.name.lower().strip() == "nexus":
         user_detected = await common.bot.fetch_user(member.id)
         await member.ban(reason="Bot detected Nexus")
         ban_appeal_embed = discord.Embed(color=discord.Color.red,
