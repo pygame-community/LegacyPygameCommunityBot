@@ -148,7 +148,7 @@ def format_entries_message(message, entry_type):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 
-    msg_link = "[View](https://discordapp.com/channels/"\
+    msg_link = "[View](https://discordapp.com/channels/" \
         f"{message.author.guild.id}/{message.channel.id}/{message.id})"
 
     attachments = ""
@@ -181,17 +181,17 @@ async def format_archive_messages(messages):
 
         if message.attachments:
             attachment_list = []
-            for i, attachment in enumerate(message.attachments):
+            for i, attachment in enumerate(message.attachments, 1):
                 filename = repr(attachment.filename)
                 attachment_list.append(
-                    f'{i + 1}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
+                    f'{i}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
             attachments = '\n> '.join(attachment_list)
         else:
             attachments = ""
 
         if message.embeds:
             embed_list = []
-            for i, embed in enumerate(message.embeds):
+            for i, embed in enumerate(message.embeds, 1):
                 if isinstance(embed, discord.Embed):
                     if isinstance(embed.description, str):
                         desc = embed.description.replace(
@@ -200,7 +200,7 @@ async def format_archive_messages(messages):
                         desc = '\n'
 
                     embed_list.append(
-                        f'{i + 1}:\n    **Title**: {embed.title}\n    **Description**: ```\n{desc}```\n    **Image URL**: {embed.image.url}')
+                        f'{i}:\n\t**Title**: {embed.title}\n\t**Description**: ```\n{desc}```\n\t**Image URL**: {embed.image.url}')
                 else:
                     embed_list.append('\n')
             embeds = '\n> '.join(embed_list)

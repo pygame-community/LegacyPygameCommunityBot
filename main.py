@@ -57,6 +57,7 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
+
     greet = random.choice(common.BOT_WELCOME_MSG["greet"])
     check = random.choice(common.BOT_WELCOME_MSG["check"])
  
@@ -73,8 +74,8 @@ async def on_member_join(member: discord.Member):
             if not member.pending:
                 # Don't use embed here, because pings would not work
                 await common.arrivals_channel.send(
-                    f"{greet} {member.mention}! {check} " + \
-                    f"{common.guide_channel.mention}{grab} " + \
+                    f"{greet} {member.mention}! {check} " +
+                    f"{common.guide_channel.mention}{grab} " +
                     f"{common.roles_channel.mention}{end}"
                 )
                 return
@@ -83,6 +84,15 @@ async def on_member_join(member: discord.Member):
     # so give sus bot role
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
+
+    if member.name.lower().strip() == "nexus":
+        user_detected = await common.bot.fetch_user(member.id)
+        await member.ban(reason="Bot detected Nexus")
+        ban_appeal_embed = discord.Embed(color=discord.Color.red,
+                                         description="The bot has detected you as Nexus. "
+                                                     "If you aren't Nexus, submit a ban appeal here:\n"
+                                                     "[Ban Appeal](http://gg.gg/pygame-community-discord-ban-appeal)")
+        await user_detected.send(embed=ban_appeal_embed)
     
 
 @common.bot.event
