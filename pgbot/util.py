@@ -294,26 +294,3 @@ async def format_archive_messages(messages):
         await asyncio.sleep(0.01)  # Lets the bot do other things
 
     return formatted_msgs
-
-emded_dict_syntax = {
-    'title': 'TITLE',
-    'url': 'URL',
-    'description': 'DESCRIPTION',
-    'type': 'rich',
-    'color': 0,
-    'fields': [
-        {'inline': True,
-        'name': 'title',
-        'value': 'desc'
-        }
-    ],
-    'author': {
-        'name': 'AUTHOR_NAME',
-        'url': 'AUTHOR_URL',
-        'icon_url': 'AUTHOR_ICON'
-    },
-    'image': {
-        'url': 'IMAGE_URL'
-    },
-    'footer': {'icon_url': 'FOOTER_IMG'}
-}
