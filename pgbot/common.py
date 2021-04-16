@@ -34,7 +34,7 @@ BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
 
 # Constants
-VERSION = "1.3"
+VERSION = "1.3.1"
 TOKEN = os.environ["TOKEN"]
 PREFIX = "pg!"
 
