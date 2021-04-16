@@ -1,8 +1,9 @@
 import asyncio
-import re
-
 import discord
-
+import re
+import datetime as dt
+from datetime import datetime
+from discord.embeds import EmptyEmbed
 from . import common
 
 
@@ -10,7 +11,7 @@ def format_time(seconds: float, decimal_places: int = 4):
     """
     Formats time with a prefix
     """
-    for fractions, unit in [
+    for fractions, unit in (
         (1.0, "s"),
         (1e-03, "ms"),
         (1e-06, "\u03bcs"),
@@ -20,7 +21,7 @@ def format_time(seconds: float, decimal_places: int = 4):
         (1e-18, "as"),
         (1e-21, "zs"),
         (1e-24, "ys"),
-    ]:
+    ):
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
     return f"very fast"
@@ -94,7 +95,7 @@ def filter_id(mention: str):
 
 def get_embed_fields(messages):
     # syntax: <Field|Title|desc.[|inline=False]>
-    field_regex = r"(<Field\|.*\|.*(\|True|\|False|)>)"
+    field_regex = r"(<\|.*\|.*(\|True|\|False|)>)"
     field_datas = []
 
     for message in messages:
@@ -144,6 +145,83 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     return await channel.send(embed=embed)
 
 
+async def send_embed_2(
+    channel, embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+    ):
+    """
+    Sends an embed with a much more tight function
+    """
+
+    embed = discord.Embed(title=title, type=embed_type, url=url, description=description, color=color)
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed.timestamp = datetime.fromisoformat(timestamp)
+        else:
+            embed.timestamp = timestamp
+
+    if author_name:
+        embed.set_author(name=author_name, url=author_name_url, icon_url=author_icon_url)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    if image_url:
+        embed.set_image(url=image_url)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    return await channel.send(embed=embed)
+
+
+async def edit_embed_2(
+    message, embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+    ):
+    """
+    Edits the embed of a message with a much more tight function
+    """
+
+    embed = discord.Embed(title=title, type=embed_type, url=url, description=description, color=color)
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed.timestamp = datetime.fromisoformat(timestamp)
+        else:
+            embed.timestamp = timestamp
+
+    if author_name:
+        embed.set_author(name=author_name, url=author_name_url, icon_url=author_icon_url)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    
+    if image_url:
+        embed.set_image(url=image_url)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    return await message.edit(embed=embed)
+
+async def send_embed_from_dict(channel, data):
+    """
+    Sends an embed from a dictionary with a much more tight function
+    """
+    return await channel.send(embed=discord.Embed.from_dict(data))
+
+async def edit_embed_from_dict(message, data):
+    """
+    Edits the embed of a message from a dictionary with a much more tight function
+    """
+    return await message.edit(embed=discord.Embed.from_dict(data))
+
 def format_entries_message(message, entry_type):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
@@ -154,7 +232,7 @@ def format_entries_message(message, entry_type):
     attachments = ""
     if message.attachments:
         for i, attachment in enumerate(message.attachments):
-            attachments += f" - [Link {i+1}]({attachment.url})\n"
+            attachments += f" • [Link {i+1}]({attachment.url})\n"
     else:
         attachments = "No attachments"
 
