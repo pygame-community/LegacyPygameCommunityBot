@@ -244,7 +244,7 @@ class AdminCommand(user_commands.UserCommand):
         """
 
         util_send_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed,
+            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
             title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
         )
@@ -264,13 +264,13 @@ class AdminCommand(user_commands.UserCommand):
                 if len(args[0]) == 3:
                     util_send_embed_args.update(
                         author_name=args[0][0],
-                        author_name_url=args[0][1],
+                        author_url=args[0][1],
                         author_icon_url=args[0][2],
                     )
                 elif len(args[0]) == 2:
                     util_send_embed_args.update(
                         author_name=args[0][0],
-                        author_name_url=args[0][1],
+                        author_url=args[0][1],
                     )
                 elif len(args[0]) == 1:
                     util_send_embed_args.update(
@@ -375,7 +375,7 @@ class AdminCommand(user_commands.UserCommand):
         """
 
         util_edit_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed,
+            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
             title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
         )
@@ -394,13 +394,13 @@ class AdminCommand(user_commands.UserCommand):
                 if len(args[0]) == 3:
                     util_edit_embed_args.update(
                         author_name=args[0][0],
-                        author_name_url=args[0][1],
+                        author_url=args[0][1],
                         author_icon_url=args[0][2],
                     )
                 elif len(args[0]) == 2:
                     util_edit_embed_args.update(
                         author_name=args[0][0],
-                        author_name_url=args[0][1],
+                        author_url=args[0][1],
                     )
                 elif len(args[0]) == 1:
                     util_edit_embed_args.update(
