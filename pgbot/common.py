@@ -1,7 +1,11 @@
 import os
 
 import discord
+from dotenv import load_dotenv
 import pygame
+
+if os.path.isfile(".env"):
+    load_dotenv()  # take environment variables from .env
 
 # For commonly used variables
 ints = discord.Intents.default()
@@ -35,8 +39,9 @@ BONCC_PARDON = 3
 
 # Constants
 VERSION = "1.3.1"
-TOKEN = os.environ["TOKEN"]
-PREFIX = "pg!"
+TEST_MODE = "TEST_TOKEN" in os.environ
+TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
+PREFIX = "pd!" if TEST_MODE else "pg!"
 
 ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
@@ -169,7 +174,7 @@ Learn more about Discord code formatting **[HERE](https://discord.com/channels/7
     "color": 0xFFFF00,
 
     "fields": (
-                ("__**Get Help**__", """
+        ("__**Get Help**__", """
 ```
 !help
 !doc
@@ -185,7 +190,7 @@ Look up the docstring of a Python/Pygame object, e.g `str` or `pygame.Rect`
 24 Hour Clock showing <@&778205389942030377> 's
 who are available to help
 """, True),
-            ("__**Run Code**__", """
+        ("__**Run Code**__", """
 ```
 !exec
 ```
@@ -196,7 +201,7 @@ Run python code in an isolated environment.
 The available preimported modules are:
 `math, cmath, random, re, time, string, itertools, pygame`.
 """, True),
-            ("__**Play With Me :snake: **__", """
+        ("__**Play With Me :snake: **__", """
 ```
 !pet
 !vibecheck

@@ -148,12 +148,13 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 async def send_embed_2(
     channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
-    ):
+):
     """
     Sends an embed with a much more tight function
     """
 
-    embed = discord.Embed(title=title, type=embed_type, url=url, description=description, color=color)
+    embed = discord.Embed(title=title, type=embed_type,
+                          url=url, description=description, color=color)
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -162,11 +163,12 @@ async def send_embed_2(
             embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
+        embed.set_author(name=author_name, url=author_url,
+                         icon_url=author_icon_url)
 
     if thumbnail_url:
         embed.set_thumbnail(url=thumbnail_url)
-    
+
     if image_url:
         embed.set_image(url=image_url)
 
@@ -181,12 +183,13 @@ async def send_embed_2(
 async def edit_embed_2(
     message, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
-    ):
+):
     """
     Edits the embed of a message with a much more tight function
     """
 
-    embed = discord.Embed(title=title, type=embed_type, url=url, description=description, color=color)
+    embed = discord.Embed(title=title, type=embed_type,
+                          url=url, description=description, color=color)
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -195,11 +198,12 @@ async def edit_embed_2(
             embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
+        embed.set_author(name=author_name, url=author_url,
+                         icon_url=author_icon_url)
 
     if thumbnail_url:
         embed.set_thumbnail(url=thumbnail_url)
-    
+
     if image_url:
         embed.set_image(url=image_url)
 
@@ -210,17 +214,20 @@ async def edit_embed_2(
 
     return await message.edit(embed=embed)
 
+
 async def send_embed_from_dict(channel, data):
     """
     Sends an embed from a dictionary with a much more tight function
     """
     return await channel.send(embed=discord.Embed.from_dict(data))
 
+
 async def edit_embed_from_dict(message, data):
     """
     Edits the embed of a message from a dictionary with a much more tight function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
+
 
 def format_entries_message(message, entry_type):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
@@ -255,7 +262,8 @@ async def format_archive_messages(messages):
         triple_block_quote = '```'
 
         author = f"{message.author} ({message.author.mention}) [{message.author.id}]"
-        content = message.content.replace('\n', '\n> ') if message.content else None
+        content = message.content.replace(
+            '\n', '\n> ') if message.content else None
 
         if message.attachments:
             attachment_list = []
@@ -286,11 +294,24 @@ async def format_archive_messages(messages):
             embeds = ""
 
         formatted_msgs.append(
-            f"**AUTHOR**: {author}\n" +
-            (f"**MESSAGE**: \n> {content}\n" if content else "") +
-            (f"**ATTACHMENT(S)**: \n> {attachments}\n" if message.attachments else "") +
-            (f"**EMBED(S)**: \n> {embeds}\n" if message.embeds else "")
+            f"**AUTHOR**: {author}\n"
+            + (f"**MESSAGE**: \n> {content}\n" if content else "")
+            + (f"**ATTACHMENT(S)**: \n> {attachments}\n" if message.attachments else "")
+            + (f"**EMBED(S)**: \n> {embeds}\n" if message.embeds else "")
         )
         await asyncio.sleep(0.01)  # Lets the bot do other things
 
     return formatted_msgs
+
+
+def code_block(string: str, max_characters=2048):
+    """
+    Formats text into discord code blocks
+    """
+    string = string.replace("```", "\u200b`\u200b`\u200b`\u200b")
+    max_characters -= 7
+
+    if len(string) > max_characters:
+        return f"```\n{string[:max_characters - 7]} ...```"
+    else:
+        return f"```\n{string[:max_characters]}```"

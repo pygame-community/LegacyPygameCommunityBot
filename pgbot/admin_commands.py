@@ -20,49 +20,25 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!eval, for admins to run arbitrary code on the bot
         """
         try:
-            script = compile(
-                self.string, "<string>", "eval"
-            )  # compile script first
+            script = compile(self.string, "<string>", "eval")  # compile script
 
             script_start = time.perf_counter()
             eval_output = eval(script)  # pylint: disable = eval-used
-            script_duration = time.perf_counter() - script_start
+            total = time.perf_counter() - script_start
 
-            enhanced_eval_output = repr(eval_output).replace(
-                "```", common.ESC_BACKTICK_3X
+            await util.edit_embed(
+                self.response_msg,
+                f"Return output (code executed in {util.format_time(total)}):",
+                util.code_block(repr(eval_output))
             )
-
-            if len(enhanced_eval_output) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Return output (code executed in {util.format_time(script_duration)}):",
-                    "```\n" + enhanced_eval_output[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Return output (code executed in {util.format_time(script_duration)}):",
-                    "```\n" + enhanced_eval_output + "```",
-                )
         except Exception as ex:
-            exp = (
-                    type(ex).__name__.replace("```", common.ESC_BACKTICK_3X)
-                    + ": "
-                    + ", ".join(str(t) for t in ex.args).replace(
-                "```", common.ESC_BACKTICK_3X
-            )
-            )
-
-            if len(exp) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp[:2037] + " ...```",
+            await util.edit_embed(
+                self.response_msg,
+                common.EXC_TITLES[1],
+                util.code_block(
+                    type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
                 )
-            else:
-                await util.edit_embed(
-                    self.response_msg, common.EXC_TITLES[1], "```\n" + exp + "```"
-                )
+            )
 
     async def cmd_sudo(self):
         """
@@ -276,10 +252,10 @@ class AdminCommand(user_commands.UserCommand):
                     util_send_embed_args.update(
                         author_name=args[0][0],
                     )
-            
+
             else:
                 util_send_embed_args.update(
-                        author_name=args[0],
+                    author_name=args[0],
                 )
         else:
             await util.edit_embed(
@@ -308,7 +284,7 @@ class AdminCommand(user_commands.UserCommand):
                     util_send_embed_args.update(
                         title=args[1][0],
                     )
-            
+
             else:
                 util_send_embed_args.update(
                     title=args[1],
@@ -326,7 +302,7 @@ class AdminCommand(user_commands.UserCommand):
                     util_send_embed_args.update(
                         description=args[2][0],
                     )
-            
+
             else:
                 util_send_embed_args.update(
                     description=args[2],
@@ -336,8 +312,7 @@ class AdminCommand(user_commands.UserCommand):
             util_send_embed_args.update(
                 color=args[3],
             )
-        
-        
+
         if arg_count > 4:
             util_send_embed_args.update(
                 fields=util.get_embed_fields(args[4])
@@ -355,19 +330,18 @@ class AdminCommand(user_commands.UserCommand):
                     util_send_embed_args.update(
                         footer_text=args[5][0],
                     )
-            
+
             else:
                 util_send_embed_args.update(
                     footer_text=args[5],
                 )
-        
+
         if arg_count > 6:
             util_send_embed_args.update(timestamp=args[6])
-        
+
         await util.send_embed_2(self.invoke_msg.channel, **util_send_embed_args)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-
 
     async def cmd_emsudo_edit_2(self):
         """
@@ -415,7 +389,7 @@ class AdminCommand(user_commands.UserCommand):
 
             else:
                 util_edit_embed_args.update(
-                        author_name=args[0],
+                    author_name=args[0],
                 )
         else:
             await util.edit_embed(
@@ -444,7 +418,7 @@ class AdminCommand(user_commands.UserCommand):
                     util_edit_embed_args.update(
                         title=args[1][0],
                     )
-            
+
             else:
                 util_edit_embed_args.update(
                     title=args[1],
@@ -462,7 +436,7 @@ class AdminCommand(user_commands.UserCommand):
                     util_edit_embed_args.update(
                         description=args[2][0],
                     )
-            
+
             else:
                 util_edit_embed_args.update(
                     description=args[2],
@@ -472,8 +446,7 @@ class AdminCommand(user_commands.UserCommand):
             util_edit_embed_args.update(
                 color=args[3],
             )
-        
-        
+
         if arg_count > 4:
             util_edit_embed_args.update(
                 fields=args[4]
@@ -491,15 +464,15 @@ class AdminCommand(user_commands.UserCommand):
                     util_edit_embed_args.update(
                         footer_text=args[5][0],
                     )
-            
+
             else:
                 util_edit_embed_args.update(
                     footer_text=args[5],
                 )
 
         if arg_count > 6:
-            util_send_embed_args.update(timestamp=args[6])
-        
+            util_edit_embed_args.update(timestamp=args[6])
+
         await util.edit_embed_2(edit_msg, **util_edit_embed_args)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -541,7 +514,8 @@ class AdminCommand(user_commands.UserCommand):
         messages.reverse()
         message_list = await util.format_archive_messages(messages)
 
-        archive_str = f"+{'=' * 40}+\n" + f"+{'=' * 40}+\n".join(message_list) + f"+{'=' * 40}+\n"
+        archive_str = f"+{'=' * 40}+\n" + \
+            f"+{'=' * 40}+\n".join(message_list) + f"+{'=' * 40}+\n"
         archive_list = util.split_long_message(archive_str)
 
         for message in archive_list:

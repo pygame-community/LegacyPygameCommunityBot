@@ -27,7 +27,7 @@ import pygame
 import pygame._sdl2
 import pygame.gfxdraw
 
-from . import common
+from . import common, util
 
 doc_module_tuple = (
     asyncio,
@@ -115,20 +115,14 @@ def get(name):
             f"{name} is a constant with a type of `{obj.__class__.__name__}`" \
             " which does not have documentation."
 
-    messg = str(obj.__doc__).replace("```", common.ESC_BACKTICK_3X)
-
-    if len(messg) + 11 > 2048:
-        return f"Documentation for `{name}`", "```\n" + messg[:2037] + " ...```"
-
-    messg = "```\n" + messg + "```\n\n"
-
+    header = ""
     if splits[0] == "pygame":
         doclink = "https://www.pygame.org/docs"
         if len(splits) > 1:
             doclink += "/ref/" + splits[1].lower() + ".html"
             doclink += "#"
             doclink += "".join([s + "." for s in splits])[:-1]
-        messg = "Online documentation: " + doclink + "\n" + messg
+        header = "Online documentation: " + doclink + "\n"
 
     allowed_obj_names = {
         "module": [],
@@ -147,15 +141,14 @@ def get(name):
 
     }
 
-    for obj in module_objs:
-        obj_type_name = type(module_objs[obj]).__name__
-        if obj.startswith("__") or obj_type_name not in allowed_obj_names:
+    for i in module_objs:
+        obj_type_name = type(module_objs[i]).__name__
+        if i.startswith("__") or obj_type_name not in allowed_obj_names:
             continue
 
-        allowed_obj_names[obj_type_name].append(obj)
+        allowed_obj_names[obj_type_name].append(i)
 
-    NEWLINE = "\n"
-
+    footer = ""
     for k in allowed_obj_names:
         obj_name_list = allowed_obj_names[k]
 
@@ -163,10 +156,8 @@ def get(name):
             continue
 
         sub_name = f"**{formatted_allowed_obj_names[k]}**\n"
-        sub_values = f"```\n{ NEWLINE.join(cls_or_func for cls_or_func in allowed_obj_names[k]) }```\n"
-        messg += f"{sub_name}{sub_values}"
+        sub_values = util.code_block('\n'.join(allowed_obj_names[k]))
+        footer += f"{sub_name}{sub_values}"
 
-    if len(messg) > 2048:
-        return f"Documentation for `{name}`", messg[:2044] + " ..."
-    else:
-        return f"Documentation for `{name}`", messg
+    docs = util.code_block(obj.__doc__, 2048 - len(header) - len(footer))
+    return f"Documentation for `{name}`", header + docs + footer
