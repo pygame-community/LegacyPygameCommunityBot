@@ -146,7 +146,7 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
 
 async def send_embed_2(
-    channel, embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
     ):
     """
@@ -162,7 +162,7 @@ async def send_embed_2(
             embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_name_url, icon_url=author_icon_url)
+        embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
 
     if thumbnail_url:
         embed.set_thumbnail(url=thumbnail_url)
@@ -179,7 +179,7 @@ async def send_embed_2(
 
 
 async def edit_embed_2(
-    message, embed_type="rich", author_name=EmptyEmbed, author_name_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    message, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
     ):
     """
@@ -195,7 +195,7 @@ async def edit_embed_2(
             embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_name_url, icon_url=author_icon_url)
+        embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
 
     if thumbnail_url:
         embed.set_thumbnail(url=thumbnail_url)
