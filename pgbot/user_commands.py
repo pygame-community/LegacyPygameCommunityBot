@@ -126,8 +126,8 @@ class UserCommand:
         """
         self.check_args(1)
 
-        title, body = docs.get(self.args[0])
-        await util.edit_embed(self.response_msg, title, body)
+        await docs.put_doc(self.args[0], self.invoke_msg.channel)
+        await self.response_msg.delete()
 
     async def cmd_exec(self):
         """
