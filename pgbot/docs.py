@@ -83,7 +83,12 @@ async def put_main_doc(name, channel):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        return "Unknown module!", "No such module was found."
+        await util.send_embed(
+            channel,
+            "Unknown module!",
+            "No such module was found."
+        )
+        return None, None
 
     module_objs = dict(doc_module_dict)
     obj = None
@@ -91,13 +96,8 @@ async def put_main_doc(name, channel):
     for part in splits:
         try:
             try:
-                is_builtin = getattr(builtins, part)
+                obj = getattr(builtins, part)
             except AttributeError:
-                is_builtin = None
-
-            if is_builtin:
-                obj = is_builtin
-            else:
                 obj = module_objs[part]
 
             try:
@@ -105,15 +105,30 @@ async def put_main_doc(name, channel):
             except TypeError:
                 module_objs = {}
         except KeyError:
-            return (
+            await util.send_embed(
+                channel,
                 "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
             )
+            return None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        return f"Documentation for {name}", \
-            f"{name} is a constant with a type of `{obj.__class__.__name__}`" \
+        await util.send_embed(
+            channel,
+            f"Documentation for `{name}`",
+            f"{name} is a constant with a type of `{obj.__class__.__name__}`"
             " which does not have documentation."
+        )
+        return None, None
+
+    if isinstance(obj, (staticmethod, classmethod)):
+        await util.send_embed(
+            channel,
+            f"Documentation for `{name}`",
+            f"{name} is a {type(obj).__name__}, and pg!doc does not provide "
+            "docs on these for now"
+        )
+        return None, None
 
     header = ""
     if splits[0] == "pygame":
@@ -150,11 +165,12 @@ async def put_main_doc(name, channel):
                 else:
                     lastchar += 2040
 
-        await util.send_embed(
-            channel,
-            f"Documentation for `{name}`",
-            header + util.code_block(text)
-        )
+        if text:
+            await util.send_embed(
+                channel,
+                f"Documentation for `{name}`",
+                header + util.code_block(text)
+            )
 
         header = ""
         if cnt >= common.DOC_EMBED_LIMIT:
@@ -168,6 +184,8 @@ async def put_doc(name, channel):
     Helper function to get docs
     """
     module_objs, name = await put_main_doc(name, channel)
+    if module_objs is None:
+        return
 
     allowed_obj_names = {
         "Modules": [],
@@ -206,6 +224,6 @@ async def put_doc(name, channel):
 
         await util.send_embed(
             channel,
-            f"{otype} for `{name}`",
+            f"{otype} in `{name}`",
             util.code_block('\n'.join(olist))
         )
