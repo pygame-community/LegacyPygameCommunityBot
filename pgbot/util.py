@@ -1,9 +1,11 @@
 import asyncio
-import discord
-import re
 import datetime as dt
+import re
 from datetime import datetime
+
+import discord
 from discord.embeds import EmptyEmbed
+
 from . import common
 
 
@@ -224,7 +226,8 @@ async def send_embed_from_dict(channel, data):
 
 async def edit_embed_from_dict(message, data):
     """
-    Edits the embed of a message from a dictionary with a much more tight function
+    Edits the embed of a message from a dictionary with a much more tight 
+    function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
 

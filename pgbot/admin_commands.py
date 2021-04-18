@@ -2,9 +2,11 @@ import os
 import sys
 import time
 from datetime import datetime
-from discord.embeds import EmptyEmbed
+
 import psutil
-from . import user_commands, common, util
+from discord.embeds import EmptyEmbed
+
+from . import common, user_commands, util
 
 process = psutil.Process(os.getpid())
 

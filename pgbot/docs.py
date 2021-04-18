@@ -182,7 +182,6 @@ async def put_doc(name, channel):
         "Types": [],
         "Functions": [],
         "Methods": [],
-        "Functions/Methods": [],
     }
 
     formatted_obj_names = {
