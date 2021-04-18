@@ -100,10 +100,9 @@ async def put_main_doc(name, channel):
             except AttributeError:
                 obj = module_objs[part]
 
-            try:
-                module_objs = vars(obj)
-            except TypeError:
-                module_objs = {}
+            module_objs = {}
+            for i in dir(obj):
+                module_objs[i] = getattr(obj, i)
         except KeyError:
             await util.send_embed(
                 channel,
@@ -118,15 +117,6 @@ async def put_main_doc(name, channel):
             f"Documentation for `{name}`",
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
             " which does not have documentation."
-        )
-        return None, None
-
-    if isinstance(obj, (staticmethod, classmethod)):
-        await util.send_embed(
-            channel,
-            f"Documentation for `{name}`",
-            f"{name} is a {type(obj).__name__}, and pg!doc does not provide "
-            "docs on these for now"
         )
         return None, None
 
