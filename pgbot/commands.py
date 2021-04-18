@@ -27,4 +27,8 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             elif role.id in common.PRIV_ROLES:
                 is_priv = True
 
+    # Only admins can execute commands to the developer bot
+    if common.TEST_MODE and not isinstance(cmd, admin_commands.AdminCommand):
+        return
+
     await cmd.handle_cmd(invoke_msg, response_msg, is_priv)

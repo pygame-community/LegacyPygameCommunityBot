@@ -1,11 +1,11 @@
-from pgbot import commands, common, moderation, util
-import pygame
-import discord
 import asyncio
 import os
 import random
 
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import discord
+import pygame
+
+from pgbot import commands, common, emotion, util
 
 
 @common.bot.event
@@ -86,15 +86,6 @@ async def on_member_join(member: discord.Member):
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
 
-    if member.name.lower().strip() == "nexus":
-        user_detected = await common.bot.fetch_user(member.id)
-        await member.ban(reason="Bot detected Nexus")
-        ban_appeal_embed = discord.Embed(color=discord.Color.red,
-                                         description="The bot has detected you as Nexus. "
-                                                     "If you aren't Nexus, submit a ban appeal here:\n"
-                                                     "[Ban Appeal](http://gg.gg/pygame-community-discord-ban-appeal)")
-        await user_detected.send(embed=ban_appeal_embed)
-
 
 @common.bot.event
 async def on_message(msg: discord.Message):
@@ -102,9 +93,6 @@ async def on_message(msg: discord.Message):
     This function is called for every message by user.
     """
     if msg.author.bot:
-        return
-
-    if await moderation.check_sus(msg):
         return
 
     if msg.content.startswith(common.PREFIX):
@@ -122,6 +110,8 @@ async def on_message(msg: discord.Message):
                 del common.cmd_logs[common.cmd_logs.keys()[0]]
         except discord.HTTPException:
             pass
+    else:
+        await emotion.check_bonk(msg)
 
     if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
@@ -164,19 +154,18 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
     if new.author.bot:
         return
 
-    if await moderation.check_sus(new):
-        return
-
     if new.content.startswith(common.PREFIX):
         try:
             if new.id in common.cmd_logs.keys():
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
+    else:
+        await emotion.check_bonk(new)
 
 
 if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    pygame.init()
+    pygame.init()  # pylint: disable=no-member
     common.window = pygame.display.set_mode((1, 1))
     common.bot.run(common.TOKEN)
