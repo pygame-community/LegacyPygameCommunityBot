@@ -1,7 +1,10 @@
+
 import os
+import subprocess
 import sys
 import time
 from datetime import datetime
+import discord
 from discord.embeds import EmptyEmbed
 import psutil
 from . import user_commands, common, util
@@ -501,6 +504,48 @@ class AdminCommand(user_commands.UserCommand):
             util_send_embed_args.update(timestamp=args[6])
         
         await util.edit_embed_2(edit_msg, **util_edit_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+    async def cmd_emsudo_get(self):
+        """
+        Get the embed of a message as a dictionary in a text file.
+        """
+        self.check_args(1)
+        msg_id = self.args[0]
+
+        embed_dicts = []
+
+        if msg_id.isnumeric():
+            try:
+                msg = await self.invoke_msg.channel.fetch_message(int(msg_id))
+            except discord.NotFound:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+            )
+            return
+        else:
+            await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+            )
+            return
+
+        embed_dicts = (*msg.embeds)
+        if not embed_dicts:
+            await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+            )
+            return
+        with open("embeddata.txt", "w") as embed_txt:
+            embed_txt.write("\n".join(repr(embed_dicts)))
+
+        await self.response_msg.channel.send(file=discord.File("embeddata.txt"))
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
