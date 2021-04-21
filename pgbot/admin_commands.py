@@ -656,7 +656,7 @@ class AdminCommand(user_commands.UserCommand):
 
         os.system("black embeddata.txt")
 
-        await self.response_msg.channel.send(file=discord.File("embeddata.txt"))
+        await self.response_msg.channel.send(content=f"Embed data for message: {str(self.response_msg)}", file=discord.File("embeddata.txt"))
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
