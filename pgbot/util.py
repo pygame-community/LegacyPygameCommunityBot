@@ -216,6 +216,42 @@ async def edit_embed_2(
 
     return await message.edit(embed=embed)
 
+async def update_embed_2(
+    message, embed, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+):
+    """
+    Updates the changed attributes of the embed of a message with a much more tight function
+    """
+
+    update_embed = discord.Embed(title=title, type=embed_type,
+                          url=url, description=description, color=color)
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed.timestamp = datetime.fromisoformat(timestamp)
+        else:
+            embed.timestamp = timestamp
+
+    if author_name:
+        embed.set_author(name=author_name, url=author_url,
+                         icon_url=author_icon_url)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+
+    if image_url:
+        embed.set_image(url=image_url)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    old_embed_dict = embed.to_dict()
+    old_embed_dict.update(update_embed.to_dict())
+
+    return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 async def send_embed_from_dict(channel, data):
     """
