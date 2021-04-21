@@ -246,9 +246,9 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     proc.start()
     psproc = psutil.Process(proc.pid)
 
-    start = time.time()
+    start = time.perf_counter() # is system-wide and has the highest resolution. 
     while proc.is_alive():
-        if start + timeout < time.time():
+        if start + timeout < time.perf_counter():
             output = Output()
             output.exc = PgExecBot(f"Hit timeout of {timeout} seconds!")
             proc.kill()

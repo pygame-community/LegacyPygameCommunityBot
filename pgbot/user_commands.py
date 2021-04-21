@@ -35,7 +35,7 @@ class UserCommand:
         self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv
     ):
         """
-        Calles the appropriate sub function to handle commands.
+        Calls the appropriate sub function to handle commands.
         Must return True on successful command execution, False otherwise
         """
         self.invoke_msg = invoke_msg
@@ -52,7 +52,7 @@ class UserCommand:
 
         except Exception as exc:
             if isinstance(exc, ArgError):
-                title = "Incorrect amount of argument(s)!"
+                title = "Incorrect amount of arguments!"
                 msg = exc.args[0]
 
             elif isinstance(exc, KeyError):

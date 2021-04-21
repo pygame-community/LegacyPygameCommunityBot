@@ -1,8 +1,10 @@
+
 import os
 import sys
 import time
 from datetime import datetime
-
+import discord
+from discord.embeds import EmptyEmbed
 import psutil
 from discord.embeds import EmptyEmbed
 
@@ -476,6 +478,185 @@ class AdminCommand(user_commands.UserCommand):
             util_edit_embed_args.update(timestamp=args[6])
 
         await util.edit_embed_2(edit_msg, **util_edit_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+    async def cmd_emsudo_update_2(self):
+        """
+        Implement pg!emsudo_update_2, for admins to update parts of embeds sent via the bot
+        """
+
+        util_edit_embed_args = dict(
+            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
+            title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
+            color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
+        )
+
+        args = eval(self.string)
+
+        edit_msg = await self.invoke_msg.channel.fetch_message(
+            args[0]
+        )
+
+        edit_msg_embed = edit_msg.embeds[0]
+
+        args = args[1:]
+        arg_count = len(args)
+
+        if arg_count > 0:
+            if isinstance(args[0], (tuple, list)):
+                if len(args[0]) == 3:
+                    util_edit_embed_args.update(
+                        author_name=args[0][0],
+                        author_url=args[0][1],
+                        author_icon_url=args[0][2],
+                    )
+                elif len(args[0]) == 2:
+                    util_edit_embed_args.update(
+                        author_name=args[0][0],
+                        author_url=args[0][1],
+                    )
+                elif len(args[0]) == 1:
+                    util_edit_embed_args.update(
+                        author_name=args[0][0],
+                    )
+
+            elif isinstance(args[0], dict):
+                await util.edit_embed_from_dict(edit_msg, args[0])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            else:
+                util_edit_embed_args.update(
+                    author_name=args[0],
+                )
+        else:
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+            )
+            return
+
+        if arg_count > 1:
+            if isinstance(args[1], (tuple, list)):
+                if len(args[1]) == 3:
+                    util_edit_embed_args.update(
+                        title=args[1][0],
+                        url=args[1][1],
+                        thumbnail_url=args[1][2],
+                    )
+
+                elif len(args[1]) == 2:
+                    util_edit_embed_args.update(
+                        title=args[1][0],
+                        url=args[1][1],
+                    )
+
+                elif len(args[1]) == 1:
+                    util_edit_embed_args.update(
+                        title=args[1][0],
+                    )
+
+            else:
+                util_edit_embed_args.update(
+                    title=args[1],
+                )
+
+        if arg_count > 2:
+            if isinstance(args[2], (tuple, list)):
+                if len(args[2]) == 2:
+                    util_edit_embed_args.update(
+                        description=args[2][0],
+                        image_url=args[2][1],
+                    )
+
+                elif len(args[2]) == 1:
+                    util_edit_embed_args.update(
+                        description=args[2][0],
+                    )
+
+            else:
+                util_edit_embed_args.update(
+                    description=args[2],
+                )
+
+        if arg_count > 3:
+            util_edit_embed_args.update(
+                color=args[3],
+            )
+
+        if arg_count > 4:
+            util_edit_embed_args.update(
+                fields=args[4]
+            )
+
+        if arg_count > 5:
+            if isinstance(args[5], (tuple, list)):
+                if len(args[5]) == 2:
+                    util_edit_embed_args.update(
+                        footer_text=args[5][0],
+                        footer_icon_url=args[5][1],
+                    )
+
+                elif len(args[5]) == 1:
+                    util_edit_embed_args.update(
+                        footer_text=args[5][0],
+                    )
+
+            else:
+                util_edit_embed_args.update(
+                    footer_text=args[5],
+                )
+
+        if arg_count > 6:
+            util_edit_embed_args.update(timestamp=args[6])
+
+        await util.update_embed_2(edit_msg, edit_msg_embed, **util_edit_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+    async def cmd_emsudo_get(self):
+        """
+        Get the embed of a message as a dictionary in a text file.
+        """
+        self.check_args(1)
+        msg_id = self.args[0]
+        embed_dicts = []
+        if msg_id.isnumeric():
+            try:
+                msg = await self.invoke_msg.channel.fetch_message(msg_id)
+                print("message recieved")
+            except discord.NotFound:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+        else:
+            await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+            )
+            return
+        
+        embed_dicts = tuple(emb.to_dict() for emb in msg.embeds)
+        if not embed_dicts:
+            await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+            )
+            return
+        with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
+            embed_txt.write("\n".join(repr(ed) for ed in embed_dicts))
+
+        os.system("black embeddata.txt")
+
+        await self.response_msg.channel.send(file=discord.File("embeddata.txt"))
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
