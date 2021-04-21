@@ -1,7 +1,10 @@
 import asyncio
 import os
+import platform
 import random
+import sys
 import time
+import traceback
 
 import discord
 import pygame
@@ -9,10 +12,15 @@ import pygame
 from . import clock, common, docs, emotion, sandbox, util
 
 
+class ArgError(Exception):
+    pass
+
+
 class UserCommand:
     """
     Base class to handle user commands.
     """
+
     def __init__(self):
         """
         Initialise UserCommand class
@@ -35,26 +43,58 @@ class UserCommand:
 
         cmd_str = invoke_msg.content[len(common.PREFIX):].lstrip()
         self.args = cmd_str.split()
-        cmd = self.args.pop(0)
+        cmd = self.args.pop(0) if self.args else ""
         self.string = cmd_str[len(cmd):].strip()
         self.is_priv = is_priv
 
         try:
             await self.cmds_and_funcs[cmd]()
-            return True
-        except (KeyError, RuntimeError):
-            return False
+
+        except Exception as exc:
+            if isinstance(exc, ArgError):
+                title = "Incorrect amount of argument(s)!"
+                msg = exc.args[0]
+
+            elif isinstance(exc, KeyError):
+                title = "Unrecognized command!"
+                msg = f"Make sure that the command '{cmd}' exists, " + \
+                    "and you have the permission to use it"
+
+            else:
+                error_tuple = (type(exc), exc, exc.__traceback__)
+                title = "An exception occured while handling the command!"
+
+                tbs = traceback.format_exception(*error_tuple)
+                # Pop out the first entry in the traceback, because that's
+                # this function call itself
+                tbs.pop(1)
+
+                elog = "This error is most likely caused due to a bug in " + \
+                    "the bot itself. Here is the traceback:\n"
+                elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
+                if platform.system() == "Windows":
+                    elog = elog.replace(
+                        os.path.dirname(sys.executable), "Python"
+                    )
+
+                msg = util.code_block(elog)
+
+            await util.edit_embed(resp_msg, title, msg, 0xFF0000)
 
     def check_args(self, minarg, maxarg=None):
         """
         A utility for a function to check that the correct number of args were
         passed
         """
+        exp = f"between {minarg} and {maxarg}"
         if maxarg is None:
-            maxarg = minarg
+            exp = maxarg = minarg
 
-        if not (minarg <= len(self.args) <= maxarg):
-            raise RuntimeError()
+        got = len(self.args)
+        if not (minarg <= got <= maxarg):
+            raise ArgError(
+                f"The number of arguments must be {exp} but {got} were given"
+            )
 
     async def cmd_version(self):
         """
@@ -76,7 +116,7 @@ class UserCommand:
         common.cmd_logs[self.invoke_msg.id] = \
             await self.response_msg.channel.send(
                 file=discord.File(f"temp{t}.png")
-            )
+        )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
@@ -86,8 +126,8 @@ class UserCommand:
         """
         self.check_args(1)
 
-        title, body = docs.get(self.args[0])
-        await util.edit_embed(self.response_msg, title, body)
+        await docs.put_doc(self.args[0], self.invoke_msg.channel)
+        await self.response_msg.delete()
 
     async def cmd_exec(self):
         """
@@ -101,7 +141,7 @@ class UserCommand:
 
         tstamp = time.perf_counter_ns()
         returned = await sandbox.exec_sandbox(code, tstamp, 10 if self.is_priv else 5)
-        duration = returned.duration  # the execution time of the script alone
+        dur = returned.duration  # the execution time of the script alone
 
         if returned.exc is None:
             if returned.img:
@@ -117,40 +157,18 @@ class UserCommand:
                     )
                 os.remove(f"temp{tstamp}.png")
 
-            str_repr = str(returned.text).replace(
-                "```", common.ESC_BACKTICK_3X
+            await util.edit_embed(
+                self.response_msg,
+                f"Returned text (code executed in {util.format_time(dur)}):",
+                util.code_block(returned.text)
             )
 
-            if len(str_repr) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    f"Returned text (code executed in {util.format_time(duration)}):",
-                    "```\n" + str_repr + "```",
-                )
-
         else:
-            exp = ", ".join(
-                map(str, returned.exc.args)
-            ).replace("```", common.ESC_BACKTICK_3X)
-
-            if len(exp) + 11 > 2048:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp[:2037] + " ...```",
-                )
-            else:
-                await util.edit_embed(
-                    self.response_msg,
-                    common.EXC_TITLES[1],
-                    "```\n" + exp + "```"
-                )
+            await util.edit_embed(
+                self.response_msg,
+                common.EXC_TITLES[1],
+                util.code_block(", ".join(map(str, returned.exc.args)))
+            )
 
     async def cmd_help(self):
         """
@@ -171,7 +189,7 @@ class UserCommand:
         """
         self.check_args(0)
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
-                emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
         ) - common.PET_COST
 
         if emotion.pet_anger < common.PET_COST:
@@ -184,8 +202,8 @@ class UserCommand:
             "",
             "",
             0xFFFFAA,
-            "https://raw.githubusercontent.com/PygameCommunityDiscord/" +
-            f"PygameCommunityBot/main/assets/images/{fname}"
+            "https://raw.githubusercontent.com/PygameCommunityDiscord/"
+            + f"PygameCommunityBot/main/assets/images/{fname}"
         )
 
     async def cmd_vibecheck(self):
@@ -196,8 +214,8 @@ class UserCommand:
         await util.edit_embed(
             self.response_msg,
             "Vibe Check, snek?",
-            f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}" +
-            f"\nIt was last pet {util.format_long_time(round(time.time() - emotion.last_pet))} ago",
+            f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}"
+            + f"\nIt was last pet {util.format_long_time(round(time.time() - emotion.last_pet))} ago",
         )
 
     async def cmd_sorry(self):
@@ -220,16 +238,16 @@ class UserCommand:
             await util.edit_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
-                "Your pythonic lord accepts your apology.\n" +
-                f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
+                "Your pythonic lord accepts your apology.\n"
+                + f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
             )
         else:
             await util.edit_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
-                "How did you dare to boncc a snake?\nBold of you to assume " +
-                "I would apologize to you, two-feet-standing being!\nThe " +
-                f"boncc count is {emotion.boncc_count}"
+                "How did you dare to boncc a snake?\nBold of you to assume "
+                + "I would apologize to you, two-feet-standing being!\nThe "
+                + f"boncc count is {emotion.boncc_count}"
             )
 
     async def cmd_bonkcheck(self):
