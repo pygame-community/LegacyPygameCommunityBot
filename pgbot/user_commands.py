@@ -98,6 +98,7 @@ class UserCommand:
 
     async def cmd_version(self):
         """
+        ->skip
         Implement pg!version, to report bot version
         """
         self.check_args(0)
@@ -107,6 +108,10 @@ class UserCommand:
 
     async def cmd_clock(self):
         """
+        ->type Get help
+        ->signature pg!clock
+        ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
+        -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
         self.check_args(0)
@@ -122,6 +127,10 @@ class UserCommand:
 
     async def cmd_doc(self):
         """
+        ->type Get help
+        ->signature pg!doc [module.Class.method]
+        ->description Look up the docstring of a Python/Pygame object, e.g str or pygame.Rect
+        -----
         Implement pg!doc, to view documentation
         """
         self.check_args(1)
@@ -131,6 +140,22 @@ class UserCommand:
 
     async def cmd_exec(self):
         """
+        ->type Run code
+        ->signature pg!exec [python code block]
+        ->description Run python code in an isolated environment.
+        ->extended description
+        Import is not available. Various methods of builtin objects have been disabled for security reasons.
+        The available preimported modules are:
+        `math, cmath, random, re, time, string, itertools, pygame`
+        To show an image, overwrite `output.img` to a surface (see example command).
+        To make it easier to read and write code use code blocks (see [HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)).
+        ->example command pg!exec \`\`\`py ```py
+        # Draw a red rectangle on a transparent surface
+        output.img = pygame.Surface((200, 200)).convert_alpha()
+        output.img.fill((0, 0, 0, 0))
+        pygame.draw.rect(output.img, (200, 0, 0), (50, 50, 100, 100))```
+        \`\`\`
+        -----
         Implement pg!exec, for execution of python code
         """
         code = self.string.lstrip('`').rstrip('`')
@@ -172,19 +197,30 @@ class UserCommand:
 
     async def cmd_help(self):
         """
+        ->type Get help
+        ->signature pg!help [command]
+        ->description Ask me for help
+        ->example command pg!help help
+        -----
         Implement pg!help, to display a help message
         """
-        self.check_args(0)
-        await util.edit_embed(
-            self.response_msg,
-            common.BOT_HELP_PROMPT["title"],
-            common.BOT_HELP_PROMPT["body"],
-            color=common.BOT_HELP_PROMPT["color"],
-            fields=common.BOT_HELP_PROMPT["fields"]
-        )
+        self.check_args(0, 1)
+
+        if len(self.args) == 0:
+            await util.send_help_message(self.response_msg, self.cmds_and_funcs)
+        else:
+            await util.send_help_message(
+                self.response_msg,
+                self.cmds_and_funcs,
+                self.args[0]
+            )
 
     async def cmd_pet(self):
         """
+        ->type Play With Me :snake: 
+        ->signature pg!pet
+        ->description Pet me :3 . Don't pet me too much or I will get mad.
+        -----
         Implement pg!pet, to pet the bot
         """
         self.check_args(0)
@@ -208,6 +244,10 @@ class UserCommand:
 
     async def cmd_vibecheck(self):
         """
+        ->type Play With Me :snake:
+        ->signature pg!vibecheck
+        ->description Check my mood.
+        -----
         Implement pg!vibecheck, to check if the bot is angry
         """
         self.check_args(0)
@@ -220,6 +260,11 @@ class UserCommand:
 
     async def cmd_sorry(self):
         """
+        ->type Play With Me :snake:
+        ->signature pg!sorry
+        ->description You were hitting me <:pg_bonk:780423317718302781> and you're now trying to apologize?
+        Let's see what I'll say :unamused:
+        -----
         Implement pg!sorry, to ask forgiveness from the bot after bonccing it
         """
         self.check_args(0)
@@ -252,6 +297,10 @@ class UserCommand:
 
     async def cmd_bonkcheck(self):
         """
+        ->type Play With Me :snake:
+        ->signature pg!bonkcheck
+        ->description Check how many times you have done me harm.
+        -----
         Implement pg!bonkcheck, to check how much the snek has been boncced
         """
         self.check_args(0)

@@ -1,7 +1,6 @@
 import asyncio
 import discord
 import re
-import datetime as dt
 from datetime import datetime
 from discord.embeds import EmptyEmbed
 from . import common
@@ -94,7 +93,17 @@ def filter_id(mention: str):
 
 
 def get_embed_fields(messages):
-    # syntax: <Field|Title|desc.[|inline=False]>
+    """
+    Get a list of fields from messages.
+    Syntax of embeds: <title|desc|[inline]>
+
+    Args:
+        messages (List[str]): The messages to get the fields from
+
+    Returns:
+        List[List[str, str, bool]]: The list of fields
+    """
+    # syntax: <|Title|desc.[|inline=False]>
     field_regex = r"(<\|.*\|.*(\|True|\|False|)>)"
     field_datas = []
 
@@ -115,6 +124,147 @@ def get_embed_fields(messages):
                 field_datas.append(field_data[1:])
 
     return field_datas
+
+def get_doc_from_docstr(string, regex):
+    """
+    Get the type, signature, description and other information
+    from docstrings.
+
+    Args:
+        string (str): The string to check
+        regex (re.Pattern): The pattern to use
+
+    Returns:
+        Dict[str] or Dict[]: The type, signature and description of
+        the string. An empty dict will be returned if the string begins
+        with "->skip" or there was no information found
+    """
+    data = {}
+    if not string:
+        return {}
+
+    string = string.strip()
+
+    if string.startswith("->skip"):
+        return {}
+
+    string = string.split("-----")[0]
+
+    finds = regex.findall(string)
+    current_key = ""
+    if finds:
+        for find in finds:
+            if find[0].startswith("->"):
+                current_key = find[0][2:].strip()
+                continue
+
+            if not current_key:
+                continue
+
+            # remove useless whitespace
+            value = re.sub("  +", "", find[1].strip())
+            data[current_key] = value
+            current_key = ""
+
+    return data
+
+async def send_help_message(original_msg, functions, command=None):
+    """
+    Edit original_msg to a help message. If command is supplied it will
+    only show information about that specific command. Otherwise sends
+    the general help embed.
+
+    Args:
+        original_msg (discord.Message): The message to edit
+
+        functions (dict[str, callable]): The name-function pairs to get
+        the docstrings from
+
+        command (str, optional): The command to send the description about.
+        Defaults to None.
+    """
+    regex = re.compile(
+        # If you add a new "section" to this regex dont forget the "|" at the end
+        # Does not have to be in the same order in the docs as in here.
+        r"(->type|"
+        r"->signature|"
+        r"->description|"
+        r"->example command|"
+        r"->extended description\n|"
+        r"\Z)|(((?!->).|\n)*)"
+    )
+    newline = "\n"
+    fields = {}
+
+    if not command:
+        for func_name in functions:
+            docstring = functions[func_name].__doc__
+            data = get_doc_from_docstr(docstring, regex)
+            if not data:
+                continue
+
+            if not fields.get(data["type"]):
+                fields[data["type"]] = ["", "", True]
+
+            fields[data["type"]][0] += f"{data['signature'][2:]}{newline}"
+            fields[data["type"]][1] += (
+                f"`{data['signature']}`{newline}"
+                f"{data['description']}{newline*2}"
+            )
+
+        for field_name in fields:
+            value = fields[field_name]
+            value[1] = f"```{value[0]}```{newline*2}{value[1]}"
+            value[0] = f"__**{field_name}**__"
+
+        await edit_embed(
+            original_msg,
+            common.BOT_HELP_PROMPT["title"],
+            common.BOT_HELP_PROMPT["body"],
+            color=common.BOT_HELP_PROMPT["color"],
+            fields=list(fields.values())
+        )
+
+        return
+
+    else:
+        for func_name in functions:
+            if func_name != command:
+                continue
+
+            doc = get_doc_from_docstr(
+                functions[func_name].__doc__,
+                regex
+            )
+
+            if not doc:
+                # function found, but does not have help.
+                break
+
+            body = f"`{doc['signature']}`{newline}"
+            body += f"`Category: {doc['type']}`{newline*2}"
+
+            desc = doc['description']
+            if ext_desc := doc.get("extended description"):
+                desc += " " + ext_desc
+
+            body += f"**Description:**{newline}{desc}"
+
+            if example_cmd := doc.get("example command"):
+                body += f"{newline*2}**Example command:**{newline}{example_cmd}"
+
+            await edit_embed(
+                original_msg,
+                f"Help for `{func_name}`",
+                body
+            )
+            return
+
+    await edit_embed(
+        original_msg,
+        "Command not found",
+        f"Help message for command {command} was not found or has no documentation."
+    )
 
 
 async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None, fields=[]):

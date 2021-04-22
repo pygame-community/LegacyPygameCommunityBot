@@ -86,16 +86,6 @@ async def on_member_join(member: discord.Member):
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
 
-    if member.name.lower().strip() == "nexus":
-        user_detected = await common.bot.fetch_user(member.id)
-        await member.ban(reason="Bot detected Nexus")
-        ban_appeal_embed = discord.Embed(color=discord.Color.red,
-                                         description="The bot has detected you as Nexus. "
-                                                     "If you aren't Nexus, submit a ban appeal here:\n"
-                                                     "[Ban Appeal](http://gg.gg/pygame-community-discord-ban-appeal)")
-        await user_detected.send(embed=ban_appeal_embed)
-
-
 @common.bot.event
 async def on_message(msg: discord.Message):
     """
@@ -123,7 +113,7 @@ async def on_message(msg: discord.Message):
         except discord.HTTPException:
             pass
 
-    if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
+    if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
             entry_type = "showcase"
             color = 0xFF8800

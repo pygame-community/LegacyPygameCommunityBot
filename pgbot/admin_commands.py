@@ -17,6 +17,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_eval(self):
         """
+        ->type Admin commands
+        ->signature pg!eval [command]
+        ->description Execute a line of command without restrictions
+        -----
         Implement pg!eval, for admins to run arbitrary code on the bot
         """
         try:
@@ -42,6 +46,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_sudo(self):
         """
+        ->type More admin commands
+        ->signature pg!sudo [message]
+        ->description Send a message trough the bot
+        -----
         Implement pg!sudo, for admins to send messages via the bot
         """
         await self.invoke_msg.channel.send(self.string)
@@ -50,6 +58,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_sudo_edit(self):
         """
+        ->type More admin commands
+        ->signature pg!sudo_edit [message_id] [message]
+        ->description Edit a message that the bot sent.
+        -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
         edit_msg = await self.invoke_msg.channel.fetch_message(
@@ -61,6 +73,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_heap(self):
         """
+        ->type Admin commands
+        ->signature pg!heap
+        ->description Show the memory usage of the bot
+        -----
         Implement pg!heap, for admins to check memory taken up by the bot
         """
         self.check_args(0)
@@ -73,6 +89,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_stop(self):
         """
+        ->type Admin commands
+        ->signature pg!stop
+        ->description Stop the bot
+        -----
         Implement pg!stop, for admins to stop the bot
         """
         self.check_args(0)
@@ -85,6 +105,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo(self):
         """
+        ->type More admin commands
+        ->signature pg!emsudo [*args]
+        ->description Send an embed trough the bot
+        -----
         Implement pg!emsudo, for admins to send embeds via the bot
         """
         args = eval(self.string)
@@ -149,6 +173,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_edit(self):
         """
+        ->type More admin commands
+        ->signature pg!emsudo_edit [message_id] [*args]
+        ->description Edit an embed sent by the bot
+        -----
         Implement pg!emsudo_edit, for admins to edit embeds via the bot
         """
         args = eval(self.string)
@@ -216,6 +244,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_2(self):
         """
+        ->type More admin commands
+        ->signature pg!emsudo_2 [*args]
+        ->description Send an embed trough the bot
+        -----
         Implement pg!emsudo_2, for admins to send embeds via the bot
         """
 
@@ -345,6 +377,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_edit_2(self):
         """
+        ->type More admin commands
+        ->signature pg!emsudo_edit_2 [*args]
+        ->description Edit an embed sent by the bot
+        -----
         Implement pg!emsudo_edit_2, for admins to edit embeds sent via the bot
         """
 
@@ -479,6 +515,10 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_archive(self):
         """
+        ->type Admin commands
+        ->signature pg!archive [*args]
+        ->description Archive messages to another channel
+        -----
         Implement pg!archive, for admins to archive messages
         """
         self.check_args(3)

@@ -163,62 +163,13 @@ ILLEGAL_ATTRIBUTES = (
 
 BOT_HELP_PROMPT = {
     "title": "Help",
+    "color": 0xFFFF00,
 
     "body": f"""
 Hey there, do you want to use <@{BOT_ID}> ?
-My command prefix is `pg`.
+My command prefix is `{PREFIX}`.
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting **[HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
+If you want to know about a specifc command run {PREFIX}help [command], for example {PREFIX}help exec.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
-
-    "color": 0xFFFF00,
-
-    "fields": (
-        ("__**Get Help**__", """
-```
-!help
-!doc
-!clock
-```
-`pg!help`
-Ask me for help
-
-`pg!doc [module.Class.method]`
-Look up the docstring of a Python/Pygame object, e.g `str` or `pygame.Rect`
-
-`pg!clock`
-24 Hour Clock showing <@&778205389942030377> 's
-who are available to help
-""", True),
-        ("__**Run Code**__", """
-```
-!exec
-```
-`pg!exec
-[python code block]`
-Run python code in an isolated environment.
-`import` is not available. Various methods of builtin objects have been disabled for security reasons.
-The available preimported modules are:
-`math, cmath, random, re, time, string, itertools, pygame`.
-""", True),
-        ("__**Play With Me :snake: **__", """
-```
-!pet
-!vibecheck
-!sorry
-!bonkcheck
-```
-`pg!pet`
-Pet me :3 . Don't pet me too much or I will get mad.
-
-`pg!vibecheck`
-Check my mood.
-
-`pg!sorry`
-You were hitting me <:pg_bonk:780423317718302781>, and you're now trying to apologize? Let's see what I'll say :unamused:
-
-`pg!bonkcheck`
-Check how many times you have done me harm.
-""", True),
-    ),
 }

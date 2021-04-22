@@ -27,4 +27,6 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
             elif role.id in common.PRIV_ROLES:
                 is_priv = True
 
-    await cmd.handle_cmd(invoke_msg, response_msg, is_priv)
+    if not common.TEST_MODE \
+        or common.TEST_MODE and isinstance(cmd, admin_commands.AdminCommand):
+        await cmd.handle_cmd(invoke_msg, response_msg, is_priv)
