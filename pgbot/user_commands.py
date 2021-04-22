@@ -48,14 +48,14 @@ class UserCommand:
         self.is_priv = is_priv
 
         title = "Unrecognized command!"
-        msg = f"Make sure that the command '{cmd}' exists, " + \
-               "and you have the permission to use it"
+        msg = f"Make sure that the command '{cmd}' exists, and you have " + \
+            "the permission to use it"
         try:
-            if cmd in self.cmds_and_func:
+            if cmd in self.cmds_and_funcs:
                 await self.cmds_and_funcs[cmd]()
                 return
-        
-        except ArgError:
+
+        except ArgError as exc:
             title = "Incorrect amount of arguments!"
             msg = exc.args[0]
 
