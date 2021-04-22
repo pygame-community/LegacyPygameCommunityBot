@@ -47,39 +47,38 @@ class UserCommand:
         self.string = cmd_str[len(cmd):].strip()
         self.is_priv = is_priv
 
+        title = "Unrecognized command!"
+        msg = f"Make sure that the command '{cmd}' exists, " + \
+               "and you have the permission to use it"
         try:
-            await self.cmds_and_funcs[cmd]()
+            if cmd in self.cmds_and_func:
+                await self.cmds_and_funcs[cmd]()
+                return
+        
+        except ArgError:
+            title = "Incorrect amount of arguments!"
+            msg = exc.args[0]
 
         except Exception as exc:
-            if isinstance(exc, ArgError):
-                title = "Incorrect amount of arguments!"
-                msg = exc.args[0]
+            title = "An exception occured while handling the command!"
 
-            elif isinstance(exc, KeyError):
-                title = "Unrecognized command!"
-                msg = f"Make sure that the command '{cmd}' exists, " + \
-                    "and you have the permission to use it"
+            error_tuple = (type(exc), exc, exc.__traceback__)
+            tbs = traceback.format_exception(*error_tuple)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
 
-            else:
-                error_tuple = (type(exc), exc, exc.__traceback__)
-                title = "An exception occured while handling the command!"
+            elog = "This error is most likely caused due to a bug in " + \
+                "the bot itself. Here is the traceback:\n"
+            elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
+            if platform.system() == "Windows":
+                elog = elog.replace(
+                    os.path.dirname(sys.executable), "Python"
+                )
 
-                tbs = traceback.format_exception(*error_tuple)
-                # Pop out the first entry in the traceback, because that's
-                # this function call itself
-                tbs.pop(1)
+            msg = util.code_block(elog)
 
-                elog = "This error is most likely caused due to a bug in " + \
-                    "the bot itself. Here is the traceback:\n"
-                elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
-                if platform.system() == "Windows":
-                    elog = elog.replace(
-                        os.path.dirname(sys.executable), "Python"
-                    )
-
-                msg = util.code_block(elog)
-
-            await util.edit_embed(resp_msg, title, msg, 0xFF0000)
+        await util.edit_embed(resp_msg, title, msg, 0xFF0000)
 
     def check_args(self, minarg, maxarg=None):
         """
