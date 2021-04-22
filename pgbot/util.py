@@ -252,10 +252,10 @@ async def update_embed_2(
     old_embed_dict = embed.to_dict()
     update_embed_dict = update_embed.to_dict()
 
-    if "author" in old_embed_dict and update_embed_dict:
+    if "author" in old_embed_dict and "author" in update_embed_dict:
         old_embed_dict["author"].update(update_embed_dict["author"])
     
-    if "footer" in old_embed_dict and update_embed_dict:
+    if "footer" in old_embed_dict and "footer" in update_embed_dict:
         old_embed_dict["footer"].update(update_embed_dict["footer"])
         
     old_embed_dict.update(update_embed_dict)
@@ -280,7 +280,7 @@ async def edit_embed_from_dict(message, data):
 
 async def update_embed_from_dict(message, embed, data):
     """
-    Updates the changed attributes of the embed of a message with a much more tight function
+    Updates the changed attributes of the embed of a message from a dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
     update_embed_dict = data
