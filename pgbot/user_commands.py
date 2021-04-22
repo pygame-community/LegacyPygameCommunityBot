@@ -11,11 +11,6 @@ import pygame
 
 from . import clock, common, docs, emotion, sandbox, util
 
-
-class ArgError(Exception):
-    pass
-
-
 class UserCommand:
     """
     Base class to handle user commands.
@@ -55,7 +50,7 @@ class UserCommand:
                 await self.cmds_and_funcs[cmd]()
                 return
 
-        except ArgError as exc:
+        except util.ArgError as exc:
             title = "Incorrect amount of arguments!"
             msg = exc.args[0]
 
@@ -91,7 +86,7 @@ class UserCommand:
 
         got = len(self.args)
         if not (minarg <= got <= maxarg):
-            raise ArgError(
+            raise util.ArgError(
                 f"The number of arguments must be {exp} but {got} were given"
             )
 
