@@ -236,6 +236,77 @@ class AdminCommand(user_commands.UserCommand):
             await self.response_msg.delete()
             await self.invoke_msg.delete()
             return
+        
+        elif isinstance(args, int):
+            try:
+                attachment_msg = await self.invoke_msg.channel.fetch_message(
+                args
+                )
+            except discord.NotFound:
+                await util.edit_embed(
+                self.response_msg,
+                "Invalid message id!",
+                ""
+                )
+                return
+            
+            if not attachment_msg.attachments:
+                await util.edit_embed(
+                self.response_msg,
+                "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                ""
+                )
+                return
+
+            for attachment in attachment_msg.attachments:
+                if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    attachment_obj = attachment
+                    break
+            else:
+                await util.edit_embed(
+                self.response_msg,
+                "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                ""
+                )
+                return
+            
+            txt_dict = await attachment_obj.read()
+            embed_dict = eval(txt_dict.decode())
+            await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
+            await self.response_msg.delete()
+            await self.invoke_msg.delete()
+            return
+        
+        elif isinstance(args, str) and not args:
+            attachment_msg = self.invoke_msg
+
+            if not attachment_msg.attachments:
+                await util.edit_embed(
+                self.response_msg,
+                "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                ""
+                )
+                return
+
+            for attachment in attachment_msg.attachments:
+                if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    attachment_obj = attachment
+                    break
+            else:
+                await util.edit_embed(
+                self.response_msg,
+                "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                ""
+                )
+                return
+            
+            txt_dict = await attachment_obj.read()
+            embed_dict = eval(txt_dict.decode())
+            await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
+            await self.response_msg.delete()
+            await self.invoke_msg.delete()
+            return
+            
 
         arg_count = len(args)
 
@@ -355,6 +426,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
+
     async def cmd_emsudo_edit_2(self):
         """
         Implement pg!emsudo_edit_2, for admins to edit embeds sent via the bot
@@ -368,9 +440,17 @@ class AdminCommand(user_commands.UserCommand):
 
         args = eval(self.string)
 
-        edit_msg = await self.invoke_msg.channel.fetch_message(
-            args[0]
-        )
+        try:
+            edit_msg = await self.invoke_msg.channel.fetch_message(
+                args[0]
+            )
+        except (discord.NotFound, IndexError, ValueError):
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+            )
+            return
 
         args = args[1:]
         arg_count = len(args)
@@ -395,6 +475,76 @@ class AdminCommand(user_commands.UserCommand):
 
             elif isinstance(args[0], dict):
                 await util.edit_embed_from_dict(edit_msg, args[0])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            elif isinstance(args[0], int):
+                try:
+                    attachment_msg = await self.invoke_msg.channel.fetch_message(
+                    args[0]
+                    )
+                except discord.NotFound:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+                
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.edit_embed_from_dict(edit_msg, embed_dict)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+            
+            elif isinstance(args[0], str) and not args[0]:
+                attachment_msg = self.invoke_msg
+
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.edit_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -510,9 +660,17 @@ class AdminCommand(user_commands.UserCommand):
 
         args = eval(self.string)
 
-        edit_msg = await self.invoke_msg.channel.fetch_message(
-            args[0]
-        )
+        try:
+            edit_msg = await self.invoke_msg.channel.fetch_message(
+                args[0]
+            )
+        except (discord.NotFound, IndexError, ValueError):
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+            )
+            return
 
         if not edit_msg.embeds:
             await util.edit_embed(
@@ -547,6 +705,76 @@ class AdminCommand(user_commands.UserCommand):
 
             elif isinstance(args[0], dict):
                 await util.update_embed_from_dict(edit_msg, edit_msg_embed, args[0])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            elif isinstance(args[0], int):
+                try:
+                    attachment_msg = await self.invoke_msg.channel.fetch_message(
+                    args[0]
+                    )
+                except discord.NotFound:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+                
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.update_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+            
+            elif isinstance(args[0], str) and not args[0]:
+                attachment_msg = self.invoke_msg
+
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.update_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
