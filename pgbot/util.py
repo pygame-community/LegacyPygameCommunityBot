@@ -262,6 +262,7 @@ async def update_embed_2(
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
+
 async def send_embed_from_dict(channel, data):
     """
     Sends an embed from a dictionary with a much more tight function
@@ -275,6 +276,25 @@ async def edit_embed_from_dict(message, data):
     function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
+
+
+async def update_embed_from_dict(message, embed, data):
+    """
+    Updates the changed attributes of the embed of a message with a much more tight function
+    """
+    old_embed_dict = embed.to_dict()
+    update_embed_dict = data
+
+    if "author" in old_embed_dict and update_embed_dict:
+        old_embed_dict["author"].update(update_embed_dict["author"])
+    
+    if "footer" in old_embed_dict and update_embed_dict:
+        old_embed_dict["footer"].update(update_embed_dict["footer"])
+        
+    old_embed_dict.update(update_embed_dict)
+
+    return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
+
 
 
 def format_entries_message(message, entry_type):

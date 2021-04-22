@@ -522,7 +522,7 @@ class AdminCommand(user_commands.UserCommand):
                     )
 
             elif isinstance(args[0], dict):
-                await util.edit_embed_from_dict(edit_msg, args[0])
+                await util.update_embed_from_dict(edit_msg, edit_msg_embed, args[0])
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
