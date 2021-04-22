@@ -1168,6 +1168,113 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
     
 
+    async def cmd_emsudo_remove_field(self):
+        """
+        Implement pg!emsudo_remove_field, for admins to remove fields in embeds sent via the bot
+        """
+
+        self.check_args(2)
+            
+        try:
+            edit_msg_id = int(self.args[0])
+        except ValueError:
+            await util.edit_embed(
+            self.response_msg,
+            "Invalid arguments! A valid integer message id followed by an index is required.",
+            ""
+            )
+            return
+
+        try:
+            edit_msg = await self.invoke_msg.channel.fetch_message(
+                edit_msg_id
+            )
+        except discord.NotFound:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "Invalid message id!"
+            )
+            return
+
+        if not edit_msg.embeds:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "No embed data found in message."
+            )
+            return
+        
+        edit_msg_embed = edit_msg.embeds[0]
+
+        try:
+            field_index = int(self.args[1])
+        except ValueError:
+            await util.edit_embed(
+            self.response_msg,
+            "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
+            ""
+            )
+            return
+            
+        try:
+            await util.remove_embed_field(edit_msg, edit_msg_embed, field_index)
+        except IndexError:
+            await util.edit_embed(
+            self.response_msg,
+            "Invalid field index!",
+            ""
+            )
+            return
+        
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
+    async def cmd_emsudo_clear_fields(self):
+        """
+        Implement pg!emsudo_clear_fields, for admins to remove fields in embeds sent via the bot
+        """
+
+        self.check_args(1)
+
+        try:
+            edit_msg_id = int(self.args[0])
+        except ValueError:
+            await util.edit_embed(
+            self.response_msg,
+            "Invalid argument! A valid integer message id is required.",
+            ""
+            )
+            return
+        
+        try:
+            edit_msg = await self.invoke_msg.channel.fetch_message(
+                edit_msg_id
+            )
+        except discord.NotFound:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "Invalid message id!"
+            )
+            return
+
+        if not edit_msg.embeds:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "No embed data found in message."
+            )
+            return
+        
+        edit_msg_embed = edit_msg.embeds[0]
+
+        await util.clear_embed_fields(edit_msg, edit_msg_embed)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
     async def cmd_emsudo_get(self):
         """
         Implement pg!_emsudo_get, to return the embed of a message as a dictionary in a text file.
@@ -1241,11 +1348,11 @@ class AdminCommand(user_commands.UserCommand):
             file=discord.File("embeddata.txt")
         )
         await self.response_msg.delete()
+    
 
-
-    async def cmd_emsudo_repeat(self):
+    async def cmd_emsudo_clone(self):
         """
-        Implement pg!_emsudo_repeat, to Get the embed of a message and send it.
+        Implement pg!_emsudo_clone, to Get the embed of a message and send it.
         """
         self.check_args(1, maxarg=2)
 

@@ -328,6 +328,22 @@ async def insert_embed_field_from_dict(message, embed, field_dict, index):
     return await message.edit(embed=embed)
 
 
+async def remove_embed_field(message, embed, index):
+    """
+    Removes an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.remove_field(index)
+    return await message.edit(embed=embed)
+
+
+async def clear_embed_fields(message, embed):
+    """
+    Removes all embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.clear_fields()
+    return await message.edit(embed=embed)
+
+
 
 def format_entries_message(message, entry_type):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
