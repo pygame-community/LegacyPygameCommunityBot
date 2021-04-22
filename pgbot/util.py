@@ -2,12 +2,13 @@ import asyncio
 import datetime as dt
 import re
 from datetime import datetime
-
 import discord
 from discord.embeds import EmptyEmbed
 
 from . import common
 
+class ArgError(Exception):
+    pass
 
 def format_time(seconds: float, decimal_places: int = 4):
     """
@@ -97,24 +98,24 @@ def filter_id(mention: str):
 
 def get_embed_fields(messages):
     # syntax: <Field|Title|desc.[|inline=False]>
-    field_regex = r"(<\|.*\|.*(\|True|\|False|)>)"
+    field_regex = r"(<.*\|.*(\|True|\|False|)>)"
     field_datas = []
 
     for message in messages:
         field_list = re.split(field_regex, message)
         for field in field_list:
             if field:
-                field = field[1:-1]
+                field = field.lstrip().rstrip()[1:-1]  #remove < and >
                 field_data = field.split("|")
 
-                if len(field_data) not in [3, 4]:
+                if len(field_data) not in (2, 3):
                     continue
-                if len(field_data) == 3:
+                elif len(field_data) == 2:
                     field_data.append("")
 
-                field_data[3] = True if field_data[3] == "True" else False
+                field_data[2] = True if field_data[2] == "True" else False
 
-                field_datas.append(field_data[1:])
+                field_datas.append(field_data)
 
     return field_datas
 
@@ -294,6 +295,53 @@ async def update_embed_from_dict(message, embed, data):
     old_embed_dict.update(update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
+
+
+async def update_embed_field_from_dict(message, embed, field_dict, index):
+    """
+    Updates an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.set_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+async def add_embed_field_from_dict(message, embed, field_dict):
+    """
+    Adds an embed field to the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.add_field(name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+async def insert_embed_field_from_dict(message, embed, field_dict, index):
+    """
+    Inserts an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.insert_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+
+async def remove_embed_field(message, embed, index):
+    """
+    Removes an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.remove_field(index)
+    return await message.edit(embed=embed)
+
+
+async def clear_embed_fields(message, embed):
+    """
+    Removes all embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.clear_fields()
+    return await message.edit(embed=embed)
 
 
 
