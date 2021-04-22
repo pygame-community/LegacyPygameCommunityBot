@@ -11,11 +11,6 @@ import pygame
 
 from . import clock, common, docs, emotion, sandbox, util
 
-
-class ArgError(Exception):
-    pass
-
-
 class UserCommand:
     """
     Base class to handle user commands.
@@ -35,7 +30,7 @@ class UserCommand:
         self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv
     ):
         """
-        Calles the appropriate sub function to handle commands.
+        Calls the appropriate sub function to handle commands.
         Must return True on successful command execution, False otherwise
         """
         self.invoke_msg = invoke_msg
@@ -47,39 +42,38 @@ class UserCommand:
         self.string = cmd_str[len(cmd):].strip()
         self.is_priv = is_priv
 
+        title = "Unrecognized command!"
+        msg = f"Make sure that the command '{cmd}' exists, and you have " + \
+            "the permission to use it"
         try:
-            await self.cmds_and_funcs[cmd]()
+            if cmd in self.cmds_and_funcs:
+                await self.cmds_and_funcs[cmd]()
+                return
+
+        except util.ArgError as exc:
+            title = "Incorrect amount of arguments!"
+            msg = exc.args[0]
 
         except Exception as exc:
-            if isinstance(exc, ArgError):
-                title = "Incorrect amount of argument(s)!"
-                msg = exc.args[0]
+            title = "An exception occured while handling the command!"
 
-            elif isinstance(exc, KeyError):
-                title = "Unrecognized command!"
-                msg = f"Make sure that the command '{cmd}' exists, " + \
-                    "and you have the permission to use it"
+            error_tuple = (type(exc), exc, exc.__traceback__)
+            tbs = traceback.format_exception(*error_tuple)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
 
-            else:
-                error_tuple = (type(exc), exc, exc.__traceback__)
-                title = "An exception occured while handling the command!"
+            elog = "This error is most likely caused due to a bug in " + \
+                "the bot itself. Here is the traceback:\n"
+            elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
+            if platform.system() == "Windows":
+                elog = elog.replace(
+                    os.path.dirname(sys.executable), "Python"
+                )
 
-                tbs = traceback.format_exception(*error_tuple)
-                # Pop out the first entry in the traceback, because that's
-                # this function call itself
-                tbs.pop(1)
+            msg = util.code_block(elog)
 
-                elog = "This error is most likely caused due to a bug in " + \
-                    "the bot itself. Here is the traceback:\n"
-                elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
-                if platform.system() == "Windows":
-                    elog = elog.replace(
-                        os.path.dirname(sys.executable), "Python"
-                    )
-
-                msg = util.code_block(elog)
-
-            await util.edit_embed(resp_msg, title, msg, 0xFF0000)
+        await util.edit_embed(resp_msg, title, msg, 0xFF0000)
 
     def check_args(self, minarg, maxarg=None):
         """
@@ -92,7 +86,7 @@ class UserCommand:
 
         got = len(self.args)
         if not (minarg <= got <= maxarg):
-            raise ArgError(
+            raise util.ArgError(
                 f"The number of arguments must be {exp} but {got} were given"
             )
 
@@ -135,8 +129,8 @@ class UserCommand:
         """
         self.check_args(1)
 
-        title, body = docs.get(self.args[0])
-        await util.edit_embed(self.response_msg, title, body)
+        await docs.put_doc(self.args[0], self.invoke_msg.channel)
+        await self.response_msg.delete()
 
     async def cmd_exec(self):
         """

@@ -1,10 +1,13 @@
 import asyncio
-import discord
 import re
 from datetime import datetime
+import discord
 from discord.embeds import EmptyEmbed
+
 from . import common
 
+class ArgError(Exception):
+    pass
 
 def format_time(seconds: float, decimal_places: int = 4):
     """
@@ -103,25 +106,25 @@ def get_embed_fields(messages):
     Returns:
         List[List[str, str, bool]]: The list of fields
     """
-    # syntax: <|Title|desc.[|inline=False]>
-    field_regex = r"(<\|.*\|.*(\|True|\|False|)>)"
+    # syntax: <Title|desc.[|inline=False]>
+    field_regex = r"(<.*\|.*(\|True|\|False|)>)"
     field_datas = []
 
     for message in messages:
         field_list = re.split(field_regex, message)
         for field in field_list:
             if field:
-                field = field[1:-1]
+                field = field.lstrip().rstrip()[1:-1]  #remove < and >
                 field_data = field.split("|")
 
-                if len(field_data) not in [3, 4]:
+                if len(field_data) not in (2, 3):
                     continue
-                if len(field_data) == 3:
+                elif len(field_data) == 2:
                     field_data.append("")
 
-                field_data[3] = True if field_data[3] == "True" else False
+                field_data[2] = True if field_data[2] == "True" else False
 
-                field_datas.append(field_data[1:])
+                field_datas.append(field_data)
 
     return field_datas
 
@@ -364,6 +367,52 @@ async def edit_embed_2(
 
     return await message.edit(embed=embed)
 
+async def update_embed_2(
+    message, embed, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+):
+    """
+    Updates the changed attributes of the embed of a message with a much more tight function
+    """
+
+    update_embed = discord.Embed(
+        title=title, type=embed_type, url=url, description=description, color=color
+    )
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed.timestamp = datetime.fromisoformat(timestamp)
+        else:
+            embed.timestamp = timestamp
+
+    if author_name:
+        embed.set_author(name=author_name, url=author_url,
+                         icon_url=author_icon_url)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+
+    if image_url:
+        embed.set_image(url=image_url)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    old_embed_dict = embed.to_dict()
+    update_embed_dict = update_embed.to_dict()
+
+    if "author" in old_embed_dict and "author" in update_embed_dict:
+        old_embed_dict["author"].update(update_embed_dict["author"])
+    
+    if "footer" in old_embed_dict and "footer" in update_embed_dict:
+        old_embed_dict["footer"].update(update_embed_dict["footer"])
+        
+    old_embed_dict.update(update_embed_dict)
+
+    return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
+
 
 async def send_embed_from_dict(channel, data):
     """
@@ -374,9 +423,76 @@ async def send_embed_from_dict(channel, data):
 
 async def edit_embed_from_dict(message, data):
     """
-    Edits the embed of a message from a dictionary with a much more tight function
+    Edits the embed of a message from a dictionary with a much more tight 
+    function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
+
+
+async def update_embed_from_dict(message, embed, data):
+    """
+    Updates the changed attributes of the embed of a message from a dictionary with a much more tight function
+    """
+    old_embed_dict = embed.to_dict()
+    update_embed_dict = data
+
+    if "author" in old_embed_dict and update_embed_dict:
+        old_embed_dict["author"].update(update_embed_dict["author"])
+    
+    if "footer" in old_embed_dict and update_embed_dict:
+        old_embed_dict["footer"].update(update_embed_dict["footer"])
+        
+    old_embed_dict.update(update_embed_dict)
+
+    return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
+
+
+async def update_embed_field_from_dict(message, embed, field_dict, index):
+    """
+    Updates an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.set_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+async def add_embed_field_from_dict(message, embed, field_dict):
+    """
+    Adds an embed field to the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.add_field(name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+async def insert_embed_field_from_dict(message, embed, field_dict, index):
+    """
+    Inserts an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.insert_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+
+async def remove_embed_field(message, embed, index):
+    """
+    Removes an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.remove_field(index)
+    return await message.edit(embed=embed)
+
+
+async def clear_embed_fields(message, embed):
+    """
+    Removes all embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    embed.clear_fields()
+    return await message.edit(embed=embed)
+
 
 
 def format_entries_message(message, entry_type):

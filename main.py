@@ -1,11 +1,11 @@
-from pgbot import commands, common, moderation, util
-import pygame
-import discord
 import asyncio
 import os
 import random
 
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import discord
+import pygame
+
+from pgbot import commands, common, emotion, util
 
 
 @common.bot.event
@@ -94,9 +94,6 @@ async def on_message(msg: discord.Message):
     if msg.author.bot:
         return
 
-    if await moderation.check_sus(msg):
-        return
-
     if msg.content.startswith(common.PREFIX):
         try:
             response = await util.send_embed(
@@ -112,6 +109,8 @@ async def on_message(msg: discord.Message):
                 del common.cmd_logs[common.cmd_logs.keys()[0]]
         except discord.HTTPException:
             pass
+    else:
+        await emotion.check_bonk(msg)
 
     if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
@@ -154,19 +153,18 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
     if new.author.bot:
         return
 
-    if await moderation.check_sus(new):
-        return
-
     if new.content.startswith(common.PREFIX):
         try:
             if new.id in common.cmd_logs.keys():
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
+    else:
+        await emotion.check_bonk(new)
 
 
 if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    pygame.init()
+    pygame.init()  # pylint: disable=no-member
     common.window = pygame.display.set_mode((1, 1))
     common.bot.run(common.TOKEN)

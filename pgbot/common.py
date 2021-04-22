@@ -1,5 +1,4 @@
 import os
-
 import discord
 from dotenv import load_dotenv
 import pygame
@@ -104,6 +103,8 @@ CLOCK_TIMEZONES = [
 
 ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
+
+DOC_EMBED_LIMIT = 3
 
 ROLE_PROMPT = {
     "title": [
