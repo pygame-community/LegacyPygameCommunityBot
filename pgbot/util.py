@@ -224,8 +224,9 @@ async def update_embed_2(
     Updates the changed attributes of the embed of a message with a much more tight function
     """
 
-    update_embed = discord.Embed(title=title, type=embed_type,
-                          url=url, description=description, color=color)
+    update_embed = discord.Embed(
+        title=title, type=embed_type, url=url, description=description, color=color
+    )
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -249,7 +250,15 @@ async def update_embed_2(
     embed.set_footer(text=footer_text, icon_url=footer_icon_url)
 
     old_embed_dict = embed.to_dict()
-    old_embed_dict.update(update_embed.to_dict())
+    update_embed_dict = update_embed.to_dict()
+
+    if "author" in old_embed_dict and update_embed_dict:
+        old_embed_dict["author"].update(update_embed_dict["author"])
+    
+    if "footer" in old_embed_dict and update_embed_dict:
+        old_embed_dict["footer"].update(update_embed_dict["footer"])
+        
+    old_embed_dict.update(update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
