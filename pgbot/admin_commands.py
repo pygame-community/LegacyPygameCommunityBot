@@ -775,16 +775,16 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_edit_2(self):
+    async def cmd_emsudo_replace_2(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo_edit_2 [*args]
+        ->signature pg!emsudo_replace_2 [*args]
         ->description Edit an embed sent by the bot
         -----
-        Implement pg!emsudo_edit_2, for admins to edit embeds sent via the bot
+        Implement pg!emsudo_replace_2, for admins to edit embeds sent via the bot
         """
 
-        util_edit_embed_args = dict(
+        util_replace_embed_args = dict(
             embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
             title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
@@ -885,18 +885,18 @@ class AdminCommand(user_commands.UserCommand):
         if arg_count > 0:
             if isinstance(args[0], (tuple, list)):
                 if len(args[0]) == 3:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         author_name=args[0][0],
                         author_url=args[0][1],
                         author_icon_url=args[0][2],
                     )
                 elif len(args[0]) == 2:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         author_name=args[0][0],
                         author_url=args[0][1],
                     )
                 elif len(args[0]) == 1:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         author_name=args[0][0],
                     )
 
@@ -977,7 +977,7 @@ class AdminCommand(user_commands.UserCommand):
                 return
 
             else:
-                util_edit_embed_args.update(
+                util_replace_embed_args.update(
                     author_name=args[0],
                 )
         else:
@@ -991,54 +991,54 @@ class AdminCommand(user_commands.UserCommand):
         if arg_count > 1:
             if isinstance(args[1], (tuple, list)):
                 if len(args[1]) == 3:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         title=args[1][0],
                         url=args[1][1],
                         thumbnail_url=args[1][2],
                     )
 
                 elif len(args[1]) == 2:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         title=args[1][0],
                         url=args[1][1],
                     )
 
                 elif len(args[1]) == 1:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         title=args[1][0],
                     )
 
             else:
-                util_edit_embed_args.update(
+                util_replace_embed_args.update(
                     title=args[1],
                 )
 
         if arg_count > 2:
             if isinstance(args[2], (tuple, list)):
                 if len(args[2]) == 2:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         description=args[2][0],
                         image_url=args[2][1],
                     )
 
                 elif len(args[2]) == 1:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         description=args[2][0],
                     )
 
             else:
-                util_edit_embed_args.update(
+                util_replace_embed_args.update(
                     description=args[2],
                 )
 
         if arg_count > 3:
-            util_edit_embed_args.update(
+            util_replace_embed_args.update(
                 color=args[3],
             )
 
         if arg_count > 4:
             try:
-                util_edit_embed_args.update(
+                util_replace_embed_args.update(
                     fields=util.get_embed_fields(args[4])
                 )
             except TypeError:
@@ -1052,31 +1052,31 @@ class AdminCommand(user_commands.UserCommand):
         if arg_count > 5:
             if isinstance(args[5], (tuple, list)):
                 if len(args[5]) == 2:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         footer_text=args[5][0],
                         footer_icon_url=args[5][1],
                     )
 
                 elif len(args[5]) == 1:
-                    util_edit_embed_args.update(
+                    util_replace_embed_args.update(
                         footer_text=args[5][0],
                     )
 
             else:
-                util_edit_embed_args.update(
+                util_replace_embed_args.update(
                     footer_text=args[5],
                 )
 
         if arg_count > 6:
-            util_edit_embed_args.update(timestamp=args[6])
+            util_replace_embed_args.update(timestamp=args[6])
 
-        await util.replace_embed_2(edit_msg, **util_edit_embed_args)
+        await util.replace_embed_2(edit_msg, **util_replace_embed_args)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_emsudo_update_2(self):
+    async def cmd_emsudo_edit_2(self):
         """
-        Implement pg!emsudo_update_2, for admins to update parts of embeds sent via the bot
+        Implement pg!emsudo_edit_2, for admins to update parts of embeds sent via the bot
         """
 
         util_edit_embed_args = dict(
@@ -1391,9 +1391,9 @@ class AdminCommand(user_commands.UserCommand):
 
 
 
-    async def cmd_emsudo_update_field_2(self):
+    async def cmd_emsudo_edit_field_2(self):
         """
-        Implement pg!emsudo_update_field_2, for admins to update fields of embeds sent via the bot
+        Implement pg!emsudo_edit_field_2, for admins to update fields of embeds sent via the bot
         """
 
         try:
