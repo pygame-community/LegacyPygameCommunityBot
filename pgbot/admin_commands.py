@@ -733,7 +733,7 @@ class AdminCommand(user_commands.UserCommand):
 
         if arg_count > 3:
             if args[3] > -1:
-                util_edit_embed_args.update(
+                util_send_embed_args.update(
                     color=args[3],
                 )
 
@@ -1089,7 +1089,7 @@ class AdminCommand(user_commands.UserCommand):
 
         if arg_count > 3:
             if args[3] > -1:
-                util_edit_embed_args.update(
+                util_add_embed_args.update(
                     color=args[3],
                 )
 
@@ -2624,7 +2624,7 @@ class AdminCommand(user_commands.UserCommand):
             return
         
         with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
-            embed_txt.write("\n".join(repr(ed) for ed in embed_dicts))
+            embed_txt.write("\n".join(repr( {k:ed[k] for k in reversed(ed.keys())} ) for ed in embed_dicts))
 
         os.system("black -q embeddata.txt")
 
