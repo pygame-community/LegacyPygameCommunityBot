@@ -224,7 +224,7 @@ async def send_help_message(original_msg, functions, command=None):
             value[1] = f"```{value[0]}```{newline*2}{value[1]}"
             value[0] = f"__**{field_name}**__"
 
-        await edit_embed(
+        await replace_embed(
             original_msg,
             common.BOT_HELP_PROMPT["title"],
             common.BOT_HELP_PROMPT["body"],
@@ -260,7 +260,7 @@ async def send_help_message(original_msg, functions, command=None):
             if example_cmd := doc.get("example command"):
                 body += f"{newline*2}**Example command:**{newline}{example_cmd}"
 
-            await edit_embed(
+            await replace_embed(
                 original_msg,
                 f"Help for `{func_name}`",
                 body,
@@ -268,14 +268,14 @@ async def send_help_message(original_msg, functions, command=None):
             )
             return
 
-    await edit_embed(
+    await replace_embed(
         original_msg,
         "Command not found",
         f"Help message for command {command} was not found or has no documentation."
     )
 
 
-async def edit_embed(message, title, description, color=0xFFFFAA, url_image=None, fields=[]):
+async def replace_embed(message, title, description, color=0xFFFFAA, url_image=None, fields=[]):
     """
     Edits the embed of a message with a much more tight function
     """
@@ -338,12 +338,12 @@ async def send_embed_2(
     return await channel.send(embed=embed)
 
 
-async def edit_embed_2(
+async def replace_embed_2(
     message, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
 ):
     """
-    Edits the embed of a message with a much more tight function
+    Replaces the embed of a message with a much more tight function
     """
 
     embed = discord.Embed(title=title, type=embed_type,
@@ -373,7 +373,7 @@ async def edit_embed_2(
     return await message.edit(embed=embed)
 
 
-async def update_embed_2(
+async def edit_embed_2(
     message, embed, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
 ):
@@ -427,17 +427,17 @@ async def send_embed_from_dict(channel, data):
     return await channel.send(embed=discord.Embed.from_dict(data))
 
 
-async def edit_embed_from_dict(message, data):
+async def replace_embed_from_dict(message, data):
     """
-    Edits the embed of a message from a dictionary with a much more tight 
+    Replaces the embed of a message from a dictionary with a much more tight 
     function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def update_embed_from_dict(message, embed, data):
+async def edit_embed_from_dict(message, embed, data):
     """
-    Updates the changed attributes of the embed of a message from a dictionary with a much more tight function
+    Edits the changed attributes of the embed of a message from a dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
     update_embed_dict = data
@@ -453,7 +453,7 @@ async def update_embed_from_dict(message, embed, data):
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
-async def update_embed_field_from_dict(message, embed, field_dict, index):
+async def edit_embed_field_from_dict(message, embed, field_dict, index):
     """
     Updates an embed field of the embed of a message from a dictionary with a much more tight function
     """
