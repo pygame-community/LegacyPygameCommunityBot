@@ -86,7 +86,6 @@ async def on_member_join(member: discord.Member):
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
 
-
 @common.bot.event
 async def on_message(msg: discord.Message):
     """
@@ -113,7 +112,7 @@ async def on_message(msg: discord.Message):
     else:
         await emotion.check_bonk(msg)
 
-    if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
+    if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
             entry_type = "showcase"
             color = 0xFF8800
