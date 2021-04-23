@@ -75,6 +75,73 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
+    async def cmd_sudo_clone(self):
+        """
+        Implement pg!sudo_clone, to get the content of a message and send it.
+        """
+        self.check_args(1, maxarg=2)
+
+        src_msg_id = None
+        src_msg = None
+        src_channel_id = self.invoke_msg.channel.id
+        src_channel = self.invoke_msg.channel
+
+        if len(self.args) == 2:
+            try:
+                src_channel_id = int(self.args[0])
+                src_msg_id = int(self.args[1])
+            except ValueError:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return
+            
+            src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+            if src_channel is None:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid channel id!"
+                )
+                return
+        else:
+            try:
+                src_msg_id = int(self.args[0])
+            except ValueError:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+        try:
+            src_msg: discord.Message = await src_channel.fetch_message(src_msg_id)
+        except discord.NotFound:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "Invalid message id!"
+            )
+            return
+
+        msg_files = None
+
+        if src_msg.attachments:
+            msg_files = []
+            for att in src_msg.attachments:
+                att_file = await att.to_file()
+                msg_files.append(att_file)
+        
+        await self.response_msg.channel.send(
+            content=src_msg.content,
+            embed=src_msg.embeds[0] if src_msg.embeds else None,
+            files=msg_files
+        )
+        
+        await self.response_msg.delete()
+
     async def cmd_heap(self):
         """
         ->type Admin commands
@@ -261,6 +328,57 @@ class AdminCommand(user_commands.UserCommand):
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
         )
 
+        if len(self.args) == 2:
+            if self.args[0].isnumeric() and self.args[1].isnumeric():
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[0]))
+
+                if not src_channel:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[1])
+                    )
+                except discord.NotFound:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+        
         args = eval(self.string)
 
         if isinstance(args, dict):
@@ -474,6 +592,69 @@ class AdminCommand(user_commands.UserCommand):
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
         )
 
+        if len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.edit_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
+
+                if not src_channel:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except discord.NotFound:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.edit_embed_from_dict(edit_msg, embed_dict)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+        
         args = eval(self.string)
 
         try:
@@ -693,6 +874,79 @@ class AdminCommand(user_commands.UserCommand):
             title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
             color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
         )
+
+        if len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.edit_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.edit_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+        
+                edit_msg_embed = edit_msg.embeds[0]
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
+
+                if not src_channel:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except discord.NotFound:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                await util.update_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
 
         args = eval(self.string)
 
@@ -1619,7 +1873,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_clone(self):
         """
-        Implement pg!_emsudo_clone, to Get the embed of a message and send it.
+        Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
         self.check_args(1, maxarg=2)
 
@@ -1665,6 +1919,14 @@ class AdminCommand(user_commands.UserCommand):
             self.response_msg,
             "Cannot execute command:",
             "Invalid message id!"
+            )
+            return
+        
+        if not src_msg.embeds:
+            await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
             )
             return
         
