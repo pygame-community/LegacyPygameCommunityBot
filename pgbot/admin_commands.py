@@ -1588,7 +1588,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
         
                 edit_msg_embed = edit_msg.embeds[0]
-                
+
                 try:
                     attachment_msg = await src_channel.fetch_message(
                         int(self.args[1])
@@ -1623,7 +1623,7 @@ class AdminCommand(user_commands.UserCommand):
                 
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
-                await util.replace_embed_from_dict(edit_msg, embed_dict)
+                await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
