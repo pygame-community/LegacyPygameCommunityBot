@@ -1505,7 +1505,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_get(self):
         """
-        Implement pg!_emsudo_get, to return the embed of a message as a dictionary in a text file.
+        Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
         self.check_args(1, maxarg=2)
 
@@ -1572,7 +1572,10 @@ class AdminCommand(user_commands.UserCommand):
         os.system("black -q embeddata.txt")
 
         await self.response_msg.channel.send(
-            content=f"*(Embed data from message at <https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*",
+            content="".join((
+                "Embed title: **{0}** \n*(Source: ".format(embed_dicts[0].get("title", "N/A")),
+                f"<https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*"
+            )),
             file=discord.File("embeddata.txt")
         )
         await self.response_msg.delete()
