@@ -335,13 +335,13 @@ class AdminCommand(user_commands.UserCommand):
         )
         sys.exit(0)
 
-    async def cmd_emsudo(self):
+    async def cmd_emsudo_c(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo [*args]
+        ->signature pg!emsudo_c [*args]
         ->description Send an embed trough the bot
         -----
-        Implement pg!emsudo, for admins to send embeds via the bot
+        Implement pg!emsudo_c, for admins to send embeds via the bot
         """
         try:
             args = eval(self.string)
@@ -415,13 +415,13 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_emsudo_edit(self):
+    async def cmd_emsudo_edit_c(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo_edit [message_id] [*args]
+        ->signature pg!emsudo_edit_c [message_id] [*args]
         ->description Edit an embed sent by the bot
         -----
-        Implement pg!emsudo_edit, for admins to edit embeds via the bot
+        Implement pg!emsudo_edit_c, for admins to edit embeds via the bot
         """
         try:
             args = eval(self.string)
@@ -498,13 +498,13 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_emsudo_2(self):
+    async def cmd_emsudo(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo_2 [*args]
+        ->signature pg!emsudo [*args]
         ->description Send an embed trough the bot
         -----
-        Implement pg!emsudo_2, for admins to send embeds via the bot
+        Implement pg!emsudo, for admins to send embeds via the bot
         """
 
         util_send_embed_args = dict(
@@ -775,13 +775,13 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_add_2(self):
+    async def cmd_emsudo_add(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo_add_2 [*args]
+        ->signature pg!emsudo_add [*args]
         ->description Edit an embed sent by the bot
         -----
-        Implement pg!emsudo_add_2, for admins to add embeds to messages sent via the bot
+        Implement pg!emsudo_add, for admins to add embeds to messages sent via the bot
         """
 
         util_add_embed_args = dict(
@@ -1130,13 +1130,13 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_replace_2(self):
+    async def cmd_emsudo_replace(self):
         """
         ->type More admin commands
-        ->signature pg!emsudo_replace_2 [*args]
+        ->signature pg!emsudo_replace [*args]
         ->description Edit an embed sent by the bot
         -----
-        Implement pg!emsudo_replace_2, for admins to edit embeds sent via the bot
+        Implement pg!emsudo_replace, for admins to edit embeds sent via the bot
         """
 
         util_replace_embed_args = dict(
@@ -1485,9 +1485,9 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
     
 
-    async def cmd_emsudo_edit_2(self):
+    async def cmd_emsudo_edit(self):
         """
-        Implement pg!emsudo_edit_2, for admins to update parts of embeds sent via the bot
+        Implement pg!emsudo_edit, for admins to update parts of embeds sent via the bot
         """
 
         util_edit_embed_args = dict(
@@ -1867,7 +1867,7 @@ class AdminCommand(user_commands.UserCommand):
 
 
 
-    async def cmd_emsudo_replace_field_2(self):
+    async def cmd_emsudo_replace_field(self):
         """
         Implement pg!emsudo_replace_field_2, for admins to update fields of embeds sent via the bot
         """
@@ -1987,7 +1987,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_insert_field_2(self):
+    async def cmd_emsudo_insert_field(self):
         """
         Implement pg!emsudo_insert_field_2, for admins to insert fields into embeds sent via the bot
         """
@@ -2107,7 +2107,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_insert_fields_2(self):
+    async def cmd_emsudo_insert_fields(self):
         """
         Implement pg!emsudo_insert_fields_2, for admins to insert multiple fields to embeds sent via the bot
         """
@@ -2232,7 +2232,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_add_field_2(self):
+    async def cmd_emsudo_add_field(self):
         """
         Implement pg!emsudo_add_field_2, for admins to add fields to embeds sent via the bot
         """
@@ -2334,7 +2334,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_add_fields_2(self):
+    async def cmd_emsudo_add_fields(self):
         """
         Implement pg!emsudo_add_fields_2, for admins to add multiple fields to embeds sent via the bot
         """

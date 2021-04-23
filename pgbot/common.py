@@ -37,7 +37,7 @@ BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
 
 # Constants
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
