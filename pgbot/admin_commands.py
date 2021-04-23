@@ -76,7 +76,6 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-
     async def cmd_sudo_get(self):
         """
         ->type More admin commands
@@ -146,7 +145,6 @@ class AdminCommand(user_commands.UserCommand):
             file=discord.File("messagedata.txt")
         )
         await self.response_msg.delete()
-
 
     async def cmd_sudo_clone(self):
         """
@@ -328,7 +326,6 @@ class AdminCommand(user_commands.UserCommand):
         )
         
         await self.response_msg.delete()
-
 
     async def cmd_heap(self):
         """
@@ -527,7 +524,6 @@ class AdminCommand(user_commands.UserCommand):
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-
 
     async def cmd_emsudo(self):
         """
@@ -1941,6 +1937,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
+
     async def cmd_emsudo_replace_field(self):
         """
         ->type More admin commands
@@ -2862,7 +2859,6 @@ class AdminCommand(user_commands.UserCommand):
             await self.response_msg.channel.send(embed=embed)
         
         await self.response_msg.delete()
-
 
     async def cmd_archive(self):
         """
