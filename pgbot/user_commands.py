@@ -11,6 +11,7 @@ import pygame
 
 from . import clock, common, docs, emotion, sandbox, util
 
+
 class UserCommand:
     """
     Base class to handle user commands.
@@ -44,7 +45,7 @@ class UserCommand:
 
         title = "Unrecognized command!"
         msg = f"Make sure that the command '{cmd}' exists, and you have " + \
-            "the permission to use it"
+            "the permission to use it. \nFor help on bot commands, do `pg!help`"
         try:
             if cmd in self.cmds_and_funcs:
                 await self.cmds_and_funcs[cmd]()
@@ -53,6 +54,7 @@ class UserCommand:
         except util.ArgError as exc:
             title = "Incorrect amount of arguments!"
             msg = exc.args[0]
+            msg += f" \nFor help on this bot command, do `pg!help {cmd}`"
 
         except Exception as exc:
             title = "An exception occured while handling the command!"

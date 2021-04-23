@@ -6,7 +6,7 @@ import pygame
 from .common import CLOCK_TIMEZONES
 
 
-def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0/3.0):
+def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0 / 3.0):
     """
     Flexible function for calculating the coordinates
     for an arrow polygon defined by a position and direction
@@ -94,7 +94,8 @@ def user_clock(t):
     names_per_column = 5
     image_height = 1280 + font_size * names_per_column
     image = pygame.Surface((1280, image_height)).convert_alpha()
-    font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), font_size-10)
+    font = pygame.font.Font(os.path.join(
+        "assets", "tahoma.ttf"), font_size - 10)
     font.bold = True
 
     image.fill((0, 0, 0, 0))
