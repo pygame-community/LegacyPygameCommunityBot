@@ -6,8 +6,10 @@ from discord.embeds import EmptyEmbed
 
 from . import common
 
+
 class ArgError(Exception):
     pass
+
 
 def format_time(seconds: float, decimal_places: int = 4):
     """
@@ -114,7 +116,7 @@ def get_embed_fields(messages):
         field_list = re.split(field_regex, message)
         for field in field_list:
             if field:
-                field = field.lstrip().rstrip()[1:-1]  #remove < and >
+                field = field.strip()[1:-1]  # remove < and >
                 field_data = field.split("|")
 
                 if len(field_data) not in (2, 3):
@@ -127,6 +129,7 @@ def get_embed_fields(messages):
                 field_datas.append(field_data)
 
     return field_datas
+
 
 def get_doc_from_docstr(string, regex):
     """
@@ -170,6 +173,7 @@ def get_doc_from_docstr(string, regex):
             current_key = ""
 
     return data
+
 
 async def send_help_message(original_msg, functions, command=None):
     """
@@ -259,7 +263,8 @@ async def send_help_message(original_msg, functions, command=None):
             await edit_embed(
                 original_msg,
                 f"Help for `{func_name}`",
-                body
+                body,
+                0xFFFF00
             )
             return
 
@@ -367,6 +372,7 @@ async def edit_embed_2(
 
     return await message.edit(embed=embed)
 
+
 async def update_embed_2(
     message, embed, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
@@ -405,10 +411,10 @@ async def update_embed_2(
 
     if "author" in old_embed_dict and "author" in update_embed_dict:
         old_embed_dict["author"].update(update_embed_dict["author"])
-    
+
     if "footer" in old_embed_dict and "footer" in update_embed_dict:
         old_embed_dict["footer"].update(update_embed_dict["footer"])
-        
+
     old_embed_dict.update(update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
@@ -438,10 +444,10 @@ async def update_embed_from_dict(message, embed, data):
 
     if "author" in old_embed_dict and update_embed_dict:
         old_embed_dict["author"].update(update_embed_dict["author"])
-    
+
     if "footer" in old_embed_dict and update_embed_dict:
         old_embed_dict["footer"].update(update_embed_dict["footer"])
-        
+
     old_embed_dict.update(update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
@@ -451,29 +457,34 @@ async def update_embed_field_from_dict(message, embed, field_dict, index):
     """
     Updates an embed field of the embed of a message from a dictionary with a much more tight function
     """
-    
+
     if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.set_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+        embed.set_field_at(
+            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
 
     return await message.edit(embed=embed)
+
 
 async def add_embed_field_from_dict(message, embed, field_dict):
     """
     Adds an embed field to the embed of a message from a dictionary with a much more tight function
     """
-    
+
     if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.add_field(name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+        embed.add_field(
+            name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
 
     return await message.edit(embed=embed)
+
 
 async def insert_embed_field_from_dict(message, embed, field_dict, index):
     """
     Inserts an embed field of the embed of a message from a dictionary with a much more tight function
     """
-    
+
     if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.insert_field_at(index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+        embed.insert_field_at(
+            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
 
     return await message.edit(embed=embed)
 
@@ -492,7 +503,6 @@ async def clear_embed_fields(message, embed):
     """
     embed.clear_fields()
     return await message.edit(embed=embed)
-
 
 
 def format_entries_message(message, entry_type):
