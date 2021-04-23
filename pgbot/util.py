@@ -436,10 +436,10 @@ async def update_embed_from_dict(message, embed, data):
     old_embed_dict = embed.to_dict()
     update_embed_dict = data
 
-    if "author" in old_embed_dict and update_embed_dict:
+    if "author" in old_embed_dict and "author" in update_embed_dict:
         old_embed_dict["author"].update(update_embed_dict["author"])
     
-    if "footer" in old_embed_dict and update_embed_dict:
+    if "footer" in old_embed_dict and "footer" in update_embed_dict:
         old_embed_dict["footer"].update(update_embed_dict["footer"])
         
     old_embed_dict.update(update_embed_dict)
