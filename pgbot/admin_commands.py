@@ -1391,9 +1391,9 @@ class AdminCommand(user_commands.UserCommand):
 
 
 
-    async def cmd_emsudo_update_field_2(self):
+    async def cmd_emsudo_edit_field_2(self):
         """
-        Implement pg!emsudo_update_field_2, for admins to update fields of embeds sent via the bot
+        Implement pg!emsudo_edit_field_2, for admins to update fields of embeds sent via the bot
         """
 
         try:
