@@ -80,11 +80,13 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_get(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_get {message_id}
-                    pg!emsudo_get {channel_id} {message_id}
-                    ``
-        ->description
+        ->signature pg!sudo_get [*args]
+        ->description Get the text of a message through the bot
+        ->extended description
+        ```
+        pg!sudo_get {message_id}
+        pg!sudo_get {channel_id} {message_id}
+        ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         -----
         Implement pg!sudo_get, to return the the contents of a message in a text file.
@@ -149,15 +151,17 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_clone(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!sudo_clone {message_id}
-                    pg!sudo_clone {channel_id} {message_id}
-                    pg!sudo_clone {message_id} {include_embeds_bool}
-                    pg!sudo_clone {channel_id} {message_id} {include_embeds_bool}
-                    pg!sudo_clone {message_id} {include_embeds_bool} {include_attachments_bool}
-                    pg!sudo_clone {channel_id} {message_id} {include_embeds_bool} {include_attachments_bool}
-                    ``
-        ->description
+        ->signature pg!sudo_clone [*args]
+        ->description Clone a message through the bot
+        ->extended description
+        ```
+        pg!sudo_clone {message_id}
+        pg!sudo_clone {channel_id} {message_id}
+        pg!sudo_clone {message_id} {include_embeds_bool}
+        pg!sudo_clone {channel_id} {message_id} {include_embeds_bool}
+        pg!sudo_clone {message_id} {include_embeds_bool} {include_attachments_bool}
+        pg!sudo_clone {channel_id} {message_id} {include_embeds_bool} {include_attachments_bool}
+        ```
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
@@ -342,6 +346,7 @@ class AdminCommand(user_commands.UserCommand):
             f"**{util.format_byte(mem, 4)}**\n({mem} B)"
         )
 
+
     async def cmd_stop(self):
         """
         ->type Admin commands
@@ -357,6 +362,7 @@ class AdminCommand(user_commands.UserCommand):
             "Change da world,\nMy final message,\nGoodbye."
         )
         sys.exit(0)
+
 
     async def cmd_emsudo_c(self):
         """
@@ -437,6 +443,7 @@ class AdminCommand(user_commands.UserCommand):
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
+
 
     async def cmd_emsudo_edit_c(self):
         """
@@ -525,14 +532,16 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo {embed_tuple}
-                    pg!emsudo {embed_dict}
-                    pg!emsudo {message_id}
-                    pg!emsudo {channel_id} {message_id}
-                    pg!emsudo {empty_str}
-                    ``
-        ->description
+        ->signature pg!emsudo [*args]
+        ->description Send an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo {embed_tuple}
+        pg!emsudo {embed_dict}
+        pg!emsudo {message_id}
+        pg!emsudo {channel_id} {message_id}
+        pg!emsudo {empty_str}
+        ```
         Generate an embed from the given arguments and send it with a message to the channel where this command was invoked.
         -----
         Implement pg!emsudo, for admins to send embeds via the bot
@@ -810,17 +819,19 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_add(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_add ({target_message_id}, *{embed_tuple})
-                    pg!emsudo_add ({target_message_id}, {embed_dict})
-                    pg!emsudo_add {target_message_id} {message_id}
-                    pg!emsudo_add {target_message_id} {channel_id} {message_id}
-                    pg!emsudo_add ({target_message_id}, {empty_str})
-                    ``
-        ->description
-        Replace the embed of a message (even if it doesn't have any) in the channel where this command was invoked using the given arguments.
+        ->signature pg!emsudo_add [*args]
+        ->description Add an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_add ({target_message_id}, *{embed_tuple})
+        pg!emsudo_add ({target_message_id}, {embed_dict})
+        pg!emsudo_add {target_message_id} {message_id}
+        pg!emsudo_add {target_message_id} {channel_id} {message_id}
+        pg!emsudo_add ({target_message_id}, {empty_str})
+        ```
+        Add an embed to a message (even if it has one, it will be replaced) in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo, for admins to send embeds via the bot
+        Implement pg!emsudo_add, for admins to add embeds to messages via the bot
         """
 
         util_add_embed_args = dict(
@@ -1173,17 +1184,19 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_replace(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_replace ({target_message_id}, *{embed_tuple})
-                    pg!emsudo_replace ({target_message_id}, {embed_dict})
-                    pg!emsudo_replace {target_message_id} {message_id}
-                    pg!emsudo_replace {target_message_id} {channel_id} {message_id}
-                    pg!emsudo_replace ({target_message_id}, {empty_str})
-                    ``
-        ->description
+        ->signature pg!emsudo_replace [*args]
+        ->description Replace an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_replace ({target_message_id}, *{embed_tuple})
+        pg!emsudo_replace ({target_message_id}, {embed_dict})
+        pg!emsudo_replace {target_message_id} {message_id}
+        pg!emsudo_replace {target_message_id} {channel_id} {message_id}
+        pg!emsudo_replace ({target_message_id}, {empty_str})
+        ```
         Replace the embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo, for admins to send embeds via the bot
+        Implement pg!emsudo_replace, for admins to replace embeds via the bot
         """
 
         util_replace_embed_args = dict(
@@ -1536,17 +1549,19 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_edit(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_edit ({target_message_id}, *{embed_tuple})
-                    pg!emsudo_edit ({target_message_id}, {embed_dict})
-                    pg!emsudo_edit {target_message_id} {message_id}
-                    pg!emsudo_edit {target_message_id} {channel_id} {message_id}
-                    pg!emsudo_edit ({target_message_id}, {empty_str})
-                    ``
-        ->description
+        ->signature pg!emsudo_edit [*args]
+        ->description Edit an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_edit ({target_message_id}, *{embed_tuple})
+        pg!emsudo_edit ({target_message_id}, {embed_dict})
+        pg!emsudo_edit {target_message_id} {message_id}
+        pg!emsudo_edit {target_message_id} {channel_id} {message_id}
+        pg!emsudo_edit ({target_message_id}, {empty_str})
+        ```
         Update the given attributes of an embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo, for admins to send embeds via the bot
+        Implement pg!emsudo_edit, for admins to replace embeds via the bot
         """
 
         util_edit_embed_args = dict(
@@ -1929,11 +1944,13 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_replace_field(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_replace_field ({target_message_id}, {index}, {field_string})
-                    pg!emsudo_replace_field ({target_message_id}, {index}, {field_dict})
-                    ``
-        ->description
+        ->signature pg!emsudo_replace [*args]
+        ->description Replace an embed field through the bot
+        ->extended description
+        ```
+        pg!emsudo_replace_field ({target_message_id}, {index}, {field_string})
+        pg!emsudo_replace_field ({target_message_id}, {index}, {field_dict})
+        ```
         Replace an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_replace_field, for admins to update fields of embeds sent via the bot
@@ -2057,14 +2074,16 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_insert_field(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_insert_field ({target_message_id}, {index}, {field_string})
-                    pg!emsudo_insert_field ({target_message_id}, {index}, {field_dict})
-                    ``
-        ->description
+        ->signature pg!emsudo_insert_field [*args]
+        ->description Insert an embed field through the bot
+        ->extended description
+        ```
+        pg!emsudo_insert_field ({target_message_id}, {index}, {field_string})
+        pg!emsudo_insert_field ({target_message_id}, {index}, {field_dict})
+        ```
         Insert an embed field at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo_insert_field_2, for admins to insert fields into embeds sent via the bot
+        Implement pg!emsudo_insert_field, for admins to insert fields into embeds sent via the bot
         """
 
         try:
@@ -2185,15 +2204,17 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_insert_fields(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_tuple})
-                    pg!emsudo_insert_fields ({target_message_id}, {index}, {field_dict_tuple})
-                    pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_or_dict_tuple})
-                    ``
-        ->description
+        ->signature pg!emsudo_insert_fields [*args]
+        ->description Insert n embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_tuple})
+        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_dict_tuple})
+        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_or_dict_tuple})
+        ```
         Insert multiple embed fields at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo_insert_fields_2, for admins to insert multiple fields to embeds sent via the bot
+        Implement pg!emsudo_insert_fields, for admins to insert multiple fields to embeds sent via the bot
         """
 
         try:
@@ -2319,14 +2340,16 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_add_field(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_add_field ({target_message_id}, {field_string})
-                    pg!emsudo_add_field ({target_message_id}, {field_dict})
-                    ``
-        ->description
+        ->signature pg!emsudo_add_field [*args]
+        ->description Add an embed field through the bot
+        ->extended description
+        ```
+        pg!emsudo_add_field ({target_message_id}, {field_string})
+        pg!emsudo_add_field ({target_message_id}, {field_dict})
+        ```
         Add an embed field to the embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo_add_field_2, for admins to add fields to embeds sent via the bot
+        Implement pg!emsudo_add_field, for admins to add fields to embeds sent via the bot
         """
 
         try:
@@ -2429,16 +2452,19 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_add_fields(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_add_fields ({target_message_id}, {field_string_tuple})
-                    pg!emsudo_add_fields ({target_message_id}, {field_dict_tuple})
-                    pg!emsudo_add_fields ({target_message_id}, {field_string_or_dict_tuple})
-                    ``
-        ->description
+        ->signature pg!emsudo_add_fields [*args]
+        ->description Add n embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_add_fields ({target_message_id}, {field_string_tuple})
+        pg!emsudo_add_fields ({target_message_id}, {field_dict_tuple})
+        pg!emsudo_add_fields ({target_message_id}, {field_string_or_dict_tuple})
+        ```
         Add multiple embed fields to the embed of a message in the channel where this command was invoked using the given arguments.
         -----
-        Implement pg!emsudo_add_fields_2, for admins to add multiple fields to embeds sent via the bot
+        Implement pg!emsudo_add_fields, for admins to add multiple fields to embeds sent via the bot
         """
+        
 
         try:
             args = eval(self.string)
@@ -2553,10 +2579,12 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_remove_field(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_remove_field {target_message_id} {index}
-                    ``
-        ->description
+        ->signature pg!emsudo_remove_field [*args]
+        ->description Remove an embed field through the bot
+        ->extended description
+        ```
+        pg!emsudo_remove_field {target_message_id} {index}
+        ```
         Remove an embed field at the given index of the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_remove_field, for admins to remove fields in embeds sent via the bot
@@ -2623,10 +2651,12 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_clear_fields(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_clear_fields {target_message_id}
-                    ``
-        ->description
+        ->signature pg!emsudo_clear_fields [*args]
+        ->description Remove all embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_clear_fields {target_message_id}
+        ```
         Remove all embed fields of the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_clear_fields, for admins to remove fields in embeds sent via the bot
@@ -2674,11 +2704,13 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_get(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_get {message_id}
-                    pg!emsudo_get {channel_id} {message_id}
-                    ``
-        ->description
+        ->signature pg!emsudo_get [*args]
+        ->description Remove all embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_get {message_id}
+        pg!emsudo_get {channel_id} {message_id}
+        ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
@@ -2760,15 +2792,13 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_clone(self):
         """
         ->type More admin commands
-        ->signature ``
-                    pg!emsudo_clone {message_id}
-                    pg!emsudo_clone {channel_id} {message_id}
-                    pg!emsudo_clone {message_id} {include_embeds_bool}
-                    pg!emsudo_clone {channel_id} {message_id} {include_embeds_bool}
-                    pg!emsudo_clone {message_id} {include_embeds_bool} {include_attachments_bool}
-                    pg!emsudo_clone {channel_id} {message_id} {include_embeds_bool} {include_attachments_bool}
-                    ``
-        ->description
+        ->signature pg!emsudo_clone [*args]
+        ->description Remove all embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_clone {message_id}
+        pg!emsudo_clone {channel_id} {message_id}
+        ```
         Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
         -----
         Implement pg!_emsudo_clone, to get the embed of a message and send it.

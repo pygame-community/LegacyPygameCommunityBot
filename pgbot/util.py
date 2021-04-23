@@ -203,6 +203,8 @@ async def send_help_message(original_msg, functions, command=None):
     newline = "\n"
     fields = {}
 
+    more_adm_cmds = {"title":"", "description":""}
+
     if not command:
         for func_name in functions:
             docstring = functions[func_name].__doc__
@@ -219,10 +221,21 @@ async def send_help_message(original_msg, functions, command=None):
                 f"{data['description']}{newline*2}"
             )
 
+        fields_cpy = fields.copy()
+
         for field_name in fields:
-            value = fields[field_name]
-            value[1] = f"```{value[0]}```{newline*2}{value[1]}"
-            value[0] = f"__**{field_name}**__"
+            if field_name == "More admin commands":
+                value = fields[field_name]
+                more_adm_cmds["title"] = f"__**{field_name}**__"
+                more_adm_cmds["description"] = f"```{value[0]}```{newline*2}{value[1]}"+"\u2800"*54
+                del fields_cpy[field_name]
+
+            else:
+                value = fields[field_name]
+                value[1] = f"```{value[0]}```{newline*2}{value[1]}"
+                value[0] = f"__**{field_name}**__"
+
+        fields = fields_cpy
 
         await replace_embed(
             original_msg,
@@ -231,6 +244,16 @@ async def send_help_message(original_msg, functions, command=None):
             color=common.BOT_HELP_PROMPT["color"],
             fields=list(fields.values())
         )
+
+        await send_embed_2(
+            original_msg.channel,
+            title=more_adm_cmds["title"],
+            description=more_adm_cmds["description"],
+            color=common.BOT_HELP_PROMPT["color"]
+        )
+
+        if more_adm_cmds:
+            pass
 
         return
 
