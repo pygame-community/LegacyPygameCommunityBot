@@ -732,9 +732,10 @@ class AdminCommand(user_commands.UserCommand):
                 )
 
         if arg_count > 3:
-            util_send_embed_args.update(
-                color=args[3],
-            )
+            if args[3] > -1:
+                util_edit_embed_args.update(
+                    color=args[3],
+                )
 
         if arg_count > 4:
             try:
@@ -1087,9 +1088,10 @@ class AdminCommand(user_commands.UserCommand):
                 )
 
         if arg_count > 3:
-            util_add_embed_args.update(
-                color=args[3],
-            )
+            if args[3] > -1:
+                util_edit_embed_args.update(
+                    color=args[3],
+                )
 
         if arg_count > 4:
             try:
@@ -1442,9 +1444,10 @@ class AdminCommand(user_commands.UserCommand):
                 )
 
         if arg_count > 3:
-            util_replace_embed_args.update(
-                color=args[3],
-            )
+            if args[3] > -1:
+                util_replace_embed_args.update(
+                    color=args[3],
+                )
 
         if arg_count > 4:
             try:
@@ -1823,9 +1826,10 @@ class AdminCommand(user_commands.UserCommand):
                 )
 
         if arg_count > 3:
-            util_edit_embed_args.update(
-                color=args[3],
-            )
+            if args[3] > -1:
+                util_edit_embed_args.update(
+                    color=args[3],
+                )
 
         if arg_count > 4:
             try:
