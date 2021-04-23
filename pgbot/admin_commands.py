@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+import traceback
 from datetime import datetime
 import discord
 from discord.embeds import EmptyEmbed
@@ -75,9 +76,9 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_sudo_clone(self):
+    async def cmd_sudo_get(self):
         """
-        Implement pg!sudo_clone, to get the content of a message and send it.
+        Implement pg!sudo_get, to return the the contents of a message in a text file.
         """
         self.check_args(1, maxarg=2)
 
@@ -117,6 +118,166 @@ class AdminCommand(user_commands.UserCommand):
                 )
                 return
         try:
+            src_msg = await src_channel.fetch_message(src_msg_id)
+        except discord.NotFound:
+            await util.edit_embed(
+            self.response_msg,
+            "Cannot execute command:",
+            "Invalid message id!"
+            )
+            return
+        
+        with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
+            msg_txt.write(src_msg.content)
+
+        await self.response_msg.channel.send(
+            content=f"__Message data__\n*(Source: <https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*",
+            file=discord.File("messagedata.txt")
+        )
+        await self.response_msg.delete()
+
+    async def cmd_sudo_clone(self):
+        """
+        Implement pg!sudo_clone, to get the content of a message and send it.
+        """
+        self.check_args(1, maxarg=4)
+
+        src_msg_id = None
+        src_msg = None
+        src_channel_id = self.invoke_msg.channel.id
+        src_channel = self.invoke_msg.channel
+
+        include_embeds = True
+        include_attachments = True
+
+        if len(self.args) == 4:
+            try:
+                src_channel_id = int(self.args[0])
+                src_msg_id = int(self.args[1])
+            except ValueError:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return
+            
+            src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+            if src_channel is None:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid channel id!"
+                )
+                return
+            
+            if  self.args[2] == "0" or self.args[2] == "False":
+                include_embeds = False
+            elif self.args[2] == "1" or self.args[2] == "True":
+                include_embeds = True
+
+            if  self.args[3] == "0" or self.args[3] == "False":
+                include_attachments = False
+            elif self.args[3] == "1" or self.args[3] == "True":
+                include_attachments = True
+
+        elif len(self.args) == 3:
+            if self.args[1] in ("0", "1" , "True", "False"):
+
+                if  self.args[1] == "0" or self.args[1] == "False":
+                    include_embeds = False
+                elif self.args[1] == "1" or self.args[1] == "True":
+                    include_embeds = True
+
+                if self.args[2] == "0" or self.args[2] == "False":
+                    include_attachments = False
+                elif self.args[2] == "1" or self.args[2] == "True":
+                    include_attachments = True
+                
+                try:
+                    src_msg_id = int(self.args[0])
+                except ValueError:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message id!"
+                    )
+                    return
+            else:
+                
+                if self.args[2] == "0" or self.args[2] == "False":
+                    include_embeds = False
+                elif self.args[2] == "1" or self.args[2] == "True":
+                    include_embeds = True
+                
+                try:
+                    src_channel_id = int(self.args[0])
+                    src_msg_id = int(self.args[1])
+                except ValueError:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message and/or channel id(s)!"
+                    )
+                    return
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+                if src_channel is None:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid channel id!"
+                    )
+                    return
+
+        elif len(self.args) == 2:
+
+            if self.args[1] in ("0", "1" , "True", "False"):
+                if  self.args[1] == "0" or self.args[1] == "False":
+                    include_embeds = False
+                elif self.args[1] == "1" or self.args[1] == "True":
+                    include_embeds = True
+                
+                try:
+                    src_msg_id = int(self.args[0])
+                except ValueError:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message id!"
+                    )
+                    return
+            else:
+                try:
+                    src_channel_id = int(self.args[0])
+                    src_msg_id = int(self.args[1])
+                except ValueError:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message and/or channel id(s)!"
+                    )
+                    return
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+                if src_channel is None:
+                    await util.edit_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid channel id!"
+                    )
+                    return
+        else:
+            try:
+                src_msg_id = int(self.args[0])
+            except ValueError:
+                await util.edit_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+        try:
             src_msg: discord.Message = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
             await util.edit_embed(
@@ -128,7 +289,7 @@ class AdminCommand(user_commands.UserCommand):
 
         msg_files = None
 
-        if src_msg.attachments:
+        if src_msg.attachments and include_attachments:
             msg_files = []
             for att in src_msg.attachments:
                 att_file = await att.to_file()
@@ -136,7 +297,7 @@ class AdminCommand(user_commands.UserCommand):
         
         await self.response_msg.channel.send(
             content=src_msg.content,
-            embed=src_msg.embeds[0] if src_msg.embeds else None,
+            embed=src_msg.embeds[0] if src_msg.embeds and include_embeds else None,
             files=msg_files
         )
         
@@ -182,7 +343,19 @@ class AdminCommand(user_commands.UserCommand):
         -----
         Implement pg!emsudo, for admins to send embeds via the bot
         """
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
 
         if len(args) == 1:
             await util.send_embed(
@@ -250,7 +423,19 @@ class AdminCommand(user_commands.UserCommand):
         -----
         Implement pg!emsudo_edit, for admins to edit embeds via the bot
         """
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
         edit_msg = await self.invoke_msg.channel.fetch_message(
             args[0]
         )
@@ -379,7 +564,20 @@ class AdminCommand(user_commands.UserCommand):
                 await self.invoke_msg.delete()
                 return
         
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+
 
         if isinstance(args, dict):
             await util.send_embed_from_dict(self.invoke_msg.channel, args)
@@ -655,7 +853,19 @@ class AdminCommand(user_commands.UserCommand):
                 await self.invoke_msg.delete()
                 return
         
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
 
         try:
             edit_msg = await self.invoke_msg.channel.fetch_message(
@@ -948,7 +1158,19 @@ class AdminCommand(user_commands.UserCommand):
                 await self.invoke_msg.delete()
                 return
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
 
         try:
             edit_msg = await self.invoke_msg.channel.fetch_message(
@@ -1174,7 +1396,20 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!emsudo_update_field_2, for admins to update fields of embeds sent via the bot
         """
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
@@ -1281,7 +1516,20 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!emsudo_insert_field_2, for admins to insert fields into embeds sent via the bot
         """
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
@@ -1388,7 +1636,20 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!emsudo_insert_fields_2, for admins to insert multiple fields to embeds sent via the bot
         """
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+        
         arg_count = len(args)
 
         field_dicts_list = []
@@ -1500,7 +1761,20 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!emsudo_add_field_2, for admins to add fields to embeds sent via the bot
         """
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
@@ -1589,7 +1863,20 @@ class AdminCommand(user_commands.UserCommand):
         Implement pg!emsudo_add_fields_2, for admins to add multiple fields to embeds sent via the bot
         """
 
-        args = eval(self.string)
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.edit_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+        
         arg_count = len(args)
 
         field_dicts_list = []
@@ -1863,7 +2150,7 @@ class AdminCommand(user_commands.UserCommand):
 
         await self.response_msg.channel.send(
             content="".join((
-                "Embed title: **{0}** \n*(Source: ".format(embed_dicts[0].get("title", "N/A")),
+                "__Embed data:__\nTitle: **{0}** \n*(Source: ".format(embed_dicts[0].get("title", "N/A")),
                 f"<https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*"
             )),
             file=discord.File("embeddata.txt")
