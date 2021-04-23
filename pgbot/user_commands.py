@@ -75,7 +75,7 @@ class UserCommand:
 
             msg = util.code_block(elog)
 
-        await util.edit_embed(resp_msg, title, msg, 0xFF0000)
+        await util.replace_embed(resp_msg, title, msg, 0xFF0000)
 
     def check_args(self, minarg, maxarg=None):
         """
@@ -98,7 +98,7 @@ class UserCommand:
         Implement pg!version, to report bot version
         """
         self.check_args(0)
-        await util.edit_embed(
+        await util.replace_embed(
             self.response_msg, "Current bot's version", f"`{common.VERSION}`"
         )
 
@@ -171,21 +171,21 @@ class UserCommand:
                         file=discord.File(f"temp{tstamp}.png")
                     )
                 else:
-                    await util.edit_embed(
+                    await util.replace_embed(
                         self.response_msg,
                         "Image cannot be sent:",
                         "The image file size is above 4MiB",
                     )
                 os.remove(f"temp{tstamp}.png")
 
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 f"Returned text (code executed in {util.format_time(dur)}):",
                 util.code_block(returned.text)
             )
 
         else:
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 common.EXC_TITLES[1],
                 util.code_block(", ".join(map(str, returned.exc.args)))
@@ -229,7 +229,7 @@ class UserCommand:
         emotion.last_pet = time.time()
 
         fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
-        await util.edit_embed(
+        await util.replace_embed(
             self.response_msg,
             "",
             "",
@@ -247,7 +247,7 @@ class UserCommand:
         Implement pg!vibecheck, to check if the bot is angry
         """
         self.check_args(0)
-        await util.edit_embed(
+        await util.replace_embed(
             self.response_msg,
             "Vibe Check, snek?",
             f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}"
@@ -265,7 +265,7 @@ class UserCommand:
         """
         self.check_args(0)
         if not emotion.boncc_count:
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Snek is happy. Awww, don't be sorry."
@@ -276,14 +276,14 @@ class UserCommand:
             emotion.boncc_count -= common.BONCC_PARDON
             if emotion.boncc_count < 0:
                 emotion.boncc_count = 0
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
             )
         else:
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "How did you dare to boncc a snake?\nBold of you to assume "
@@ -301,13 +301,13 @@ class UserCommand:
         """
         self.check_args(0)
         if emotion.boncc_count:
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 "The snek is hurt and angry:",
                 f"The boncc count is {emotion.boncc_count}"
             )
         else:
-            await util.edit_embed(
+            await util.replace_embed(
                 self.response_msg,
                 "The snek is right",
                 "Please, don't hit the snek"
