@@ -867,6 +867,8 @@ class AdminCommand(user_commands.UserCommand):
                     )
                     return
 
+                src_channel = self.invoke_msg.channel
+
                 try:
                     attachment_msg = await src_channel.fetch_message(
                         int(self.args[1])
@@ -1219,6 +1221,8 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
+
+                src_channel = self.invoke_msg.channel
 
                 try:
                     attachment_msg = await src_channel.fetch_message(
@@ -1578,6 +1582,8 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
+
+                src_channel = self.invoke_msg.channel
 
                 if not edit_msg.embeds:
                     await util.replace_embed(
