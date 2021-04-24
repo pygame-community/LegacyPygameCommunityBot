@@ -202,6 +202,7 @@ async def send_help_message(original_msg, functions, command=None):
     )
     newline = "\n"
     fields = {}
+    is_admin = False
 
     more_adm_cmds = {"title":"", "description":""}
 
@@ -225,6 +226,7 @@ async def send_help_message(original_msg, functions, command=None):
 
         for field_name in fields:
             if field_name == "More admin commands":
+                is_admin = True
                 value = fields[field_name]
                 more_adm_cmds["title"] = f"__**{field_name}**__"
                 more_adm_cmds["description"] = f"```{value[0]}```{newline*2}{value[1]}"+"\u2800"*54
@@ -245,15 +247,13 @@ async def send_help_message(original_msg, functions, command=None):
             fields=list(fields.values())
         )
 
-        await send_embed_2(
-            original_msg.channel,
-            title=more_adm_cmds["title"],
-            description=more_adm_cmds["description"],
-            color=common.BOT_HELP_PROMPT["color"]
-        )
-
-        if more_adm_cmds:
-            pass
+        if is_admin:
+            await send_embed_2(
+                original_msg.channel,
+                title=more_adm_cmds["title"],
+                description=more_adm_cmds["description"],
+                color=common.BOT_HELP_PROMPT["color"]
+            )
 
         return
 
