@@ -820,7 +820,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Add an embed through the bot
         ->extended description
         ```
-        pg!emsudo_add ({target_message_id}, {embed_tuple})
+        pg!emsudo_add ({target_message_id}, *{embed_tuple})
         pg!emsudo_add ({target_message_id}, {embed_dict})
         pg!emsudo_add {target_message_id} {message_id}
         pg!emsudo_add {target_message_id} {channel_id} {message_id}
@@ -1185,7 +1185,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Replace an embed through the bot
         ->extended description
         ```
-        pg!emsudo_replace ({target_message_id}, {embed_tuple})
+        pg!emsudo_replace ({target_message_id}, *{embed_tuple})
         pg!emsudo_replace ({target_message_id}, {embed_dict})
         pg!emsudo_replace {target_message_id} {message_id}
         pg!emsudo_replace {target_message_id} {channel_id} {message_id}
@@ -1555,7 +1555,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Edit an embed through the bot
         ->extended description
         ```
-        pg!emsudo_edit ({target_message_id}, {embed_tuple})
+        pg!emsudo_edit ({target_message_id}, *{embed_tuple})
         pg!emsudo_edit ({target_message_id}, {embed_dict})
         pg!emsudo_edit {target_message_id} {message_id}
         pg!emsudo_edit {target_message_id} {channel_id} {message_id}
