@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Mapping
 import re
 from datetime import datetime
 import discord
@@ -95,6 +96,21 @@ def filter_id(mention: str):
         mention = mention.replace(char, "")
 
     return int(mention)
+
+
+def recursive_update(old_dict, update_dict):
+    """
+    Update one embed dictionary with another, similar to dict.update(),
+    But recursively update dictionary values that are dictionaries as well.
+    based on the answers in
+    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    """
+    for k, v in update_dict.items():
+        if isinstance(v, Mapping):
+            old_dict[k] = recursive_update(old_dict.get(k, {}), v)
+        else:
+            old_dict[k] = v
+    return old_dict
 
 
 def get_embed_fields(messages):
@@ -403,42 +419,35 @@ async def edit_embed_2(
     """
     Updates the changed attributes of the embed of a message with a much more tight function
     """
-
     update_embed = discord.Embed(
         title=title, type=embed_type, url=url, description=description, color=color
     )
 
     if timestamp:
         if isinstance(timestamp, str):
-            embed.timestamp = datetime.fromisoformat(timestamp)
+            update_embed.timestamp = datetime.fromisoformat(timestamp)
         else:
-            embed.timestamp = timestamp
+            update_embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_url,
+        update_embed.set_author(name=author_name, url=author_url,
                          icon_url=author_icon_url)
 
     if thumbnail_url:
-        embed.set_thumbnail(url=thumbnail_url)
+        update_embed.set_thumbnail(url=thumbnail_url)
 
     if image_url:
-        embed.set_image(url=image_url)
+        update_embed.set_image(url=image_url)
 
     for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
+        update_embed.add_field(name=field[0], value=field[1], inline=field[2])
 
-    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+    update_embed.set_footer(text=footer_text, icon_url=footer_icon_url)
 
     old_embed_dict = embed.to_dict()
     update_embed_dict = update_embed.to_dict()
 
-    if "author" in old_embed_dict and "author" in update_embed_dict:
-        old_embed_dict["author"].update(update_embed_dict["author"])
-
-    if "footer" in old_embed_dict and "footer" in update_embed_dict:
-        old_embed_dict["footer"].update(update_embed_dict["footer"])
-
-    old_embed_dict.update(update_embed_dict)
+    recursive_update(old_embed_dict, update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
@@ -465,13 +474,8 @@ async def edit_embed_from_dict(message, embed, data):
     old_embed_dict = embed.to_dict()
     update_embed_dict = data
 
-    if "author" in old_embed_dict and "author" in update_embed_dict:
-        old_embed_dict["author"].update(update_embed_dict["author"])
-
-    if "footer" in old_embed_dict and "footer" in update_embed_dict:
-        old_embed_dict["footer"].update(update_embed_dict["footer"])
-
-    old_embed_dict.update(update_embed_dict)
+    old_embed_dict_2 = old_embed_dict.copy()
+    recursive_update(old_embed_dict, update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 

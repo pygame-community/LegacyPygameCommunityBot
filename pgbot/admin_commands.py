@@ -525,6 +525,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
+
     async def cmd_emsudo(self):
         """
         ->type More admin commands
@@ -819,7 +820,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Add an embed through the bot
         ->extended description
         ```
-        pg!emsudo_add ({target_message_id}, *{embed_tuple})
+        pg!emsudo_add ({target_message_id}, {embed_tuple})
         pg!emsudo_add ({target_message_id}, {embed_dict})
         pg!emsudo_add {target_message_id} {message_id}
         pg!emsudo_add {target_message_id} {channel_id} {message_id}
@@ -1184,7 +1185,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Replace an embed through the bot
         ->extended description
         ```
-        pg!emsudo_replace ({target_message_id}, *{embed_tuple})
+        pg!emsudo_replace ({target_message_id}, {embed_tuple})
         pg!emsudo_replace ({target_message_id}, {embed_dict})
         pg!emsudo_replace {target_message_id} {message_id}
         pg!emsudo_replace {target_message_id} {channel_id} {message_id}
@@ -1337,7 +1338,7 @@ class AdminCommand(user_commands.UserCommand):
             edit_msg = await self.invoke_msg.channel.fetch_message(
                 args[0]
             )
-        except (discord.NotFound, IndexError, ValueError):
+        except (discord.NotFound, IndexError, ValueError, TypeError):
             await util.replace_embed(
                 self.response_msg,
                 "Invalid arguments!",
@@ -1413,34 +1414,39 @@ class AdminCommand(user_commands.UserCommand):
                 return
             
             elif isinstance(args[0], str) and not args[0]:
-                attachment_msg = self.invoke_msg
-
-                if not attachment_msg.attachments:
-                    await util.replace_embed(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                if arg_count > 1:
+                    util_replace_embed_args.update(
+                    author_name=args[0],
                     )
-                    return
 
-                for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
-                        attachment_obj = attachment
-                        break
                 else:
-                    await util.replace_embed(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
-                    )
+                    attachment_msg = self.invoke_msg
+                    if not attachment_msg.attachments:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                        return
+
+                    for attachment in attachment_msg.attachments:
+                        if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                            attachment_obj = attachment
+                            break
+                    else:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                        return
+                    
+                    txt_dict = await attachment_obj.read()
+                    embed_dict = eval(txt_dict.decode())
+                    await util.replace_embed_from_dict(edit_msg, embed_dict)
+                    await self.response_msg.delete()
+                    await self.invoke_msg.delete()
                     return
-                
-                txt_dict = await attachment_obj.read()
-                embed_dict = eval(txt_dict.decode())
-                await util.replace_embed_from_dict(edit_msg, embed_dict)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
 
             else:
                 util_replace_embed_args.update(
@@ -1549,7 +1555,7 @@ class AdminCommand(user_commands.UserCommand):
         ->description Edit an embed through the bot
         ->extended description
         ```
-        pg!emsudo_edit ({target_message_id}, *{embed_tuple})
+        pg!emsudo_edit ({target_message_id}, {embed_tuple})
         pg!emsudo_edit ({target_message_id}, {embed_dict})
         pg!emsudo_edit {target_message_id} {message_id}
         pg!emsudo_edit {target_message_id} {channel_id} {message_id}
@@ -1722,7 +1728,7 @@ class AdminCommand(user_commands.UserCommand):
             edit_msg = await self.invoke_msg.channel.fetch_message(
                 args[0]
             )
-        except (discord.NotFound, IndexError, ValueError):
+        except (discord.NotFound, IndexError, ValueError, TypeError):
             await util.replace_embed(
                 self.response_msg,
                 "Invalid arguments!",
@@ -1808,39 +1814,47 @@ class AdminCommand(user_commands.UserCommand):
                 return
             
             elif isinstance(args[0], str) and not args[0]:
-                attachment_msg = self.invoke_msg
-
-                if not attachment_msg.attachments:
-                    await util.replace_embed(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                if arg_count > 1:
+                    util_edit_embed_args.update(
+                    author_name=args[0],
                     )
-                    return
 
-                for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
-                        attachment_obj = attachment
-                        break
                 else:
-                    await util.replace_embed(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
-                    )
+                    attachment_msg = self.invoke_msg
+                    if not attachment_msg.attachments:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                        return
+
+                    for attachment in attachment_msg.attachments:
+                        if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                            attachment_obj = attachment
+                            break
+                    else:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                        return
+                    
+                    txt_dict = await attachment_obj.read()
+                    embed_dict = eval(txt_dict.decode())
+                    await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
+                    await self.response_msg.delete()
+                    await self.invoke_msg.delete()
                     return
-                
-                txt_dict = await attachment_obj.read()
-                embed_dict = eval(txt_dict.decode())
-                await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
 
             else:
-                util_edit_embed_args.update(
-                    author_name=args[0],
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
                 )
+                return
         else:
             await util.replace_embed(
                 self.response_msg,
