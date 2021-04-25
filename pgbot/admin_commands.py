@@ -2059,6 +2059,10 @@ class AdminCommand(user_commands.UserCommand):
             util_edit_embed_args.update(
                 color=args[3],
             )
+        else:
+            util_edit_embed_args.update(
+                color=-1,
+            )
 
         if arg_count > 4:
             try:
