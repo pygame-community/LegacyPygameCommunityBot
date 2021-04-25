@@ -65,14 +65,74 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_edit(self):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit [message_id] [message]
+        ->signature pg!sudo_edit [message_id or channel_id/message_id] [message]
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
-        edit_msg = await self.invoke_msg.channel.fetch_message(
-            util.filter_id(self.args[0])
-        )
+
+        target_channel_id = None
+        target_msg_id = None
+
+        id_list = self.args[0].split("/")
+
+        if len(id_list) == 2:
+            target_channel_id = id_list[0]
+            target_msg_id = id_list[1]
+        elif len(id_list) == 1:
+            target_msg_id = id_list[1]
+
+        target_channel = self.invoke_msg.channel
+
+        if target_channel_id:
+            try:
+                target_channel_id = int(target_channel_id)
+                target_msg_id = int(target_msg_id)
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return 
+            
+            target_channel = self.invoke_msg.author.guild.get_channel(target_channel_id)
+            if target_channel is None:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid channel id!"
+                )
+                return
+
+        else:
+            try:
+                target_msg_id = int(self.args[1])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return
+
+
+        
+        edit_msg = None
+
+        try:
+            edit_msg = await target_channel.fetch_message(
+                target_msg_id
+            )
+        except discord.NotFound:
+            await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+            return
+
+        
         await edit_msg.edit(content=self.string[len(self.args[0]) + 1:])
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -87,38 +147,95 @@ class AdminCommand(user_commands.UserCommand):
         ```
         pg!sudo_get {message_id}
         pg!sudo_get {channel_id} {message_id}
+        pg!sudo_get {message_id} {as_attachment_bool}
+        pg!sudo_get {channel_id} {message_id} {as_attachment_bool}
         ```
-        Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
+        Get the contents of the embed of a message from the given arguments and send it as another message
+        (as an embed code block or a message with a `.txt` file attachment containing the message data)
+        to the channel where this command was invoked.
         -----
         Implement pg!sudo_get, to return the the contents of a message in a text file.
         """
-        self.check_args(1, maxarg=2)
+        self.check_args(1, maxarg=3)
 
         src_msg_id = None
         src_msg = None
         src_channel_id = self.invoke_msg.channel.id
         src_channel = self.invoke_msg.channel
+        as_attachment_bool = False
 
-        if len(self.args) == 2:
-            try:
-                src_channel_id = int(self.args[0])
-                src_msg_id = int(self.args[1])
-            except ValueError:
+        if len(self.args) == 3:
+            if self.args[2] in ("0", "1" , "True", "False"):
+                if  self.args[2] == "0" or self.args[2] == "False":
+                    as_attachment_bool = False
+                elif self.args[2] == "1" or self.args[2] == "True":
+                    as_attachment_bool = True
+                
+                try:
+                    src_channel_id = int(self.args[0])
+                    src_msg_id = int(self.args[1])
+                except ValueError:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message and/or channel id(s)!"
+                    )
+                    return
+ 
+                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+                if src_channel is None:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid channel id!"
+                    )
+                    return
+            else:
                 await util.replace_embed(
                 self.response_msg,
                 "Cannot execute command:",
-                "Invalid message and/or channel id(s)!"
+                "Invalid boolean argument!"
                 )
                 return
-            
-            src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
-            if src_channel is None:
-                await util.replace_embed(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid channel id!"
-                )
-                return
+
+        elif len(self.args) == 2:
+            if self.args[1] in ("0", "1" , "True", "False"):
+                if  self.args[1] == "0" or self.args[1] == "False":
+                    as_attachment_bool = False
+                elif self.args[1] == "1" or self.args[1] == "True":
+                    as_attachment_bool = True
+
+                try:
+                    src_msg_id = int(self.args[0])
+                except ValueError:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message id!"
+                    )
+                    return
+
+            else:
+                try:
+                    src_channel_id = int(self.args[0])
+                    src_msg_id = int(self.args[1])
+                except ValueError:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message and/or channel id(s)!"
+                    )
+                    return
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+                if src_channel is None:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid channel id!"
+                    )
+                    return
+                
         else:
             try:
                 src_msg_id = int(self.args[0])
@@ -129,6 +246,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message id!"
                 )
                 return
+            
         try:
             src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
@@ -139,13 +257,27 @@ class AdminCommand(user_commands.UserCommand):
             )
             return
         
-        with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
-            msg_txt.write(src_msg.content)
+        if as_attachment_bool:
+            with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
+                msg_txt.write(src_msg.content)
 
-        await self.response_msg.channel.send(
-            content=f"__Message data__\n*(Source: <https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*",
-            file=discord.File("messagedata.txt")
-        )
+            await self.response_msg.channel.send(
+                file=discord.File("messagedata.txt"),
+                embed=util.create_full_embed(
+                    author_name="__Message data__",
+                    description=f"**[View Original](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**",
+                    color=0xFFFFAA
+                    )
+            )
+        else:
+            await util.send_embed_2(
+                self.response_msg.channel,
+                author_name="Message data",
+                description="```\n{0}```".format(src_msg.content.replace("```", "\`\`\`")),
+                fields=(
+                ("\u2800", f"**[View Original](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**", False),
+                )
+            )
         await self.response_msg.delete()
 
 
@@ -2751,8 +2883,6 @@ class AdminCommand(user_commands.UserCommand):
         src_msg = None
         src_channel_id = self.invoke_msg.channel.id
         src_channel = self.invoke_msg.channel
-
-        embed_dicts = None
         embed_attr_keys = set((
             "author", "provider", "title", "url",
             "description", "type", "color", "fields",
@@ -2869,10 +2999,11 @@ class AdminCommand(user_commands.UserCommand):
         os.system("black -q embeddata.txt")
 
         await self.response_msg.channel.send(
-            content="".join((
-                "__Embed data:__\nTitle: **{0}** \n*(Source: ".format(embed_dict.get("title", "N/A")),
-                f"<https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*"
-            )),
+            embed=util.create_full_embed(
+                author_name="Embed Data",
+                title=embed_dict.get("title", "(add a title by editing this embed)"),
+                fields=(("\u2800", f"**[View Original](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**", True),)
+            ),
             file=discord.File("embeddata.txt")
         )
         await self.response_msg.delete()
@@ -2951,6 +3082,7 @@ class AdminCommand(user_commands.UserCommand):
             await self.response_msg.channel.send(embed=embed)
         
         await self.response_msg.delete()
+
 
     async def cmd_archive(self):
         """
