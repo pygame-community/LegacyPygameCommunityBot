@@ -97,18 +97,6 @@ def filter_id(mention: str):
 
     return int(mention)
 
-def filter_id_union(id_str, sep="/"):
-    id_dict = {}
-
-    id_list = id_str.split(sep)
-
-    if len(id_list) == 2:
-        id_dict["channel_id"] = id_list[0]
-        id_dict["message_id"] = id_list[1]
-    elif len(id_list) == 1:
-        id_dict["message_id"] = id_list[1]
-    return id_dict
-
 
 def recursive_update(old_dict, update_dict):
     """

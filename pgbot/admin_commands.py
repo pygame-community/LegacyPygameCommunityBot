@@ -264,7 +264,7 @@ class AdminCommand(user_commands.UserCommand):
             await self.response_msg.channel.send(
                 file=discord.File("messagedata.txt"),
                 embed=util.create_full_embed(
-                    author_name="__Message data__",
+                    author_name="Message data",
                     description=f"**[View Original](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**",
                     color=0xFFFFAA
                     )
