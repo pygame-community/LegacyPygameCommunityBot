@@ -100,6 +100,8 @@ class FilteredPygame:
     transform = pygame.transform
     mask = pygame.mask
     math = pygame.math
+    Vector2 = pygame.math.Vector2
+    Vector3 = pygame.math.Vector3
     version = pygame.version
 
     class freetype:
@@ -145,7 +147,6 @@ del FilteredPygame.version.__spec__
 for const in pygame.constants.__all__:
     setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
-
 
 def pg_exec(
     code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue

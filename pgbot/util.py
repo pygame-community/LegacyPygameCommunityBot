@@ -342,6 +342,39 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
     return await channel.send(embed=embed)
 
 
+def create_full_embed(embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+):
+    """
+    Returns a fully populated discord.py Embed object using the given arguments.
+    """
+
+    embed = discord.Embed(title=title, type=embed_type,
+                          url=url, description=description, color=color)
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed.timestamp = datetime.fromisoformat(timestamp)
+        else:
+            embed.timestamp = timestamp
+
+    if author_name:
+        embed.set_author(name=author_name, url=author_url,
+                         icon_url=author_icon_url)
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+
+    if image_url:
+        embed.set_image(url=image_url)
+
+    for field in fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    return embed
+
 async def send_embed_2(
     channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
