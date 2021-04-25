@@ -420,7 +420,7 @@ async def edit_embed_2(
     Updates the changed attributes of the embed of a message with a much more tight function
     """
     update_embed = discord.Embed(
-        title=title, type=embed_type, url=url, description=description, color=color
+        title=title, type=embed_type, url=url, description=description, color=color if color > -1 else embed.color
     )
 
     if timestamp:
