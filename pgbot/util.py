@@ -297,7 +297,7 @@ async def send_help_message(original_msg, functions, command=None):
             body += f"**Description:**{newline}{desc}"
 
             if example_cmd := doc.get("example command"):
-                body += f"{newline*2}**Example command:**{newline}{example_cmd}"
+                body += f"{newline*2}**Example command(s):**{newline}{example_cmd}"
 
             await replace_embed(
                 original_msg,

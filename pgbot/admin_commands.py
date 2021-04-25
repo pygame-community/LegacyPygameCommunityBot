@@ -1451,11 +1451,19 @@ class AdminCommand(user_commands.UserCommand):
                     await self.response_msg.delete()
                     await self.invoke_msg.delete()
                     return
-
-            else:
+            
+            elif isinstance(args[0], str) and args[0]:
                 util_replace_embed_args.update(
                     author_name=args[0],
                 )
+            
+            else:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                ""
+                )
+                return
         else:
             await util.replace_embed(
                 self.response_msg,
@@ -1851,6 +1859,11 @@ class AdminCommand(user_commands.UserCommand):
                     await self.response_msg.delete()
                     await self.invoke_msg.delete()
                     return
+
+            elif isinstance(args[0], str) and args[0]:
+                util_edit_embed_args.update(
+                    author_name=args[0],
+                )
 
             else:
                 await util.replace_embed(
@@ -2727,6 +2740,9 @@ class AdminCommand(user_commands.UserCommand):
         ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
+        ->example command pg!emsudo_get 123456789123456789 title
+        pg!emsudo_get 123456789123456789 98765432198765444321 description fields
+        pg!emsudo_get 123456789123456789 98765432198765444321
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
