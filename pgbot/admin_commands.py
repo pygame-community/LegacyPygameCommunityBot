@@ -61,6 +61,7 @@ class AdminCommand(user_commands.UserCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
+
     async def cmd_sudo_edit(self):
         """
         ->type More admin commands
@@ -75,6 +76,7 @@ class AdminCommand(user_commands.UserCommand):
         await edit_msg.edit(content=self.string[len(self.args[0]) + 1:])
         await self.response_msg.delete()
         await self.invoke_msg.delete()
+
 
     async def cmd_sudo_get(self):
         """
@@ -145,6 +147,7 @@ class AdminCommand(user_commands.UserCommand):
             file=discord.File("messagedata.txt")
         )
         await self.response_msg.delete()
+
 
     async def cmd_sudo_clone(self):
         """
@@ -326,6 +329,7 @@ class AdminCommand(user_commands.UserCommand):
         )
         
         await self.response_msg.delete()
+
 
     async def cmd_heap(self):
         """
@@ -1951,7 +1955,6 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-
     async def cmd_emsudo_replace_field(self):
         """
         ->type More admin commands
@@ -2719,14 +2722,15 @@ class AdminCommand(user_commands.UserCommand):
         ->description Remove all embed fields through the bot
         ->extended description
         ```
-        pg!emsudo_get {message_id}
-        pg!emsudo_get {channel_id} {message_id}
+        pg!emsudo_get {message_id} [{optional_embed_attr} {optional_embed_attr}...]
+        pg!emsudo_get {channel_id} {message_id} [{optional_embed_attr} {optional_embed_attr}...]
         ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
+        If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
-        self.check_args(1, maxarg=2)
+        self.check_args(1, maxarg=13)
 
         src_msg_id = None
         src_msg = None
@@ -2734,8 +2738,61 @@ class AdminCommand(user_commands.UserCommand):
         src_channel = self.invoke_msg.channel
 
         embed_dicts = None
+        embed_attr_keys = set((
+            "author", "provider", "title", "url",
+            "description", "type", "color", "fields",
+            "thumbnail", "image", "footer", "timestamp"
+        ))
+        reduced_embed_attr_keys = set()
 
-        if len(self.args) == 2:
+        if len(self.args) > 1:
+            offset_idx = 0
+            if self.args[0].isnumeric():
+                if self.args[1].isnumeric():
+                    offset_idx = 2
+                    try:
+                        src_channel_id = int(self.args[0])
+                        src_msg_id = int(self.args[1])
+                    except ValueError:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "Invalid message and/or channel id(s)!"
+                        )
+                        return
+                    
+                    src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
+                    if src_channel is None:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "Invalid channel id!"
+                        )
+                        return
+                else:
+                    offset_idx = 1
+                    try:
+                        src_msg_id = int(self.args[0])
+                    except ValueError:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "Invalid message id!"
+                        )
+                        return
+
+            for i in range(offset_idx, len(self.args)):
+                if self.args[i] in embed_attr_keys:
+                    reduced_embed_attr_keys.add(self.args[i])
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid embed attribute names!"
+                    )
+                    return
+
+        elif len(self.args) == 2:
             try:
                 src_channel_id = int(self.args[0])
                 src_msg_id = int(self.args[1])
@@ -2774,25 +2831,31 @@ class AdminCommand(user_commands.UserCommand):
             "Invalid message id!"
             )
             return
-        
-        embed_dicts = tuple(emb.to_dict() for emb in src_msg.embeds)
-    
-        if not embed_dicts:
+            
+        if not src_msg.embeds:
             await util.replace_embed(
                 self.response_msg,
                 "Cannot execute command:",
                 "No embed data found in message."
             )
             return
-        
+
+        embed_dict = src_msg.embeds[0].to_dict()
+
+        if reduced_embed_attr_keys:
+            for key in tuple(embed_dict.keys()):
+                if key not in reduced_embed_attr_keys:
+                    del embed_dict[key]
+
+
         with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
-            embed_txt.write("\n".join(repr( {k:ed[k] for k in reversed(ed.keys())} ) for ed in embed_dicts))
+            embed_txt.write(repr( {k:embed_dict[k] for k in reversed(embed_dict.keys())} ))
 
         os.system("black -q embeddata.txt")
 
         await self.response_msg.channel.send(
             content="".join((
-                "__Embed data:__\nTitle: **{0}** \n*(Source: ".format(embed_dicts[0].get("title", "N/A")),
+                "__Embed data:__\nTitle: **{0}** \n*(Source: ".format(embed_dict.get("title", "N/A")),
                 f"<https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id}>)*"
             )),
             file=discord.File("embeddata.txt")
