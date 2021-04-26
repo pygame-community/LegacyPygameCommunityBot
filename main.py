@@ -95,20 +95,28 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        try:
-            response = await util.send_embed(
-                msg.channel,
-                "Your command is being processed!",
-                ""
-            )
+        run_command = True
+        
+        if common.TEST_MODE and common.TEST_USER_ID:
+            if common.TEST_USER_ID != msg.author.id:
+                run_command = False
+            
+        if run_command:   
+            try:
+                response = await util.send_embed(
+                    msg.channel,
+                    "Your command is being processed!",
+                    ""
+                )
 
-            await commands.handle(msg, response)
+                await commands.handle(msg, response)
 
-            common.cmd_logs[msg.id] = response
-            if len(common.cmd_logs) > 100:
-                del common.cmd_logs[common.cmd_logs.keys()[0]]
-        except discord.HTTPException:
-            pass
+                common.cmd_logs[msg.id] = response
+                if len(common.cmd_logs) > 100:
+                    del common.cmd_logs[common.cmd_logs.keys()[0]]
+            except discord.HTTPException:
+                pass
+        
     else:
         await emotion.check_bonk(msg)
 
