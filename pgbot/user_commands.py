@@ -145,12 +145,12 @@ class UserCommand:
         `math, cmath, random, re, time, string, itertools, pygame`
         To show an image, overwrite `output.img` to a surface (see example command).
         To make it easier to read and write code use code blocks (see [HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)).
-        ->example command pg!exec \`\`\`py ```py
+        ->example command pg!exec \\`\\`\\`py ```py
         # Draw a red rectangle on a transparent surface
         output.img = pygame.Surface((200, 200)).convert_alpha()
         output.img.fill((0, 0, 0, 0))
         pygame.draw.rect(output.img, (200, 0, 0), (50, 50, 100, 100))```
-        \`\`\`
+        \\`\\`\\`
         -----
         Implement pg!exec, for execution of python code
         """
