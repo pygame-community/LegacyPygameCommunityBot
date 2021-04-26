@@ -39,7 +39,7 @@ BONCC_PARDON = 3
 # Constants
 VERSION = "1.4.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
-TEST_USER_ID = None
+TEST_USER_ID = os.environ["TEST_USER_ID"] if "TEST_USER_ID" in os.environ else None
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
 
