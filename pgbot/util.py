@@ -1,8 +1,10 @@
 import asyncio
 from collections.abc import Mapping
 import re
+import time
 from datetime import datetime
 import discord
+from discord import message
 from discord.embeds import EmptyEmbed
 
 from . import common
@@ -10,6 +12,83 @@ from . import common
 
 class ArgError(Exception):
     pass
+
+
+class EmbedPage:
+    def __init__(self, message, pages, command=None, start_page=0) -> None:
+        self.pages = pages
+        self.current_page = start_page
+        self.message = message
+        self.start_time = time.time()
+        self.parent_command = command
+
+        self.control_emojis = {
+            "prev": "◀️",
+            "next": "▶️",
+            "stop": "⏹️",
+        }
+        self.killed = False
+
+    async def add_control_emojis(self):
+        for emoji in self.control_emojis.values():
+            await self.message.add_reaction(emoji)
+
+    async def handle_reaction(self, reaction, user):
+        if reaction == self.control_emojis["next"]:
+            await self.next_page()
+
+        if reaction == self.control_emojis["prev"]:
+            await self.prev_page()
+
+        if reaction == self.control_emojis["stop"]:
+            self.killed = True
+
+        await self.message.remove_reaction(reaction, user)
+
+    async def next_page(self):
+        self.current_page = (self.current_page + 1) % len(self.pages)
+        await self.message.edit(embed=self.pages[self.current_page])
+
+    async def prev_page(self):
+        self.current_page = (self.current_page - 1) % len(self.pages)
+        await self.message.edit(embed=self.pages[self.current_page])
+
+    async def setup(self):
+        if len(self.pages) == 1:
+            await self.message.edit(embed=self.pages[0])
+            return False
+
+        for i, page in enumerate(self.pages):
+            footer = (
+                f"Page {i+1} of {len(self.pages)}.\n"
+                f"Refresh with pg!refresh {self.message.id}"
+            )
+            if self.parent_command:
+                footer += f"\nCommand: {self.parent_command}"
+
+            page.set_footer(text=footer)
+
+        await self.message.edit(embed=self.pages[self.current_page])
+        await self.add_control_emojis()
+        return True
+
+    def check(self, args):
+        return args.message_id == self.message.id and not args.member.bot
+
+    async def update(self):
+        if not await self.setup():
+            return
+
+        while not self.killed:
+            try:
+                event = await common.bot.wait_for(
+                    "raw_reaction_add", check=self.check, timeout=60)
+
+                await self.handle_reaction(str(event.emoji), event.member)
+            except asyncio.TimeoutError:
+                self.killed = True
+
+        await self.message.clear_reactions()
 
 
 def format_time(seconds: float, decimal_places: int = 4):
@@ -191,7 +270,7 @@ def get_doc_from_docstr(string, regex):
     return data
 
 
-async def send_help_message(original_msg, functions, command=None):
+async def send_help_message(original_msg, functions, command=None, page=0):
     """
     Edit original_msg to a help message. If command is supplied it will
     only show information about that specific command. Otherwise sends
@@ -218,9 +297,6 @@ async def send_help_message(original_msg, functions, command=None):
     )
     newline = "\n"
     fields = {}
-    is_admin = False
-
-    more_adm_cmds = {"title":"", "description":""}
 
     if not command:
         for func_name in functions:
@@ -241,35 +317,35 @@ async def send_help_message(original_msg, functions, command=None):
         fields_cpy = fields.copy()
 
         for field_name in fields:
-            if field_name == "More admin commands":
-                is_admin = True
-                value = fields[field_name]
-                more_adm_cmds["title"] = f"__**{field_name}**__"
-                more_adm_cmds["description"] = f"```{value[0]}```{newline*2}{value[1]}"+"\u2800"*54
-                del fields_cpy[field_name]
-
-            else:
-                value = fields[field_name]
-                value[1] = f"```{value[0]}```{newline*2}{value[1]}"
-                value[0] = f"__**{field_name}**__"
+            value = fields[field_name]
+            value[1] = f"```{value[0]}```{newline*2}{value[1]}"
+            value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy
 
-        await replace_embed(
+        embeds = []
+        for field in list(fields.values()):
+            body = common.BOT_HELP_PROMPT["body"] + "\n" + field[0] + "\n\n" + field[1]
+            embeds.append(
+                await send_embed_2(
+                    None,
+                    title=common.BOT_HELP_PROMPT["title"],
+                    description=body,
+                    color=common.BOT_HELP_PROMPT["color"],
+                    do_return=True,
+                )
+            )
+
+        print(original_msg.id)
+
+        page_system = EmbedPage(
             original_msg,
-            common.BOT_HELP_PROMPT["title"],
-            common.BOT_HELP_PROMPT["body"],
-            color=common.BOT_HELP_PROMPT["color"],
-            fields=list(fields.values())
+            embeds,
+            "help",
+            page
         )
 
-        if is_admin:
-            await send_embed_2(
-                original_msg.channel,
-                title=more_adm_cmds["title"],
-                description=more_adm_cmds["description"],
-                color=common.BOT_HELP_PROMPT["color"]
-            )
+        await page_system.update()
 
         return
 
@@ -377,7 +453,7 @@ def create_full_embed(embed_type="rich", author_name=EmptyEmbed, author_url=Empt
 
 async def send_embed_2(
     channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed, do_return=False
 ):
     """
     Sends an embed with a much more tight function
@@ -406,6 +482,9 @@ async def send_embed_2(
         embed.add_field(name=field[0], value=field[1], inline=field[2])
 
     embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    if do_return:
+        return embed
 
     return await channel.send(embed=embed)
 

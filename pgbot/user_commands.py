@@ -5,8 +5,10 @@ import random
 import sys
 import time
 import traceback
+import re
 
 import discord
+from discord.errors import HTTPException
 import pygame
 
 from . import clock, common, docs, emotion, sandbox, util
@@ -131,8 +133,7 @@ class UserCommand:
         """
         self.check_args(1)
 
-        await docs.put_doc(self.args[0], self.invoke_msg.channel)
-        await self.response_msg.delete()
+        await docs.put_doc(self.args[0], self.response_msg)
 
     async def cmd_exec(self):
         """
@@ -191,7 +192,7 @@ class UserCommand:
                 util.code_block(", ".join(map(str, returned.exc.args)))
             )
 
-    async def cmd_help(self):
+    async def cmd_help(self, page=-1, args=[], msg=None):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -200,15 +201,23 @@ class UserCommand:
         -----
         Implement pg!help, to display a help message
         """
-        self.check_args(0, 1)
+        if page == -1:
+            self.check_args(0, 1)
+            page = 0
 
-        if len(self.args) == 0:
-            await util.send_help_message(self.response_msg, self.cmds_and_funcs)
+        if not msg:
+            msg = self.response_msg
+
+        if not args:
+            args = self.args
+
+        if len(args) == 0:
+            await util.send_help_message(msg, self.cmds_and_funcs, page=page)
         else:
             await util.send_help_message(
-                self.response_msg,
+                msg,
                 self.cmds_and_funcs,
-                self.args[0]
+                args[0]
             )
 
     async def cmd_pet(self):
@@ -312,3 +321,27 @@ class UserCommand:
                 "The snek is right",
                 "Please, don't hit the snek"
             )
+
+    async def cmd_refresh(self):
+        self.check_args(1)
+
+        msg_id = self.args.pop(0)
+        try:
+            msg = await self.invoke_msg.channel.fetch_message(msg_id)
+        except (discord.errors.NotFound, HTTPException):
+            await util.replace_embed(
+                self.response_msg,
+                "Message not found",
+                "Message was not found. Make sure that the id is correct and that "
+                "you are in the same channel as the message."
+            )
+            return
+
+        data = msg.embeds[0].footer.text.split("\n")
+        page = re.search(r'\d+', data[0]).group()
+        command = data[2].replace("Command: ", "").split()
+
+        await self.response_msg.delete()
+
+        await self.cmds_and_funcs[command[0]](page=int(page)-1, args=command[1:], msg=msg)
+
