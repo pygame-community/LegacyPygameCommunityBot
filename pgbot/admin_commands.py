@@ -2370,6 +2370,8 @@ class AdminCommand(user_commands.UserCommand):
         ->description Insert n embed fields through the bot
         ->extended description
         ```
+        pg!emsudo_insert_fields {target_message_id} {index} {channel_id}
+        pg!emsudo_insert_fields {target_message_id} {index} {channel_id} {message_id}
         pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_tuple})
         pg!emsudo_insert_fields ({target_message_id}, {index}, {field_dict_tuple})
         pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_or_dict_tuple})
@@ -2378,6 +2380,189 @@ class AdminCommand(user_commands.UserCommand):
         -----
         Implement pg!emsudo_insert_fields, for admins to insert multiple fields to embeds sent via the bot
         """
+
+        if len(self.args) == 4:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric() and self.args[3].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+        
+                edit_msg_embed = edit_msg.embeds[0]
+
+                try:
+                    insert_index = int(self.args[1])
+                except ValueError:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid field insertion index!",
+                        ""
+                    )
+                    return
+                
+                try:
+                    src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[2]))
+                except ValueError:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                if not src_channel:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[3])
+                    )
+                except (discord.NotFound, ValueError):
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "No field attribute found in embed dictionary.",
+                        ""
+                    )
+                    return
+                
+                await util.insert_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+        
+                edit_msg_embed = edit_msg.embeds[0]
+                
+                src_channel = self.invoke_msg.channel
+
+                try:
+                    insert_index = int(self.args[1])
+                except ValueError:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid field insertion index!",
+                        ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except (discord.NotFound, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid source message id!",
+                        ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                        ""
+                        )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "No field attribute found in embed dictionary.",
+                        ""
+                    )
+                    return
+                
+                await util.insert_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+        
 
         try:
             args = eval(self.string)
@@ -2492,9 +2677,7 @@ class AdminCommand(user_commands.UserCommand):
             )
             return
 
-        for field_dict in reversed(field_dicts_list):
-            await util.insert_embed_field_from_dict(edit_msg, edit_msg_embed, field_dict, field_index)
-        
+        await util.insert_embed_fields_from_dicts(edit_msg, edit_msg_embed, reversed(field_dicts_list), field_index)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
@@ -2626,6 +2809,161 @@ class AdminCommand(user_commands.UserCommand):
         -----
         Implement pg!emsudo_add_fields, for admins to add multiple fields to embeds sent via the bot
         """
+        field_dicts_list = []
+
+        if len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+        
+                edit_msg_embed = edit_msg.embeds[0]
+                
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
+
+                if not src_channel:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except discord.NotFound:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+                
+                await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+        
+        elif len(self.args) == 2:
+            if self.args[0].isnumeric() and self.args[1].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                src_channel = self.invoke_msg.channel
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+        
+                edit_msg_embed = edit_msg.embeds[0]
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[1])
+                    )
+                except discord.NotFound:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+                
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+                
+                await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
         
 
         try:
@@ -2643,8 +2981,6 @@ class AdminCommand(user_commands.UserCommand):
             return
         
         arg_count = len(args)
-
-        field_dicts_list = []
             
         if arg_count == 2:
             try:
@@ -2697,6 +3033,8 @@ class AdminCommand(user_commands.UserCommand):
 
                         if len(data_list) == 3:
                             data_dict = {"name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                        elif len(data_list) == 2:
+                            data_dict = {"name": data_list[0], "value": data_list[1], "inline": False}
 
                         elif not data_list:
                             await util.replace_embed(
@@ -2731,8 +3069,7 @@ class AdminCommand(user_commands.UserCommand):
             )
             return
 
-        for field_dict in field_dicts_list:
-            await util.add_embed_field_from_dict(edit_msg, edit_msg_embed, field_dict)
+        await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
         
         await self.response_msg.delete()
         await self.invoke_msg.delete()
