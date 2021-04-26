@@ -591,9 +591,9 @@ async def edit_embed_from_dict(message, embed, data):
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
-async def edit_embed_field_from_dict(message, embed, field_dict, index):
+async def replace_embed_field_from_dict(message, embed, field_dict, index):
     """
-    Updates an embed field of the embed of a message from a dictionary with a much more tight function
+    Replaces an embed field of the embed of a message from a dictionary with a much more tight function
     """
 
     if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
@@ -602,6 +602,26 @@ async def edit_embed_field_from_dict(message, embed, field_dict, index):
 
     return await message.edit(embed=embed)
 
+
+async def edit_embed_field_from_dict(message, embed, field_dict, index):
+    """
+    Edits parts of an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+
+    embed_dict = embed.to_dict()
+    
+    old_field_dict = embed_dict["fields"][index]
+
+    for k in field_dict:
+        if k in old_field_dict and field_dict[k]:
+            old_field_dict[k] = field_dict[k]
+    
+    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+        embed.set_field_at(
+            index, name=old_field_dict["name"], value=old_field_dict["value"], inline=old_field_dict["inline"]
+        )
+
+    return await message.edit(embed=embed)
 
 async def add_embed_field_from_dict(message, embed, field_dict):
     """
