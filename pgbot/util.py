@@ -507,7 +507,6 @@ async def edit_embed_from_dict(message, embed, data):
     old_embed_dict = embed.to_dict()
     update_embed_dict = data
 
-    old_embed_dict_2 = old_embed_dict.copy()
     recursive_update(old_embed_dict, update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
@@ -537,6 +536,19 @@ async def add_embed_field_from_dict(message, embed, field_dict):
     return await message.edit(embed=embed)
 
 
+async def add_embed_fields_from_dicts(message, embed, field_dicts):
+    """
+    Adds embed fields to the embed of a message from dictionaries with a much more tight function
+    """
+
+    for field_dict in field_dicts:
+        if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+            embed.add_field(
+                name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+
+    return await message.edit(embed=embed)
+
+
 async def insert_embed_field_from_dict(message, embed, field_dict, index):
     """
     Inserts an embed field of the embed of a message from a dictionary with a much more tight function
@@ -544,7 +556,22 @@ async def insert_embed_field_from_dict(message, embed, field_dict, index):
 
     if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
         embed.insert_field_at(
-            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"]
+        )
+
+    return await message.edit(embed=embed)
+
+
+async def insert_embed_fields_from_dicts(message, embed: discord.Embed, field_dicts, index):
+    """
+    Inserts embed fields to the embed of a message from dictionaries at a specified index with a much more tight function
+    """
+    
+    for field_dict in field_dicts:
+        if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
+            embed.insert_field_at(
+                index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"]
+            )
 
     return await message.edit(embed=embed)
 
