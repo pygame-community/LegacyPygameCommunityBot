@@ -65,14 +65,74 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_edit(self):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit [message_id] [message]
+        ->signature pg!sudo_edit [message_id or channel_id/message_id] [message]
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
-        edit_msg = await self.invoke_msg.channel.fetch_message(
-            util.filter_id(self.args[0])
-        )
+
+        target_channel_id = None
+        target_msg_id = None
+
+        id_list = self.args[0].split("/")
+
+        if len(id_list) == 2:
+            target_channel_id = id_list[0]
+            target_msg_id = id_list[1]
+        elif len(id_list) == 1:
+            target_msg_id = id_list[1]
+
+        target_channel = self.invoke_msg.channel
+
+        if target_channel_id:
+            try:
+                target_channel_id = int(target_channel_id)
+                target_msg_id = int(target_msg_id)
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return 
+
+            target_channel = self.invoke_msg.author.guild.get_channel(target_channel_id)
+            if target_channel is None:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid channel id!"
+                )
+                return
+
+        else:
+            try:
+                target_msg_id = int(self.args[1])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message and/or channel id(s)!"
+                )
+                return
+
+
+
+        edit_msg = None
+
+        try:
+            edit_msg = await target_channel.fetch_message(
+                target_msg_id
+            )
+        except discord.NotFound:
+            await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+            return
+
+
         await edit_msg.edit(content=self.string[len(self.args[0]) + 1:])
         await self.response_msg.delete()
         await self.invoke_msg.delete()
