@@ -65,18 +65,19 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_edit(self):
         """
         ->type More admin commands
+        ->signature pg!sudo_edit [message_id or channel_id/message_id] [message]
         ->signature pg!sudo_edit [message_id] [message]
         ->description Edit a message that the bot sent.
         -----
-        Implement pg!sudo_edit, for admins to edit messages via the bot
+        Implement pg!sudo_edit, for admins to edit messages via the bot.
         """
+
         edit_msg = await self.invoke_msg.channel.fetch_message(
             util.filter_id(self.args[0])
         )
         await edit_msg.edit(content=self.string[len(self.args[0]) + 1:])
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-
 
     async def cmd_sudo_get(self):
         """
@@ -110,7 +111,7 @@ class AdminCommand(user_commands.UserCommand):
                     as_attachment_bool = False
                 elif self.args[2] == "1" or self.args[2] == "True":
                     as_attachment_bool = True
-
+                
                 try:
                     src_channel_id = int(self.args[0])
                     src_msg_id = int(self.args[1])
@@ -121,7 +122,7 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid message and/or channel id(s)!"
                     )
                     return
-
+ 
                 src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
                 if src_channel is None:
                     await util.replace_embed(
@@ -166,7 +167,7 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid message and/or channel id(s)!"
                     )
                     return
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
                 if src_channel is None:
                     await util.replace_embed(
@@ -175,7 +176,7 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid channel id!"
                     )
                     return
-
+                
         else:
             try:
                 src_msg_id = int(self.args[0])
@@ -186,7 +187,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message id!"
                 )
                 return
-
+            
         try:
             src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
@@ -196,7 +197,7 @@ class AdminCommand(user_commands.UserCommand):
             "Invalid message id!"
             )
             return
-
+        
         if as_attachment_bool:
             with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
                 msg_txt.write(src_msg.content)
@@ -260,7 +261,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message and/or channel id(s)!"
                 )
                 return
-
+            
             src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
                 await util.replace_embed(
@@ -269,7 +270,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid channel id!"
                 )
                 return
-
+            
             if  self.args[2] == "0" or self.args[2] == "False":
                 include_embeds = False
             elif self.args[2] == "1" or self.args[2] == "True":
@@ -292,7 +293,7 @@ class AdminCommand(user_commands.UserCommand):
                     include_attachments = False
                 elif self.args[2] == "1" or self.args[2] == "True":
                     include_attachments = True
-
+                
                 try:
                     src_msg_id = int(self.args[0])
                 except ValueError:
@@ -303,12 +304,12 @@ class AdminCommand(user_commands.UserCommand):
                     )
                     return
             else:
-
+                
                 if self.args[2] == "0" or self.args[2] == "False":
                     include_embeds = False
                 elif self.args[2] == "1" or self.args[2] == "True":
                     include_embeds = True
-
+                
                 try:
                     src_channel_id = int(self.args[0])
                     src_msg_id = int(self.args[1])
@@ -319,7 +320,7 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid message and/or channel id(s)!"
                     )
                     return
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
                 if src_channel is None:
                     await util.replace_embed(
@@ -336,7 +337,7 @@ class AdminCommand(user_commands.UserCommand):
                     include_embeds = False
                 elif self.args[1] == "1" or self.args[1] == "True":
                     include_embeds = True
-
+                
                 try:
                     src_msg_id = int(self.args[0])
                 except ValueError:
@@ -357,7 +358,7 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid message and/or channel id(s)!"
                     )
                     return
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
                 if src_channel is None:
                     await util.replace_embed(
@@ -393,13 +394,13 @@ class AdminCommand(user_commands.UserCommand):
             for att in src_msg.attachments:
                 att_file = await att.to_file()
                 msg_files.append(att_file)
-
+        
         await self.response_msg.channel.send(
             content=src_msg.content,
             embed=src_msg.embeds[0] if src_msg.embeds and include_embeds else None,
             files=msg_files
         )
-
+        
         await self.response_msg.delete()
 
 
@@ -604,7 +605,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo [*args]
         ->description Send an embed through the bot
         ->extended description
@@ -669,14 +670,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         try:
             args = eval(self.string)
         except Exception as e:
@@ -697,7 +698,7 @@ class AdminCommand(user_commands.UserCommand):
             await self.response_msg.delete()
             await self.invoke_msg.delete()
             return
-
+        
         elif isinstance(args, int):
             try:
                 attachment_msg = await self.invoke_msg.channel.fetch_message(
@@ -710,7 +711,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             if not attachment_msg.attachments:
                 await util.replace_embed(
                 self.response_msg,
@@ -730,14 +731,14 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             txt_dict = await attachment_obj.read()
             embed_dict = eval(txt_dict.decode())
             await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
             return
-
+        
         elif isinstance(args, str) and not args:
             attachment_msg = self.invoke_msg
 
@@ -760,14 +761,14 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             txt_dict = await attachment_obj.read()
             embed_dict = eval(txt_dict.decode())
             await util.send_embed_from_dict(self.invoke_msg.channel, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
             return
-
+            
 
         arg_count = len(args)
 
@@ -891,7 +892,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_add(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_add [*args]
         ->description Add an embed through the bot
         ->extended description
@@ -926,7 +927,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
 
                 if not src_channel:
@@ -968,14 +969,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+            
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
@@ -1023,14 +1024,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         try:
             args = eval(self.string)
         except Exception as e:
@@ -1096,7 +1097,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 if not attachment_msg.attachments:
                     await util.replace_embed(
                     self.response_msg,
@@ -1116,14 +1117,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+            
             elif isinstance(args[0], str) and not args[0]:
                 attachment_msg = self.invoke_msg
 
@@ -1146,7 +1147,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
@@ -1256,7 +1257,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_replace(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_replace [*args]
         ->description Replace an embed through the bot
         ->extended description
@@ -1291,7 +1292,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
 
                 if not src_channel:
@@ -1333,14 +1334,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
@@ -1388,14 +1389,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         try:
             args = eval(self.string)
         except Exception as e:
@@ -1461,7 +1462,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 if not attachment_msg.attachments:
                     await util.replace_embed(
                     self.response_msg,
@@ -1481,14 +1482,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.replace_embed_from_dict(edit_msg, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+            
             elif isinstance(args[0], str) and not args[0]:
                 if arg_count > 1:
                     util_replace_embed_args.update(
@@ -1516,19 +1517,19 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                         )
                         return
-
+                    
                     txt_dict = await attachment_obj.read()
                     embed_dict = eval(txt_dict.decode())
                     await util.replace_embed_from_dict(edit_msg, embed_dict)
                     await self.response_msg.delete()
                     await self.invoke_msg.delete()
                     return
-
+            
             elif isinstance(args[0], str) and args[0]:
                 util_replace_embed_args.update(
                     author_name=args[0],
                 )
-
+            
             else:
                 await util.replace_embed(
                 self.response_msg,
@@ -1630,11 +1631,11 @@ class AdminCommand(user_commands.UserCommand):
         await util.replace_embed_2(edit_msg, **util_replace_embed_args)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-
+    
 
     async def cmd_emsudo_edit(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_edit [*args]
         ->description Edit an embed through the bot
         ->extended description
@@ -1677,9 +1678,9 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
 
                 if not src_channel:
@@ -1721,14 +1722,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
@@ -1752,7 +1753,7 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
@@ -1786,7 +1787,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
@@ -1827,7 +1828,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
             )
             return
-
+        
         edit_msg_embed = edit_msg.embeds[0]
 
         args = args[1:]
@@ -1869,7 +1870,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 if not attachment_msg.attachments:
                     await util.replace_embed(
                     self.response_msg,
@@ -1889,14 +1890,14 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+            
             elif isinstance(args[0], str) and not args[0]:
                 if arg_count > 1:
                     util_edit_embed_args.update(
@@ -1924,7 +1925,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                         )
                         return
-
+                    
                     txt_dict = await attachment_obj.read()
                     embed_dict = eval(txt_dict.decode())
                     await util.edit_embed_from_dict(edit_msg, edit_msg_embed, embed_dict)
@@ -2045,7 +2046,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_replace_field(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_replace [*args]
         ->description Replace an embed field through the bot
         ->extended description
@@ -2071,11 +2072,11 @@ class AdminCommand(user_commands.UserCommand):
                 f"```\n{''.join(tbs)}```"
             )
             return
-
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
-
+            
         if arg_count == 3:
             try:
                 edit_msg_id = int(args[0])
@@ -2086,7 +2087,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             try:
                 edit_msg = await self.invoke_msg.channel.fetch_message(
                     edit_msg_id
@@ -2106,7 +2107,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
                 )
                 return
-
+            
             edit_msg_embed = edit_msg.embeds[0]
 
             try:
@@ -2118,7 +2119,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
 
             if isinstance(args[2], dict):
                 field_dict = args[2]
@@ -2151,7 +2152,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+        
         else:
             await util.replace_embed(
             self.response_msg,
@@ -2312,7 +2313,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_insert_field(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_insert_field [*args]
         ->description Insert an embed field through the bot
         ->extended description
@@ -2338,11 +2339,11 @@ class AdminCommand(user_commands.UserCommand):
                 f"```\n{''.join(tbs)}```"
             )
             return
-
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
-
+            
         if arg_count == 3:
             try:
                 edit_msg_id = int(args[0])
@@ -2353,7 +2354,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             try:
                 edit_msg = await self.invoke_msg.channel.fetch_message(
                     edit_msg_id
@@ -2373,7 +2374,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
                 )
                 return
-
+            
             edit_msg_embed = edit_msg.embeds[0]
 
             try:
@@ -2385,7 +2386,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
 
             if isinstance(args[2], dict):
                 field_dict = args[2]
@@ -2418,7 +2419,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+        
         else:
             await util.replace_embed(
             self.response_msg,
@@ -2442,9 +2443,9 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_insert_fields(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_insert_fields [*args]
-        ->description Insert embed fields through the bot
+        ->description Insert n embed fields through the bot
         ->extended description
         ```
         pg!emsudo_insert_fields {target_message_id} {index} {channel_id}
@@ -2479,7 +2480,7 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
@@ -2491,7 +2492,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
-
+                
                 try:
                     src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[2]))
                 except ValueError:
@@ -2541,7 +2542,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 if "fields" not in embed_dict:
@@ -2551,7 +2552,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
-
+                
                 await util.insert_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
@@ -2578,9 +2579,9 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
-
+                
                 src_channel = self.invoke_msg.channel
 
                 try:
@@ -2624,7 +2625,7 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                         )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 if "fields" not in embed_dict:
@@ -2634,12 +2635,12 @@ class AdminCommand(user_commands.UserCommand):
                         ""
                     )
                     return
-
+                
                 await util.insert_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
 
         try:
             args = eval(self.string)
@@ -2654,11 +2655,11 @@ class AdminCommand(user_commands.UserCommand):
                 f"```\n{''.join(tbs)}```"
             )
             return
-
+        
         arg_count = len(args)
 
         field_dicts_list = []
-
+            
         if arg_count == 3:
             try:
                 edit_msg_id = int(args[0])
@@ -2669,7 +2670,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             try:
                 edit_msg = await self.invoke_msg.channel.fetch_message(
                     edit_msg_id
@@ -2689,7 +2690,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
                 )
                 return
-
+            
             edit_msg_embed = edit_msg.embeds[0]
 
             try:
@@ -2745,7 +2746,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+        
         else:
             await util.replace_embed(
             self.response_msg,
@@ -2761,7 +2762,7 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_add_field(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_add_field [*args]
         ->description Add an embed field through the bot
         ->extended description
@@ -2787,11 +2788,11 @@ class AdminCommand(user_commands.UserCommand):
                 f"```\n{''.join(tbs)}```"
             )
             return
-
+        
         arg_count = len(args)
         field_list = None
         field_dict = None
-
+            
         if arg_count == 2:
             try:
                 edit_msg_id = int(args[0])
@@ -2802,7 +2803,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             try:
                 edit_msg = await self.invoke_msg.channel.fetch_message(
                     edit_msg_id
@@ -2822,7 +2823,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
                 )
                 return
-
+            
             edit_msg_embed = edit_msg.embeds[0]
 
             if isinstance(args[1], dict):
@@ -2856,7 +2857,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+        
         else:
             await util.replace_embed(
             self.response_msg,
@@ -2866,16 +2867,16 @@ class AdminCommand(user_commands.UserCommand):
             return
 
         await util.add_embed_field_from_dict(edit_msg, edit_msg_embed, field_dict)
-
+        
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
 
     async def cmd_emsudo_add_fields(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_add_fields [*args]
-        ->description Add embed fields through the bot
+        ->description Add n embed fields through the bot
         ->extended description
         ```
         pg!emsudo_add_fields ({target_message_id}, {field_string_tuple})
@@ -2909,9 +2910,9 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
-
+                
                 src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
 
                 if not src_channel:
@@ -2953,7 +2954,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 if "fields" not in embed_dict:
@@ -2963,12 +2964,12 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
@@ -2992,7 +2993,7 @@ class AdminCommand(user_commands.UserCommand):
                         "No embed data found in message."
                     )
                     return
-
+        
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
@@ -3026,7 +3027,7 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 txt_dict = await attachment_obj.read()
                 embed_dict = eval(txt_dict.decode())
                 if "fields" not in embed_dict:
@@ -3036,12 +3037,12 @@ class AdminCommand(user_commands.UserCommand):
                     ""
                     )
                     return
-
+                
                 await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
-
+        
 
         try:
             args = eval(self.string)
@@ -3056,9 +3057,9 @@ class AdminCommand(user_commands.UserCommand):
                 f"```\n{''.join(tbs)}```"
             )
             return
-
+        
         arg_count = len(args)
-
+            
         if arg_count == 2:
             try:
                 edit_msg_id = int(args[0])
@@ -3069,7 +3070,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+            
             try:
                 edit_msg = await self.invoke_msg.channel.fetch_message(
                     edit_msg_id
@@ -3089,7 +3090,7 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
                 )
                 return
-
+            
             edit_msg_embed = edit_msg.embeds[0]
 
             if isinstance(args[1], (list, tuple)):
@@ -3137,7 +3138,7 @@ class AdminCommand(user_commands.UserCommand):
                 ""
                 )
                 return
-
+        
         else:
             await util.replace_embed(
             self.response_msg,
@@ -3147,14 +3148,14 @@ class AdminCommand(user_commands.UserCommand):
             return
 
         await util.add_embed_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
-
+        
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-
+    
 
     async def cmd_emsudo_remove_field(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_remove_field [*args]
         ->description Remove an embed field through the bot
         ->extended description
@@ -3167,7 +3168,7 @@ class AdminCommand(user_commands.UserCommand):
         """
 
         self.check_args(2)
-
+            
         try:
             edit_msg_id = int(self.args[0])
         except ValueError:
@@ -3197,7 +3198,7 @@ class AdminCommand(user_commands.UserCommand):
             "No embed data found in message."
             )
             return
-
+        
         edit_msg_embed = edit_msg.embeds[0]
 
         try:
@@ -3209,7 +3210,7 @@ class AdminCommand(user_commands.UserCommand):
             ""
             )
             return
-
+            
         try:
             await util.remove_embed_field(edit_msg, edit_msg_embed, field_index)
         except IndexError:
@@ -3219,14 +3220,14 @@ class AdminCommand(user_commands.UserCommand):
             ""
             )
             return
-
+        
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
 
     async def cmd_emsudo_clear_fields(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_clear_fields [*args]
         ->description Remove all embed fields through the bot
         ->extended description
@@ -3249,7 +3250,7 @@ class AdminCommand(user_commands.UserCommand):
             ""
             )
             return
-
+        
         try:
             edit_msg = await self.invoke_msg.channel.fetch_message(
                 edit_msg_id
@@ -3269,7 +3270,7 @@ class AdminCommand(user_commands.UserCommand):
             "No embed data found in message."
             )
             return
-
+        
         edit_msg_embed = edit_msg.embeds[0]
 
         await util.clear_embed_fields(edit_msg, edit_msg_embed)
@@ -3279,13 +3280,13 @@ class AdminCommand(user_commands.UserCommand):
 
     async def cmd_emsudo_get(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_get [*args]
-        ->description Get the embed data of a message
+        ->description Remove all embed fields through the bot
         ->extended description
         ```
-        pg!emsudo_get {message_id} [*{optional_embed_attr}]
-        pg!emsudo_get {channel_id} {message_id} [*{optional_embed_attr}]
+        pg!emsudo_get {message_id} [{optional_embed_attr} {optional_embed_attr}...]
+        pg!emsudo_get {channel_id} {message_id} [{optional_embed_attr} {optional_embed_attr}...]
         ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
@@ -3323,7 +3324,7 @@ class AdminCommand(user_commands.UserCommand):
                         "Invalid message and/or channel id(s)!"
                         )
                         return
-
+                    
                     src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
                     if src_channel is None:
                         await util.replace_embed(
@@ -3366,7 +3367,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message and/or channel id(s)!"
                 )
                 return
-
+            
             src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
                 await util.replace_embed(
@@ -3394,7 +3395,7 @@ class AdminCommand(user_commands.UserCommand):
             "Invalid message id!"
             )
             return
-
+            
         if not src_msg.embeds:
             await util.replace_embed(
                 self.response_msg,
@@ -3425,13 +3426,13 @@ class AdminCommand(user_commands.UserCommand):
             file=discord.File("embeddata.txt")
         )
         await self.response_msg.delete()
-
+    
 
     async def cmd_emsudo_clone(self):
         """
-        ->type emsudo commands
+        ->type More admin commands
         ->signature pg!emsudo_clone [*args]
-        ->description Clone all embeds.
+        ->description Remove all embed fields through the bot
         ->extended description
         ```
         pg!emsudo_clone {message_id}
@@ -3459,7 +3460,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message and/or channel id(s)!"
                 )
                 return
-
+            
             src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
                 await util.replace_embed(
@@ -3487,7 +3488,7 @@ class AdminCommand(user_commands.UserCommand):
             "Invalid message id!"
             )
             return
-
+        
         if not src_msg.embeds:
             await util.replace_embed(
                 self.response_msg,
@@ -3495,10 +3496,10 @@ class AdminCommand(user_commands.UserCommand):
                 "No embed data found in message."
             )
             return
-
+        
         for embed in src_msg.embeds:
             await self.response_msg.channel.send(embed=embed)
-
+        
         await self.response_msg.delete()
 
 
