@@ -147,3 +147,4 @@ def user_clock(t):
     pygame.draw.circle(image, (0, 0, 0), (640, 640), 64)
 
     return image
+    

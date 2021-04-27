@@ -533,6 +533,7 @@ def create_full_embed(embed_type="rich", author_name=EmptyEmbed, author_url=Empt
 
     return embed
 
+
 async def send_embed_2(
     channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed, do_return=False
@@ -661,13 +662,11 @@ async def replace_embed_from_dict(message, data):
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def edit_embed_from_dict(message, embed, data):
+async def edit_embed_from_dict(message, embed, update_embed_dict):
     """
     Edits the changed attributes of the embed of a message from a dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
-    update_embed_dict = data
-
     recursive_update(old_embed_dict, update_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
@@ -678,9 +677,12 @@ async def replace_embed_field_from_dict(message, embed, field_dict, index):
     Replaces an embed field of the embed of a message from a dictionary with a much more tight function
     """
 
-    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.set_field_at(
-            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+    embed.set_field_at(
+        index,
+        name=field_dict.get("name", ""),
+        value=field_dict.get("value", ""),
+        inline=field_dict.get("inline", True),
+    )
 
     return await message.edit(embed=embed)
 
@@ -698,10 +700,12 @@ async def edit_embed_field_from_dict(message, embed, field_dict, index):
         if k in old_field_dict and field_dict[k]:
             old_field_dict[k] = field_dict[k]
     
-    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.set_field_at(
-            index, name=old_field_dict["name"], value=old_field_dict["value"], inline=old_field_dict["inline"]
-        )
+    embed.set_field_at(
+        index,
+        name=old_field_dict.get("name", ""),
+        value=old_field_dict.get("value", ""),
+        inline=old_field_dict.get("inline", True),
+    )
 
     return await message.edit(embed=embed)
 
@@ -710,22 +714,26 @@ async def add_embed_field_from_dict(message, embed, field_dict):
     Adds an embed field to the embed of a message from a dictionary with a much more tight function
     """
 
-    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.add_field(
-            name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+    embed.add_field(
+        name=field_dict.get("name", ""),
+        value=field_dict.get("value", ""),
+        inline=field_dict.get("inline", True),
+    )
 
     return await message.edit(embed=embed)
 
 
-async def add_embed_fields_from_dicts(message, embed, field_dicts):
+async def add_embed_fields_from_dicts(message, embed: discord.Embed, field_dicts):
     """
     Adds embed fields to the embed of a message from dictionaries with a much more tight function
     """
 
     for field_dict in field_dicts:
-        if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-            embed.add_field(
-                name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"])
+        embed.add_field(
+            name=field_dict.get("name", ""),
+            value=field_dict.get("value", ""),
+            inline=field_dict.get("inline", True),
+        )
 
     return await message.edit(embed=embed)
 
@@ -735,10 +743,12 @@ async def insert_embed_field_from_dict(message, embed, field_dict, index):
     Inserts an embed field of the embed of a message from a dictionary with a much more tight function
     """
 
-    if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-        embed.insert_field_at(
-            index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"]
-        )
+    embed.insert_field_at(
+        index,
+        name=field_dict.get("name", ""),
+        value=field_dict.get("value", ""),
+        inline=field_dict.get("inline", True),
+    )
 
     return await message.edit(embed=embed)
 
@@ -749,10 +759,12 @@ async def insert_embed_fields_from_dicts(message, embed: discord.Embed, field_di
     """
     
     for field_dict in field_dicts:
-        if "name" in field_dict and "value" in field_dict and "inline" in field_dict:
-            embed.insert_field_at(
-                index, name=field_dict["name"], value=field_dict["value"], inline=field_dict["inline"]
-            )
+        embed.insert_field_at(
+        index,
+        name=field_dict.get("name", ""),
+        value=field_dict.get("value", ""),
+        inline=field_dict.get("inline", True),
+        )
 
     return await message.edit(embed=embed)
 

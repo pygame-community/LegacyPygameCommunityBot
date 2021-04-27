@@ -24,3 +24,4 @@ async def check_bonk(msg):
             "You mortal mammal! How you dare to boncc a snake?"
         )
         await msg.channel.send(common.PG_ANGRY_AN)
+        
