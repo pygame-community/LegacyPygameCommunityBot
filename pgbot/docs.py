@@ -227,4 +227,3 @@ async def put_doc(name, original_msg, msg_invoker, page=0):
 
     page_embed = util.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
     await page_embed.mainloop()
-    
