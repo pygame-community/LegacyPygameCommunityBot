@@ -65,11 +65,13 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_sudo_edit(self):
         """
         ->type More admin commands
+        ->signature pg!sudo_edit [message_id or channel_id/message_id] [message]
         ->signature pg!sudo_edit [message_id] [message]
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot.
         """
+
         edit_msg = await self.invoke_msg.channel.fetch_message(
             util.filter_id(self.args[0])
         )

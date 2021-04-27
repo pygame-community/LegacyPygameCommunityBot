@@ -71,7 +71,7 @@ for module in pkg_resources.working_set:  # pylint: disable=not-an-iterable
         pass
 
 
-async def put_main_doc(name, channel):
+async def put_main_doc(name, original_msg):
     """
     Put main part of the doc into embed(s)
     """
@@ -83,12 +83,12 @@ async def put_main_doc(name, channel):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        await util.send_embed(
-            channel,
+        await util.replace_embed(
+            original_msg,
             "Unknown module!",
             "No such module was found."
         )
-        return None, None
+        return None, None, None
 
     module_objs = dict(doc_module_dict)
     obj = None
@@ -104,21 +104,21 @@ async def put_main_doc(name, channel):
             for i in dir(obj):
                 module_objs[i] = getattr(obj, i)
         except KeyError:
-            await util.send_embed(
-                channel,
+            await util.replace_embed(
+                original_msg,
                 "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
             )
-            return None, None
+            return None, None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        await util.send_embed(
-            channel,
+        await util.replace_embed(
+            original_msg,
             f"Documentation for `{name}`",
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
             " which does not have documentation."
         )
-        return None, None
+        return None, None, None
 
     header = ""
     if splits[0] == "pygame":
@@ -131,6 +131,7 @@ async def put_main_doc(name, channel):
 
     docs = "" if obj.__doc__ is None else obj.__doc__
 
+    embeds = []
     lastchar = 0
     cnt = 0
     while len(docs) >= lastchar:
@@ -156,24 +157,26 @@ async def put_main_doc(name, channel):
                     lastchar += 2040
 
         if text:
-            await util.send_embed(
-                channel,
-                f"Documentation for `{name}`",
-                header + util.code_block(text)
-            )
+            embeds.append(await util.send_embed_2(
+                None,
+                title=f"Documentation for `{name}`",
+                description=header + util.code_block(text),
+                do_return=True
+            ))
 
         header = ""
         if cnt >= common.DOC_EMBED_LIMIT:
             break
 
-    return module_objs, name
+
+    return module_objs, name, embeds
 
 
-async def put_doc(name, channel):
+async def put_doc(name, original_msg, msg_invoker, page=0):
     """
     Helper function to get docs
     """
-    module_objs, name = await put_main_doc(name, channel)
+    module_objs, name, main_embeds = await put_main_doc(name, original_msg)
     if module_objs is None:
         return
 
@@ -207,12 +210,20 @@ async def put_doc(name, channel):
 
         allowed_obj_names[obj_type_name].append(oname)
 
+    embeds = []
+
     for otype, olist in allowed_obj_names.items():
         if not olist:
             continue
 
-        await util.send_embed(
-            channel,
-            f"{otype} in `{name}`",
-            util.code_block('\n'.join(olist))
-        )
+        embeds.append(await util.send_embed_2(
+            None,
+            title=f"{otype} in `{name}`",
+            description=util.code_block('\n'.join(olist)),
+            do_return=True
+        ))
+
+    main_embeds.extend(embeds)
+
+    page_embed = util.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+    await page_embed.mainloop()
