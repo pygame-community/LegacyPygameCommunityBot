@@ -37,7 +37,7 @@ BONCC_THRESHOLD = 10
 BONCC_PARDON = 3
 
 # Constants
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 TEST_MODE = "TEST_TOKEN" in os.environ
 TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
