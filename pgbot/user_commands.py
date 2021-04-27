@@ -96,7 +96,10 @@ class UserCommand:
 
     async def cmd_version(self):
         """
-        ->skip
+        ->type Other commands
+        ->signature pg!version
+        ->description Get the version of <@&822580851241123860>
+        -----
         Implement pg!version, to report bot version
         """
         self.check_args(0)
@@ -123,7 +126,7 @@ class UserCommand:
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
-    async def cmd_doc(self):
+    async def cmd_doc(self, page=-1, args=[], msg=None):
         """
         ->type Get help
         ->signature pg!doc [module.Class.method]
@@ -131,9 +134,17 @@ class UserCommand:
         -----
         Implement pg!doc, to view documentation
         """
-        self.check_args(1)
+        if page == -1:
+            self.check_args(1)
+            page = 0
 
-        await docs.put_doc(self.args[0], self.response_msg)
+        if not msg:
+            msg = self.response_msg
+
+        if not args:
+            args = self.args
+
+        await docs.put_doc(args[0], msg, self.invoke_msg.author, page)
 
     async def cmd_exec(self):
         """
@@ -212,10 +223,16 @@ class UserCommand:
             args = self.args
 
         if len(args) == 0:
-            await util.send_help_message(msg, self.cmds_and_funcs, page=page)
+            await util.send_help_message(
+                msg,
+                self.invoke_msg.author,
+                self.cmds_and_funcs,
+                page=page
+            )
         else:
             await util.send_help_message(
                 msg,
+                self.invoke_msg.author,
                 self.cmds_and_funcs,
                 args[0]
             )
@@ -323,6 +340,13 @@ class UserCommand:
             )
 
     async def cmd_refresh(self):
+        """
+        ->type Other commands
+        ->signature pg!refresh [message_id]
+        ->description Refresh a message which support pages.
+        -----
+        Implement pg!refresh, to refresh a message which supports pages
+        """
         self.check_args(1)
 
         msg_id = self.args.pop(0)
@@ -337,11 +361,30 @@ class UserCommand:
             )
             return
 
+        if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
+            await util.replace_embed(
+                self.response_msg,
+                "Message does not support pages",
+                "The message specified does not support pages. Make sure "
+                "the id of the message is correct."
+            )
+            return
+
         data = msg.embeds[0].footer.text.split("\n")
+
         page = re.search(r'\d+', data[0]).group()
         command = data[2].replace("Command: ", "").split()
 
-        await self.response_msg.delete()
+        if not page or not command or not self.cmds_and_funcs.get(command[0]):
+            await util.replace_embed(
+                self.response_msg,
+                "Message does not support pages",
+                "The message specified does not support pages. Make sure "
+                "the id of the message is correct."
+            )
+            return
 
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
         await self.cmds_and_funcs[command[0]](page=int(page)-1, args=command[1:], msg=msg)
 

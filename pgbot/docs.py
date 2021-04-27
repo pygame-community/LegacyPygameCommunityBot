@@ -172,7 +172,7 @@ async def put_main_doc(name, original_msg):
     return module_objs, name, embeds
 
 
-async def put_doc(name, original_msg):
+async def put_doc(name, original_msg, msg_invoker, page=0):
     """
     Helper function to get docs
     """
@@ -225,11 +225,5 @@ async def put_doc(name, original_msg):
 
     main_embeds.extend(embeds)
 
-    page_embed = util.EmbedPage(original_msg, main_embeds, f"doc {name}", 0)
-    await page_embed.update()
-
-        # await util.send_embed(
-        #     channel,
-        #     f"{otype} in `{name}`",
-        #     util.code_block('\n'.join(olist))
-        # )
+    page_embed = util.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+    await page_embed.mainloop()

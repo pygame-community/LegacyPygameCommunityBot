@@ -3615,33 +3615,3 @@ class AdminCommand(user_commands.UserCommand):
             f"Successfully archived {len(messages)} message(s)!",
             ""
         )
-
-    async def cmd_page_test(self, page=-1, args=[], msg=None):
-        if page == -1:
-            self.check_args(0)
-
-        page1 = discord.Embed.from_dict({"title": "Title 1", "description": "desc1", "type": "rich", "color": 16777130})
-        page2 = discord.Embed.from_dict({"title": "Title 2", "description": "desc2", "type": "rich", "color": 16777130})
-        page3 = discord.Embed.from_dict({"title": "Title 3", "description": "desc3", "type": "rich", "color": 16777130})
-        if page == -1:
-            page_system = util.EmbedPage(
-                self.response_msg,
-                [page1, page2, page3],
-                command="page_test"
-            )
-            await page_system.update()
-        else:
-            if not msg:
-                return util.EmbedPage(
-                    self.response_msg,
-                    [page1, page2, page3],
-                    command="page_test",
-                    start_page=page
-                )
-            else:
-                return util.EmbedPage(
-                    msg,
-                    [page1, page2, page3],
-                    command="page_test",
-                    start_page=page
-                )

@@ -4,7 +4,6 @@ import re
 import time
 from datetime import datetime
 import discord
-from discord import message
 from discord.embeds import EmptyEmbed
 
 from . import common
@@ -14,43 +13,103 @@ class ArgError(Exception):
     pass
 
 
-class EmbedPage:
-    def __init__(self, message, pages, command=None, start_page=0) -> None:
+class PagedEmbed:
+    def __init__(self, message, pages, caller=None, command=None, start_page=0):
+        """
+        Create an embed which can be controlled by reactions. The footer of the
+        embeds will be overwritten. If the optional "command" argument
+        is set the embed page will be refreshable. The pages argument must
+        have at least one embed.
+
+        Args:
+            message (discord.Message): The message to overwrite.
+
+            pages (list[discord.Embed]): The list of embeds to change
+            pages between
+
+            caller (discord.Member, optional): The user that can control
+            the embed. Defaults to None (everyone can control it).
+
+            command (str, optional): Optional argument to support pg!refresh.
+            Defaults to None.
+
+            start_page (int, optional): The page to start from. Defaults to 0.
+        """
         self.pages = pages
         self.current_page = start_page
         self.message = message
-        self.start_time = time.time()
         self.parent_command = command
+        self.is_on_info = False
 
         self.control_emojis = {
-            "prev": "◀️",
-            "next": "▶️",
-            "stop": "⏹️",
+            "first": ("", ""),
+            "prev":  ("◀️", "Go to the previous page"),
+            "stop":  ("⏹️", "Deactivate the buttons"),
+            "info":  ("ℹ️", "Show this information page"),
+            "next":  ("▶️", "Go to the next page"),
+            "last":  ("", ""),
         }
+
+        if len(self.pages) >= 3:
+            self.control_emojis["first"] = ("⏪", "Go to the first page")
+            self.control_emojis["last"]  = ("⏩", "Go to the last page")
+
+
         self.killed = False
+        self.caller = caller
+
+        newline = "\n"
+        self.help_text = ""
+        for emoji, desc in self.control_emojis.values():
+            if emoji:
+                self.help_text += f"{emoji}: {desc}{newline}"
+
 
     async def add_control_emojis(self):
+        """Add the control reactions to the message."""
         for emoji in self.control_emojis.values():
-            await self.message.add_reaction(emoji)
+            if emoji[0]:
+                await self.message.add_reaction(emoji[0])
 
-    async def handle_reaction(self, reaction, user):
-        if reaction == self.control_emojis["next"]:
-            await self.next_page()
+    async def handle_reaction(self, reaction):
+        """Handle a reaction."""
+        if reaction == self.control_emojis.get("next")[0]:
+            await self.set_page(self.current_page + 1)
 
-        if reaction == self.control_emojis["prev"]:
-            await self.prev_page()
+        if reaction == self.control_emojis.get("prev")[0]:
+            await self.set_page(self.current_page - 1)
 
-        if reaction == self.control_emojis["stop"]:
+        if reaction == self.control_emojis.get("first")[0]:
+            await self.set_page(0)
+
+        if reaction == self.control_emojis.get("last")[0]:
+            await self.set_page(len(self.pages) - 1)
+
+        if reaction == self.control_emojis.get("stop")[0]:
             self.killed = True
 
-        await self.message.remove_reaction(reaction, user)
+        if reaction == self.control_emojis.get("info")[0]:
+            await self.show_info_page()
 
-    async def next_page(self):
-        self.current_page = (self.current_page + 1) % len(self.pages)
-        await self.message.edit(embed=self.pages[self.current_page])
+    async def show_info_page(self):
+        """Create and show the info page."""
+        self.is_on_info = not self.is_on_info
+        if self.is_on_info:
+            info_page_embed = await send_embed_2(
+                None,
+                description=self.help_text,
+                do_return=True
+            )
+            footer = self.get_footer_text(self.current_page)
+            info_page_embed.set_footer(text=footer)
+            await self.message.edit(embed=info_page_embed)
+        else:
+            await self.message.edit(embed=self.pages[self.current_page])
 
-    async def prev_page(self):
-        self.current_page = (self.current_page - 1) % len(self.pages)
+    async def set_page(self, num):
+        """Set the current page and display it."""
+        self.is_on_info = False
+        self.current_page = num % len(self.pages)
         await self.message.edit(embed=self.pages[self.current_page])
 
     async def setup(self):
@@ -59,32 +118,53 @@ class EmbedPage:
             return False
 
         for i, page in enumerate(self.pages):
-            footer = (
-                f"Page {i+1} of {len(self.pages)}.\n"
-                f"Refresh with pg!refresh {self.message.id}"
-            )
-            if self.parent_command:
-                footer += f"\nCommand: {self.parent_command}"
+            footer = self.get_footer_text(i)
 
             page.set_footer(text=footer)
 
         await self.message.edit(embed=self.pages[self.current_page])
         await self.add_control_emojis()
+
         return True
 
-    def check(self, args):
-        return args.message_id == self.message.id and not args.member.bot
+    def get_footer_text(self, page_num):
+        """Get the information footer text, which contains the current page."""
+        newline = "\n"
+        footer = f"Page {page_num+1} of {len(self.pages)}.{newline}"
 
-    async def update(self):
+        if self.parent_command:
+            footer += f"Refresh with pg!refresh {self.message.id}{newline}"
+            footer += f"Command: {self.parent_command}"
+
+        return footer
+
+    async def check(self, event):
+        """Check if the event from "raw_reaction_add" can be passed down to `handle_rection`"""
+        if event.member.bot:
+            return False
+
+        await self.message.remove_reaction(str(event.emoji), event.member)
+        if self.caller and self.caller.id != event.user_id:
+            for role in event.member.roles:
+                if role.id in common.ADMIN_ROLES:
+                    break
+            else:
+                return False
+
+        return event.message_id == self.message.id
+
+    async def mainloop(self):
+        """Start the mainloop. This checks for reactions and handles them."""
         if not await self.setup():
             return
 
         while not self.killed:
             try:
-                event = await common.bot.wait_for(
-                    "raw_reaction_add", check=self.check, timeout=60)
+                event = await common.bot.wait_for("raw_reaction_add", timeout=60)
 
-                await self.handle_reaction(str(event.emoji), event.member)
+                if await self.check(event):
+                    await self.handle_reaction(str(event.emoji))
+
             except asyncio.TimeoutError:
                 self.killed = True
 
@@ -270,7 +350,7 @@ def get_doc_from_docstr(string, regex):
     return data
 
 
-async def send_help_message(original_msg, functions, command=None, page=0):
+async def send_help_message(original_msg, invoker, functions, command=None, page=0):
     """
     Edit original_msg to a help message. If command is supplied it will
     only show information about that specific command. Otherwise sends
@@ -336,16 +416,15 @@ async def send_help_message(original_msg, functions, command=None, page=0):
                 )
             )
 
-        print(original_msg.id)
-
-        page_system = EmbedPage(
+        page_system = PagedEmbed(
             original_msg,
             embeds,
+            invoker,
             "help",
             page
         )
 
-        await page_system.update()
+        await page_system.mainloop()
 
         return
 
@@ -404,7 +483,7 @@ async def replace_embed(message, title, description, color=0xFFFFAA, url_image=N
     return await message.edit(embed=embed)
 
 
-async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None, fields=[]):
+async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None, fields=[], do_return=False):
     """
     Sends an embed with a much more tight function
     """
@@ -414,6 +493,9 @@ async def send_embed(channel, title, description, color=0xFFFFAA, url_image=None
 
     for field in fields:
         embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    if do_return:
+        return embed
 
     return await channel.send(embed=embed)
 
