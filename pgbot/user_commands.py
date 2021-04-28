@@ -175,7 +175,10 @@ class UserCommand:
 
         if not code.strip() and self.invoke_msg.attachments:
             attach = self.invoke_msg.attachments[0]
-            if attach.content_type.startswith("text"):
+            if (
+                attach.content_type is not None
+                and attach.content_type.startswith("text")
+            ):
                 contents = await attach.read()
                 code = contents.decode()
 
