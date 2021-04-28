@@ -182,6 +182,7 @@ class UserCommand:
                 contents = await attach.read()
                 code = contents.decode()
 
+        code = code.strip().strip("\\")
         tstamp = time.perf_counter_ns()
         returned = await sandbox.exec_sandbox(code, tstamp, 10 if self.is_priv else 5)
         dur = returned.duration  # the execution time of the script alone
