@@ -2311,6 +2311,290 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
+    async def cmd_emsudo_edit_fields(self):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_edit_fields [*args]
+        ->description Add embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_edit_fields ({target_message_id}, {field_string_tuple})
+        pg!emsudo_edit_fields ({target_message_id}, {field_dict_tuple})
+        pg!emsudo_edit_fields ({target_message_id}, {field_string_or_dict_tuple})
+        ```
+        Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
+        """
+        field_dicts_list = []
+
+        if len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+
+                edit_msg_embed = edit_msg.embeds[0]
+
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
+
+                if not src_channel:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except discord.NotFound:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+
+                await util.edit_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif len(self.args) == 2:
+            if self.args[0].isnumeric() and self.args[1].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                src_channel = self.invoke_msg.channel
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+
+                edit_msg_embed = edit_msg.embeds[0]
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[1])
+                    )
+                except discord.NotFound:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+
+                await util.edit_embed_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+
+        arg_count = len(args)
+
+        if arg_count == 2:
+            try:
+                edit_msg_id = int(args[0])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+                ""
+                )
+                return
+
+            try:
+                edit_msg = await self.invoke_msg.channel.fetch_message(
+                    edit_msg_id
+                )
+            except discord.NotFound:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+
+            if not edit_msg.embeds:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+                )
+                return
+
+            edit_msg_embed = edit_msg.embeds[0]
+
+            if isinstance(args[1], (list, tuple)):
+                for i, data in enumerate(args[1]):
+                    if isinstance(data, dict):
+                        field_dicts_list.append(data)
+
+                    elif isinstance(data, str):
+                        if data:
+                            try:
+                                data_list = util.get_embed_fields((data,))[0]
+                            except (TypeError, IndexError):
+                                await util.replace_embed(
+                                self.response_msg,
+                                "Invalid format for field string!",
+                                ""
+                                )
+                                return
+
+                            if len(data_list) == 3:
+                                data_dict = {"name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                            elif len(data_list) == 2:
+                                data_dict = {"name": data_list[0], "value": data_list[1], "inline": False}
+
+                            elif not data_list:
+                                await util.replace_embed(
+                                self.response_msg,
+                                "Invalid format for field string!",
+                                ""
+                                )
+                                return
+                        else:
+                            data_dict = {}
+                        
+                        field_dicts_list.append(data_dict)
+                    else:
+                        await util.replace_embed(
+                        self.response_msg,
+                        f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
+                        ""
+                        )
+                        return
+
+            else:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+                ""
+                )
+                return
+
+        else:
+            await util.replace_embed(
+            self.response_msg,
+            "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+            ""
+            )
+            return
+
+        await util.edit_embed_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
+
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
     async def cmd_emsudo_insert_field(self):
         """
         ->type emsudo commands
@@ -3213,6 +3497,160 @@ class AdminCommand(user_commands.UserCommand):
 
         try:
             await util.remove_embed_field(edit_msg, edit_msg_embed, field_index)
+        except IndexError:
+            await util.replace_embed(
+            self.response_msg,
+            "Invalid field index!",
+            ""
+            )
+            return
+
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
+    async def cmd_emsudo_remove_fields(self):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_remove_field [*args]
+        ->description Remove an embed field through the bot
+        ->extended description
+        ```
+        pg!emsudo_remove_fields {target_message_id} {index_1} {index_2}...
+        pg!emsudo_remove_fields ({target_message_id}, {range_object})
+        ```
+        Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_remove_fields, for admins to remove fields in embeds sent via the bot
+        """
+
+        self.check_args(1, 26)
+
+        field_indices = ()
+        if all(arg.isnumeric() for arg in self.args):
+            try:
+                edit_msg_id = int(self.args[0])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices,"+\
+                "or a valid integer message id followed by a comma and a `range()` object is required.",
+                ""
+                )
+                return
+
+            try:
+                edit_msg = await self.invoke_msg.channel.fetch_message(
+                    edit_msg_id
+                )
+            except discord.NotFound:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+
+            if not edit_msg.embeds:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+                )
+                return
+
+            edit_msg_embed = edit_msg.embeds[0]
+
+            try:
+                field_indices = tuple(int(index) for index in self.args[1:])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices,"+\
+                "or a valid integer message id followed by a comma and a `range()` object is required.",
+                ""
+                )
+                return
+
+        else:
+            try:
+                args = eval(self.string)
+            except Exception as e:
+                tbs = traceback.format_exception(type(e), e, e.__traceback__)
+                # Pop out the first entry in the traceback, because that's
+                # this function call itself
+                tbs.pop(1)
+                await util.replace_embed(
+                    self.response_msg,
+                    "Invalid arguments!",
+                    f"```\n{''.join(tbs)}```"
+                )
+                return
+            
+            if isinstance(args, tuple) and len(args) == 2:
+                try:
+                    edit_msg_id = int(args[0])
+                except ValueError:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid arguments! A valid integer message id followed by indices,"+\
+                    "or a valid integer message id followed by a comma and a `range()` object is required.",
+                    ""
+                    )
+                    return
+                
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        edit_msg_id
+                    )
+                except discord.NotFound:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message id!"
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "No embed data found in message."
+                    )
+                    return
+
+                edit_msg_embed = edit_msg.embeds[0]
+                
+                if isinstance(args[1], range):
+                    if len(args[1]) > 25:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Invalid range object passed as an argument!",
+                        ""
+                        )
+                        return
+
+                    field_indices = tuple(args[1])
+                else:
+                    await util.replace_embed(
+                    self.response_msg,
+                    "Invalid arguments! A valid integer message id followed by indices,"+\
+                    "or a valid integer message id followed by a comma and a `range()` object is required.",
+                    ""
+                    )
+                    return
+
+            else:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices,"+\
+                "or a valid integer message id followed by a comma and a `range()` object is required.",
+                ""
+                )
+                return
+
+        try:
+            await util.remove_embed_fields(edit_msg, edit_msg_embed, field_indices)
         except IndexError:
             await util.replace_embed(
             self.response_msg,

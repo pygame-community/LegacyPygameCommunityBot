@@ -668,7 +668,6 @@ async def edit_embed_from_dict(message, embed, update_embed_dict):
     """
     old_embed_dict = embed.to_dict()
     recursive_update(old_embed_dict, update_embed_dict)
-
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -708,6 +707,39 @@ async def edit_embed_field_from_dict(message, embed, field_dict, index):
     )
 
     return await message.edit(embed=embed)
+
+
+async def edit_embed_fields_from_dicts(message, embed: discord.Embed, field_dicts):
+    """
+    Edits embed fields in the embed of a message from dictionaries with a much more tight function
+    """
+    
+    embed_dict = embed.to_dict()
+    old_field_dicts = embed_dict.get("fields", [])
+    old_field_dicts_len = len(old_field_dicts)
+    field_dicts_len = len(field_dicts)
+
+    for i in range(old_field_dicts_len):
+        if i > field_dicts_len-1:
+            break
+
+        old_field_dict = old_field_dicts[i]
+        field_dict = field_dicts[i]
+
+        if field_dict:
+            for k in field_dict:
+                if k in old_field_dict and field_dict[k]:
+                    old_field_dict[k] = field_dict[k]
+            
+            embed.set_field_at(
+                i,
+                name=old_field_dict.get("name", ""),
+                value=old_field_dict.get("value", ""),
+                inline=old_field_dict.get("inline", True),
+            )
+
+    return await message.edit(embed=embed)
+
 
 async def add_embed_field_from_dict(message, embed, field_dict):
     """
@@ -774,6 +806,15 @@ async def remove_embed_field(message, embed, index):
     Removes an embed field of the embed of a message from a dictionary with a much more tight function
     """
     embed.remove_field(index)
+    return await message.edit(embed=embed)
+
+
+async def remove_embed_fields(message, embed, field_indices):
+    """
+    Removes multiple embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    for index in sorted(field_indices, reverse=True):
+        embed.remove_field(index)
     return await message.edit(embed=embed)
 
 
