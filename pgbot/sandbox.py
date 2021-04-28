@@ -1,24 +1,57 @@
-# TODO: Write documentation what this part does
-
 import asyncio
 import builtins
 import cmath
-import gc
 import itertools
 import math
-import os
+import multiprocessing
 import random
 import re
 import string
+import sys
 import time
+import traceback
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 
-from pgbot.util import ThreadWithTrace, PgExecBot, pg_exec
+from . import common
 
-process = psutil.Process(os.getpid())
+
+class Output:
+    """
+    Output class for posting relevent data through discord
+    """
+
+    def __init__(self):
+        self.text = ""
+        self.img = None
+        self.exc = None
+        self.duration = -1  # The script execution time
+
+
+class SandboxFunctionsObject:
+    """
+    Wrap custom functions for use in pg!exec
+    """
+    public_functions = (
+        "print",
+    )
+
+    def __init__(self):
+        self.output = Output()
+
+    def print(self, *values, sep=" ", end="\n"):
+        self.output.text = str(self.output.text)
+        self.output.text += sep.join(map(str, values)) + end
+
+
+class PgExecBot(Exception):
+    """
+    Base class for pg!exec exceptions
+    """
+    pass
+
 
 filtered_builtins = {}
 disallowed_builtins = (
@@ -55,6 +88,9 @@ for key in dir(builtins):
 
 
 class FilteredPygame:
+    """
+    pygame module in a sandbox
+    """
     Surface = pygame.Surface
     Rect = pygame.Rect
     Color = pygame.Color
@@ -64,6 +100,8 @@ class FilteredPygame:
     transform = pygame.transform
     mask = pygame.mask
     math = pygame.math
+    Vector2 = pygame.math.Vector2
+    Vector3 = pygame.math.Vector3
     version = pygame.version
 
     class freetype:
@@ -110,71 +148,120 @@ for const in pygame.constants.__all__:
     setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
-allowed_globals = {
-    "math": math,
-    "cmath": cmath,
-    "random": random,
-    "re": re,
-    "time": time,
-    "string": string,
-    "itertools": itertools,
-}
+def pg_exec(
+    code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue
+):
+    """
+    exec wrapper used for pg!exec, runs in a seperate process. Since this
+    function runs in a seperate Process, keep that in mind if you want to make
+    any changes to this function (that is, do not touch this shit if you don't 
+    know what you are doing)
+    """
+    sandbox_funcs = SandboxFunctionsObject()
+    output = sandbox_funcs.output
 
-for module in allowed_globals:
-    del allowed_globals[module].__loader__, allowed_globals[module].__spec__
+    allowed_globals = {
+        "math": math,
+        "cmath": cmath,
+        "random": random,
+        "re": re,
+        "time": time,
+        "string": string,
+        "itertools": itertools,
+    }
 
-allowed_globals["__builtins__"] = filtered_builtins
-allowed_globals["pygame"] = FilteredPygame
+    for module in allowed_globals:
+        del allowed_globals[module].__loader__, allowed_globals[module].__spec__
 
-for k in filtered_builtins:
-    allowed_globals[k] = filtered_builtins[k]
-
-
-class Output:
-    def __init__(self):
-        self.text = ""
-        self.img = None
-        self.exc = None
-        self.duration = -1  # The script execution time
-
-
-async def exec_sandbox(code: str, timeout=5, max_memory=2 ** 28):
-    output = Output()
+    allowed_globals["__builtins__"] = allowed_builtins
+    allowed_globals["pygame"] = FilteredPygame
     allowed_globals["output"] = output
 
-    for illegal_patterns in ["__subclasses__", "__loader__", "__bases__", "__code__",
-                             "__getattribute__", "__setattr__", "__delattr_", "mro"]:
-        if illegal_patterns in code:
+    allowed_globals.update(allowed_builtins)
+
+    for func_name in sandbox_funcs.public_functions:
+        allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
+
+    for ill_attr in common.ILLEGAL_ATTRIBUTES:
+        if ill_attr in code:
             output.exc = PgExecBot("Suspicious Pattern")
+            break
+    else:
+        try:
+            script_start = time.perf_counter()
+            exec(code, allowed_globals)
+            output.duration = time.perf_counter() - script_start
+
+        except ImportError:
+            output.exc = PgExecBot(
+                "Oopsies! The bot's exec function doesn't support importing "
+                + "external modules. Don't worry, many modules are pre-"
+                + "imported for you already! Just re-run your code, without "
+                + "the import statements"
+            )
+
+        except SyntaxError as e:
+            offsetarrow = " " * e.offset + "^\n"
+            output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  "
+                                   + e.text + '\n' + offsetarrow + e.msg)
+
+        except Exception as err:
+            ename = err.__class__.__name__
+            details = err.args[0]
+            # Don't try to replace this, otherwise we may get wrong line numbers
+            lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
+            output.exc = PgExecBot(f"{ename} at line {lineno}: {details}")
+
+    # Because output needs to go through queue, we need to sanitize it first
+    # Any random data that gets put in the queue will likely crash the entire
+    # bot
+    sanitized_output = Output()
+    if isinstance(output.text, str):
+        sanitized_output.text = output.text
+
+    if isinstance(output.duration, float):
+        sanitized_output.duration = output.duration
+
+    if isinstance(output.exc, PgExecBot):
+        sanitized_output.exc = output.exc
+
+    if isinstance(output.img, pygame.Surface):
+        # A surface is not picklable, so handle differently
+        sanitized_output.img = True
+        pygame.image.save(output.img, f"temp{tstamp}.png")
+
+    q.put(sanitized_output)
+
+
+async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
+    """
+    Helper to run pg!exec code in a sandbox, manages the seperate process that
+    runs to execute user code.
+    """
+    q = multiprocessing.Queue(1)
+    proc = multiprocessing.Process(
+        target=pg_exec,
+        args=(code, tstamp, filtered_builtins, q),
+        daemon=True  # the process must die when the main process dies
+    )
+    proc.start()
+    psproc = psutil.Process(proc.pid)
+
+    start = time.perf_counter() # is system-wide and has the highest resolution. 
+    while proc.is_alive():
+        if start + timeout < time.perf_counter():
+            output = Output()
+            output.exc = PgExecBot(f"Hit timeout of {timeout} seconds!")
+            proc.kill()
             return output
 
-    def exec_thread():
-        glob = allowed_globals.copy()
-        try:
-            output.duration = pg_exec(code, glob)
-        except Exception as exc:
-            output.exc = exc
-
-        glob.clear()
-        gc.collect()
-
-    thread = ThreadWithTrace(target=exec_thread)
-    thread.start()
-
-    start = time.time()
-    while thread.is_alive():
-        if start + timeout < time.time():
-            output.exc = PgExecBot(
-                f"Sandbox was running for more than the timeout of {timeout} seconds!"
-            )
-            break
-        if process.memory_info().rss > max_memory:
+        if psproc.memory_info().rss > max_memory:
+            output = Output()
             output.exc = PgExecBot(
                 f"The bot's memory has taken up to {max_memory} bytes!"
             )
-            break
+            proc.kill()
+            return output
         await asyncio.sleep(0.05)  # Let the bot do other async things
 
-    thread.kill()
-    thread.join()
-    return output
+    return q.get()
