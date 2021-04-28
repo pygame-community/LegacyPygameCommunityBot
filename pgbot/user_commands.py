@@ -2,14 +2,15 @@ import asyncio
 import os
 import platform
 import random
+import re
 import sys
 import time
 import traceback
-import re
+import urllib
 
 import discord
-from discord.errors import HTTPException
 import pygame
+from discord.errors import HTTPException
 
 from . import clock, common, docs, emotion, sandbox, util
 
@@ -166,11 +167,17 @@ class UserCommand:
         -----
         Implement pg!exec, for execution of python code
         """
-        code = self.string.lstrip('`').rstrip('`')
+        code = self.string.strip('`')
         if code.startswith("python\n"):
             code = code[7:]
         elif code.startswith("py\n"):
             code = code[3:]
+
+        if not code.strip() and self.invoke_msg.attachments:
+            attach = self.invoke_msg.attachments[0]
+            if attach.content_type.startswith("text"):
+                contents = await attach.read()
+                code = contents.decode()
 
         tstamp = time.perf_counter_ns()
         returned = await sandbox.exec_sandbox(code, tstamp, 10 if self.is_priv else 5)
@@ -386,4 +393,4 @@ class UserCommand:
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
-        await self.cmds_and_funcs[command[0]](page=int(page)-1, args=command[1:], msg=msg)
+        await self.cmds_and_funcs[command[0]](page=int(page) - 1, args=command[1:], msg=msg)
