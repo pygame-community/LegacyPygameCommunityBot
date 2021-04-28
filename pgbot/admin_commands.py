@@ -3517,6 +3517,7 @@ class AdminCommand(user_commands.UserCommand):
         ->extended description
         ```
         pg!emsudo_remove_fields {target_message_id} {index_1} {index_2}...
+        pg!emsudo_remove_fields ({target_message_id}, {range_object})
         ```
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
         -----
