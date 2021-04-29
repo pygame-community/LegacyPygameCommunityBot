@@ -2323,6 +2323,8 @@ class AdminCommand(user_commands.UserCommand):
         pg!emsudo_edit_fields ({target_message_id}, {field_string_or_dict_tuple})
         ```
         Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
+        Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
+        to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at it's index when passed to this command.
         -----
         Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
         """
@@ -3929,8 +3931,8 @@ class AdminCommand(user_commands.UserCommand):
         ->description Get the embed data of a message
         ->extended description
         ```
-        pg!emsudo_get {message_id} [*{optional_embed_attr}]
-        pg!emsudo_get {channel_id} {message_id} [*{optional_embed_attr}]
+        pg!emsudo_get {message_id} {optional_embed_attr} {optional_embed_attr}...
+        pg!emsudo_get {channel_id} {message_id} {optional_embed_attr} {optional_embed_attr}...
         ```
         Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
@@ -4083,7 +4085,7 @@ class AdminCommand(user_commands.UserCommand):
                 if key not in reduced_embed_attr_keys:
                     del embed_dict[key]
         
-            if "fields" in reduced_embed_attr_keys and "fields" in embed_dict:
+            if "fields" in reduced_embed_attr_keys and "fields" in embed_dict and filtered_field_indices:
                 embed_dict["fields"] = [embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)]
 
 
@@ -4154,6 +4156,7 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid message id!"
                 )
                 return
+        
         try:
             src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
