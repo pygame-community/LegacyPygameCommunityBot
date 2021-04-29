@@ -2315,7 +2315,7 @@ class AdminCommand(user_commands.UserCommand):
         """
         ->type emsudo commands
         ->signature pg!emsudo_edit_fields [*args]
-        ->description Add embed fields through the bot
+        ->description Edit multiple embed fields through the bot
         ->extended description
         ```
         pg!emsudo_edit_fields ({target_message_id}, {field_string_tuple})
@@ -3444,14 +3444,14 @@ class AdminCommand(user_commands.UserCommand):
         """
         ->type emsudo commands
         ->signature pg!emsudo_clone_fields [*args]
-        ->description Remove an embed field through the bot
+        ->description Clone multiple embed fields through the bot
         ->extended description
         ```
         pg!emsudo_clone_fields {target_message_id} {index_1} {index_2}... i={insertion_idx}
-        pg!emsudo_clone_fields ({target_message_id}, {range_object}, insertion_index)
+        pg!emsudo_clone_fields ({target_message_id}, {range_object}, insertion_idx)
         ```
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
-        If `i={insertion_idx}` is excluded, the cloned fields will be inserted at the index where they were cloned from.
+        If `insertion_idx` is excluded, the cloned fields will be inserted at the index where they were cloned from.
         -----
         Implement pg!emsudo_clone_fields, for admins to remove fields in embeds sent via the bot
         """
