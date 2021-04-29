@@ -4085,7 +4085,6 @@ class AdminCommand(user_commands.UserCommand):
         
             if "fields" in reduced_embed_attr_keys and "fields" in embed_dict:
                 embed_dict["fields"] = [embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)]
-                print(embed_dict["fields"])
 
 
         with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
