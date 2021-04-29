@@ -3437,28 +3437,224 @@ class AdminCommand(user_commands.UserCommand):
         await self.invoke_msg.delete()
 
 
-    async def cmd_emsudo_remove_field(self):
+    
+
+
+    async def cmd_emsudo_clone_fields(self):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_remove_field [*args]
+        ->signature pg!emsudo_clone_fields [*args]
         ->description Remove an embed field through the bot
         ->extended description
         ```
-        pg!emsudo_remove_field {target_message_id} {index}
+        pg!emsudo_clone_fields {target_message_id} {index_1} {index_2}... i={insertion_idx}
+        pg!emsudo_clone_fields ({target_message_id}, {range_object}, insertion_index)
         ```
-        Remove an embed field at the given index of the embed of a message in the channel where this command was invoked using the given arguments.
+        Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        If `i={insertion_idx}` is excluded, the cloned fields will be inserted at the index where they were cloned from.
         -----
-        Implement pg!emsudo_remove_field, for admins to remove fields in embeds sent via the bot
+        Implement pg!emsudo_clone_fields, for admins to remove fields in embeds sent via the bot
         """
 
-        self.check_args(2)
+        self.check_args(1, 26)
+
+        field_indices = ()
+        insertion_index = None
+        insertion_index_arg_idx = None
+        break_1 = False
+        for i, arg in enumerate(self.args):
+            if not arg.isnumeric():
+                if arg.lower().startswith("i="):
+                    try:
+                        insertion_index = int(arg[2:])
+                    except ValueError:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                        "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                        ""
+                        )
+                        return
+                    else:
+                        insertion_index_arg_idx = i
+                else:
+                    break_1 = True
+                    break
+
+        else:
+            if insertion_index_arg_idx:
+                self.args.remove(insertion_index_arg_idx)
+            
+            try:
+                edit_msg_id = int(self.args[0])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                ""
+                )
+                return
+
+            try:
+                edit_msg = await self.invoke_msg.channel.fetch_message(
+                    edit_msg_id
+                )
+            except discord.NotFound:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+
+            if not edit_msg.embeds:
+                await util.replace_embed(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+                )
+                return
+
+            edit_msg_embed = edit_msg.embeds[0]
+
+            try:
+                field_indices = tuple(int(index) for index in self.args[1:])
+            except ValueError:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                ""
+                )
+                return
+
+        if break_1:
+            try:
+                args = eval(self.string)
+            except Exception as e:
+                tbs = traceback.format_exception(type(e), e, e.__traceback__)
+                # Pop out the first entry in the traceback, because that's
+                # this function call itself
+                tbs.pop(1)
+                await util.replace_embed(
+                    self.response_msg,
+                    "Invalid arguments!",
+                    f"```\n{''.join(tbs)}```"
+                )
+                return
+            
+            if isinstance(args, tuple):
+                if len(args) >= 2:
+                    try:
+                        edit_msg_id = int(args[0])
+                    except ValueError:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                        "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                        ""
+                        )
+                        return
+                    
+                    try:
+                        edit_msg = await self.invoke_msg.channel.fetch_message(
+                            edit_msg_id
+                        )
+                    except discord.NotFound:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "Invalid message id!"
+                        )
+                        return
+
+                    if not edit_msg.embeds:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                        )
+                        return
+
+                    edit_msg_embed = edit_msg.embeds[0]
+
+                    if len(args) > 2:
+                        try:
+                            insertion_index = int(args[2])
+                        except ValueError:
+                            await util.replace_embed(
+                            self.response_msg,
+                            "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                            "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                            ""
+                            )
+                            return
+                    
+                    if isinstance(args[1], range):
+                        if len(args[1]) > 25:
+                            await util.replace_embed(
+                            self.response_msg,
+                            "Invalid range object passed as an argument!",
+                            ""
+                            )
+                            return
+
+                        field_indices = tuple(args[1])
+                    else:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                        "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                        ""
+                        )
+                        return
+
+            else:
+                await util.replace_embed(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"+\
+                "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
+                ""
+                )
+                return
+
+        try:
+            await util.clone_embed_fields(edit_msg, edit_msg_embed, field_indices, insertion_index=insertion_index)
+        except IndexError:
+            await util.replace_embed(
+            self.response_msg,
+            "Invalid field index/indices!",
+            ""
+            )
+            return
+
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
+    async def cmd_emsudo_swap_fields(self):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_swap_fields [*args]
+        ->description Swap embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_swap_fields {target_message_id} {index_a} {index_b}
+        ```
+        Swap the positions of embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_swap_fields, for admins to swap fields in embeds sent via the bot
+        """
+
+        self.check_args(3)
 
         try:
             edit_msg_id = int(self.args[0])
         except ValueError:
             await util.replace_embed(
             self.response_msg,
-            "Invalid arguments! A valid integer message id followed by an index is required.",
+            "Invalid arguments! A valid integer message id followed by two indices is required.",
             ""
             )
             return
@@ -3486,17 +3682,27 @@ class AdminCommand(user_commands.UserCommand):
         edit_msg_embed = edit_msg.embeds[0]
 
         try:
-            field_index = int(self.args[1])
+            field_index_a = int(self.args[1])
         except ValueError:
             await util.replace_embed(
             self.response_msg,
-            "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
+            "Invalid arguments! A valid integer message id followed by two indices is required.",
+            ""
+            )
+            return
+        
+        try:
+            field_index_b = int(self.args[2])
+        except ValueError:
+            await util.replace_embed(
+            self.response_msg,
+            "Invalid arguments! A valid integer message id followed by two indices is required.",
             ""
             )
             return
 
         try:
-            await util.remove_embed_field(edit_msg, edit_msg_embed, field_index)
+            await util.swap_embed_fields(edit_msg, edit_msg_embed, field_index_a, field_index_b)
         except IndexError:
             await util.replace_embed(
             self.response_msg,
@@ -3512,7 +3718,7 @@ class AdminCommand(user_commands.UserCommand):
     async def cmd_emsudo_remove_fields(self):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_remove_field [*args]
+        ->signature pg!emsudo_remove_fields [*args]
         ->description Remove an embed field through the bot
         ->extended description
         ```
@@ -3734,7 +3940,7 @@ class AdminCommand(user_commands.UserCommand):
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
-        self.check_args(1, maxarg=13)
+        self.check_args(1, maxarg=38)
 
         src_msg_id = None
         src_msg = None
@@ -3746,6 +3952,8 @@ class AdminCommand(user_commands.UserCommand):
             "thumbnail", "image", "footer", "timestamp"
         ))
         reduced_embed_attr_keys = set()
+        filtered_field_indices = []
+        offset_idx_2 = None
 
         if len(self.args) > 1:
             offset_idx = 0
@@ -3784,7 +3992,21 @@ class AdminCommand(user_commands.UserCommand):
                         return
 
             for i in range(offset_idx, len(self.args)):
-                if self.args[i] in embed_attr_keys:
+                if self.args[i] == "fields":
+                    reduced_embed_attr_keys.add("fields")
+                    for j in range(i+1, len(self.args)):
+                        if self.args[j].isnumeric():
+                            filtered_field_indices.append(int(self.args[j]))
+                        else:
+                            offset_idx_2 = j
+                            break
+                    else:
+                        break
+            
+                    if offset_idx_2:
+                        break
+
+                elif self.args[i] in embed_attr_keys:
                     reduced_embed_attr_keys.add(self.args[i])
                 else:
                     await util.replace_embed(
@@ -3793,6 +4015,18 @@ class AdminCommand(user_commands.UserCommand):
                     "Invalid embed attribute names!"
                     )
                     return
+
+            if offset_idx_2:
+                for i in range(offset_idx_2, len(self.args)):
+                    if self.args[i] in embed_attr_keys:
+                        reduced_embed_attr_keys.add(self.args[i])
+                    else:
+                        await util.replace_embed(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "Invalid embed attribute names!"
+                        )
+                        return
 
         elif len(self.args) == 2:
             try:
@@ -3848,6 +4082,9 @@ class AdminCommand(user_commands.UserCommand):
             for key in tuple(embed_dict.keys()):
                 if key not in reduced_embed_attr_keys:
                     del embed_dict[key]
+        
+            if "fields" in reduced_embed_attr_keys and "fields" in embed_dict:
+                embed_dict["fields"] = [embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)]
 
 
         with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:

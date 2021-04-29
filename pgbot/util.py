@@ -817,6 +817,43 @@ async def remove_embed_fields(message, embed, field_indices):
         embed.remove_field(index)
     return await message.edit(embed=embed)
 
+async def swap_embed_fields(message, embed, index_a, index_b):
+    """
+    Swaps two embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    embed_dict = embed.to_dict()
+    fields_list = embed_dict["fields"]
+    fields_list[index_a], fields_list[index_b] = fields_list[index_b], fields_list[index_a]
+    return await message.edit(embed=discord.Embed.from_dict(embed_dict))
+
+
+async def clone_embed_field(message, embed, index):
+    """
+    Duplicates an embed field of the embed of a message from a dictionary with a much more tight function
+    """
+    embed_dict = embed.to_dict()
+    cloned_field = embed_dict["fields"][index].copy()
+    embed_dict["fields"].insert(index, cloned_field)
+    return await message.edit(embed=discord.Embed.from_dict(embed_dict))
+
+
+async def clone_embed_fields(message, embed, field_indices, insertion_index=None):
+    """
+    Duplicates multiple embed fields of the embed of a message from a dictionary with a much more tight function
+    """
+    embed_dict = embed.to_dict()
+
+    if isinstance(insertion_index, int):
+        cloned_fields = tuple(embed_dict["fields"][index].copy() for index in sorted(field_indices, reverse=True))
+        for cloned_field in cloned_fields:
+            embed_dict["fields"].insert(insertion_index, cloned_field)
+    else:
+        for index in sorted(field_indices, reverse=True):
+            cloned_field = embed_dict["fields"][index].copy()
+            embed_dict["fields"].insert(index, cloned_field)
+    
+    return await message.edit(embed=discord.Embed.from_dict(embed_dict))
+
 
 async def clear_embed_fields(message, embed):
     """
