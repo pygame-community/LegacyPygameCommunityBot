@@ -617,43 +617,6 @@ class AdminCommand(user_commands.UserCommand):
         pg!emsudo {empty_str}
         ```
         Generate an embed from the given arguments and send it with a message to the channel where this command was invoked.
-        Embed field structure:
-        ```py
-        {
-            'type': 'rich',
-            'author': {
-                'name': 'NAME',
-                'url': 'URL_TO_A_WEBSITE',
-                'icon_url': 'URL_TO_IMAGE'
-            },
-
-            'thumbnail': {
-                'url': 'URL_TO_IMAGE'
-            },
-
-            'title': 'EMBED_TITLE',
-            'url': 'URL_TO_A_WEBSITE',
-            'description': 'DESC',
-            'color': 0xFFFFFF,  # color integer
-            'fields': [
-                {
-                    'name': 'FIELD_TITLE',
-                    'value': 'FIELD_DESCRIPTION',
-                    'inline': True or False,
-                }
-            ],
-
-            'image': {
-                'url': 'URL_TO_IMAGE'
-            },
-
-            'footer': {
-                'icon_url': 'URL_TO_IMAGE'
-            }
-
-            "timestamp": "2021-04-17T17:36:00.553" # YY-MM-DDT:nn:nn.nn (Timestamp string, timezone data is optional)
-        }
-        ```
         -----
         Implement pg!emsudo, for admins to send embeds via the bot
         """
