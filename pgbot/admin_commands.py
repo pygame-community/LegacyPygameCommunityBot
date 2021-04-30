@@ -232,36 +232,56 @@ class AdminCommand(user_commands.UserCommand):
         ```
         pg!sudo_clone {message_id}
         pg!sudo_clone {channel_id} {message_id}
-        pg!sudo_clone {message_id} {include_embeds_bool}
-        pg!sudo_clone {channel_id} {message_id} {include_embeds_bool}
-        pg!sudo_clone {message_id} {include_embeds_bool} {include_attachments_bool}
-        pg!sudo_clone {channel_id} {message_id} {include_embeds_bool} {include_attachments_bool}
+        pg!sudo_clone {message_id} {embeds=True/False}
+        pg!sudo_clone {channel_id} {message_id} {embeds=True/False}
+        pg!sudo_clone {message_id} {embeds=True/False} {attachments=True/False}
+        pg!sudo_clone {channel_id} {message_id} {embeds=True/False} {attachments=True/False}
         ```
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
-        self.check_args(1, maxarg=4)
+        self.check_args(1, maxarg=5)
 
         src_msg_id = None
         src_msg = None
         src_channel_id = self.invoke_msg.channel.id
         src_channel = self.invoke_msg.channel
 
-        include_embeds = True
-        include_attachments = True
+        kwargs = dict(
+            embeds=True,
+            attachments=True,
+            as_spoiler=False
+        )
 
-        if len(self.args) == 4:
-            try:
-                src_channel_id = int(self.args[0])
-                src_msg_id = int(self.args[1])
-            except ValueError:
-                await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message and/or channel id(s)!"
-                )
-                return
+        kwargs_specifiers = ("embeds=", "attachments=", "spoilers=")
+
+        server_id_list = []
+
+        for i in range(len(self.args)):
+            arg = self.args[i]
+            if arg.isnumeric() and i < 2:
+                try:
+                    server_id_list.append(int(arg))
+                except ValueError:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "Cannot execute command:",
+                    "Invalid message and/or channel id(s)!"
+                    )
+                    return
+            
+            elif arg.startswith(kwargs_specifiers):
+                kwarg_str = self.args[2]
+                eq_idx = kwarg_str.find("=")
+                kwarg_val = True if kwarg_str[eq_idx+1:] in ("True", "1") else False
+
+                kwargs[kwarg_str[:eq_idx]] = kwarg_val
+
+
+        if len(server_id_list) == 2:
+            src_channel_id = server_id_list[1]
+            src_msg_id = server_id_list[1]
 
             src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
@@ -272,114 +292,8 @@ class AdminCommand(user_commands.UserCommand):
                 )
                 return
 
-            if  self.args[2] == "0" or self.args[2] == "False":
-                include_embeds = False
-            elif self.args[2] == "1" or self.args[2] == "True":
-                include_embeds = True
-
-            if  self.args[3] == "0" or self.args[3] == "False":
-                include_attachments = False
-            elif self.args[3] == "1" or self.args[3] == "True":
-                include_attachments = True
-
-        elif len(self.args) == 3:
-            if self.args[1] in ("0", "1" , "True", "False"):
-
-                if  self.args[1] == "0" or self.args[1] == "False":
-                    include_embeds = False
-                elif self.args[1] == "1" or self.args[1] == "True":
-                    include_embeds = True
-
-                if self.args[2] == "0" or self.args[2] == "False":
-                    include_attachments = False
-                elif self.args[2] == "1" or self.args[2] == "True":
-                    include_attachments = True
-
-                try:
-                    src_msg_id = int(self.args[0])
-                except ValueError:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
-                    )
-                    return
-            else:
-
-                if self.args[2] == "0" or self.args[2] == "False":
-                    include_embeds = False
-                elif self.args[2] == "1" or self.args[2] == "True":
-                    include_embeds = True
-
-                try:
-                    src_channel_id = int(self.args[0])
-                    src_msg_id = int(self.args[1])
-                except ValueError:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message and/or channel id(s)!"
-                    )
-                    return
-
-                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
-                if src_channel is None:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid channel id!"
-                    )
-                    return
-
-        elif len(self.args) == 2:
-
-            if self.args[1] in ("0", "1" , "True", "False"):
-                if  self.args[1] == "0" or self.args[1] == "False":
-                    include_embeds = False
-                elif self.args[1] == "1" or self.args[1] == "True":
-                    include_embeds = True
-
-                try:
-                    src_msg_id = int(self.args[0])
-                except ValueError:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
-                    )
-                    return
-            else:
-                try:
-                    src_channel_id = int(self.args[0])
-                    src_msg_id = int(self.args[1])
-                except ValueError:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message and/or channel id(s)!"
-                    )
-                    return
-
-                src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
-                if src_channel is None:
-                    await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid channel id!"
-                    )
-                    return
-        else:
-            try:
-                src_msg_id = int(self.args[0])
-            except ValueError:
-                await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
-                )
-                return
         try:
-            src_msg: discord.Message = await src_channel.fetch_message(src_msg_id)
+            src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
             await embed_utils.replace(
             self.response_msg,
@@ -390,15 +304,15 @@ class AdminCommand(user_commands.UserCommand):
 
         msg_files = None
 
-        if src_msg.attachments and include_attachments:
+        if src_msg.attachments and kwargs["attachments"]:
             msg_files = []
             for att in src_msg.attachments:
-                att_file = await att.to_file()
+                att_file = await att.to_file(spoiler=kwargs["spoilers"])
                 msg_files.append(att_file)
 
         await self.response_msg.channel.send(
             content=src_msg.content,
-            embed=src_msg.embeds[0] if src_msg.embeds and include_embeds else None,
+            embed=src_msg.embeds[0] if src_msg.embeds and kwargs["embeds"] else None,
             files=msg_files
         )
 
