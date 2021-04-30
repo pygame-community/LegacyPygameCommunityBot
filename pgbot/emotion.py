@@ -24,4 +24,3 @@ async def check_bonk(msg):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif"
         )
-        await msg.channel.send(common.PG_ANGRY_AN)
