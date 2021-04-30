@@ -251,7 +251,7 @@ class AdminCommand(user_commands.UserCommand):
         kwargs = dict(
             embeds=True,
             attachments=True,
-            as_spoiler=False
+            spoilers=False
         )
 
         kwargs_specifiers = ("embeds=", "attachments=", "spoilers=")
@@ -272,7 +272,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
             
             elif arg.startswith(kwargs_specifiers):
-                kwarg_str = self.args[2]
+                kwarg_str = arg
                 eq_idx = kwarg_str.find("=")
                 kwarg_val = True if kwarg_str[eq_idx+1:] in ("True", "1") else False
 
@@ -280,7 +280,7 @@ class AdminCommand(user_commands.UserCommand):
 
 
         if len(server_id_list) == 2:
-            src_channel_id = server_id_list[1]
+            src_channel_id = server_id_list[0]
             src_msg_id = server_id_list[1]
 
             src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
@@ -291,6 +291,8 @@ class AdminCommand(user_commands.UserCommand):
                 "Invalid channel id!"
                 )
                 return
+        else:
+            src_msg_id = server_id_list[0]
 
         try:
             src_msg = await src_channel.fetch_message(src_msg_id)
