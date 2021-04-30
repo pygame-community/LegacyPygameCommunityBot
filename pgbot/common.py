@@ -45,7 +45,6 @@ TEST_USER_IDS = set( int(user_id) for user_id in os.environ["TEST_USER_IDS"].spl
 if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)
 
-TEST_USER_IDS.add()
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
 
