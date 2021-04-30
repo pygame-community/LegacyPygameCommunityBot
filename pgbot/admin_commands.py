@@ -236,6 +236,7 @@ class AdminCommand(user_commands.UserCommand):
         pg!sudo_clone {channel_id} {message_id} {embeds=True/False}
         pg!sudo_clone {message_id} {embeds=True/False} {attachments=True/False}
         pg!sudo_clone {channel_id} {message_id} {embeds=True/False} {attachments=True/False}
+        pg!sudo_clone {message_id} {embeds=True/False} {attachments=True/False} {as_spoilers=True/False}
         ```
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
         -----
@@ -251,10 +252,10 @@ class AdminCommand(user_commands.UserCommand):
         kwargs = dict(
             embeds=True,
             attachments=True,
-            spoilers=False
+            as_spoilers=False
         )
 
-        kwargs_specifiers = ("embeds=", "attachments=", "spoilers=")
+        kwargs_specifiers = ("embeds=", "attachments=", "as_spoilers=")
 
         server_id_list = []
 
@@ -309,7 +310,7 @@ class AdminCommand(user_commands.UserCommand):
         if src_msg.attachments and kwargs["attachments"]:
             msg_files = []
             for att in src_msg.attachments:
-                att_file = await att.to_file(spoiler=kwargs["spoilers"])
+                att_file = await att.to_file(spoiler=kwargs["as_spoilers"])
                 msg_files.append(att_file)
 
         await self.response_msg.channel.send(
