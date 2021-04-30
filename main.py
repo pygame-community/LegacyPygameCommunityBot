@@ -97,8 +97,8 @@ async def on_message(msg: discord.Message):
     if msg.content.startswith(common.PREFIX):
         run_command = True
 
-        if common.TEST_MODE and common.TEST_USER_ID:
-            if common.TEST_USER_ID != msg.author.id:
+        if common.TEST_MODE and common.TEST_USER_IDS:
+            if msg.author.id not in common.TEST_USER_IDS:
                 run_command = False
 
         if run_command:
