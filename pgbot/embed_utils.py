@@ -330,7 +330,7 @@ async def edit_2(
         thumbnail_url=thumbnail_url,
         description=description,
         image_url=image_url,
-        color=color,
+        color=(color if color >= 0 else 0xFFFFAA),
         fields=fields,
         footer_text=footer_text,
         footer_icon_url=footer_icon_url,
