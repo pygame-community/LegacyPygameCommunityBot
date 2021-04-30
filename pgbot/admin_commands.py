@@ -578,7 +578,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -639,7 +639,7 @@ class AdminCommand(user_commands.UserCommand):
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                if attachment.filename.endswith((".txt", ".py")):
                     attachment_obj = attachment
                     break
             else:
@@ -669,7 +669,7 @@ class AdminCommand(user_commands.UserCommand):
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                if attachment.filename.endswith((".txt", ".py")):
                     attachment_obj = attachment
                     break
             else:
@@ -877,7 +877,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -932,7 +932,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1025,7 +1025,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1055,7 +1055,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1242,7 +1242,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1297,7 +1297,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1390,7 +1390,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1425,7 +1425,7 @@ class AdminCommand(user_commands.UserCommand):
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        if attachment.filename.endswith((".txt", ".py")):
                             attachment_obj = attachment
                             break
                     else:
@@ -1630,7 +1630,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1695,7 +1695,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1798,7 +1798,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -1833,7 +1833,7 @@ class AdminCommand(user_commands.UserCommand):
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                        if attachment.filename.endswith((".txt", ".py")):
                             attachment_obj = attachment
                             break
                     else:
@@ -2226,6 +2226,292 @@ class AdminCommand(user_commands.UserCommand):
             return
         await self.response_msg.delete()
         await self.invoke_msg.delete()
+    
+
+    async def cmd_emsudo_edit_fields(self):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_edit_fields [*args]
+        ->description Edit multiple embed fields through the bot
+        ->extended description
+        ```
+        pg!emsudo_edit_fields ({target_message_id}, {field_string_tuple})
+        pg!emsudo_edit_fields ({target_message_id}, {field_dict_tuple})
+        pg!emsudo_edit_fields ({target_message_id}, {field_string_or_dict_tuple})
+        ```
+        Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
+        Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
+        to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at it's index when passed to this command.
+        -----
+        Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
+        """
+        field_dicts_list = []
+
+        if len(self.args) == 3:
+            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                if not edit_msg.embeds:
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+
+                edit_msg_embed = edit_msg.embeds[0]
+
+                src_channel = self.invoke_msg.author.guild.get_channel(int(self.args[1]))
+
+                if not src_channel:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "Invalid source channel id!",
+                    ""
+                    )
+                    return
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[2])
+                    )
+                except discord.NotFound:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "Invalid source message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith((".txt", ".py")):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+
+                await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif len(self.args) == 2:
+            if self.args[0].isnumeric() and self.args[1].isnumeric():
+                try:
+                    edit_msg = await self.invoke_msg.channel.fetch_message(
+                        self.args[0]
+                    )
+                except (discord.NotFound, IndexError, ValueError):
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Invalid arguments!",
+                        ""
+                    )
+                    return
+
+                src_channel = self.invoke_msg.channel
+
+                if not edit_msg.embeds:
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Cannot execute command:",
+                        "No embed data found in message."
+                    )
+                    return
+
+                edit_msg_embed = edit_msg.embeds[0]
+
+                try:
+                    attachment_msg = await src_channel.fetch_message(
+                        int(self.args[1])
+                    )
+                except discord.NotFound:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "Invalid message id!",
+                    ""
+                    )
+                    return
+
+                if not attachment_msg.attachments:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                for attachment in attachment_msg.attachments:
+                    if attachment.filename.endswith((".txt", ".py")):
+                        attachment_obj = attachment
+                        break
+                else:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    ""
+                    )
+                    return
+
+                txt_dict = await attachment_obj.read()
+                embed_dict = eval(txt_dict.decode())
+                if "fields" not in embed_dict:
+                    await embed_utils.replace(
+                    self.response_msg,
+                    "No field attribute found in embed dictionary.",
+                    ""
+                    )
+                    return
+
+                await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+
+        try:
+            args = eval(self.string)
+        except Exception as e:
+            tbs = traceback.format_exception(type(e), e, e.__traceback__)
+            # Pop out the first entry in the traceback, because that's
+            # this function call itself
+            tbs.pop(1)
+            await embed_utils.replace(
+                self.response_msg,
+                "Invalid arguments!",
+                f"```\n{''.join(tbs)}```"
+            )
+            return
+
+        arg_count = len(args)
+
+        if arg_count == 2:
+            try:
+                edit_msg_id = int(args[0])
+            except ValueError:
+                await embed_utils.replace(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+                ""
+                )
+                return
+
+            try:
+                edit_msg = await self.invoke_msg.channel.fetch_message(
+                    edit_msg_id
+                )
+            except discord.NotFound:
+                await embed_utils.replace(
+                self.response_msg,
+                "Cannot execute command:",
+                "Invalid message id!"
+                )
+                return
+
+            if not edit_msg.embeds:
+                await embed_utils.replace(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message."
+                )
+                return
+
+            edit_msg_embed = edit_msg.embeds[0]
+
+            if isinstance(args[1], (list, tuple)):
+                for i, data in enumerate(args[1]):
+                    if isinstance(data, dict):
+                        field_dicts_list.append(data)
+
+                    elif isinstance(data, str):
+                        if data:
+                            try:
+                                data_list = embed_utils.get_fields((data,))[0]
+                            except (TypeError, IndexError):
+                                await embed_utils.replace(
+                                self.response_msg,
+                                "Invalid format for field string!",
+                                ""
+                                )
+                                return
+
+                            if len(data_list) == 3:
+                                data_dict = {"name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                            elif len(data_list) == 2:
+                                data_dict = {"name": data_list[0], "value": data_list[1], "inline": False}
+
+                            elif not data_list:
+                                await embed_utils.replace(
+                                self.response_msg,
+                                "Invalid format for field string!",
+                                ""
+                                )
+                                return
+                        else:
+                            data_dict = {}
+                        
+                        field_dicts_list.append(data_dict)
+                    else:
+                        await embed_utils.replace(
+                        self.response_msg,
+                        f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
+                        ""
+                        )
+                        return
+
+            else:
+                await embed_utils.replace(
+                self.response_msg,
+                "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+                ""
+                )
+                return
+
+        else:
+            await embed_utils.replace(
+            self.response_msg,
+            "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
+            ""
+            )
+            return
+
+        await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
+
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
 
 
     async def cmd_emsudo_insert_field(self):
@@ -2448,7 +2734,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -2531,7 +2817,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -2860,7 +3146,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
@@ -2933,7 +3219,7 @@ class AdminCommand(user_commands.UserCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith(".txt") or attachment.filename.endswith(".py"):
+                    if attachment.filename.endswith((".txt", ".py")):
                         attachment_obj = attachment
                         break
                 else:
