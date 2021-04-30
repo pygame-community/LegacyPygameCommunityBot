@@ -5,7 +5,7 @@ import random
 import discord
 import pygame
 
-from pgbot import commands, common, emotion, util
+from pgbot import commands, common, emotion, utils, embed_utils
 
 
 @common.bot.event
@@ -96,14 +96,14 @@ async def on_message(msg: discord.Message):
 
     if msg.content.startswith(common.PREFIX):
         run_command = True
-        
+
         if common.TEST_MODE and common.TEST_USER_ID:
             if common.TEST_USER_ID != msg.author.id:
                 run_command = False
-            
-        if run_command:   
+
+        if run_command:
             try:
-                response = await util.send_embed(
+                response = await embed_utils.send(
                     msg.channel,
                     "Your command is being processed!",
                     ""
@@ -116,7 +116,7 @@ async def on_message(msg: discord.Message):
                     del common.cmd_logs[common.cmd_logs.keys()[0]]
             except discord.HTTPException:
                 pass
-        
+
     else:
         await emotion.check_bonk(msg)
 
@@ -128,8 +128,8 @@ async def on_message(msg: discord.Message):
             entry_type = "resource"
             color = 0x0000AA
 
-        title, fields = util.format_entries_message(msg, entry_type)
-        await util.send_embed(
+        title, fields = utils.format_entries_message(msg, entry_type)
+        await embed_utils.send(
             common.entries_discussion_channel,
             title,
             "",
