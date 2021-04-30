@@ -12,7 +12,7 @@ import discord
 import pygame
 from discord.errors import HTTPException
 
-from . import clock, common, docs, emotion, sandbox, util
+from . import clock, common, docs, emotion, sandbox, utils, embed_utils
 
 
 class UserCommand:
@@ -54,7 +54,7 @@ class UserCommand:
                 await self.cmds_and_funcs[cmd]()
                 return
 
-        except util.ArgError as exc:
+        except utils.ArgError as exc:
             title = "Incorrect amount of arguments!"
             msg = exc.args[0]
             msg += f" \nFor help on this bot command, do `pg!help {cmd}`"
@@ -76,9 +76,9 @@ class UserCommand:
                     os.path.dirname(sys.executable), "Python"
                 )
 
-            msg = util.code_block(elog)
+            msg = utils.code_block(elog)
 
-        await util.replace_embed(resp_msg, title, msg, 0xFF0000)
+        await embed_utils.replace(resp_msg, title, msg, 0xFF0000)
 
     def check_args(self, minarg, maxarg=None):
         """
@@ -91,7 +91,7 @@ class UserCommand:
 
         got = len(self.args)
         if not (minarg <= got <= maxarg):
-            raise util.ArgError(
+            raise utils.ArgError(
                 f"The number of arguments must be {exp} but {got} were given"
             )
 
@@ -104,7 +104,7 @@ class UserCommand:
         Implement pg!version, to report bot version
         """
         self.check_args(0)
-        await util.replace_embed(
+        await embed_utils.replace(
             self.response_msg, "Current bot's version", f"`{common.VERSION}`"
         )
 
@@ -194,24 +194,24 @@ class UserCommand:
                         file=discord.File(f"temp{tstamp}.png")
                     )
                 else:
-                    await util.replace_embed(
+                    await embed_utils.replace(
                         self.response_msg,
                         "Image cannot be sent:",
                         "The image file size is above 4MiB",
                     )
                 os.remove(f"temp{tstamp}.png")
 
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
-                f"Returned text (code executed in {util.format_time(dur)}):",
-                util.code_block(returned.text)
+                f"Returned text (code executed in {utils.format_time(dur)}):",
+                utils.code_block(returned.text)
             )
 
         else:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 common.EXC_TITLES[1],
-                util.code_block(", ".join(map(str, returned.exc.args)))
+                utils.code_block(", ".join(map(str, returned.exc.args)))
             )
 
     async def cmd_help(self, page=-1, args=[], msg=None):
@@ -234,14 +234,14 @@ class UserCommand:
             args = self.args
 
         if len(args) == 0:
-            await util.send_help_message(
+            await utils.send_help_message(
                 msg,
                 self.invoke_msg.author,
                 self.cmds_and_funcs,
                 page=page
             )
         else:
-            await util.send_help_message(
+            await utils.send_help_message(
                 msg,
                 self.invoke_msg.author,
                 self.cmds_and_funcs,
@@ -266,7 +266,7 @@ class UserCommand:
         emotion.last_pet = time.time()
 
         fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
-        await util.replace_embed(
+        await embed_utils.replace(
             self.response_msg,
             "",
             "",
@@ -284,11 +284,11 @@ class UserCommand:
         Implement pg!vibecheck, to check if the bot is angry
         """
         self.check_args(0)
-        await util.replace_embed(
+        await embed_utils.replace(
             self.response_msg,
             "Vibe Check, snek?",
             f"Previous petting anger: {emotion.pet_anger:.2f}/{common.JUMPSCARE_THRESHOLD:.2f}"
-            + f"\nIt was last pet {util.format_long_time(round(time.time() - emotion.last_pet))} ago",
+            + f"\nIt was last pet {utils.format_long_time(round(time.time() - emotion.last_pet))} ago",
         )
 
     async def cmd_sorry(self):
@@ -302,7 +302,7 @@ class UserCommand:
         """
         self.check_args(0)
         if not emotion.boncc_count:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Snek is happy. Awww, don't be sorry."
@@ -313,14 +313,14 @@ class UserCommand:
             emotion.boncc_count -= common.BONCC_PARDON
             if emotion.boncc_count < 0:
                 emotion.boncc_count = 0
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
             )
         else:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "How did you dare to boncc a snake?\nBold of you to assume "
@@ -338,13 +338,13 @@ class UserCommand:
         """
         self.check_args(0)
         if emotion.boncc_count:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "The snek is hurt and angry:",
                 f"The boncc count is {emotion.boncc_count}"
             )
         else:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "The snek is right",
                 "Please, don't hit the snek"
@@ -363,8 +363,8 @@ class UserCommand:
         msg_id = self.args.pop(0)
         try:
             msg = await self.invoke_msg.channel.fetch_message(msg_id)
-        except (discord.errors.NotFound, HTTPException):
-            await util.replace_embed(
+        except (discord.errors.NotFound, discord.errors.HTTPException):
+            await embed_utils.replace(
                 self.response_msg,
                 "Message not found",
                 "Message was not found. Make sure that the id is correct and that "
@@ -373,7 +373,7 @@ class UserCommand:
             return
 
         if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
@@ -387,7 +387,7 @@ class UserCommand:
         command = data[2].replace("Command: ", "").split()
 
         if not page or not command or not self.cmds_and_funcs.get(command[0]):
-            await util.replace_embed(
+            await embed_utils.replace(
                 self.response_msg,
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "

@@ -1,13 +1,13 @@
 import discord
 
-from . import admin_commands, common, user_commands, util
+from . import admin_commands, common, user_commands, embed_utils
 
 
 async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
     """
     Handle a pg! command posted by a user
     """
-    await util.send_embed(
+    await embed_utils.send(
         common.log_channel,
         f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
         invoke_msg.content
