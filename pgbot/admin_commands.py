@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import traceback
+import black
 from datetime import datetime
 import discord
 from discord.embeds import EmptyEmbed
@@ -4002,10 +4003,10 @@ class AdminCommand(user_commands.UserCommand):
                 embed_dict["fields"] = [embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)]
 
 
-        with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
-            embed_txt.write(repr( {k:embed_dict[k] for k in reversed(embed_dict.keys())} ))
+        embed_dict_code = repr( {k:embed_dict[k] for k in reversed(embed_dict.keys())} )
 
-        os.system("black -q embeddata.txt")
+        with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
+            embed_txt.write(black.format_str(embed_dict_code, mode=black.FileMode()))
 
         await self.response_msg.channel.send(
             embed=await embed_utils.send_2(
