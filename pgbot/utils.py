@@ -5,10 +5,6 @@ import discord
 from . import common, embed_utils
 
 
-class ArgError(Exception):
-    pass
-
-
 def format_time(seconds: float, decimal_places: int = 4):
     """
     Formats time with a prefix
@@ -194,7 +190,8 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
         embeds = []
         for field in list(fields.values()):
-            body = common.BOT_HELP_PROMPT["body"] + "\n" + field[0] + "\n\n" + field[1]
+            body = common.BOT_HELP_PROMPT["body"] + \
+                "\n" + field[0] + "\n\n" + field[1]
             embeds.append(
                 await embed_utils.send_2(
                     None,
