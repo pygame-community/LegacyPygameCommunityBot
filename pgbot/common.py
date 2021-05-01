@@ -32,15 +32,18 @@ PET_INTERVAL = 60.0
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
 PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
-SORRY_CHANCE = 0.5
 BONCC_THRESHOLD = 10
-BONCC_PARDON = 3
 
 # Constants
 VERSION = "1.4.1"
 TEST_MODE = "TEST_TOKEN" in os.environ
-TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
-TEST_USER_IDS = set( int(user_id) for user_id in os.environ["TEST_USER_IDS"].split() ) if "TEST_USER_IDS" in os.environ else set()
+TEST_USER_ID = int(
+    os.environ["TEST_USER_ID"]
+) if "TEST_USER_ID" in os.environ else None
+
+TEST_USER_IDS = set(
+    int(user_id) for user_id in os.environ["TEST_USER_IDS"].split()
+) if "TEST_USER_IDS" in os.environ else set()
 
 if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)

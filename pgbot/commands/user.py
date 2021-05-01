@@ -207,8 +207,9 @@ class UserCommand(BaseCommand):
             )
             return
 
-        if random.random() < common.SORRY_CHANCE:
-            emotion.boncc_count -= common.BONCC_PARDON
+        num = random.randint(0, 3)
+        if num:
+            emotion.boncc_count -= num
             if emotion.boncc_count < 0:
                 emotion.boncc_count = 0
             await embed_utils.replace(

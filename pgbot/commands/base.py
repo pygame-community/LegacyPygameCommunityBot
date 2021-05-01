@@ -117,8 +117,7 @@ class BaseCommand:
                 "Code block was not properly closed in code ticks"
             )
 
-        # args empty or starts with code block
-        if not args or isinstance(args[0], CodeBlock):
+        if not args or not isinstance(args[0], str):
             raise ArgError(
                 "Invalid Command",
                 "Command name was not entered"

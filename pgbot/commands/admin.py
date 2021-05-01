@@ -142,10 +142,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 self.response_msg.channel,
                 author_name="Message data",
                 description="```\n{0}```".format(
-                    msg.content.replace("```", "\\`\\`\\`")),
+                    msg.content.replace("```", "\\`\\`\\`")
+                ),
                 fields=(
-                    ("\u2800",
-                     f"**[View Original]({msg_link})**", False),
+                    (
+                        "\u2800",
+                        f"**[View Original]({msg_link})**",
+                        False
+                    ),
                 )
             )
         await self.response_msg.delete()
@@ -234,7 +238,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         origin: MentionableID,
         quantity: int,
-        destination: MentionableID,
+        destination: MentionableID = None,
     ):
         """
         ->type Admin commands
@@ -246,6 +250,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         origin_channel = None
         destination_channel = None
+
+        if destination is None:
+            destination = MentionableID("0")
+            destination.id = self.invoke_msg.channel.id
+
+        if destination.id == origin.id:
+            await embed_utils.replace(
+                self.response_msg,
+                "Cannot execute command:",
+                "Origin and destination channels are same"
+            )
+            return
 
         for channel in common.bot.get_all_channels():
             if channel.id == origin.id:
