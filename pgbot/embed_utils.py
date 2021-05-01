@@ -394,7 +394,7 @@ async def edit_field_from_dict(message, embed, field_dict, index):
     old_field_dict = embed_dict["fields"][index]
 
     for k in field_dict:
-        if k in old_field_dict and field_dict[k]:
+        if k in old_field_dict and field_dict[k] != "":
             old_field_dict[k] = field_dict[k]
 
     embed.set_field_at(
@@ -426,7 +426,7 @@ async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
 
         if field_dict:
             for k in field_dict:
-                if k in old_field_dict and field_dict[k]:
+                if k in old_field_dict and field_dict[k] != "":
                     old_field_dict[k] = field_dict[k]
 
             embed.set_field_at(
