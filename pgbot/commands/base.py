@@ -309,7 +309,7 @@ class OldBaseCommand:
         Must return True on successful command execution, False otherwise
         """
         self.args = self.cmd_str.split()
-        cmd = self.args.pop(0) if self.args else ""
+        cmd = self.args.pop(0).rstrip("\n") if self.args else ""
         self.string = self.cmd_str[len(cmd):].strip()
 
         title = "Unrecognized command!"
