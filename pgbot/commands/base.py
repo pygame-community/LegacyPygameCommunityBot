@@ -7,28 +7,52 @@ import sys
 import traceback
 
 import discord
+import pygame
 
 from pgbot import common, embed_utils, utils
 
 
 class ArgError(Exception):
+    """
+    Base class for all argument parsing related exceptions
+    """
     pass
 
 
 class CodeBlock:
+    """
+    Base class to represent code blocks in the argument parser
+    """
+
     def __init__(self, code):
         code = code.strip().strip("\\")  # because \\ causes problems
         self.code = code
 
 
 class String:
+    """
+    Base class to represent strings in the argument parser
+    """
+
     def __init__(self, string):
         self.string = string
 
 
 class MentionableID:
+    """
+    Base class to a mentionable ID (as an int) in the argument parser
+    """
+
     def __init__(self, string):
         self.id = utils.filter_id(string)
+
+
+class HiddenArg:
+    """
+    Base class to represent a "hidden argument", one that cannot be passed via
+    discord, but is used internally by other commands
+    """
+    pass
 
 
 class BaseCommand:
@@ -60,6 +84,7 @@ class BaseCommand:
                 args.append(String(i))
             else:
                 for arg in i.split(" "):
+                    arg = arg.strip()
                     if not arg:
                         continue
 
@@ -190,14 +215,44 @@ class BaseCommand:
 
             if not isdefault:
                 try:
-                    if val.annotation == "bool":
+                    if val.annotation == "HiddenArg":
+                        raise ArgError(
+                            "Invalid Arguments!",
+                            "Hidden arguments cannot be explicitly passed"
+                        )
+
+                    elif val.annotation == "pygame.Color":
+                        try:
+                            newargs.append(pygame.Color(arg))
+                        except ValueError:
+                            raise ArgError(
+                                "Invalid Arguments!",
+                                "Got invalid color argument"
+                            )
+
+                    elif val.annotation == "bool":
                         newargs.append(
                             arg == "1" or bool(arg.lower() == "true")
                         )
+
                     elif val.annotation == "int":
                         newargs.append(int(arg))
+
                     elif val.annotation == "float":
                         newargs.append(float(arg))
+
+                    elif val.annotation == "discord.Member":
+                        try:
+                            newargs.append(
+                                utils.get_mention_from_id(arg, self.invoke_msg)
+                            )
+                        except ValueError:
+                            raise ArgError(
+                                "Invalid Arguments!",
+                                f"Expected `{key}` be a member mention.\nFor "
+                                + f"help on this bot command, do `pg!help {cmd}`"
+                            )
+
                     elif val.annotation == "MentionableID":
                         if not isinstance(arg, str):
                             raise ArgError(
@@ -206,6 +261,7 @@ class BaseCommand:
                                 + f"For help on this bot command, do `pg!help {cmd}`"
                             )
                         newargs.append(MentionableID(arg))
+
                     elif val.annotation == "CodeBlock":
                         # Expected code block, did not get one
                         if not isinstance(arg, CodeBlock):
@@ -215,6 +271,7 @@ class BaseCommand:
                                 + "surround your code in code backticks '```'"
                             )
                         newargs.append(arg)
+
                     elif val.annotation == "String":
                         # Expected String, did not get one
                         if not isinstance(arg, String):
@@ -223,6 +280,7 @@ class BaseCommand:
                                 "Please enter the string in quotes"
                             )
                         newargs.append(arg)
+
                     else:
                         newargs.append(arg)
 

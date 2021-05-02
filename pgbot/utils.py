@@ -5,6 +5,17 @@ import discord
 from . import common, embed_utils
 
 
+def get_mention_from_id(idstr: str, msg: discord.Message):
+    """
+    Get discord.Member object from a message, using the mentions attribute
+    """
+    uid = filter_id(idstr)
+    for mem in msg.mentions:
+        if mem.id == uid:
+            return mem
+    raise ValueError()
+
+
 def format_time(seconds: float, decimal_places: int = 4):
     """
     Formats time with a prefix
