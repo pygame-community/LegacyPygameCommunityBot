@@ -10,7 +10,7 @@ import pygame
 from discord.errors import HTTPException
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
-from pgbot.commands.base import BaseCommand, CodeBlock
+from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg
 
 
 class UserCommand(BaseCommand):
@@ -28,32 +28,114 @@ class UserCommand(BaseCommand):
             self.response_msg, "Current bot's version", f"`{common.VERSION}`"
         )
 
-    async def cmd_clock(self):
+    async def cmd_ping(self):
+        """
+        ->type Other commands
+        ->signature pg!ping
+        ->description Get the ping of the bot
+        -----
+        Implement pg!ping, to get ping
+        """
+        timedelta = self.response_msg.created_at - self.invoke_msg.created_at
+        sec = timedelta.total_seconds()
+        await embed_utils.replace(
+            self.response_msg,
+            "Pingy Pongy",
+            f"The bots ping is `{utils.format_time(sec, 0)}`"
+        )
+
+    async def cmd_clock(
+        self,
+        action: str = "",
+        timezone: float = 0,
+        color: pygame.Color = None,
+        member: HiddenArg = None,
+    ):
         """
         ->type Get help
         ->signature pg!clock
         ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
+        -> Extended description
+        People on the clock can run the clock with more arguments, to update their data.
+        `pg!clock update [timezone in hours] [color as hex string]`
+        `timezone` is float offset from GMT in hours.
+        `color` optional color argument, that shows up on the clock.
+        Note that you might not always display with that colour.
+        This happens if more than one person are on the same timezone
+        Use `pg!clock remove` to remove yourself from the clock
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
+        msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
+        db_msg = await self.invoke_msg.guild.get_channel(
+            common.DB_CHANNEL_ID).fetch_message(msg_id)
+
+        timezones = clock.decode_from_msg(db_msg)
+        if action:
+            if member is None:
+                member = self.invoke_msg.author
+                for mem, _, _ in timezones:
+                    if mem.id == member.id:
+                        break
+                else:
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Cannot update clock",
+                        "You cannot run clock update commands because you are "
+                        + "not on the clock"
+                    )
+                    return
+
+            if action == "update":
+                for cnt, (mem, _, _) in enumerate(timezones):
+                    if mem.id == member.id:
+                        timezones[cnt][1] = timezone
+                        if color is not None:
+                            timezones[cnt][2] = color
+                        break
+                else:
+                    if color is None:
+                        await embed_utils.replace(
+                            self.response_msg,
+                            "Failed to update clock",
+                            "Color argument is required when adding new people"
+                        )
+                        return
+                    timezones.append([member, timezone, color])
+                    timezones.sort(key=lambda x: x[1])
+
+            elif action == "remove":
+                for cnt, (mem, _, _) in enumerate(timezones):
+                    if mem.id == member.id:
+                        timezones.pop(cnt)
+                        break
+                else:
+                    await embed_utils.replace(
+                        self.response_msg,
+                        "Failed to update clock",
+                        "Cannot remove non-existing person from clock"
+                    )
+                    return
+
+            else:
+                await embed_utils.replace(
+                    self.response_msg,
+                    "Failed to update clock",
+                    f"Invalid action specifier {action}"
+                )
+                return
+
+            await db_msg.edit(content=clock.encode_to_msg(timezones))
+
         t = time.time()
-        pygame.image.save(clock.user_clock(t), f"temp{t}.png")
+        pygame.image.save(clock.user_clock(t, timezones), f"temp{t}.png")
         common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
             file=discord.File(f"temp{t}.png")
         )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
-    async def _cmd_doc(self, modname, page=0, msg=None):
-        """
-        Helper function for doc, handle pg!refresh stuff
-        """
-        if not msg:
-            msg = self.response_msg
-
-        await docs.put_doc(modname, msg, self.invoke_msg.author, page)
-
-    async def cmd_doc(self, name: str):
+    async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
         ->signature pg!doc [module.Class.method]
@@ -61,7 +143,10 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!doc, to view documentation
         """
-        await self._cmd_doc(name)
+        if not msg:
+            msg = self.response_msg
+
+        await docs.put_doc(name, msg, self.invoke_msg.author, page)
 
     async def cmd_exec(self, code: CodeBlock):
         """
@@ -116,14 +201,21 @@ class UserCommand(BaseCommand):
                 utils.code_block(", ".join(map(str, returned.exc.args)))
             )
 
-    async def _cmd_help(self, argname, page=0, msg=None):
+    async def cmd_help(
+        self, name: str = None, page: HiddenArg = 0, msg: HiddenArg = None
+    ):
         """
-        Helper function for pg!help, handle pg!refresh stuff
+        ->type Get help
+        ->signature pg!help [command]
+        ->description Ask me for help
+        ->example command pg!help help
+        -----
+        Implement pg!help, to display a help message
         """
         if not msg:
             msg = self.response_msg
 
-        if argname is None:
+        if name is None:
             await utils.send_help_message(
                 msg,
                 self.invoke_msg.author,
@@ -135,19 +227,8 @@ class UserCommand(BaseCommand):
                 msg,
                 self.invoke_msg.author,
                 self.cmds_and_funcs,
-                argname
+                name
             )
-
-    async def cmd_help(self, name: str = None):
-        """
-        ->type Get help
-        ->signature pg!help [command]
-        ->description Ask me for help
-        ->example command pg!help help
-        -----
-        Implement pg!help, to display a help message
-        """
-        await self._cmd_help(name)
 
     async def cmd_pet(self):
         """
@@ -297,10 +378,10 @@ class UserCommand(BaseCommand):
             if len(command) == 1:
                 command.append(None)
 
-            await self._cmd_help(
+            await self.cmd_help(
                 command[1], page=int(page) - 1, msg=msg
             )
         elif command[0] == "doc":
-            await self._cmd_doc(
+            await self.cmd_doc(
                 command[1], page=int(page) - 1, msg=msg
             )

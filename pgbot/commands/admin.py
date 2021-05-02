@@ -6,6 +6,7 @@ import time
 
 import discord
 import psutil
+import pygame
 
 from pgbot import common, embed_utils, utils
 from pgbot.commands.base import CodeBlock, String, MentionableID
@@ -16,6 +17,9 @@ process = psutil.Process(os.getpid())
 
 
 class AdminCommand(UserCommand, EmsudoCommand):
+    """
+    Base class for all admin commands
+    """
     async def handle_cmd(self):
         """
         Temporary function, to divert paths for emsudo commands and other
@@ -25,6 +29,49 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await EmsudoCommand.handle_cmd(self)
         else:
             await UserCommand.handle_cmd(self)
+
+    async def cmd_sync_clocks(self):
+        """
+        ->type Admin commands
+        ->signature pg!sync_clocks
+        ->description sync test clock and real clock
+        -----
+        Implement pg!sync_clocks, to sync clock data between clocks
+        """
+        db_channel = self.invoke_msg.guild.get_channel(common.DB_CHANNEL_ID)
+
+        dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
+        dest_msg = await db_channel.fetch_message(dest_msg_id)
+
+        src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
+        src_msg = await db_channel.fetch_message(src_msg_id)
+
+        await dest_msg.edit(content=src_msg.content)
+        await embed_utils.replace(
+            self.response_msg,
+            "Clocks synced!",
+            "Test clock and main clock have been synced"
+        )
+
+    async def cmd_clock(
+        self,
+        action: str = "",
+        timezone: float = 0,
+        color: pygame.Color = None,
+        member: discord.Member = None,
+    ):
+        """
+        ->type Admin commands
+        ->signature pg!clock
+        ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
+        ->extended description
+        Admins can run clock with more arguments, to add/update/remove other members.
+        `pg!clock update [timezone in hours] [color as hex string] [mention member]`
+        `pg!clock remove [mention member]`
+        -----
+        Implement pg!clock, to display a clock of helpfulies/mods/wizards
+        """
+        return await super().cmd_clock(action, timezone, color, member)
 
     async def cmd_eval(self, code: CodeBlock):
         """

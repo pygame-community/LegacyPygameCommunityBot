@@ -3,7 +3,34 @@ import os
 
 import pygame
 
-from .common import CLOCK_TIMEZONES
+from pgbot import utils
+
+
+def encode_to_msg(timezones):
+    """
+    Encode clock timezone data to string
+    """
+    msg = ""
+    for mem, tz, col in sorted(timezones, key=lambda x: x[1]):
+        msg += " ".join([mem.mention, str(tz), str(int(col))]) + "\n"
+    return msg
+
+
+def decode_from_msg(msg):
+    """
+    Decode clock timezone data from string
+    """
+    ret = []
+    for line in msg.content.splitlines():
+        a, b, c = line.split(" ")
+        ret.append(
+            [
+                utils.get_mention_from_id(a, msg),
+                float(b),
+                pygame.Color(int(c))
+            ]
+        )
+    return ret
 
 
 def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0 / 3.0):
@@ -86,7 +113,7 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     )
 
 
-def user_clock(t):
+def user_clock(t, clock_timezones):
     """
     Generate a 24 hour clock for special server roles
     """
@@ -116,7 +143,21 @@ def user_clock(t):
         image.blit(time, actual_time)
 
     tx = ty = 0
-    for offset, name, color in CLOCK_TIMEZONES:
+    tz_and_col = {}
+    for mem, offset, color in clock_timezones:
+        # try to use nickname, if it is too long, fallback to name
+        # 14 happens to be the sweet spot, any longer and the name overflows
+        if mem.nick and len(mem.nick) <= 14:
+            name = mem.nick
+        else:
+            name = mem.name[:14]
+
+        if offset in tz_and_col:
+            color = tz_and_col[offset]
+        else:
+            tz_and_col[offset] = color
+
+        offset = int(offset * 3600)
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
 
