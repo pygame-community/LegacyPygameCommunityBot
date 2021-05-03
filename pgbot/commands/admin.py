@@ -9,7 +9,7 @@ import psutil
 import pygame
 
 from pgbot import common, embed_utils, utils
-from pgbot.commands.base import CodeBlock, String, MentionableID
+from pgbot.commands.base import CodeBlock, String
 from pgbot.commands.user import UserCommand
 from pgbot.commands.emsudo import EmsudoCommand
 
@@ -114,29 +114,22 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_sudo_edit(self, msg_id: MentionableID, msg: String):
+    async def cmd_sudo_edit(self, edit_msg: discord.Message, msg: String):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit [msg_id] [message]
+        ->signature pg!sudo_edit [edit_message] [message string]
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
-
-        edit_msg = await self.invoke_msg.channel.fetch_message(msg_id.id)
         await edit_msg.edit(content=msg.string)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_sudo_get(
-        self,
-        msg_id: MentionableID,
-        channel_id: MentionableID = None,
-        attach: bool = False,
-    ):
+    async def cmd_sudo_get(self, msg: discord.Message, attach: bool = False):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [msg_id] [channel_id] [attach]
+        ->signature pg!sudo_get [message] [bool attach]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -145,28 +138,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message in a text file.
         """
-        channel = self.invoke_msg.channel if channel_id is None else \
-            self.invoke_msg.guild.get_channel(channel_id.id)
-
-        if channel is None:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid channel id!"
-            )
-            return
-
-        try:
-            msg = await channel.fetch_message(msg_id.id)
-        except discord.NotFound:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
-            )
-            return
-
-        msg_link = f"https://discord.com/channels/{msg.guild.id}/{channel.id}/{msg.id}"
+        msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
         if attach:
             try:
                 with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
@@ -203,42 +175,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
     async def cmd_sudo_clone(
         self,
-        msg_id: MentionableID,
-        channel_id: MentionableID = None,
+        msg: discord.Message,
         embeds: bool = True,
         attach: bool = True,
         spoiler: bool = False,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone [msg_id] [channel_id] [embeds] [attach] [spoiler]
+        ->signature pg!sudo_clone [message] [embeds] [attach] [spoiler]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
-        channel = self.invoke_msg.channel if channel_id is None else \
-            self.invoke_msg.guild.get_channel(channel_id.id)
-
-        if channel is None:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid channel id!"
-            )
-            return
-
-        try:
-            msg = await channel.fetch_message(msg_id.id)
-        except discord.NotFound:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
-            )
-            return
-
         msg_files = None
         if msg.attachments and attach:
             msg_files = [await a.to_file(spoiler=spoiler) for a in msg.attachments]
@@ -283,26 +233,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
     async def cmd_archive(
         self,
-        origin: MentionableID,
+        origin: discord.TextChannel,
         quantity: int,
-        destination: MentionableID = None,
+        destination: discord.TextChannel = None,
     ):
         """
         ->type Admin commands
-        ->signature pg!archive [origin] [quantity] [destination]
+        ->signature pg!archive [origin channel] [quantity] [destination channel]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
         """
-
-        origin_channel = None
-        destination_channel = None
-
         if destination is None:
-            destination = MentionableID("0")
-            destination.id = self.invoke_msg.channel.id
+            destination = self.invoke_msg.channel
 
-        if destination.id == origin.id:
+        if origin == destination:
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
@@ -310,29 +255,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
             return
 
-        for channel in common.bot.get_all_channels():
-            if channel.id == origin.id:
-                origin_channel = channel
-            if channel.id == destination.id:
-                destination_channel = channel
-
-        if not origin_channel:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid origin channel!"
-            )
-            return
-
-        elif not destination_channel:
-            await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid destination channel!"
-            )
-            return
-
-        messages = await origin_channel.history(limit=quantity).flatten()
+        messages = await origin.history(limit=quantity).flatten()
         messages.reverse()
         message_list = await utils.format_archive_messages(messages)
 
@@ -341,7 +264,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         archive_list = utils.split_long_message(archive_str)
 
         for message in archive_list:
-            await destination_channel.send(message)
+            await destination.send(message)
 
         await embed_utils.replace(
             self.response_msg,
