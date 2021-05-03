@@ -16,7 +16,6 @@ class ArgError(Exception):
     """
     Base class for all argument parsing related exceptions
     """
-    pass
 
 
 class CodeBlock:
@@ -44,7 +43,6 @@ class HiddenArg:
     Base class to represent a "hidden argument", one that cannot be passed via
     discord, but is used internally by other commands
     """
-    pass
 
 
 class BaseCommand:
@@ -106,8 +104,7 @@ class BaseCommand:
         if cnt % 2:
             # The last quote was not closed
             raise ArgError(
-                "Invalid String",
-                "String was not properly closed in quotes"
+                "Invalid String", "String was not properly closed in quotes"
             )
 
         return kwstart
@@ -116,7 +113,7 @@ class BaseCommand:
         """
         Custom parser for handling arguments. The work of this function is to
         parse the source string of the command into the command name, a list
-        of arguments and a dictionary of keyword arguments. The list of 
+        of arguments and a dictionary of keyword arguments. The list of
         arguments must only contain strings, 'CodeBlock' objects and 'String'
         objects. The keyword arguments dictionary are string-string pairs
 
@@ -232,117 +229,9 @@ class BaseCommand:
                 arg = args[i]
 
             if not isdefault:
-                # make arguments to the type specified by the annotation
-                try:
-                    if param.annotation == "HiddenArg":
-                        raise ArgError(
-                            "Invalid Arguments!",
-                            "Hidden arguments cannot be explicitly passed"
-                        )
-
-                    elif param.annotation == "pygame.Color":
-                        newargs.append(pygame.Color(arg))
-
-                    elif param.annotation == "bool":
-                        newargs.append(
-                            arg == "1" or bool(arg.lower() == "true")
-                        )
-
-                    elif param.annotation == "int":
-                        newargs.append(int(arg))
-
-                    elif param.annotation == "float":
-                        newargs.append(float(arg))
-
-                    elif param.annotation == "discord.Member":
-                        newargs.append(
-                            utils.get_mention_from_id(arg, self.invoke_msg)
-                        )
-
-                    elif param.annotation == "discord.TextChannel":
-                        if not isinstance(arg, str):
-                            raise ValueError()
-
-                        chan_id = utils.filter_id(arg)
-                        chan = self.invoke_msg.guild.get_channel(chan_id)
-                        if chan is None:
-                            raise ArgError(
-                                "Invalid Arguments!",
-                                "Got invalid channel ID"
-                            )
-                        newargs.append(chan)
-
-                    elif param.annotation == "discord.Message":
-                        if not isinstance(arg, str):
-                            raise ValueError()
-
-                        a, b, c = arg.partition("/")
-                        if b:
-                            msg = int(c)
-                            chan_id = utils.filter_id(a)
-                            chan = self.invoke_msg.guild.get_channel(chan_id)
-                            if chan is None:
-                                raise ArgError(
-                                    "Invalid Arguments!",
-                                    "Got invalid channel ID"
-                                )
-                        else:
-                            msg = int(a)
-                            chan = self.invoke_msg.channel
-
-                        try:
-                            newargs.append(await chan.fetch_message(msg))
-                        except discord.NotFound:
-                            raise ArgError(
-                                "Invalid Arguments!",
-                                "Got invalid message ID"
-                            )
-
-                    elif param.annotation == "CodeBlock":
-                        # Expected code block, did not get one
-                        if not isinstance(arg, CodeBlock):
-                            raise ArgError(
-                                "Invalid Arguments!",
-                                "Please enter code in 'code blocks', that is, "
-                                + "surround your code in code backticks '```'"
-                            )
-                        newargs.append(arg)
-
-                    elif param.annotation == "String":
-                        # Expected String, did not get one
-                        if not isinstance(arg, String):
-                            raise ArgError(
-                                "Invalid Arguments!",
-                                "Please enter the string in quotes"
-                            )
-                        newargs.append(arg)
-
-                    elif param.annotation in [sig.empty, "str"]:
-                        newargs.append(arg)
-
-                    else:
-                        raise ArgError(
-                            "Internal Bot error",
-                            f"Invalid annotation `{param.annotation}`"
-                        )
-
-                except ValueError:
-                    if param.annotation == "discord.Member":
-                        typ = "an @mention to someone"
-                    elif param.annotation == "discord.TextChannel":
-                        typ = "an id or mention to a text channel"
-                    elif param.annotation == "discord.Messgae":
-                        typ = "a message id, or a 'channel/message' combo"
-                    elif param.annotation == "pygame.Color":
-                        typ = "a color, represented by the color name or hex rgb"
-                    else:
-                        typ = f"of type `{param.annotation}`"
-
-                    raise ArgError(
-                        "Invalid Arguments!",
-                        f"The argument `{key}` must be {typ} \n"
-                        + f"For help on this bot command, do `pg!help {cmd}`"
-                    )
+                newargs.append(
+                    await self.correct_arg(cmd, sig, key, param, arg)
+                )
             else:
                 newargs.append(arg)
 
@@ -353,10 +242,124 @@ class BaseCommand:
             raise ArgError(
                 "Invalid Arguments!",
                 f"{tot} were given, but {i} is the maximum number allowed. \n"
-                + f"For help on this bot command, do `pg!help {cmd}`"
+                + f"For help on this bot command, do `pg!help {cmd}`",
             )
 
         await func(*newargs)
+
+    async def correct_arg(self, cmd, sig, key, param, arg):
+        try:
+            if param.annotation == "HiddenArg":
+                raise ArgError(
+                    "Invalid Arguments!",
+                    "Hidden arguments cannot be explicitly passed"
+                )
+
+            elif param.annotation == "pygame.Color":
+                return pygame.Color(arg)
+
+            elif param.annotation == "bool":
+                return arg == "1" or bool(arg.lower() == "true")
+
+            elif param.annotation == "int":
+                return int(arg)
+
+            elif param.annotation == "float":
+                return (float(arg))
+
+            elif param.annotation == "discord.Member":
+                return utils.get_mention_from_id(arg, self.invoke_msg)
+
+            elif param.annotation == "discord.TextChannel":
+                if not isinstance(arg, str):
+                    raise ValueError()
+
+                chan_id = utils.filter_id(arg)
+                chan = self.invoke_msg.guild.get_channel(chan_id)
+
+                if chan is None:
+                    raise ArgError(
+                        "Invalid Arguments!", "Got invalid channel ID"
+                    )
+
+                return chan
+
+            elif param.annotation == "discord.Message":
+                if not isinstance(arg, str):
+                    raise ValueError()
+
+                a, b, c = arg.partition("/")
+                if b:
+                    msg = int(c)
+                    chan_id = utils.filter_id(a)
+                    chan = self.invoke_msg.guild.get_channel(chan_id)
+
+                    if chan is None:
+                        raise ArgError(
+                            "Invalid Arguments!", "Got invalid channel ID"
+                        )
+
+                else:
+                    msg = int(a)
+                    chan = self.invoke_msg.channel
+
+                try:
+                    return await chan.fetch_message(msg)
+                except discord.NotFound:
+                    raise ArgError(
+                        "Invalid Arguments!", "Got invalid message ID"
+                    )
+
+            elif param.annotation == "CodeBlock":
+                # Expected code block, did not get one
+                if not isinstance(arg, CodeBlock):
+                    raise ArgError(
+                        "Invalid Arguments!",
+                        "Please enter code in 'code blocks', that is, "
+                        + "surround your code in code backticks '```'",
+                    )
+
+                return arg
+
+            elif param.annotation == "String":
+                # Expected String, did not get one
+                if not isinstance(arg, String):
+                    raise ArgError(
+                        "Invalid Arguments!",
+                        "Please enter the string in quotes"
+                    )
+
+                return arg
+
+            elif param.annotation in [sig.empty, "str"]:
+                return arg
+
+            else:
+                raise ArgError(
+                    "Internal Bot error", f"Invalid annotation `{param.annotation}`"
+                )
+
+        except ValueError:
+            if param.annotation == "discord.Member":
+                typ = "an @mention to someone"
+
+            elif param.annotation == "discord.TextChannel":
+                typ = "an id or mention to a text channel"
+
+            elif param.annotation == "discord.Messgae":
+                typ = "a message id, or a 'channel/message' combo"
+
+            elif param.annotation == "pygame.Color":
+                typ = "a color, represented by the color name or hex rgb"
+
+            else:
+                typ = f"of type `{param.annotation}`"
+
+            raise ArgError(
+                "Invalid Arguments!",
+                f"The argument `{key}` must be {typ} \n"
+                + f"For help on this bot command, do `pg!help {cmd}`",
+            )
 
     async def handle_cmd(self):
         """
@@ -375,14 +378,14 @@ class BaseCommand:
             # this function call itself
             tbs.pop(1)
 
-            elog = "This error is most likely caused due to a bug in " + \
-                "the bot itself. Here is the traceback:\n"
-            elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
+            elog = (
+                "This error is most likely caused due to a bug in "
+                + "the bot itself. Here is the traceback:\n"
+            )
+            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
             if platform.system() == "Windows":
                 # Hide path to python on windows
-                elog = elog.replace(
-                    os.path.dirname(sys.executable), "Python"
-                )
+                elog = elog.replace(os.path.dirname(sys.executable), "Python")
 
             msg = utils.code_block(elog)
 
@@ -424,8 +427,10 @@ class OldBaseCommand:
         self.string = self.cmd_str[len(cmd):].strip()
 
         title = "Unrecognized command!"
-        msg = f"Make sure that the command '{cmd}' exists, and you have " + \
-            "the permission to use it. \nFor help on bot commands, do `pg!help`"
+        msg = (
+            f"Make sure that the command '{cmd}' exists, and you have "
+            + "the permission to use it. \nFor help on bot commands, do `pg!help`"
+        )
         try:
             if cmd in self.cmds_and_funcs:
                 await self.cmds_and_funcs[cmd]()
@@ -445,9 +450,11 @@ class OldBaseCommand:
             # this function call itself
             tbs.pop(1)
 
-            elog = "This error is most likely caused due to a bug in " + \
-                "the bot itself. Here is the traceback:\n"
-            elog += ''.join(tbs).replace(os.getcwd(), "PgBot")
+            elog = (
+                "This error is most likely caused due to a bug in "
+                + "the bot itself. Here is the traceback:\n"
+            )
+            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
             if platform.system() == "Windows":
                 elog = elog.replace(
                     os.path.dirname(sys.executable), "Python"
