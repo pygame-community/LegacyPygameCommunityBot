@@ -68,64 +68,11 @@ class BaseCommand:
             if i.startswith("cmd_"):
                 self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
 
-    def handle_non_code_args(self, argstr, args, kwargs, kwstart):
+    def split_args(self):
         """
-        Helper to handle argument parsing
+        Utility function to do the first parsing step to split based on 
+        seperators
         """
-        for cnt, substr in enumerate(argstr.split('"')):
-            if cnt % 2:
-                args.append(String(substr))
-            else:
-                for arg in substr.split(" "):
-                    arg = arg.strip()
-                    if not arg:
-                        continue
-
-                    a, b, c = arg.partition("=")
-                    if not b:
-                        if not kwstart:
-                            args.append(arg)
-                        else:
-                            raise ArgError(
-                                "Invalid Keyword Arguments!",
-                                "Keyword arguments cannot come before "
-                                + "positional arguments"
-                            )
-                    elif a and c:
-                        kwstart = True
-                        kwargs[a] = c
-                    else:
-                        raise ArgError(
-                            "Invalid Keyword argument",
-                            "Keyword seperator '=' was not surrounded by args"
-                            + "\nRemember to not put spaces around them!"
-                        )
-
-        if cnt % 2:
-            # The last quote was not closed
-            raise ArgError(
-                "Invalid String", "String was not properly closed in quotes"
-            )
-
-        return kwstart
-
-    async def parse_args(self):
-        """
-        Custom parser for handling arguments. The work of this function is to
-        parse the source string of the command into the command name, a list
-        of arguments and a dictionary of keyword arguments. The list of
-        arguments must only contain strings, 'CodeBlock' objects and 'String'
-        objects. The keyword arguments dictionary are string-string pairs
-
-        TODO for @Ankith26:
-        It is a limitation that 'CodeBlock' and 'String' objects cannot be
-        used as keyword arguments, and I am too lazy to fix it as of now. If
-        required I will fix it in the future.
-        """
-        args = []
-        kwargs = {}
-        kwstart = False  # used to make sure that keyword args come after args
-
         # first split based on the code block character
         for cnt, substr in enumerate(self.cmd_str.split("```")):
             if cnt % 2:
@@ -135,12 +82,20 @@ class BaseCommand:
                 elif substr[:2] == "py":
                     substr = substr[2:]
 
-                args.append(CodeBlock(substr))
+                yield CodeBlock(substr)
             else:
-                # Handle non codeblock parts or the command
-                kwstart = self.handle_non_code_args(
-                    substr, args, kwargs, kwstart
-                )
+                # Handle non codeblock parts of the command
+                for cnt2, substr2 in enumerate(substr.split('"')):
+                    if cnt2 % 2:
+                        substr2 = String(substr2)
+                    yield substr2
+
+                if cnt2 % 2:
+                    # The last quote was not closed
+                    raise ArgError(
+                        "Invalid String",
+                        "String was not properly closed in quotes"
+                    )
 
         if cnt % 2:
             # The last command block was not closed
@@ -148,6 +103,67 @@ class BaseCommand:
                 "Invalid Code block",
                 "Code block was not properly closed in code ticks"
             )
+
+    async def parse_args(self):
+        """
+        Custom parser for handling arguments. The work of this function is to
+        parse the source string of the command into the command name, a list
+        of arguments and a dictionary of keyword arguments. The list of
+        arguments must only contain strings, 'CodeBlock' objects and 'String'
+        objects.
+        """
+        args = []
+        kwargs = {}
+        kwstart = False  # used to make sure that keyword args come after args
+        prevkey = None  # temporarily store previous key name
+
+        for arg in self.split_args():
+            if not isinstance(arg, str):
+                if prevkey is not None:
+                    kwargs[prevkey] = arg
+                else:
+                    args.append(arg)
+                continue
+
+            arg = arg.replace(" =", "=")
+            for substr in arg.split(" "):
+                substr = substr.strip()
+                if not substr:
+                    continue
+
+                a, b, c = substr.partition("=")
+                if not b:
+                    if prevkey:
+                        kwargs[prevkey] = a
+                        prevkey = None
+                        continue
+
+                    if kwstart:
+                        raise ArgError(
+                            "Invalid Keyword Arguments!",
+                            "Keyword arguments cannot come before positional "
+                            + "arguments"
+                        )
+                    args.append(substr)
+
+                else:
+                    kwstart = True
+                    if prevkey:
+                        raise ArgError(
+                            "Invalid Keyword Argument!",
+                            "Did not specify argument after '='"
+                        )
+
+                    if not a:
+                        raise ArgError(
+                            "Invalid Keyword Argument!",
+                            "Missing keyword before '=' symbol"
+                        )
+
+                    if c:
+                        kwargs[a] = c
+                    else:
+                        prevkey = a
 
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
@@ -160,12 +176,98 @@ class BaseCommand:
                 args.append(CodeBlock(contents.decode()))
 
         # user entered something like 'pg!', display help message
-        if not args or not isinstance(args[0], str):
+        if not args:
+            if kwargs:
+                raise ArgError(
+                    "Invalid Keyword Argument!",
+                    "Keyword argument entered without command!"
+                )
             args = ["help"]
-            kwargs.clear()
 
         cmd = args.pop(0)
+        if not isinstance(cmd, str):
+            raise ArgError("Invalid Command name!", "")
+
         return cmd, args, kwargs
+
+    async def cast_arg(self, param, arg):
+        """
+        Cast an argument to the type mentioned by the paramenter annotation
+        Raises ValueErrors on failure to cast arguments
+        """
+        if isinstance(arg, CodeBlock):
+            if param.annotation == "CodeBlock":
+                return arg
+            raise ValueError()
+
+        elif isinstance(arg, String):
+            if param.annotation == "String":
+                return arg
+            raise ValueError()
+
+        elif isinstance(arg, str):
+            if param.annotation in ["CodeBlock", "String"]:
+                raise ValueError()
+
+            elif param.annotation == "HiddenArg":
+                raise ArgError(
+                    "Invalid Arguments!",
+                    "Hidden arguments cannot be explicitly passed"
+                )
+
+            elif param.annotation == "pygame.Color":
+                return pygame.Color(arg)
+
+            elif param.annotation == "bool":
+                return arg == "1" or arg.lower() == "true"
+
+            elif param.annotation == "int":
+                return int(arg)
+
+            elif param.annotation == "float":
+                return float(arg)
+
+            elif param.annotation == "discord.Member":
+                return utils.get_mention_from_id(arg, self.invoke_msg)
+
+            elif param.annotation == "discord.TextChannel":
+                chan_id = utils.filter_id(arg)
+                chan = self.invoke_msg.guild.get_channel(chan_id)
+                if chan is None:
+                    raise ArgError(
+                        "Invalid Arguments!", "Got invalid channel ID"
+                    )
+
+                return chan
+
+            elif param.annotation == "discord.Message":
+                a, b, c = arg.partition("/")
+                if b:
+                    msg = int(c)
+                    chan_id = utils.filter_id(a)
+                    chan = self.invoke_msg.guild.get_channel(chan_id)
+
+                    if chan is None:
+                        raise ArgError(
+                            "Invalid Arguments!", "Got invalid channel ID"
+                        )
+                else:
+                    msg = int(a)
+                    chan = self.invoke_msg.channel
+
+                try:
+                    return await chan.fetch_message(msg)
+                except discord.NotFound:
+                    raise ArgError(
+                        "Invalid Arguments!", "Got invalid message ID"
+                    )
+
+            elif param.annotation in [param.empty, "str"]:
+                return arg
+
+        raise ArgError(
+            "Internal Bot error", f"Invalid argument of type `{type(arg)}`"
+        )
 
     async def call_cmd(self):
         """
@@ -190,177 +292,124 @@ class BaseCommand:
         func = self.cmds_and_funcs[cmd]
         sig = inspect.signature(func)
 
-        # Iterate through kwargs to check if we recieved invalid ones
-        for key in kwargs:
-            if key not in sig.parameters:
-                raise ArgError(
-                    "Invalid Keyword Argument!",
-                    f"Recieved invalid keyword argument `{key}`\n"
-                    + f"For help on this bot command, do `pg!help {cmd}`"
-                )
-
         i = -1
-        newargs = []
+        is_var_pos = is_var_key = False
 
         # iterate through function parameters, arrange the given args and
         # kwargs in the order and format the function wants
         for i, key in enumerate(sig.parameters):
             param = sig.parameters[key]
+            iskw = False
 
-            # a bool which indicates wheter an argument is at it's default value
-            isdefault = False
-            if key in kwargs:
-                # argument was passed as a keyword argument
-                arg = kwargs[key]
+            if param.kind == param.VAR_POSITIONAL:
+                is_var_pos = True
+                continue
 
-            elif i >= len(args):
-                if param.default == sig.empty:
+            elif param.kind == param.VAR_KEYWORD:
+                is_var_key = True
+                continue
+
+            elif param.kind == param.KEYWORD_ONLY:
+                iskw = True
+                if key not in kwargs:
+                    if param.default == param.empty:
+                        raise ArgError(
+                            "Invalid Keyword Arguments!",
+                            f"Missed required keyword argument `{key}` \nFor "
+                            + f"help on this bot command, do `pg!help {cmd}`"
+                        )
+                    kwargs[key] = param.default
+                    continue
+
+            elif i == len(args):
+                # ran out of args, try to fill it with something
+                if key in kwargs:
+                    if param.kind == param.POSITIONAL_ONLY:
+                        raise ArgError(
+                            "Invalid Arguments!",
+                            f"`{key}` cannot be passed as a keyword argument \n"
+                            + f"Run `pg!help {cmd}` for help on this command"
+                        )
+                    args.append(kwargs.pop(key))
+
+                elif param.default == param.empty:
                     raise ArgError(
                         "Invalid Arguments!",
                         f"Missed required argument `{key}` \nFor help on "
                         + f"this bot command, do `pg!help {cmd}`"
                     )
+
                 else:
-                    # use default argument for the function
-                    isdefault = True
-                    arg = param.default
+                    args.append(param.default)
+                    continue
 
-            else:
-                arg = args[i]
-
-            if not isdefault:
-                try:
-                    newargs.append(
-                        await self.correct_arg(sig, param, arg)
-                    )
-                except ValueError:
-                    if param.annotation == "discord.Member":
-                        typ = "an @mention to someone"
-
-                    elif param.annotation == "discord.TextChannel":
-                        typ = "an id or mention to a text channel"
-
-                    elif param.annotation == "discord.Messgae":
-                        typ = "a message id, or a 'channel/message' combo"
-
-                    elif param.annotation == "pygame.Color":
-                        typ = (
-                            "a color, represented by"
-                            "the color name or hex rgb"
-                        )
-
-                    else:
-                        typ = f"of type `{param.annotation}`"
-
-                    raise ArgError(
-                        "Invalid Arguments!",
-                        f"The argument `{key}` must be {typ} \n"
-                        + f"For help on this bot command, do `pg!help {cmd}`",
-                    )
-            else:
-                newargs.append(arg)
-
-        i += 1
-        # More arguments were given than required
-        tot = len(args) + len(kwargs)
-        if i < tot:
-            raise ArgError(
-                "Invalid Arguments!",
-                f"{tot} were given, but {i} is the maximum number allowed. \n"
-                + f"For help on this bot command, do `pg!help {cmd}`",
-            )
-
-        await func(*newargs)
-
-    async def correct_arg(self, sig, param, arg):
-        if param.annotation == "HiddenArg":
-            raise ArgError(
-                "Invalid Arguments!",
-                "Hidden arguments cannot be explicitly passed"
-            )
-
-        elif param.annotation == "pygame.Color":
-            return pygame.Color(arg)
-
-        elif param.annotation == "bool":
-            return arg == "1" or bool(arg.lower() == "true")
-
-        elif param.annotation == "int":
-            return int(arg)
-
-        elif param.annotation == "float":
-            return float(arg)
-
-        elif param.annotation == "discord.Member":
-            return utils.get_mention_from_id(arg, self.invoke_msg)
-
-        elif param.annotation == "discord.TextChannel":
-            if not isinstance(arg, str):
-                raise ValueError()
-
-            chan_id = utils.filter_id(arg)
-            chan = self.invoke_msg.guild.get_channel(chan_id)
-
-            if chan is None:
+            elif key in kwargs:
                 raise ArgError(
-                    "Invalid Arguments!", "Got invalid channel ID"
+                    "Invalid Arguments!",
+                    "Positional cannot be passed again as a keyword argument"
                 )
-
-            return chan
-
-        elif param.annotation == "discord.Message":
-            if not isinstance(arg, str):
-                raise ValueError()
-
-            a, b, c = arg.partition("/")
-            if b:
-                msg = int(c)
-                chan_id = utils.filter_id(a)
-                chan = self.invoke_msg.guild.get_channel(chan_id)
-
-                if chan is None:
-                    raise ArgError(
-                        "Invalid Arguments!", "Got invalid channel ID"
-                    )
-
-            else:
-                msg = int(a)
-                chan = self.invoke_msg.channel
 
             try:
-                return await chan.fetch_message(msg)
-            except discord.NotFound:
-                raise ArgError(
-                    "Invalid Arguments!", "Got invalid message ID"
-                )
+                if iskw:
+                    kwargs[key] = await self.cast_arg(param, kwargs[key])
+                else:
+                    args[i] = await self.cast_arg(param, args[i])
 
-        elif param.annotation == "CodeBlock":
-            # Expected code block, did not get one
-            if not isinstance(arg, CodeBlock):
+            except ValueError:
+                if param.annotation == "CodeBlock":
+                    typ = (
+                        "a codeblock, please surround your code in code "
+                        "backticks"
+                    )
+
+                elif param.annotation == "String":
+                    typ = "a string, please surround it in quotes (`\"\"`)"
+
+                elif param.annotation == "discord.Member":
+                    typ = "an @mention to someone"
+
+                elif param.annotation == "discord.TextChannel":
+                    typ = "an id or mention to a text channel"
+
+                elif param.annotation == "discord.Message":
+                    typ = "a message id, or a 'channel/message' combo"
+
+                elif param.annotation == "pygame.Color":
+                    typ = (
+                        "a color, represented by"
+                        "the color name or hex rgb"
+                    )
+
+                else:
+                    typ = f"of type `{param.annotation}`"
+
                 raise ArgError(
                     "Invalid Arguments!",
-                    "Please enter code in 'code blocks', that is, "
-                    + "surround your code in code backticks '```'",
+                    f"The argument `{key}` must be {typ} \n"
+                    + f"For help on this bot command, do `pg!help {cmd}`",
                 )
 
-            return arg
-
-        elif param.annotation == "String":
-            # Expected String, did not get one
-            if not isinstance(arg, String):
+        i += 1
+        if not is_var_pos:
+            # More arguments were given than required
+            if i < len(args):
                 raise ArgError(
                     "Invalid Arguments!",
-                    "Please enter the string in quotes"
+                    f"Too many args were given ({len(args)}) \n"
+                    + f"For help on this bot command, do `pg!help {cmd}`",
                 )
 
-            return arg
+        if not is_var_key:
+            # Iterate through kwargs to check if we recieved invalid ones
+            for key in kwargs:
+                if key not in sig.parameters:
+                    raise ArgError(
+                        "Invalid Keyword Argument!",
+                        f"Recieved invalid keyword argument `{key}`\n"
+                        + f"For help on this bot command, do `pg!help {cmd}`"
+                    )
 
-        elif param.annotation in [sig.empty, "str"]:
-            return arg
-
-        raise ArgError(
-            "Internal Bot error", f"Invalid annotation `{param.annotation}`"
-        )
+        await func(*args, **kwargs)
 
     async def handle_cmd(self):
         """
@@ -375,8 +424,9 @@ class BaseCommand:
         except Exception as exc:
             title = "An exception occured while handling the command!"
             tbs = traceback.format_exception(type(exc), exc, exc.__traceback__)
-            # Pop out the second entry in the traceback, because that's
-            # this function call itself
+            # Pop out the second and third entry in the traceback, because that
+            # is this function call itself
+            tbs.pop(1)
             tbs.pop(1)
 
             elog = (

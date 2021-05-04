@@ -329,24 +329,14 @@ class UserCommand(BaseCommand):
                 "Please, don't hit the snek"
             )
 
-    async def cmd_refresh(self, msg_id: int):
+    async def cmd_refresh(self, msg: discord.Message):
         """
         ->type Other commands
-        ->signature pg!refresh [message_id]
+        ->signature pg!refresh [message]
         ->description Refresh a message which support pages.
         -----
         Implement pg!refresh, to refresh a message which supports pages
         """
-        try:
-            msg = await self.invoke_msg.channel.fetch_message(msg_id)
-        except (discord.errors.NotFound, discord.errors.HTTPException):
-            await embed_utils.replace(
-                self.response_msg,
-                "Message not found",
-                "Message was not found. Make sure that the id is correct and that "
-                "you are in the same channel as the message."
-            )
-            return
 
         if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
             await embed_utils.replace(
