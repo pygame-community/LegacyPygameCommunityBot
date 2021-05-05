@@ -36,7 +36,10 @@ def format_time(seconds: float, decimal_places: int = 4):
     return f"very fast"
 
 
-def format_long_time(seconds):
+def format_long_time(seconds: int):
+    """
+    Formats time into string, which is of the order of a few days
+    """
     result = []
 
     for name, count in (
@@ -102,7 +105,7 @@ def filter_id(mention: str):
     return int(mention)
 
 
-def get_doc_from_docstr(string, regex):
+def get_doc_from_docstr(string: str, regex: re.Pattern):
     """
     Get the type, signature, description and other information
     from docstrings.
@@ -265,7 +268,10 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
     )
 
 
-def format_entries_message(message, entry_type):
+def format_entries_message(message: discord.Message, entry_type: str):
+    """
+    Formats an entries message to be reposted in discussion channel
+    """
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 
@@ -289,7 +295,7 @@ def format_entries_message(message, entry_type):
     return title, fields
 
 
-async def format_archive_messages(messages):
+async def format_archive_messages(messages: list[discord.Message]):
     """
     Formats a message to be archived
     """

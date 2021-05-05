@@ -33,7 +33,14 @@ def decode_from_msg(msg):
     return ret
 
 
-def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0 / 3.0):
+def generate_arrow_points(
+    position,
+    arrow_vector,
+    thickness=5.0,
+    size_multiplier=1.0,
+    arrow_head_width_mul=0.75,
+    tip_to_base_ratio=2.0 / 3.0
+):
     """
     Flexible function for calculating the coordinates
     for an arrow polygon defined by a position and direction
@@ -139,7 +146,9 @@ def user_clock(t, clock_timezones):
 
     actual_times = [(60, 580), (565, 60), (1060, 580), (565, 1160)]
 
-    for time, actual_time in zip([time_6, time_12, time_18, time_0], actual_times):
+    for time, actual_time in zip(
+        [time_6, time_12, time_18, time_0], actual_times
+    ):
         image.blit(time, actual_time)
 
     tx = ty = 0
@@ -174,7 +183,9 @@ def user_clock(t, clock_timezones):
 
         time_h = int((t + offset) // 3600 % 24)
         time_m = int((t + offset) // 60 % 60)
-        text_to_render = f"{name} - {str(time_h).zfill(2)}:{str(time_m).zfill(2)}"
+
+        text_to_render = name
+        text_to_render += f" - {str(time_h).zfill(2)}:{str(time_m).zfill(2)}"
 
         text = font.render(text_to_render, True, color)
         text_rect = text.get_rect(midleft=(tx, 1280 + ty + font_size / 2))

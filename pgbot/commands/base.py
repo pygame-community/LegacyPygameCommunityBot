@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import traceback
+from typing import Any, TypeVar
 
 import discord
 import pygame
@@ -44,12 +45,9 @@ class String:
         self.string = string
 
 
-class HiddenArg:
-    """
-    Base class to represent a "hidden argument", one that cannot be passed via
-    discord, but is used internally by other commands
-    """
-
+# Type hint for an argument that is "hidden", that is, it cannot be passed
+# from the discord end
+HiddenArg = TypeVar("HiddenArg")
 
 SPLIT_FLAGS = [
     ("```", CodeBlock, (True,)),
@@ -78,8 +76,9 @@ class BaseCommand:
 
         self.cmds_and_funcs = {}
         for i in dir(self):
-            if i.startswith("cmd_"):
-                self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
+            if i.startswith(common.CMD_FUNC_PREFIX):
+                self.cmds_and_funcs[i[len(common.CMD_FUNC_PREFIX):]] = \
+                    self.__getattribute__(i)
 
     def split_args(self, split_str, split_flags):
         """
@@ -201,42 +200,51 @@ class BaseCommand:
         annotation
         Raises ValueErrors on failure to cast arguments
         """
+        if param.annotation == "Any":
+            # no checking/converting, do a direct return
+            return arg
+
+        if param.annotation.startswith("Optional["):
+            anno = param.annotation[9:-1].strip()
+        else:
+            anno = param.annotation
+
         if isinstance(arg, CodeBlock):
-            if param.annotation == "CodeBlock":
+            if anno == "CodeBlock":
                 return arg
             raise ValueError()
 
         elif isinstance(arg, String):
-            if param.annotation == "String":
+            if anno == "String":
                 return arg
             raise ValueError()
 
         elif isinstance(arg, str):
-            if param.annotation in ["CodeBlock", "String"]:
+            if anno in ["CodeBlock", "String"]:
                 raise ValueError()
 
-            elif param.annotation == "HiddenArg":
+            elif anno == "HiddenArg":
                 raise ArgError(
                     "Invalid Arguments!",
                     "Hidden arguments cannot be explicitly passed"
                 )
 
-            elif param.annotation == "pygame.Color":
+            elif anno == "pygame.Color":
                 return pygame.Color(arg)
 
-            elif param.annotation == "bool":
+            elif anno == "bool":
                 return arg == "1" or arg.lower() == "true"
 
-            elif param.annotation == "int":
+            elif anno == "int":
                 return int(arg)
 
-            elif param.annotation == "float":
+            elif anno == "float":
                 return float(arg)
 
-            elif param.annotation == "discord.Member":
+            elif anno == "discord.Member":
                 return utils.get_mention_from_id(arg, self.invoke_msg)
 
-            elif param.annotation == "discord.TextChannel":
+            elif anno == "discord.TextChannel":
                 chan_id = utils.filter_id(arg)
                 chan = self.invoke_msg.guild.get_channel(chan_id)
                 if chan is None:
@@ -246,7 +254,7 @@ class BaseCommand:
 
                 return chan
 
-            elif param.annotation == "discord.Message":
+            elif anno == "discord.Message":
                 a, b, c = arg.partition("/")
                 if b:
                     msg = int(c)
@@ -268,8 +276,12 @@ class BaseCommand:
                         "Invalid Arguments!", "Got invalid message ID"
                     )
 
-            elif param.annotation in [param.empty, "str"]:
+            elif anno in [param.empty, "str"]:
                 return arg
+
+            raise ArgError(
+                "Internal Bot error", f"Invalid type annotation `{anno}`"
+            )
 
         raise ArgError(
             "Internal Bot error", f"Invalid argument of type `{type(arg)}`"
@@ -284,10 +296,7 @@ class BaseCommand:
 
         except ValueError:
             if param.annotation == "CodeBlock":
-                typ = (
-                    "a codeblock, please surround your code in code "
-                    "backticks"
-                )
+                typ = "a codeblock, please surround your code in codeticks"
 
             elif param.annotation == "String":
                 typ = "a string, please surround it in quotes (`\"\"`)"
@@ -302,10 +311,7 @@ class BaseCommand:
                 typ = "a message id, or a 'channel/message' combo"
 
             elif param.annotation == "pygame.Color":
-                typ = (
-                    "a color, represented by"
-                    "the color name or hex rgb"
-                )
+                typ = "a color, represented by the color name or hex rgb"
 
             else:
                 typ = f"of type `{param.annotation}`"

@@ -28,7 +28,7 @@ import pygame._sdl2
 import pygame.gfxdraw
 import pygame_gui
 
-from . import common, utils, embed_utils
+from . import common, embed_utils, utils
 
 doc_module_tuple = (
     asyncio,
@@ -167,7 +167,6 @@ async def put_main_doc(name, original_msg):
         if cnt >= common.DOC_EMBED_LIMIT:
             break
 
-
     return module_objs, name, embeds
 
 
@@ -223,5 +222,6 @@ async def put_doc(name, original_msg, msg_invoker, page=0):
 
     main_embeds.extend(embeds)
 
-    page_embed = embed_utils.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+    page_embed = embed_utils.PagedEmbed(
+        original_msg, main_embeds, msg_invoker, f"doc {name}", page)
     await page_embed.mainloop()

@@ -35,7 +35,7 @@ PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
 BONCC_THRESHOLD = 10
 
 # Constants
-VERSION = "1.4.1"
+VERSION = "1.4.2"
 TEST_MODE = "TEST_TOKEN" in os.environ
 TEST_USER_ID = int(
     os.environ["TEST_USER_ID"]
@@ -61,8 +61,7 @@ ENTRY_CHANNEL_IDS = {
 }
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
-MUTED_ROLE = 772534687302156301
-BOT_SUS_ROLE = 829281419125719070
+CMD_FUNC_PREFIX = "cmd_"
 
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
@@ -87,17 +86,6 @@ PRIV_ROLES = {
     787473199088533504,
 }
 
-# Beginner, Regular, Pro, Contributor
-COMPETENCE_ROLES = {
-    772536799926157312,
-    772536976262823947,
-    772537033078997002,
-    772537232594698271,
-}
-
-# PGC #regulars-pygame-help, #beginners-help
-PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
-
 ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
 
@@ -117,8 +105,8 @@ ROLE_PROMPT = {
     ],
 
     "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro,"
-        "or even a @ Pygame Contributor?\n"  # Broke down line limit
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a "
+        "@ Pygame Pro, or even a @ Pygame Contributor?\n"
         "Tell <@!235148962103951360> in <#772535163195228200>!",
     ]
 }
@@ -133,7 +121,8 @@ BOT_WELCOME_MSG = {
         "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
         "Howdy", "Hi there, ", "Hey there", "*Hiss* Who's that? It's",
         "*Hisss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hiss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
+        "*Hiss* Do I see a new user? *hisss*\n\n"
+        + "Welcome to our wonderful chatroom",
     ),
 
     "check": (
@@ -144,25 +133,26 @@ BOT_WELCOME_MSG = {
     ),
 
     "grab": (
-        ", grab", ". Then get some", ", take", ", then grab yourself some shiny", ". Get some fancy", ", get some",
-        ", then get yourself some cool", ", then get yourself some", ", take some",
-        ", then take some", ", then take some", ". Then go take some fancy",
-        ", then grab some shiny",
+        ", grab", ". Then get some", ", take",
+        ", then grab yourself some shiny", ". Get some fancy", ", get some",
+        ", then get yourself some cool", ", then get yourself some",
+        ", take some", ", then take some", ", then take some",
+        ". Then go take some fancy", ", then grab some shiny",
     ),
 
     "end": (
-        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hiss* ",
-        " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
-        " and have fun with pygame!", " and have fun with pygame! *hisssss*",
-        " and have fun here! *hissss*",
+        " and have fun!", ", then have fun with pygame!",
+        ", then have fun with pygame! *hiss* ", " and have a nice time!",
+        " and enjoy your stay!", " and have some fun! *hissss*",
+        " and have fun here!", " and have fun with pygame!",
+        " and have fun with pygame! *hisssss*", " and have fun here! *hissss*",
     ),
 
 }
 
 ILLEGAL_ATTRIBUTES = (
-    "__subclasses__", "__loader__", "__bases__", "__code__",
-    "__getattribute__", "__setattr__", "__delattr_", "mro",
-    "__class__", "__dict__"
+    "__subclasses__", "__loader__", "__bases__", "__code__", "__getattribute__",
+    "__setattr__", "__delattr_", "mro", "__class__", "__dict__"
 )
 
 BOT_HELP_PROMPT = {

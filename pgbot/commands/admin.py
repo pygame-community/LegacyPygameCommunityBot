@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from typing import Optional
 
 import discord
 import psutil
@@ -10,8 +11,8 @@ import pygame
 
 from pgbot import common, embed_utils, utils
 from pgbot.commands.base import CodeBlock, String
-from pgbot.commands.user import UserCommand
 from pgbot.commands.emsudo import EmsudoCommand
+from pgbot.commands.user import UserCommand
 
 process = psutil.Process(os.getpid())
 
@@ -57,8 +58,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         action: str = "",
         timezone: float = 0,
-        color: pygame.Color = None,
-        member: discord.Member = None,
+        color: Optional[pygame.Color] = None,
+        member: Optional[discord.Member] = None,
     ):
         """
         ->type Admin commands
@@ -138,7 +139,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message in a text file.
         """
-        msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
+        msg_link = "https://discord.com/channels/"
+        msg_link += f"{msg.guild.id}/{msg.channel.id}/{msg.id}"
         if attach:
             try:
                 with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
@@ -191,14 +193,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         msg_files = None
         if msg.attachments and attach:
-            msg_files = [await a.to_file(spoiler=spoiler) for a in msg.attachments]
+            msg_files = [
+                await a.to_file(spoiler=spoiler) for a in msg.attachments
+            ]
 
         await self.response_msg.channel.send(
             content=msg.content,
             embed=msg.embeds[0] if msg.embeds and embeds else None,
             files=msg_files
         )
-
         await self.response_msg.delete()
 
     async def cmd_heap(self):
@@ -235,7 +238,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
-        destination: discord.TextChannel = None,
+        destination: Optional[discord.TextChannel] = None,
     ):
         """
         ->type Admin commands

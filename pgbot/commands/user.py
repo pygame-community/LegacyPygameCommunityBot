@@ -4,6 +4,7 @@ import os
 import random
 import re
 import time
+from typing import Optional
 
 import discord
 import pygame
@@ -48,7 +49,7 @@ class UserCommand(BaseCommand):
         self,
         action: str = "",
         timezone: float = 0,
-        color: pygame.Color = None,
+        color: Optional[pygame.Color] = None,
         member: HiddenArg = None,
     ):
         """
@@ -129,13 +130,17 @@ class UserCommand(BaseCommand):
 
         t = time.time()
         pygame.image.save(clock.user_clock(t, timezones), f"temp{t}.png")
-        common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
-            file=discord.File(f"temp{t}.png")
+        common.cmd_logs[self.invoke_msg.id] = \
+            await self.response_msg.channel.send(file=discord.File(
+                f"temp{t}.png"
+            )
         )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
-    async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
+    async def cmd_doc(
+        self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
+    ):
         """
         ->type Get help
         ->signature pg!doc [module.Class.method]
@@ -202,7 +207,10 @@ class UserCommand(BaseCommand):
             )
 
     async def cmd_help(
-        self, name: str = None, page: HiddenArg = 0, msg: HiddenArg = None
+        self,
+        name: Optional[str] = None,
+        page: HiddenArg = 0,
+        msg: HiddenArg = None
     ):
         """
         ->type Get help

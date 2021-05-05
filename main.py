@@ -55,8 +55,8 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
-    if common.TEST_MODE:
-        # Do not greet people in test mode
+    if common.TEST_MODE or member.bot:
+        # Do not greet people in test mode, or if a bot joins
         return
 
     greet = random.choice(common.BOT_WELCOME_MSG["greet"])
@@ -67,24 +67,19 @@ async def on_member_join(member: discord.Member):
 
     # This function is called right when a member joins, even before the member
     # finishes the join screening. So we wait for that to happen and then send
-    # the message. Wait for a maximum of one hour.
-    if not member.bot:
-        for _ in range(3600):
-            await asyncio.sleep(1)
+    # the message. Wait for a maximum of six hours.
+    for _ in range(10800):
+        await asyncio.sleep(2)
 
-            if not member.pending:
-                # Don't use embed here, because pings would not work
-                await common.arrivals_channel.send(
-                    f"{greet} {member.mention}! {check} "
-                    + f"{common.guide_channel.mention}{grab} "
-                    + f"{common.roles_channel.mention}{end}"
-                )
-                return
+        if not member.pending:
+            # Don't use embed here, because pings would not work
+            await common.arrivals_channel.send(
+                f"{greet} {member.mention}! {check} "
+                + f"{common.guide_channel.mention}{grab} "
+                + f"{common.roles_channel.mention}{end}"
+            )
+            return
 
-    # Member did not complete screen within an hour of joining. This is sus,
-    # so give sus bot role
-    bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
-    await member.add_roles(bot_sus)
 
 @common.bot.event
 async def on_message(msg: discord.Message):
@@ -95,15 +90,7 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        run_command = True
-
-        if (
-            (common.TEST_MODE and common.TEST_USER_IDS)\
-            and msg.author.id not in common.TEST_USER_IDS
-        ):
-            run_command = False
-
-        if run_command:
+        if not common.TEST_MODE or msg.author.id in common.TEST_USER_IDS:
             try:
                 response = await embed_utils.send(
                     msg.channel,
