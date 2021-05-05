@@ -608,12 +608,12 @@ def get_stats_embed(msg: discord.Message):
     else:
         msg_edited_at_info = ""
 
-    msg_id_info = f"__Message ID__: \n> {msg.id}\n\n"
+    msg_id_info = f"__ID__: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"__Char. Count__: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
 
     member_name_info = "__Name__: \n> "+(
-        f"{member.nick}\n> ({member.name}#{member.discriminator})\n\n"\
-        if member.nick else f"{member.name}#{member.discriminator}\n\n"
+        f"**{member.nick}**\n> ({member.name}#{member.discriminator})\n\n"\
+        if member.nick else f"**{member.name}#{member.discriminator}**\n\n"
         )
 
     member_created_at_fdtime = member.created_at.strftime(datetime_format_str)
