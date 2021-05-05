@@ -600,29 +600,29 @@ def get_stats_embed(msg: discord.Message):
     datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p %Z`"
     msg_created_at_fdtime = msg.created_at.strftime(datetime_format_str)
 
-    msg_created_at_info = f"\n__Created On__: \n> {msg_created_at_fdtime}\n\n"
+    msg_created_at_info = f"\u2800\nCreated On: \n> {msg_created_at_fdtime}\n\n"
     
     if msg.edited_at:
         msg_edited_at_fdtime = msg.edited_at.strftime(datetime_format_str)
-        msg_edited_at_info = f"__Last Edited On__: \n> {msg_edited_at_fdtime}\n\n"
+        msg_edited_at_info = f"Last Edited On: \n> {msg_edited_at_fdtime}\n\n"
     else:
         msg_edited_at_info = ""
 
-    msg_id_info = f"__Message ID__: \n> {msg.id}\n\n"
-    msg_char_count_info = f"__Char. Count__: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
+    msg_id_info = f"ID: \n> `{msg.id}`\n\n"
+    msg_char_count_info = f"Char. Count: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
 
-    member_name_info = "__Name__: \n> "+(
-        f"{member.nick}\n> ({member.name}#{member.discriminator})\n\n"\
-        if member.nick else f"{member.name}#{member.discriminator}\n\n"
+    member_name_info = "Name: \n> "+(
+        f"**{member.nick}**\n> ({member.name}#{member.discriminator})\n\n"\
+        if member.nick else f"**{member.name}#{member.discriminator}**\n\n"
         )
 
     member_created_at_fdtime = member.created_at.strftime(datetime_format_str)
-    member_created_at_info = f"\n__Created On__: \n> {member_created_at_fdtime}\n\n"
+    member_created_at_info = f"\u2800\nCreated On: \n> {member_created_at_fdtime}\n\n"
     
     member_joined_at_fdtime = member.joined_at.strftime(datetime_format_str)
-    member_joined_at_info = f"__Joined On__: \n> {member_joined_at_fdtime}\n\n"
+    member_joined_at_info = f"Joined On: \n> {member_joined_at_fdtime}\n\n"
     
-    member_id_info = f"__ID__: \n> `{msg.id}`\n\n"
+    member_id_info = f"ID: \n> `{msg.id}`\n\n"
 
     msg_stats = f"{msg_created_at_info}{msg_edited_at_info}{msg_id_info}{msg_char_count_info}"
     member_stats = f"{member_created_at_info}{member_name_info}{member_joined_at_info}{member_id_info}"
