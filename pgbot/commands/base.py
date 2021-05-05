@@ -200,7 +200,7 @@ class BaseCommand:
         annotation
         Raises ValueErrors on failure to cast arguments
         """
-        if param.annotation == "Any":
+        if param.annotation in ["Any", param.empty]:
             # no checking/converting, do a direct return
             return arg
 
@@ -276,7 +276,7 @@ class BaseCommand:
                         "Invalid Arguments!", "Got invalid message ID"
                     )
 
-            elif anno in [param.empty, "str"]:
+            elif anno == "str":
                 return arg
 
             raise ArgError(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import random
 import re
@@ -11,7 +12,7 @@ import pygame
 from discord.errors import HTTPException
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
-from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg
+from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg, String
 
 
 class UserCommand(BaseCommand):
@@ -39,11 +40,45 @@ class UserCommand(BaseCommand):
         """
         timedelta = self.response_msg.created_at - self.invoke_msg.created_at
         sec = timedelta.total_seconds()
+        sec2 = common.bot.latency  # This does not refresh that often
+        if sec < sec2:
+            sec2 = sec
+
         await embed_utils.replace(
             self.response_msg,
             "Pingy Pongy",
-            f"The bots ping is `{utils.format_time(sec, 0)}`"
+            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+            + f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
         )
+
+    async def cmd_remind(self, msg: String, time: int):
+        """
+        ->type Other commands
+        ->signature pg!remind [message string] [time in minutes]
+        ->description Set a reminder to yourself
+        -----
+        Implement pg!remind, for users to set reminders for themselves
+        """
+        if time > 360 or time <= 0:
+            await embed_utils.replace(
+                self.response_msg,
+                f"Failed to set reminder!",
+                f"The maximum time for which you can set reminder is 6 hours"
+            )
+            return
+
+        await embed_utils.replace(
+            self.response_msg,
+            f"Reminder set!",
+            f"Gonna remind {self.invoke_msg.author.name} in {time} minutes.\n"
+            + "But do not solely rely on me though, cause I might forget to "
+            + "remind you incase I am down."
+        )
+        await asyncio.sleep(time * 60)
+
+        sendmsg = "__**Reminder for "
+        sendmsg += self.invoke_msg.author.mention + ":**__\n" + msg.string
+        await self.invoke_msg.channel.send(sendmsg)
 
     async def cmd_clock(
         self,
