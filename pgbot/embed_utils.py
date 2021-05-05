@@ -588,3 +588,64 @@ async def clear_fields(message, embed):
     """
     embed.clear_fields()
     return await message.edit(embed=embed)
+
+
+def get_stats_embed(msg: discord.Message):
+    """
+    Generate an embed containing info about a message and its author.
+    """
+    msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
+
+    member = msg.author
+    datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p %Z`"
+    msg_created_at_fdtime = msg.created_at.strftime(datetime_format_str)
+
+    msg_created_at_info = f"\n__Created On__: \n> {msg_created_at_fdtime}\n\n"
+    
+    if msg.edited_at:
+        msg_edited_at_fdtime = msg.edited_at.strftime(datetime_format_str)
+        msg_edited_at_info = f"__Last Edited On__: \n> {msg_edited_at_fdtime}\n\n"
+    else:
+        msg_edited_at_info = ""
+
+    msg_id_info = f"__Message ID__: \n> {msg.id}\n\n"
+    msg_char_count_info = f"__Char. Count__: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
+
+    member_name_info = "__Name__: \n> "+(
+        f"{member.nick}\n> ({member.name}#{member.discriminator})\n\n"\
+        if member.nick else f"{member.name}#{member.discriminator}\n\n"
+        )
+
+    member_created_at_fdtime = member.created_at.strftime(datetime_format_str)
+    member_created_at_info = f"\n__Created On__: \n> {member_created_at_fdtime}\n\n"
+    
+    member_joined_at_fdtime = member.joined_at.strftime(datetime_format_str)
+    member_joined_at_info = f"__Joined On__: \n> {member_joined_at_fdtime}\n\n"
+    
+    member_id_info = f"__ID__: \n> `{msg.id}`\n\n"
+
+    msg_stats = f"{msg_created_at_info}{msg_edited_at_info}{msg_id_info}{msg_char_count_info}"
+    member_stats = f"{member_created_at_info}{member_name_info}{member_joined_at_info}{member_id_info}"
+
+    return create(
+        title="Message Stats",
+        thumbnail_url=str(msg.author.avatar_url),
+        description=(f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else discord.embeds.EmptyEmbed),
+        fields=(
+            (
+                "Message Info",
+                msg_stats,
+                True
+            ),
+            (
+                "Message Author Info",
+                member_stats,
+                True
+            ),
+            (
+                "\u2800",
+                f"**[View Original Message]({msg_link})**",
+                False
+            ),
+        ),
+    )

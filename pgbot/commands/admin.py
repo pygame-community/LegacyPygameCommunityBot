@@ -127,7 +127,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_sudo_get(self, msg: discord.Message, attach: bool = False):
+    async def cmd_sudo_get(self, msg: discord.Message, attach: bool = False, stats: bool = False):
         """
         ->type More admin commands
         ->signature pg!sudo_get [message] [bool attach] [bool stats]
@@ -151,13 +151,23 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed=await embed_utils.send_2(
                         None,
                         author_name="Message data",
-                        description=f"**[View Original]({msg_link})**",
+                        description=f"**[View Original Message]({msg_link})**",
                         color=0xFFFFAA
                     )
                 )
             finally:
                 if os.path.exists("messagedata.txt"):
                     os.remove("messagedata.txt")
+        
+        elif stats:
+            stats_embed = embed_utils.get_stats_embed(msg)
+            stats_embed.set_author(name="Message data & stats")
+            stats_embed.title = ""
+            stats_embed.description = f"```\n{msg.content}```\n\u2800"
+            await self.response_msg.channel.send(
+                embed=stats_embed
+            )
+        
         else:
             await embed_utils.send_2(
                 self.response_msg.channel,
@@ -168,11 +178,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 fields=(
                     (
                         "\u2800",
-                        f"**[View Original]({msg_link})**",
+                        f"**[View Original Message]({msg_link})**",
                         False
                     ),
                 )
             )
+
+        
         await self.response_msg.delete()
 
     async def cmd_sudo_clone(
@@ -192,14 +204,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
+
         msg_files = None
+        cloned_msg = None
+
         if msg.attachments and attach:
             msg_files = [
                 await a.to_file(spoiler=spoiler) for a in msg.attachments
             ]
 
         if msg.embeds and embeds:
-            await self.response_msg.channel.send(
+            cloned_msg = await self.response_msg.channel.send(
             content=msg.content,
             embed=msg.embeds[0],
             files=msg_files
@@ -210,20 +225,34 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 embed=msg.embeds[i],
                 )
         else:
-            await self.response_msg.channel.send(
+            cloned_msg = await self.response_msg.channel.send(
                 content=msg.content,
                 embed=msg.embeds[0] if msg.embeds and embeds else None,
                 files=msg_files
             )
 
         if stats:
-            pass
-            # await self.response_msg.channel.send(
-            #     embed=embed_utils.create(
-            #         author_name="Message Stats",
-            #         description="Stats for "
-            #     )
-            # )
+            await self.response_msg.channel.send(
+                embed=embed_utils.get_stats_embed(msg),
+                reference=cloned_msg,
+
+            )
+        await self.response_msg.delete()
+
+    async def cmd_sudo_stats(self, msg: discord.Message):
+        """
+        ->type More admin commands
+        ->signature pg!sudo_stats [message]
+        ->description Get information about a message and its author
+
+        Get information about a message and its author in an embed and send it to the channel where this command was invoked.
+        -----
+        Implement pg!sudo_stats, to get information about a message and its author.
+        """
+
+        await self.response_msg.channel.send(
+            embed=embed_utils.get_stats_embed(msg)
+        )
         await self.response_msg.delete()
 
     async def cmd_heap(self):
