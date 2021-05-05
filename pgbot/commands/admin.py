@@ -235,7 +235,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await self.response_msg.channel.send(
                 embed=embed_utils.get_stats_embed(msg),
                 reference=cloned_msg,
-
             )
         await self.response_msg.delete()
 
