@@ -635,12 +635,12 @@ def get_stats_embed(msg: discord.Message):
             (
                 "Message Info",
                 msg_stats,
-                False
+                True
             ),
             (
                 "Message Author Info",
                 member_stats,
-                False
+                True
             ),
             (
                 "\u2800",
