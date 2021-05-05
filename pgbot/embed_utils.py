@@ -624,8 +624,6 @@ def get_stats_embed(msg: discord.Message):
     
     member_id_info = f"__ID__: \n> `{msg.id}`\n\n"
 
-    msg_link_info = f"\n**[View Original Message]({msg_link})**"
-
     msg_stats = f"{msg_created_at_info}{msg_edited_at_info}{msg_id_info}{msg_char_count_info}"
     member_stats = f"{member_created_at_info}{member_name_info}{member_joined_at_info}{member_id_info}"
 
