@@ -130,14 +130,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_get(self, msg: discord.Message, attach: bool = False):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [message] [bool attach]
+        ->signature pg!sudo_get [message] [bool attach] [bool stats]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
         (as an embed code block or a message with a `.txt` file attachment containing the message data)
         to the channel where this command was invoked.
         -----
-        Implement pg!sudo_get, to return the the contents of a message in a text file.
+        Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
         msg_link = "https://discord.com/channels/"
         msg_link += f"{msg.guild.id}/{msg.channel.id}/{msg.id}"
@@ -181,10 +181,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         embeds: bool = True,
         attach: bool = True,
         spoiler: bool = False,
+        stats: bool = False,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone [message] [embeds] [attach] [spoiler]
+        ->signature pg!sudo_clone [message] [embeds] [attach] [spoiler] [stats]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -197,11 +198,32 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 await a.to_file(spoiler=spoiler) for a in msg.attachments
             ]
 
-        await self.response_msg.channel.send(
+        if msg.embeds and embeds:
+            await self.response_msg.channel.send(
             content=msg.content,
-            embed=msg.embeds[0] if msg.embeds and embeds else None,
+            embed=msg.embeds[0],
             files=msg_files
-        )
+            )
+
+            for i in range(1, len(msg.embeds)):
+                await self.response_msg.channel.send(
+                embed=msg.embeds[i],
+                )
+        else:
+            await self.response_msg.channel.send(
+                content=msg.content,
+                embed=msg.embeds[0] if msg.embeds and embeds else None,
+                files=msg_files
+            )
+
+        if stats:
+            pass
+            # await self.response_msg.channel.send(
+            #     embed=embed_utils.create(
+            #         author_name="Message Stats",
+            #         description="Stats for "
+            #     )
+            # )
         await self.response_msg.delete()
 
     async def cmd_heap(self):
