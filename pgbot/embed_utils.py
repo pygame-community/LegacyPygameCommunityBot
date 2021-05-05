@@ -244,16 +244,13 @@ async def send(channel, title, description, color=0xFFFFAA, url_image=None, fiel
 
     return await channel.send(embed=embed)
 
-
-async def send_2(
-    channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+def create(
+    embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
     description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
 ):
     """
-    Sends an embed with a much more tight function. If the channel is
-    None it will return the embed instead of sending it.
+    Creates an embed with a much more tight function.
     """
-
     embed = discord.Embed(title=title, type=embed_type,
                           url=url, description=description, color=color)
 
@@ -274,9 +271,42 @@ async def send_2(
         embed.set_image(url=image_url)
 
     for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
+        if isinstance(field, dict):
+            embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+        else:
+            embed.add_field(name=field[0], value=field[1], inline=field[2])
 
     embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+
+    return embed
+
+
+
+async def send_2(
+    channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=EmptyEmbed
+):
+    """
+    Sends an embed with a much more tight function. If the channel is
+    None it will return the embed instead of sending it.
+    """
+
+    embed = create(
+        embed_type=embed_type,
+        author_name=author_name,
+        author_url=author_url,
+        author_icon_url=author_icon_url,
+        title=title,
+        url=url,
+        thumbnail_url=thumbnail_url,
+        description=description,
+        image_url=image_url,
+        color=color,
+        fields=fields,
+        footer_text=footer_text,
+        footer_icon_url=footer_icon_url,
+        timestamp=timestamp
+    )
 
     if channel is None:
         return embed
@@ -291,8 +321,7 @@ async def replace_2(
     """
     Replaces the embed of a message with a much more tight function
     """
-    embed = await send_2(
-        None,
+    embed = create(
         embed_type=embed_type,
         author_name=author_name,
         author_url=author_url,
@@ -319,8 +348,7 @@ async def edit_2(
     """
     Updates the changed attributes of the embed of a message with a much more tight function
     """
-    update_embed = await send_2(
-        None,
+    update_embed = create(
         embed_type=embed_type,
         author_name=author_name,
         author_url=author_url,
