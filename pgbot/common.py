@@ -118,18 +118,20 @@ EXC_TITLES = [
 
 BOT_WELCOME_MSG = {
     "greet": (
-        "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
+        "Hi", "Hello", "Welcome to **Pygame Community**", "Greetings",
         "Howdy", "Hi there, ", "Hey there", "*Hiss* Who's that? It's",
-        "*Hisss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hiss* Do I see a new user? *hisss*\n\n"
+        "*Hiss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
+        "*Hiss* Do I see a new user? *hiss*\n"
         + "Welcome to our wonderful chatroom",
+        "Ooooh! It's", "Oooh! Look who has joined us, it's",
     ),
 
     "check": (
         "Check out our", "Make sure to check out the",
         "Take a look at our", "See our", "Please see our",
         "Be sure to read our", "Be sure to check the",
-        "Be sure to check out our",
+        "Be sure to check out our", "Read our",
+        "Have a look at our", "To get started here, please read the"
     ),
 
     "grab": (
@@ -137,15 +139,17 @@ BOT_WELCOME_MSG = {
         ", then grab yourself some shiny", ". Get some fancy", ", get some",
         ", then get yourself some cool", ", then get yourself some",
         ", take some", ", then take some", ", then take some",
+        ". Go get some cool roles at", 
         ". Then go take some fancy", ", then grab some shiny",
     ),
 
     "end": (
         " and have fun!", ", then have fun with pygame!",
         ", then have fun with pygame! *hiss* ", " and have a nice time!",
-        " and enjoy your stay!", " and have some fun! *hissss*",
+        " and enjoy your stay!", " and have some fun! *hisss*",
         " and have fun here!", " and have fun with pygame!",
-        " and have fun with pygame! *hisssss*", " and have fun here! *hissss*",
+        "and have a wonderful time!", "and join us!", "and join the fun!", 
+        " and have fun with pygame! *hisss*", " and have fun here! *hisss*",
     ),
 
 }

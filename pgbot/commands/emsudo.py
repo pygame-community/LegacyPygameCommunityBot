@@ -243,7 +243,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -303,7 +303,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.filename.endswith((".txt", ".py")):
+                if attachment.content_type is not None and attachment.content_type.startswith("text"):
                     attachment_obj = attachment
                     break
             else:
@@ -333,7 +333,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.filename.endswith((".txt", ".py")):
+                if attachment.content_type is not None and attachment.content_type.startswith("text"):
                     attachment_obj = attachment
                     break
             else:
@@ -540,7 +540,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -595,7 +595,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -688,7 +688,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -718,7 +718,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -905,7 +905,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -960,7 +960,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -1053,7 +1053,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -1088,7 +1088,7 @@ class EmsudoCommand(OldBaseCommand):
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.filename.endswith((".txt", ".py")):
+                        if attachment.content_type is not None and attachment.content_type.startswith("text"):
                             attachment_obj = attachment
                             break
                     else:
@@ -1293,7 +1293,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -1358,7 +1358,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -1461,7 +1461,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -1496,7 +1496,7 @@ class EmsudoCommand(OldBaseCommand):
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.filename.endswith((".txt", ".py")):
+                        if attachment.content_type is not None and attachment.content_type.startswith("text"):
                             attachment_obj = attachment
                             break
                     else:
@@ -1963,7 +1963,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -2036,7 +2036,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -2396,7 +2396,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -2479,7 +2479,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -2808,7 +2808,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -2881,7 +2881,7 @@ class EmsudoCommand(OldBaseCommand):
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.filename.endswith((".txt", ".py")):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -3676,7 +3676,7 @@ class EmsudoCommand(OldBaseCommand):
                 title=embed_dict.get(
                     "title", "(add a title by editing this embed)"),
                 fields=(
-                    ("\u2800", f"**[View Original](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**", True),)
+                    ("\u2800", f"**[View Original Message](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**", True),)
             ),
             file=discord.File("embeddata.txt")
         )
