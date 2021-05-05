@@ -600,7 +600,7 @@ def get_stats_embed(msg: discord.Message):
     datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p %Z`"
     msg_created_at_fdtime = msg.created_at.strftime(datetime_format_str)
 
-    msg_created_at_info = f"\n__Created On__: \n> {msg_created_at_fdtime}\n\n"
+    msg_created_at_info = f"\u2800\n__Created On__: \n> {msg_created_at_fdtime}\n\n"
     
     if msg.edited_at:
         msg_edited_at_fdtime = msg.edited_at.strftime(datetime_format_str)
@@ -617,7 +617,7 @@ def get_stats_embed(msg: discord.Message):
         )
 
     member_created_at_fdtime = member.created_at.strftime(datetime_format_str)
-    member_created_at_info = f"\n__Created On__: \n> {member_created_at_fdtime}\n\n"
+    member_created_at_info = f"\u2800\n__Created On__: \n> {member_created_at_fdtime}\n\n"
     
     member_joined_at_fdtime = member.joined_at.strftime(datetime_format_str)
     member_joined_at_info = f"__Joined On__: \n> {member_joined_at_fdtime}\n\n"
