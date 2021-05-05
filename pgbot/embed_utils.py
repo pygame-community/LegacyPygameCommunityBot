@@ -1,6 +1,6 @@
 import asyncio
 import re
-from datetime import datetime
+import datetime
 from collections.abc import Mapping
 
 import discord
@@ -256,7 +256,7 @@ def create(
 
     if timestamp:
         if isinstance(timestamp, str):
-            embed.timestamp = datetime.fromisoformat(timestamp)
+            embed.timestamp = datetime.datetime.fromisoformat(timestamp)
         else:
             embed.timestamp = timestamp
 
@@ -597,13 +597,13 @@ def get_stats_embed(msg: discord.Message):
     msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
 
     member = msg.author
-    datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p`"
-    msg_created_at_fdtime = msg.created_at.strftime(datetime_format_str)
+    datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
+    msg_created_at_fdtime = msg.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
 
     msg_created_at_info = f"\u2800\n*Created On*: \n> {msg_created_at_fdtime}\n\n"
     
     if msg.edited_at:
-        msg_edited_at_fdtime = msg.edited_at.strftime(datetime_format_str)
+        msg_edited_at_fdtime = msg.edited_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
         msg_edited_at_info = f"*Last Edited On*: \n> {msg_edited_at_fdtime}\n\n"
     else:
         msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
@@ -616,10 +616,10 @@ def get_stats_embed(msg: discord.Message):
         if member.nick else f"**{member.name}#{member.discriminator}**\n\n"
         )
 
-    member_created_at_fdtime = member.created_at.strftime(datetime_format_str)
+    member_created_at_fdtime = member.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
     member_created_at_info = f"\u2800\n*Created On*: \n> {member_created_at_fdtime}\n\n"
     
-    member_joined_at_fdtime = member.joined_at.strftime(datetime_format_str)
+    member_joined_at_fdtime = member.joined_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
     member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
     
     member_id_info = f"*Author ID*: \n> `{msg.id}`\n\n"
