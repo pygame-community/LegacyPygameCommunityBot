@@ -269,7 +269,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.get_user_info_embed(member)
         )
         await self.response_msg.delete()
-    
 
     async def cmd_heap(self):
         """

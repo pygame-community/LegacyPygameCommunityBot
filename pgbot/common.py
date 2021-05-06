@@ -35,7 +35,7 @@ PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
 BONCC_THRESHOLD = 10
 
 # Constants
-VERSION = "1.4.2"
+VERSION = "1.5.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
 TEST_USER_ID = int(
     os.environ["TEST_USER_ID"]
