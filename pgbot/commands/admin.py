@@ -254,15 +254,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
         await self.response_msg.delete()
 
-    async def cmd_member_stats(self, member: discord.Member):
+    async def cmd_member_info(self, member: discord.Member):
         """
         ->type More admin commands
-        ->signature pg!member_stats [member]
+        ->signature pg!member_info [member]
         ->description Get information about a message and its author
 
         Get information about a member in an embed and send it to the channel where this command was invoked.
         -----
-        Implement pg!member_stats, to get information about a member.
+        Implement pg!member_info, to get information about a member.
         """
 
         await self.response_msg.channel.send(

@@ -637,14 +637,14 @@ def get_info_embed(msg: discord.Message):
     else:
         member_top_role_info = member_role_count_info = ""
     
-    member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
+    member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
 
     msg_info = f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
     member_info = f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"+\
                     f"{member_role_count_info}{member_id_info}"
 
     return create(
-        title="__Message Stats__",
+        title="__Message & Author Stats__",
         thumbnail_url=str(member.avatar_url),
         description=(f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else discord.embeds.EmptyEmbed),
         fields=(
@@ -699,7 +699,7 @@ def get_user_info_embed(member: discord.Member):
     else:
         member_top_role_info = member_role_count_info = ""
     
-    member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
+    member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
 
     member_info = f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"+\
                     f"{member_role_count_info}{member_id_info}"
