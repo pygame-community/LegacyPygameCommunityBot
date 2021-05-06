@@ -86,6 +86,7 @@ async def on_member_join(member: discord.Member):
     bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
     await member.add_roles(bot_sus)
 
+
 @common.bot.event
 async def on_message(msg: discord.Message):
     """
