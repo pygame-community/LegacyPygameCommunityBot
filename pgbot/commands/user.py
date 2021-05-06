@@ -9,7 +9,6 @@ from typing import Optional
 
 import discord
 import pygame
-from discord.errors import HTTPException
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg, String
@@ -418,3 +417,221 @@ class UserCommand(BaseCommand):
             await self.cmd_doc(
                 command[1], page=int(page) - 1, msg=msg
             )
+
+    async def cmd_poll(
+        self,
+        desc:String,
+        *emojis:String,
+        is_admin:HiddenArg=False,
+        author:String=None,
+        color:str=None,
+        url:String=None,
+        img_url:String=None,
+        thumbnail:String=None
+    ):
+        """
+        ->type Other commands
+        ->signature pg!poll [*args]
+        ->description Start a poll.
+        ->extended description
+        `pg!poll description *args`
+        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
+        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        """
+        newline = "\n"
+        base_embed = {
+            "title": "Voting in progress",
+            "fields": [
+                {
+                    "name": "🔺",
+                    "value": "Agree",
+                    "inline": True,
+                },
+                {
+                    "name": "🔻",
+                    "value": "Disagree",
+                    "inline": True,
+                },
+            ],
+            "author": {
+                "name": self.invoke_msg.author.name,
+            },
+            "color": 0x34a832,
+            "footer": {
+                "text": f"By {self.invoke_msg.author.display_name}{newline}"
+                        f"({self.invoke_msg.author.id}){newline}Started"
+            },
+            "timestamp": self.response_msg.created_at.isoformat()
+        }
+
+        if is_admin:
+            if author:
+                base_embed["author"] = author.string
+
+            if color:
+                try:
+                    base_embed["color"] = int(color, 16)
+                except ValueError:
+                    return await embed_utils.replace(
+                        self.response_msg,
+                        "Invalid color argument",
+                        "The color specified could not be converted to int."
+                        " Make sure it is in a format like this: 0xff0000"
+                    )
+
+            if url:
+                base_embed["url"] = url.string
+
+            if img_url:
+                base_embed["image"] = {"url": img_url.string}
+
+            if thumbnail:
+                base_embed["thumbnail"] = {"url": thumbnail.string}
+
+        base_embed["description"] = desc.string
+        if len(emojis):
+            if len(emojis) <= 3 or len(emojis) % 2:
+                return await embed_utils.replace(
+                    self.response_msg,
+                    "Invalid arguments for emojis.",
+                    "Please add at least 2 emojis with 2 descriptions."
+                    " Each emoji should have their own description."
+                    " Make sure each argument is a different string. For more"
+                    " information see `pg!help poll`"
+                )
+
+            base_embed["fields"] = []
+            for i, substr in enumerate(emojis):
+                if not i % 2:
+                    base_embed["fields"].append({
+                        "name": substr.string.strip(),
+                        "value": common.ZERO_SPACE,
+                        "inline": True
+                    })
+                else:
+                    base_embed["fields"][i//2]["value"] = substr.string.strip()
+
+        await embed_utils.replace_from_dict(self.response_msg, base_embed)
+
+        for field in base_embed["fields"]:
+            try:
+                emoji_id = utils.filter_emoji_id(field["name"].strip())
+                emoji = common.bot.get_emoji(emoji_id)
+                if emoji is None:
+                    raise ValueError
+            except ValueError:
+                emoji = field["name"]
+
+            try:
+                await self.response_msg.add_reaction(emoji)
+            except (discord.errors.HTTPException, discord.errors.NotFound):
+                # Either a custom emoji was used (which could not be added by
+                # our beloved snek) or some other error happened. Clear the
+                # reactions and prompt the user to make sure it is the currect
+                # emoji.
+                await self.response_msg.clear_reactions()
+                return await embed_utils.replace(
+                    self.response_msg,
+                    "Invalid emoji",
+                    "The emoji could not be added as a reaction. Make sure it is"
+                    " the correct emoji and that it is not from another server"
+                )
+
+    async def cmd_close_poll(
+        self, msg:discord.Message, is_admin:HiddenArg=False, color:str=None
+    ):
+        """
+        ->type Other commands
+        ->signature pg!close_poll [msg_id]
+        ->description Close an ongoing poll.
+        ->extended description
+        The poll can only be closed by the person who started it or by mods.
+        """
+        newline = "\n"
+        if not msg.embeds:
+            return await embed_utils.replace(
+                self.response_msg,
+                "Invalid message",
+                "The message specified is not an ongiong vote."
+                " Please double-check the id."
+            )
+        embed = msg.embeds[0]
+        # Take the second line remove the parenthesies
+        if embed.footer.text and embed.footer.text.count("\n"):
+            poll_owner = int(embed.footer.text.split("\n")[1]
+                             .replace("(", "").replace(")", ""))
+        else:
+            return await embed_utils.replace(
+                self.response_msg,
+                "Invalid message",
+                "The message specified is not an ongiong vote."
+                " Please double-check the id."
+            )
+
+        if not is_admin and self.invoke_msg.author.id != poll_owner:
+            return await embed_utils.replace(
+                self.response_msg,
+                "You cant stop this vote",
+                "The vote was not started by you."
+                " Ask the person who started it to close it."
+            )
+
+        title = "Voting has ended"
+        reactions = {}
+        for reaction in msg.reactions:
+            if isinstance(reaction.emoji, str):
+                reactions[reaction.emoji] = reaction.count
+            else:
+                reactions[reaction.emoji.id] = reaction.count
+
+        top = [(0, None)]
+        for reaction in msg.reactions:
+            if reaction.emoji not in reactions:
+                continue
+
+            if reaction.count - 1 > top[0][0]:
+                top = [(reaction.count - 1, reaction.emoji)]
+                continue
+
+            if reaction.count - 1 == top[0][0]:
+                top.append((reaction.count - 1, reaction.emoji))
+
+
+        fields = []
+        for field in embed.fields:
+            try:
+                r_count = reactions[utils.filter_emoji_id(field.name)] - 1
+            except KeyError:
+                # The reactions and the embed fields dont match up.
+                # Someone is abusing their mod powers if this happens probably.
+                continue
+
+            fields.append([
+                field.name,
+                f"{field.value} ({r_count} votes)",
+                True
+            ])
+
+            if field.name == top[0][1]:
+                title += (
+                    f"{newline}{field.value}({top[0][1]}) "
+                    f"has won with {top[0][0]} votes!"
+                )
+
+        if len(top) >= 2:
+            print(top)
+            title = title.split("\n")[0]
+            title += "\nIt's a draw!"
+
+        await embed_utils.edit_2(
+            msg,
+            embed,
+            color=0xa83232 if not color else int(color, 16),
+            title=title,
+            fields=fields,
+            footer_text="Ended",
+            timestamp=self.response_msg.created_at.isoformat()
+        )
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
