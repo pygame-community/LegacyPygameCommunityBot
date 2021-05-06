@@ -272,7 +272,7 @@ def create(
 
     for field in fields:
         if isinstance(field, dict):
-            embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+            embed.add_field(name=field.get("name", ""), value=field.get("value", ""), inline=field.get("inline", True))
         else:
             embed.add_field(name=field[0], value=field[1], inline=field[2])
 
