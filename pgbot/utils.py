@@ -97,7 +97,7 @@ def filter_id(mention: str):
     """
     Filters mention to get ID "<@!6969>" to "6969"
     Note that this function can error with ValueError on the int call, so the
-    caller of this function must take care of this
+    caller of this function must take care of that.
     """
     for char in ("<", ">", "@", "&", "#", "!", " "):
         mention = mention.replace(char, "")
@@ -105,7 +105,30 @@ def filter_id(mention: str):
     return int(mention)
 
 
-def get_doc_from_docstr(string: str, regex: re.Pattern):
+def filter_emoji_id(name:str):
+    """
+    Filter emoji name to get "837402289709907978" from
+    "<:pg_think:837402289709907978>"
+    Note that this function can error with ValueError on the int call, in which
+    case it returns the input string (no exception is raised)
+
+    Args:
+        name (str): The emoji name
+
+    Returns:
+        str|int: The emoji id or the input string if it could not convert it to
+        an int.
+    """
+    if name.count(":") >= 2:
+        emoji_id = name.split(":")[-1][:-1]
+        print(f"'{emoji_id}'")
+        return int(emoji_id)
+    try:
+        return int(name)
+    except ValueError:
+        return name
+
+def get_doc_from_docstr(string:str, regex:re.Pattern):
     """
     Get the type, signature, description and other information
     from docstrings.
