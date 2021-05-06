@@ -90,10 +90,11 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        if  not common.TEST_MODE or \
-            (len(common.TEST_USER_IDS) != 0 and
-            msg.author.id in common.TEST_USER_IDS) or \
-            not bool(common.TEST_USER_IDS):
+        if (
+            not common.TEST_MODE
+            or not common.TEST_USER_IDS
+            or msg.author.id in common.TEST_USER_IDS
+        ):
 
             try:
                 response = await embed_utils.send(

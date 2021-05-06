@@ -16,7 +16,7 @@ def encode_to_msg(timezones):
     return msg
 
 
-def decode_from_msg(msg):
+async def decode_from_msg(msg):
     """
     Decode clock timezone data from string
     """
@@ -25,7 +25,7 @@ def decode_from_msg(msg):
         a, b, c = line.split(" ")
         ret.append(
             [
-                utils.get_mention_from_id(a, msg),
+                await utils.get_mention_from_id(a, msg),
                 float(b),
                 pygame.Color(int(c))
             ]

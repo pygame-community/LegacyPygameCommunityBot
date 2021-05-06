@@ -1,11 +1,17 @@
 import asyncio
 import re
+
 import discord
+import pygame
 
 from . import common, embed_utils
 
 
-def get_mention_from_id(idstr: str, msg: discord.Message):
+def color_to_rgb_int(col: pygame.Color):
+    return (((col.r << 8) + col.g) << 8) + col.b
+
+
+async def get_mention_from_id(idstr: str, msg: discord.Message):
     """
     Get discord.Member object from a message, using the mentions attribute
     """
@@ -13,7 +19,9 @@ def get_mention_from_id(idstr: str, msg: discord.Message):
     for mem in msg.mentions:
         if mem.id == uid:
             return mem
-    raise ValueError()
+
+    # The ID was passed as an integer and not a mention, try to decode it
+    return await msg.guild.fetch_member(uid)
 
 
 def format_time(seconds: float, decimal_places: int = 4):
@@ -105,7 +113,7 @@ def filter_id(mention: str):
     return int(mention)
 
 
-def filter_emoji_id(name:str):
+def filter_emoji_id(name: str):
     """
     Filter emoji name to get "837402289709907978" from
     "<:pg_think:837402289709907978>"
@@ -121,14 +129,15 @@ def filter_emoji_id(name:str):
     """
     if name.count(":") >= 2:
         emoji_id = name.split(":")[-1][:-1]
-        print(f"'{emoji_id}'")
         return int(emoji_id)
+
     try:
         return int(name)
     except ValueError:
         return name
 
-def get_doc_from_docstr(string:str, regex:re.Pattern):
+
+def get_doc_from_docstr(string: str, regex: re.Pattern):
     """
     Get the type, signature, description and other information
     from docstrings.

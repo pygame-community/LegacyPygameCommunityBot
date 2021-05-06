@@ -192,6 +192,13 @@ class BaseCommand:
         if not isinstance(cmd, str):
             raise ArgError("Invalid Command name!", "")
 
+        if self.invoke_msg.reference is not None:
+            args.insert(
+                0,
+                str(self.invoke_msg.reference.channel_id) + "/"
+                + str(self.invoke_msg.reference.message_id)
+            )
+
         return cmd, args, kwargs
 
     async def _cast_arg(self, param, arg):
@@ -242,7 +249,7 @@ class BaseCommand:
                 return float(arg)
 
             elif anno == "discord.Member":
-                return utils.get_mention_from_id(arg, self.invoke_msg)
+                return await utils.get_mention_from_id(arg, self.invoke_msg)
 
             elif anno == "discord.TextChannel":
                 chan_id = utils.filter_id(arg)
@@ -295,6 +302,7 @@ class BaseCommand:
             return await self._cast_arg(param, arg)
 
         except ValueError:
+            # TODO fix anno
             if param.annotation == "CodeBlock":
                 typ = "a codeblock, please surround your code in codeticks"
 
@@ -302,7 +310,7 @@ class BaseCommand:
                 typ = "a string, please surround it in quotes (`\"\"`)"
 
             elif param.annotation == "discord.Member":
-                typ = "an @mention to someone"
+                typ = "an id of a person or a mention to them"
 
             elif param.annotation == "discord.TextChannel":
                 typ = "an id or mention to a text channel"
