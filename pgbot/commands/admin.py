@@ -274,3 +274,26 @@ class AdminCommand(UserCommand, EmsudoCommand):
             f"Successfully archived {len(messages)} message(s)!",
             ""
         )
+
+    async def cmd_poll(self, desc: String, *emojis: String, **kwargs):
+        """
+        ->type Other commands
+        ->signature pg!poll [*args]
+        ->description Start a poll.
+        ->extended description
+        `pg!poll description *args`
+        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
+        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        """
+        return await super().cmd_poll(desc, *emojis, is_admin=True, **kwargs)
+
+    async def cmd_close_poll(self, msg: discord.Message, color:str=None):
+        """
+        ->type Other commands
+        ->signature pg!close_poll [msg_id]
+        ->description Close an ongoing poll.
+        ->extended description
+        The poll can only be closed by the person who started it or by mods.
+        """
+        return await super().cmd_close_poll(msg, is_admin=True, color=color)
