@@ -160,7 +160,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     os.remove("messagedata.txt")
         
         elif stats:
-            stats_embed = embed_utils.get_stats_embed(msg)
+            stats_embed = embed_utils.get_info_embed(msg)
             stats_embed.set_author(name="Message data & stats")
             stats_embed.title = ""
             stats_embed.description = f"```\n{msg.content}```\n\u2800"
@@ -233,7 +233,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if stats:
             await self.response_msg.channel.send(
-                embed=embed_utils.get_stats_embed(msg),
+                embed=embed_utils.get_info_embed(msg),
                 reference=cloned_msg,
             )
         await self.response_msg.delete()
@@ -250,9 +250,26 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         await self.response_msg.channel.send(
-            embed=embed_utils.get_stats_embed(msg)
+            embed=embed_utils.get_info_embed(msg)
         )
         await self.response_msg.delete()
+
+    async def cmd_member_stats(self, member: discord.Member):
+        """
+        ->type More admin commands
+        ->signature pg!member_stats [member]
+        ->description Get information about a message and its author
+
+        Get information about a member in an embed and send it to the channel where this command was invoked.
+        -----
+        Implement pg!member_stats, to get information about a member.
+        """
+
+        await self.response_msg.channel.send(
+            embed=embed_utils.get_user_info_embed(member)
+        )
+        await self.response_msg.delete()
+    
 
     async def cmd_heap(self):
         """
