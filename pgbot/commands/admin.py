@@ -135,7 +135,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [message] [bool attach] [bool stats]
+        ->signature pg!sudo_get [message] [attach] [stats]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -382,13 +382,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
         return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
 
     async def cmd_close_poll(
-        self, msg: discord.Message, color: Optional[pygame.Color] = None
+        self,
+        msg: discord.Message,
+        color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
-        ->type Other commands
-        ->signature pg!close_poll [msg_id] [color]
+        ->type Admin commands
+        ->signature pg!close_poll [message] [color]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
+        The color is the color of the closed poll embed
         """
-        return await super().cmd_close_poll(msg, is_admin=True, color=color)
+        return await super().cmd_close_poll(msg, color)

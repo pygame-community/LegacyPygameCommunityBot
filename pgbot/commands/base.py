@@ -201,20 +201,12 @@ class BaseCommand:
 
         return cmd, args, kwargs
 
-    async def _cast_arg(self, param, arg):
+    async def _cast_arg(self, anno, arg):
         """
         Helper to cast an argument to the type mentioned by the parameter 
         annotation
         Raises ValueErrors on failure to cast arguments
         """
-        if param.annotation in ["Any", param.empty]:
-            # no checking/converting, do a direct return
-            return arg
-
-        if param.annotation.startswith("Optional["):
-            anno = param.annotation[9:-1].strip()
-        else:
-            anno = param.annotation
 
         if isinstance(arg, CodeBlock):
             if anno == "CodeBlock":
@@ -298,27 +290,34 @@ class BaseCommand:
         """
         Cast an argument to the type mentioned by the paramenter annotation
         """
+        anno = param.annotation
+        if anno in ["Any", param.empty]:
+            # no checking/converting, do a direct return
+            return arg
+
+        if anno.startswith("Optional["):
+            anno = anno[9:-1].strip()
+
         try:
-            return await self._cast_arg(param, arg)
+            return await self._cast_arg(anno, arg)
 
         except ValueError:
-            # TODO fix anno
-            if param.annotation == "CodeBlock":
+            if anno == "CodeBlock":
                 typ = "a codeblock, please surround your code in codeticks"
 
-            elif param.annotation == "String":
+            elif anno == "String":
                 typ = "a string, please surround it in quotes (`\"\"`)"
 
-            elif param.annotation == "discord.Member":
+            elif anno == "discord.Member":
                 typ = "an id of a person or a mention to them"
 
-            elif param.annotation == "discord.TextChannel":
+            elif anno == "discord.TextChannel":
                 typ = "an id or mention to a text channel"
 
-            elif param.annotation == "discord.Message":
+            elif anno == "discord.Message":
                 typ = "a message id, or a 'channel/message' combo"
 
-            elif param.annotation == "pygame.Color":
+            elif anno == "pygame.Color":
                 typ = "a color, represented by the color name or hex rgb"
 
             else:

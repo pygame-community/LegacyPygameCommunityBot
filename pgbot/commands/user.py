@@ -426,7 +426,7 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!poll [description string] [*args]
+        ->signature pg!poll [description] [*args]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
@@ -514,12 +514,11 @@ class UserCommand(BaseCommand):
     async def cmd_close_poll(
         self,
         msg: discord.Message,
-        color: Optional[pygame.Color] = None,
-        is_admin: HiddenArg = False,
+        color: HiddenArg = None,
     ):
         """
         ->type Other commands
-        ->signature pg!close_poll [msg_id] [color]
+        ->signature pg!close_poll [message]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
@@ -545,7 +544,7 @@ class UserCommand(BaseCommand):
                 " Please double-check the id."
             )
 
-        if not is_admin and self.invoke_msg.author.id != poll_owner:
+        if color is None and self.invoke_msg.author.id != poll_owner:
             return await embed_utils.replace(
                 self.response_msg,
                 "You cant stop this vote",
