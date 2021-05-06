@@ -32,14 +32,22 @@ PET_INTERVAL = 60.0
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
 PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
-SORRY_CHANCE = 0.5
 BONCC_THRESHOLD = 10
-BONCC_PARDON = 3
 
 # Constants
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
-TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
+TEST_USER_ID = int(
+    os.environ["TEST_USER_ID"]
+) if "TEST_USER_ID" in os.environ else None
+
+TEST_USER_IDS = set(
+    int(user_id) for user_id in os.environ["TEST_USER_IDS"].split()
+) if "TEST_USER_IDS" in os.environ else set()
+
+if TEST_USER_ID is not None:
+    TEST_USER_IDS.add(TEST_USER_ID)
+
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
 
@@ -53,8 +61,7 @@ ENTRY_CHANNEL_IDS = {
 }
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
-MUTED_ROLE = 772534687302156301
-BOT_SUS_ROLE = 829281419125719070
+CMD_FUNC_PREFIX = "cmd_"
 
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
@@ -79,31 +86,19 @@ PRIV_ROLES = {
     787473199088533504,
 }
 
-# Beginner, Regular, Pro, Contributor
-COMPETENCE_ROLES = {
-    772536799926157312,
-    772536976262823947,
-    772537033078997002,
-    772537232594698271,
+DIVIDER_ROLES = {
+    836645525372665887,
+    836645368744771654
 }
-
-# PGC #regulars-pygame-help, #beginners-help
-PYGAME_CHANNELS = {772507303781859348, 772816508015083552}
-
-CLOCK_TIMEZONES = [
-    (3600 * -4, 'Ghast', (176, 111, 90)),
-    (0, 'BaconInvader', (123, 196, 63)),
-    (3600 * 2, 'MegaJC', (255, 28, 28)),
-    (3600 * 2, 'bydariogamer', (255, 28, 28)),
-    (3600 * 2, 'pirosalma', (255, 28, 28)),
-    (3600 * 2, 'CozyFractal', (255, 28, 28)),
-    (3600 * 3, 'k4dir', (66, 135, 245)),
-    (3600 * 5.5, 'Ankith', (240, 140, 0)),
-    (3600 * 7, 'Avaxar', (64, 255, 192)),
-]
 
 ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
+
+# Database channel
+DB_CHANNEL_ID = 838090567682490458
+
+# First is normal clock db message, second is testclock db message
+DB_CLOCK_MSG_IDS = [838299905574830080, 838300106880057394]
 
 DOC_EMBED_LIMIT = 3
 
@@ -115,8 +110,8 @@ ROLE_PROMPT = {
     ],
 
     "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a @ Pygame Pro,"
-        "or even a @ Pygame Contributor?\n"  # Broke down line limit
+        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a "
+        "@ Pygame Pro, or even a @ Pygame Contributor?\n"
         "Tell <@!235148962103951360> in <#772535163195228200>!",
     ]
 }
@@ -128,39 +123,45 @@ EXC_TITLES = [
 
 BOT_WELCOME_MSG = {
     "greet": (
-        "Hi", "Hello", "Welcome to Pygame Community", "Greetings",
+        "Hi", "Hello", "Welcome to **Pygame Community**", "Greetings",
         "Howdy", "Hi there, ", "Hey there", "*Hiss* Who's that? It's",
-        "*Hisss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hiss* Do I see a new user? *hisss*\n\nWelcome to our wonderful chatroom",
+        "*Hiss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
+        "*Hiss* Do I see a new user? *hiss*\n"
+        + "Welcome to our wonderful chatroom",
+        "Ooooh! It's", "Oooh! Look who has joined us, it's",
     ),
 
     "check": (
         "Check out our", "Make sure to check out the",
         "Take a look at our", "See our", "Please see our",
         "Be sure to read our", "Be sure to check the",
-        "Be sure to check out our",
+        "Be sure to check out our", "Read our",
+        "Have a look at our", "To get started here, please read the"
     ),
 
     "grab": (
-        ", grab", ". Then get some", ", take", ", then grab yourself some shiny", ". Get some fancy", ", get some",
-        ", then get yourself some cool", ", then get yourself some", ", take some",
-        ", then take some", ", then take some", ". Then go take some fancy",
-        ", then grab some shiny",
+        ", grab", ". Then get some", ", take",
+        ", then grab yourself some shiny", ". Get some fancy", ", get some",
+        ", then get yourself some cool", ", then get yourself some",
+        ", take some", ", then take some", ", then take some",
+        ". Go get some cool roles at", 
+        ". Then go take some fancy", ", then grab some shiny",
     ),
 
     "end": (
-        " and have fun!", ", then have fun with pygame!", ", then have fun with pygame! *hiss* ",
-        " and have a nice time!", " and enjoy your stay!", " and have some fun! *hissss*", " and have fun here!",
-        " and have fun with pygame!", " and have fun with pygame! *hisssss*",
-        " and have fun here! *hissss*",
+        " and have fun!", ", then have fun with pygame!",
+        ", then have fun with pygame! *hiss* ", " and have a nice time!",
+        " and enjoy your stay!", " and have some fun! *hisss*",
+        " and have fun here!", " and have fun with pygame!",
+        "and have a wonderful time!", "and join us!", "and join the fun!", 
+        " and have fun with pygame! *hisss*", " and have fun here! *hisss*",
     ),
 
 }
 
 ILLEGAL_ATTRIBUTES = (
-    "__subclasses__", "__loader__", "__bases__", "__code__",
-    "__getattribute__", "__setattr__", "__delattr_", "mro",
-    "__class__", "__dict__"
+    "__subclasses__", "__loader__", "__bases__", "__code__", "__getattribute__",
+    "__setattr__", "__delattr_", "mro", "__class__", "__dict__"
 )
 
 BOT_HELP_PROMPT = {

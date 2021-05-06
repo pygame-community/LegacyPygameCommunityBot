@@ -5,7 +5,7 @@ import random
 import discord
 import pygame
 
-from pgbot import commands, common, emotion, util
+from pgbot import commands, common, emotion, utils, embed_utils
 
 
 @common.bot.event
@@ -55,8 +55,8 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
-    if common.TEST_MODE:
-        # Do not greet people in test mode
+    if common.TEST_MODE or member.bot:
+        # Do not greet people in test mode, or if a bot joins
         return
 
     greet = random.choice(common.BOT_WELCOME_MSG["greet"])
@@ -67,24 +67,19 @@ async def on_member_join(member: discord.Member):
 
     # This function is called right when a member joins, even before the member
     # finishes the join screening. So we wait for that to happen and then send
-    # the message. Wait for a maximum of one hour.
-    if not member.bot:
-        for _ in range(3600):
-            await asyncio.sleep(1)
+    # the message. Wait for a maximum of six hours.
+    for _ in range(10800):
+        await asyncio.sleep(2)
 
-            if not member.pending:
-                # Don't use embed here, because pings would not work
-                await common.arrivals_channel.send(
-                    f"{greet} {member.mention}! {check} "
-                    + f"{common.guide_channel.mention}{grab} "
-                    + f"{common.roles_channel.mention}{end}"
-                )
-                return
+        if not member.pending:
+            # Don't use embed here, because pings would not work
+            await common.arrivals_channel.send(
+                f"{greet} {member.mention}! {check} "
+                + f"{common.guide_channel.mention}{grab} "
+                + f"{common.roles_channel.mention}{end}"
+            )
+            return
 
-    # Member did not complete screen within an hour of joining. This is sus,
-    # so give sus bot role
-    bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
-    await member.add_roles(bot_sus)
 
 
 @common.bot.event
@@ -96,15 +91,14 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        run_command = True
-        
-        if common.TEST_MODE and common.TEST_USER_ID:
-            if common.TEST_USER_ID != msg.author.id:
-                run_command = False
-            
-        if run_command:   
+        if (
+            not common.TEST_MODE
+            or not common.TEST_USER_IDS
+            or msg.author.id in common.TEST_USER_IDS
+        ):
+
             try:
-                response = await util.send_embed(
+                response = await embed_utils.send(
                     msg.channel,
                     "Your command is being processed!",
                     ""
@@ -117,7 +111,7 @@ async def on_message(msg: discord.Message):
                     del common.cmd_logs[common.cmd_logs.keys()[0]]
             except discord.HTTPException:
                 pass
-        
+
     else:
         await emotion.check_bonk(msg)
 
@@ -129,8 +123,8 @@ async def on_message(msg: discord.Message):
             entry_type = "resource"
             color = 0x0000AA
 
-        title, fields = util.format_entries_message(msg, entry_type)
-        await util.send_embed(
+        title, fields = utils.format_entries_message(msg, entry_type)
+        await embed_utils.send(
             common.entries_discussion_channel,
             title,
             "",

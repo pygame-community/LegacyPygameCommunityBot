@@ -148,6 +148,7 @@ for const in pygame.constants.__all__:
     setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
+
 def pg_exec(
     code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue
 ):
@@ -203,7 +204,7 @@ def pg_exec(
         except SyntaxError as e:
             offsetarrow = " " * e.offset + "^\n"
             output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  "
-                                   + e.text + '\n' + offsetarrow + e.msg)
+                                   + e.text + offsetarrow + e.msg)
 
         except Exception as err:
             ename = err.__class__.__name__
@@ -247,7 +248,8 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     proc.start()
     psproc = psutil.Process(proc.pid)
 
-    start = time.perf_counter() # is system-wide and has the highest resolution. 
+    # is system-wide and has the highest resolution.
+    start = time.perf_counter()
     while proc.is_alive():
         if start + timeout < time.perf_counter():
             output = Output()

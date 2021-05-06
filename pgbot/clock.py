@@ -3,10 +3,44 @@ import os
 
 import pygame
 
-from .common import CLOCK_TIMEZONES
+from pgbot import utils
 
 
-def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier=1.0, arrow_head_width_mul=0.75, tip_to_base_ratio=2.0 / 3.0):
+def encode_to_msg(timezones):
+    """
+    Encode clock timezone data to string
+    """
+    msg = ""
+    for mem, tz, col in sorted(timezones, key=lambda x: x[1]):
+        msg += " ".join([mem.mention, str(tz), str(int(col))]) + "\n"
+    return msg
+
+
+async def decode_from_msg(msg):
+    """
+    Decode clock timezone data from string
+    """
+    ret = []
+    for line in msg.content.splitlines():
+        a, b, c = line.split(" ")
+        ret.append(
+            [
+                await utils.get_mention_from_id(a, msg),
+                float(b),
+                pygame.Color(int(c))
+            ]
+        )
+    return ret
+
+
+def generate_arrow_points(
+    position,
+    arrow_vector,
+    thickness=5.0,
+    size_multiplier=1.0,
+    arrow_head_width_mul=0.75,
+    tip_to_base_ratio=2.0 / 3.0
+):
     """
     Flexible function for calculating the coordinates
     for an arrow polygon defined by a position and direction
@@ -86,7 +120,7 @@ def generate_arrow_points(position, arrow_vector, thickness=5.0, size_multiplier
     )
 
 
-def user_clock(t):
+def user_clock(t, clock_timezones):
     """
     Generate a 24 hour clock for special server roles
     """
@@ -112,11 +146,27 @@ def user_clock(t):
 
     actual_times = [(60, 580), (565, 60), (1060, 580), (565, 1160)]
 
-    for time, actual_time in zip([time_6, time_12, time_18, time_0], actual_times):
+    for time, actual_time in zip(
+        [time_6, time_12, time_18, time_0], actual_times
+    ):
         image.blit(time, actual_time)
 
     tx = ty = 0
-    for offset, name, color in CLOCK_TIMEZONES:
+    tz_and_col = {}
+    for mem, offset, color in clock_timezones:
+        # try to use nickname, if it is too long, fallback to name
+        # 14 happens to be the sweet spot, any longer and the name overflows
+        if mem.nick and len(mem.nick) <= 14:
+            name = mem.nick
+        else:
+            name = mem.name[:14]
+
+        if offset in tz_and_col:
+            color = tz_and_col[offset]
+        else:
+            tz_and_col[offset] = color
+
+        offset = int(offset * 3600)
         angle = (t + offset) % 86400 / 86400 * 360 + 180
         s, c = math.sin(math.radians(angle)), math.cos(math.radians(angle))
 
@@ -133,7 +183,9 @@ def user_clock(t):
 
         time_h = int((t + offset) // 3600 % 24)
         time_m = int((t + offset) // 60 % 60)
-        text_to_render = f"{name} - {str(time_h).zfill(2)}:{str(time_m).zfill(2)}"
+
+        text_to_render = name
+        text_to_render += f" - {str(time_h).zfill(2)}:{str(time_m).zfill(2)}"
 
         text = font.render(text_to_render, True, color)
         text_rect = text.get_rect(midleft=(tx, 1280 + ty + font_size / 2))

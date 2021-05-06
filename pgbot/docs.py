@@ -28,7 +28,7 @@ import pygame._sdl2
 import pygame.gfxdraw
 import pygame_gui
 
-from . import common, util
+from . import common, embed_utils, utils
 
 doc_module_tuple = (
     asyncio,
@@ -83,7 +83,7 @@ async def put_main_doc(name, original_msg):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        await util.replace_embed(
+        await embed_utils.replace(
             original_msg,
             "Unknown module!",
             "No such module was found."
@@ -104,7 +104,7 @@ async def put_main_doc(name, original_msg):
             for i in dir(obj):
                 module_objs[i] = getattr(obj, i)
         except KeyError:
-            await util.replace_embed(
+            await embed_utils.replace(
                 original_msg,
                 "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`"
@@ -112,7 +112,7 @@ async def put_main_doc(name, original_msg):
             return None, None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        await util.replace_embed(
+        await embed_utils.replace(
             original_msg,
             f"Documentation for `{name}`",
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
@@ -157,17 +157,15 @@ async def put_main_doc(name, original_msg):
                     lastchar += 2040
 
         if text:
-            embeds.append(await util.send_embed_2(
+            embeds.append(await embed_utils.send_2(
                 None,
                 title=f"Documentation for `{name}`",
-                description=header + util.code_block(text),
-                do_return=True
+                description=header + utils.code_block(text),
             ))
 
         header = ""
         if cnt >= common.DOC_EMBED_LIMIT:
             break
-
 
     return module_objs, name, embeds
 
@@ -216,14 +214,14 @@ async def put_doc(name, original_msg, msg_invoker, page=0):
         if not olist:
             continue
 
-        embeds.append(await util.send_embed_2(
+        embeds.append(await embed_utils.send_2(
             None,
             title=f"{otype} in `{name}`",
-            description=util.code_block('\n'.join(olist)),
-            do_return=True
+            description=utils.code_block('\n'.join(olist)),
         ))
 
     main_embeds.extend(embeds)
 
-    page_embed = util.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+    page_embed = embed_utils.PagedEmbed(
+        original_msg, main_embeds, msg_invoker, f"doc {name}", page)
     await page_embed.mainloop()
