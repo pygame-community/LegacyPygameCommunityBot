@@ -7,7 +7,6 @@ import re
 import time
 from typing import Optional
 
-import arrow
 import discord
 import pygame
 

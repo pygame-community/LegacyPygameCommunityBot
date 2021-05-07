@@ -5,4 +5,3 @@ numpy>=1.20.0
 pygame_gui>=0.5.7
 python-dotenv>=0.17
 black>=20.8b1
-arrow>=1.1.0
