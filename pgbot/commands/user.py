@@ -105,7 +105,7 @@ class UserCommand(BaseCommand):
         db_msg = await self.invoke_msg.guild.get_channel(
             common.DB_CHANNEL_ID).fetch_message(msg_id)
 
-        timezones = clock.decode_from_msg(db_msg)
+        timezones = await clock.decode_from_msg(db_msg)
         if action:
             if member is None:
                 member = self.invoke_msg.author
@@ -421,18 +421,13 @@ class UserCommand(BaseCommand):
 
     async def cmd_poll(
         self,
-        desc:String,
-        *emojis:String,
-        is_admin:HiddenArg=False,
-        author:String=None,
-        color:str=None,
-        url:String=None,
-        img_url:String=None,
-        thumbnail:String=None
+        desc: String,
+        *emojis: String,
+        admin_embed: HiddenArg = {},
     ):
         """
         ->type Other commands
-        ->signature pg!poll [*args]
+        ->signature pg!poll [description] [*args]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
@@ -463,35 +458,12 @@ class UserCommand(BaseCommand):
                 "text": f"By {self.invoke_msg.author.display_name}{newline}"
                         f"({self.invoke_msg.author.id}){newline}Started"
             },
-            "timestamp": self.response_msg.created_at.isoformat()
+            "timestamp": self.response_msg.created_at.isoformat(),
+            "description": desc.string
         }
+        base_embed.update(admin_embed)
 
-        if is_admin:
-            if author:
-                base_embed["author"] = author.string
-
-            if color:
-                try:
-                    base_embed["color"] = int(color, 16)
-                except ValueError:
-                    return await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid color argument",
-                        "The color specified could not be converted to int."
-                        " Make sure it is in a format like this: 0xff0000"
-                    )
-
-            if url:
-                base_embed["url"] = url.string
-
-            if img_url:
-                base_embed["image"] = {"url": img_url.string}
-
-            if thumbnail:
-                base_embed["thumbnail"] = {"url": thumbnail.string}
-
-        base_embed["description"] = desc.string
-        if len(emojis):
+        if emojis:
             if len(emojis) <= 3 or len(emojis) % 2:
                 return await embed_utils.replace(
                     self.response_msg,
@@ -511,7 +483,8 @@ class UserCommand(BaseCommand):
                         "inline": True
                     })
                 else:
-                    base_embed["fields"][i//2]["value"] = substr.string.strip()
+                    base_embed["fields"][i // 2]["value"] = \
+                        substr.string.strip()
 
         await embed_utils.replace_from_dict(self.response_msg, base_embed)
 
@@ -520,7 +493,7 @@ class UserCommand(BaseCommand):
                 emoji_id = utils.filter_emoji_id(field["name"].strip())
                 emoji = common.bot.get_emoji(emoji_id)
                 if emoji is None:
-                    raise ValueError
+                    raise ValueError()
             except ValueError:
                 emoji = field["name"]
 
@@ -540,11 +513,13 @@ class UserCommand(BaseCommand):
                 )
 
     async def cmd_close_poll(
-        self, msg:discord.Message, is_admin:HiddenArg=False, color:str=None
+        self,
+        msg: discord.Message,
+        color: HiddenArg = None,
     ):
         """
         ->type Other commands
-        ->signature pg!close_poll [msg_id]
+        ->signature pg!close_poll [message]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
@@ -570,7 +545,7 @@ class UserCommand(BaseCommand):
                 " Please double-check the id."
             )
 
-        if not is_admin and self.invoke_msg.author.id != poll_owner:
+        if color is None and self.invoke_msg.author.id != poll_owner:
             return await embed_utils.replace(
                 self.response_msg,
                 "You cant stop this vote",
@@ -598,7 +573,6 @@ class UserCommand(BaseCommand):
             if reaction.count - 1 == top[0][0]:
                 top.append((reaction.count - 1, reaction.emoji))
 
-
         fields = []
         for field in embed.fields:
             try:
@@ -621,18 +595,16 @@ class UserCommand(BaseCommand):
                 )
 
         if len(top) >= 2:
-            print(top)
             title = title.split("\n")[0]
             title += "\nIt's a draw!"
 
         await embed_utils.edit_2(
             msg,
             embed,
-            color=0xa83232 if not color else int(color, 16),
+            color=0xa83232 if not color else utils.color_to_rgb_int(color),
             title=title,
             fields=fields,
             footer_text="Ended",
             timestamp=self.response_msg.created_at.isoformat()
         )
         await self.response_msg.delete()
-        await self.invoke_msg.delete()

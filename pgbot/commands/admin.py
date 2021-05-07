@@ -66,7 +66,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!clock
+        ->signature pg!clock [action] [timezone] [color] [member]
         ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
         ->extended description
         Admins can run clock with more arguments, to add/update/remove other members.
@@ -130,10 +130,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_sudo_get(self, msg: discord.Message, attach: bool = False, stats: bool = False):
+    async def cmd_sudo_get(
+        self,
+        msg: discord.Message,
+        attach: bool = False,
+        stats: bool = False
+    ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [message] [bool attach] [bool stats]
+        ->signature pg!sudo_get [message] [attach] [stats]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -142,8 +147,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
-        msg_link = "https://discord.com/channels/"
-        msg_link += f"{msg.guild.id}/{msg.channel.id}/{msg.id}"
         if attach:
             try:
                 with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
@@ -154,14 +157,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed=await embed_utils.send_2(
                         None,
                         author_name="Message data",
-                        description=f"**[View Original Message]({msg_link})**",
+                        description=f"**[View Original Message]({msg.jump_url})**",
                         color=0xFFFFAA
                     )
                 )
             finally:
                 if os.path.exists("messagedata.txt"):
                     os.remove("messagedata.txt")
-        
+
         elif stats:
             stats_embed = embed_utils.get_info_embed(msg)
             stats_embed.set_author(name="Message data & stats")
@@ -170,7 +173,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await self.response_msg.channel.send(
                 embed=stats_embed
             )
-        
+
         else:
             await embed_utils.send_2(
                 self.response_msg.channel,
@@ -181,13 +184,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 fields=(
                     (
                         "\u2800",
-                        f"**[View Original Message]({msg_link})**",
+                        f"**[View Original Message]({msg.jump_url})**",
                         False
                     ),
                 )
             )
 
-        
         await self.response_msg.delete()
 
     async def cmd_sudo_clone(
@@ -230,14 +232,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
-            content=msg.content,
-            embed=msg.embeds[0],
-            files=msg_files
+                content=msg.content,
+                embed=msg.embeds[0],
+                files=msg_files
             )
 
             for i in range(1, len(msg.embeds)):
                 await self.response_msg.channel.send(
-                embed=msg.embeds[i],
+                    embed=msg.embeds[i],
                 )
         else:
             cloned_msg = await self.response_msg.channel.send(
@@ -413,25 +415,55 @@ class AdminCommand(UserCommand, EmsudoCommand):
             ""
         )
 
-    async def cmd_poll(self, desc: String, *emojis: String, **kwargs):
+    async def cmd_poll(
+        self,
+        desc: String,
+        *emojis: String,
+        author: Optional[String] = None,
+        color: Optional[pygame.Color] = None,
+        url: Optional[String] = None,
+        img_url: Optional[String] = None,
+        thumbnail: Optional[String] = None,
+    ):
         """
-        ->type Other commands
-        ->signature pg!poll [*args]
+        ->type Admin commands
+        ->signature pg!poll [*args] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
-        `pg!poll description *args`
         The args must be strings with one emoji and one description of said emoji (see example command). \
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
+        Additionally admins can specify some keyword arguments to improve the appearance of the poll
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
-        return await super().cmd_poll(desc, *emojis, is_admin=True, **kwargs)
+        embed_dict = {}
+        if author:
+            embed_dict["author"] = {"name": author.string}
 
-    async def cmd_close_poll(self, msg: discord.Message, color:str=None):
+        if color:
+            embed_dict["color"] = utils.color_to_rgb_int(color)
+
+        if url:
+            embed_dict["url"] = url.string
+
+        if img_url:
+            embed_dict["image"] = {"url": img_url.string}
+
+        if thumbnail:
+            embed_dict["thumbnail"] = {"url": thumbnail.string}
+
+        return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
+
+    async def cmd_close_poll(
+        self,
+        msg: discord.Message,
+        color: pygame.Color = pygame.Color("#A83232"),
+    ):
         """
-        ->type Other commands
-        ->signature pg!close_poll [msg_id]
+        ->type Admin commands
+        ->signature pg!close_poll [message] [color]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
+        The color is the color of the closed poll embed
         """
-        return await super().cmd_close_poll(msg, is_admin=True, color=color)
+        return await super().cmd_close_poll(msg, color)
