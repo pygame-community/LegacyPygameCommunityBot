@@ -648,7 +648,6 @@ class UserCommand(BaseCommand):
                     tags_to_filter = param.replace('filter tag', '').strip().lower().split(" ")
                 if 'filter user' in param:
                     user_to_filter = await filter_user(param.replace('filter user', '').strip(), self.invoke_msg.guild)
-                    print(user_to_filter.name)
         # TODO: Lol
         nl = '\n'
         resource_entries_channel = self.invoke_msg.guild.get_channel(common.RESOURCE_ENTRIES_CHANNEL_ID)
