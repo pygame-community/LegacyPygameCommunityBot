@@ -683,15 +683,18 @@ class UserCommand(BaseCommand):
             top_10_msg = msgs[:5]
             current_embed = discord.Embed()
             for i, msg in enumerate(top_10_msg, 1):
-                current_embed.add_field(
-                    name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
-                         f"{remove_all(msg.content.split(nl), '')[1][:40]}"
-                         f"{'...' if len(remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
-                    value=f'{" ".join(remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
-                          f'Links: {", ".join(return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
-                          f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
-                    inline=False
-                )
+                try:
+                    current_embed.add_field(
+                        name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
+                             f"{remove_all(msg.content.split(nl), '')[1][:40]}"
+                             f"{'...' if len(remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
+                        value=f'{" ".join(remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
+                              f'Links: {", ".join(return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
+                              f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
+                        inline=False
+                    )
+                except ValueError:
+                    pass
             current_embed.set_author(
                 icon_url=common.CHECK_MARK if len(copy_msgs) > 0 else common.X_MARK,
                 name=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
