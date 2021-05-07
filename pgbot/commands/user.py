@@ -692,7 +692,7 @@ class UserCommand(BaseCommand):
                               f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
                         inline=False
                     )
-                except ValueError:
+                except IndexError:
                     pass
             current_embed.set_author(
                 icon_url=common.CHECK_MARK if len(copy_msgs) > 0 else common.X_MARK,
