@@ -364,7 +364,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 embed=embed_utils.create(
                     title=f"Archive of `#{origin.name}`",
                     description=f"From `{start_date_str}` to `{end_date_str}` (UTC)",
-                    color=0x36393F,
+                    color=0xffffff,
                 )
             )
         
