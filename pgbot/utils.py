@@ -413,6 +413,7 @@ async def filter_user(user_context, guild):
     elif re.match(r'.+#\d{4}', user_context):
         user_mode = 'username'
     else:
+        print('here here')
         return None
 
     if user_mode == 'mention':
@@ -431,6 +432,7 @@ async def filter_user(user_context, guild):
             if user in guild.members:
                 user = guild.get_member(int(user_context))
     elif user_mode == 'username':
+        print('here')
         # Only supports members in the server
         username, discriminator = user_context.split("#")
         # Gets user by Username+Discriminator, returns None otherwise

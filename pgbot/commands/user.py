@@ -629,7 +629,7 @@ class UserCommand(BaseCommand):
         limit = None
         tags_to_filter = None
         oldest_first = False
-        user_to_filter = None
+        user_to_filter = ''
         if all_params:
             all_params_list = all_params.string.split(",")
             all_params_list_2 = []
@@ -659,6 +659,8 @@ class UserCommand(BaseCommand):
                 msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
         if user_to_filter:
             msgs = list(filter(lambda x: x.author.id == user_to_filter.id, msgs))
+        elif user_to_filter is None:
+            msgs = []
 
         links = {
             msg.id: [
@@ -701,7 +703,12 @@ class UserCommand(BaseCommand):
             )
             pages.append(current_embed)
             msgs = msgs[5:]
-
+        if len(pages) == 0:
+            failed_embed = discord.Embed(color=discord.Color.red())
+            failed_embed.set_author(name=f"Retrieved 0 entries in #{resource_entries_channel.name}", icon_url=common.X_MARK)
+            pages.append(
+                failed_embed
+            )
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author
         )
