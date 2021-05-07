@@ -431,13 +431,10 @@ async def filter_user(user_context, guild):
             if user in guild.members:
                 user = guild.get_member(int(user_context))
     elif user_mode == 'username':
-        print('e')
         # Only supports members in the server
         username, discriminator = user_context.split("#")
         # Gets user by Username+Discriminator, returns None otherwise
-        print(username, discriminator)
         user = discord.utils.get(common.bot.get_all_members(), name=username, discriminator=discriminator)
-        print(list(common.bot.get_all_members()))
         if not user:
             return None
 
