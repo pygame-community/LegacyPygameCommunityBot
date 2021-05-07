@@ -7,11 +7,13 @@ import re
 import time
 from typing import Optional
 
+import arrow
 import discord
 import pygame
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg, String
+from pgbot.utils import *
 
 
 class UserCommand(BaseCommand):
@@ -43,11 +45,12 @@ class UserCommand(BaseCommand):
         if sec < sec2:
             sec2 = sec
 
-        await embed_utils.replace(
+        await embed_utils.replace_2(
             self.response_msg,
-            "Pingy Pongy",
-            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
-            + f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
+            description=f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+                        f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
+            author_name="Pingy Pongy",
+            author_icon_url=common.CHECK_MARK
         )
 
     async def cmd_remind(self, msg: String, time: int):
@@ -71,7 +74,7 @@ class UserCommand(BaseCommand):
             f"Reminder set!",
             f"Gonna remind {self.invoke_msg.author.name} in {time} minutes.\n"
             + "But do not solely rely on me though, cause I might forget to "
-            + "remind you incase I am down."
+            + "remind you in case I am sleeping."
         )
         await asyncio.sleep(time * 60)
 
@@ -80,11 +83,11 @@ class UserCommand(BaseCommand):
         await self.invoke_msg.channel.send(sendmsg)
 
     async def cmd_clock(
-        self,
-        action: str = "",
-        timezone: float = 0,
-        color: Optional[pygame.Color] = None,
-        member: HiddenArg = None,
+            self,
+            action: str = "",
+            timezone: float = 0,
+            color: Optional[pygame.Color] = None,
+            member: HiddenArg = None,
     ):
         """
         ->type Get help
@@ -168,12 +171,12 @@ class UserCommand(BaseCommand):
             await self.response_msg.channel.send(file=discord.File(
                 f"temp{t}.png"
             )
-        )
+            )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
     async def cmd_doc(
-        self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
+            self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
     ):
         """
         ->type Get help
@@ -241,10 +244,10 @@ class UserCommand(BaseCommand):
             )
 
     async def cmd_help(
-        self,
-        name: Optional[str] = None,
-        page: HiddenArg = 0,
-        msg: HiddenArg = None
+            self,
+            name: Optional[str] = None,
+            page: HiddenArg = 0,
+            msg: HiddenArg = None
     ):
         """
         ->type Get help
@@ -281,7 +284,7 @@ class UserCommand(BaseCommand):
         Implement pg!pet, to pet the bot
         """
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
-            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+                emotion.pet_anger / common.JUMPSCARE_THRESHOLD
         ) - common.PET_COST
 
         if emotion.pet_anger < common.PET_COST:
@@ -419,10 +422,10 @@ class UserCommand(BaseCommand):
             )
 
     async def cmd_poll(
-        self,
-        desc: String,
-        *emojis: String,
-        admin_embed: HiddenArg = {},
+            self,
+            desc: String,
+            *emojis: String,
+            admin_embed: HiddenArg = {},
     ):
         """
         ->type Other commands
@@ -512,9 +515,9 @@ class UserCommand(BaseCommand):
                 )
 
     async def cmd_close_poll(
-        self,
-        msg: discord.Message,
-        color: HiddenArg = None,
+            self,
+            msg: discord.Message,
+            color: HiddenArg = None,
     ):
         """
         ->type Other commands
@@ -607,3 +610,98 @@ class UserCommand(BaseCommand):
             timestamp=self.response_msg.created_at.isoformat()
         )
         await self.response_msg.delete()
+
+    async def cmd_resources(
+            self,
+            all_params: String = None
+    ):
+        """
+        ->type Other commands
+        ->signature pg!resources [*args]
+        ->description Browse through resources.
+        ->extended description
+        pg!resources takes in additional arguments, though they are optional.
+        `oldest first`: Browses the resources according to age
+        `limit [num]`: Limits the number of resources to the number
+        `filter tag [tag]`: Includes only the resources with that tag(s)
+        `filter user [user]`: Includes only the resources posted by that user
+        ->example command pg!resources "limit 5, oldest first, filter tag python, filter user Mega_JC#7835"
+        """
+        limit = None
+        tags_to_filter = None
+        oldest_first = False
+        user_to_filter = None
+        if all_params:
+            all_params_list = all_params.string.split(",")
+            all_params_list_2 = []
+            for i in all_params_list:
+                if 'filter user' not in i:
+                    all_params_list_2.append(i.strip().lower())
+                else:
+                    all_params_list_2.append(i)
+
+            if 'oldest first' in all_params_list_2:
+                oldest_first = True
+            for param in all_params_list_2:
+                if 'limit' in param:
+                    limit = int(param.replace('limit', '').strip())
+                if 'filter tag' in param:
+                    tags_to_filter = param.replace('filter tag', '').strip().lower().split(" ")
+                if 'filter user' in param:
+                    user_to_filter = await filter_user(param.replace('filter user', '').strip(), self.invoke_msg.guild)
+                    print(user_to_filter.name)
+        # TODO: Lol
+        nl = '\n'
+        resource_entries_channel = self.invoke_msg.guild.get_channel(common.RESOURCE_ENTRIES_CHANNEL_ID)
+        msgs = await resource_entries_channel.history(oldest_first=oldest_first, limit=limit).flatten()
+        copy_msgs = msgs[:]
+
+        if tags_to_filter:
+            for tag in tags_to_filter:
+                msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
+        if user_to_filter:
+            msgs = list(filter(lambda x: x.author.id == user_to_filter.id, msgs))
+
+        links = {
+            msg.id: [
+                match.group() for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
+            ] for msg in msgs
+        }
+        tags = {
+            msg.id: [
+                f"`{match.group().replace('tag_', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+                for match in re.finditer('tag_.+', msg.content.lower())
+            ] for msg in msgs
+        }
+        old_tags = {
+            msg.id: [
+                f"`{match.group().replace('tag-', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+                for match in re.finditer('tag-<.+>', msg.content.lower())
+            ] for msg in msgs
+        }
+        pages = []
+        while msgs:
+            top_10_msg = msgs[:5]
+            current_embed = discord.Embed()
+            for i, msg in enumerate(top_10_msg, 1):
+                current_embed.add_field(
+                    name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
+                         f"{remove_all(msg.content.split(nl), '')[1][:40]}"
+                         f"{'...' if len(remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
+                    value=f'{" ".join(remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
+                          f'Links: {", ".join(return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
+                          f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
+                    inline=False
+                )
+            current_embed.set_author(
+                icon_url=common.CHECK_MARK if len(copy_msgs) > 0 else common.X_MARK,
+                name=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
+                     f"in #{resource_entries_channel.name}"
+            )
+            pages.append(current_embed)
+            msgs = msgs[5:]
+
+        page_embed = embed_utils.PagedEmbed(
+            self.response_msg, pages, caller=self.invoke_msg.author
+        )
+        await page_embed.mainloop()

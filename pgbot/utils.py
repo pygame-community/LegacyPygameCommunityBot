@@ -29,15 +29,15 @@ def format_time(seconds: float, decimal_places: int = 4):
     Formats time with a prefix
     """
     for fractions, unit in (
-        (1.0, "s"),
-        (1e-03, "ms"),
-        (1e-06, "\u03bcs"),
-        (1e-09, "ns"),
-        (1e-12, "ps"),
-        (1e-15, "fs"),
-        (1e-18, "as"),
-        (1e-21, "zs"),
-        (1e-24, "ys"),
+            (1.0, "s"),
+            (1e-03, "ms"),
+            (1e-06, "\u03bcs"),
+            (1e-09, "ns"),
+            (1e-12, "ps"),
+            (1e-15, "fs"),
+            (1e-18, "as"),
+            (1e-21, "zs"),
+            (1e-24, "ys"),
     ):
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
@@ -222,22 +222,21 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             fields[data["type"]][0] += f"{data['signature'][2:]}{newline}"
             fields[data["type"]][1] += (
                 f"`{data['signature']}`{newline}"
-                f"{data['description']}{newline*2}"
+                f"{data['description']}{newline * 2}"
             )
 
         fields_cpy = fields.copy()
 
         for field_name in fields:
             value = fields[field_name]
-            value[1] = f"```{value[0]}```{newline*2}{value[1]}"
+            value[1] = f"```{value[0]}```{newline * 2}{value[1]}"
             value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy
 
         embeds = []
         for field in list(fields.values()):
-            body = common.BOT_HELP_PROMPT["body"] + \
-                "\n" + field[0] + "\n\n" + field[1]
+            body = f"{common.BOT_HELP_PROMPT['body']}\n{field[0]}\n\n{field[1]}"
             embeds.append(
                 await embed_utils.send_2(
                     None,
@@ -274,7 +273,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
                 break
 
             body = f"`{doc['signature']}`{newline}"
-            body += f"`Category: {doc['type']}`{newline*2}"
+            body += f"`Category: {doc['type']}`{newline * 2}"
 
             desc = doc['description']
             if ext_desc := doc.get("extended description"):
@@ -283,7 +282,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             body += f"**Description:**{newline}{desc}"
 
             if example_cmd := doc.get("example command"):
-                body += f"{newline*2}**Example command(s):**{newline}{example_cmd}"
+                body += f"{newline * 2}**Example command(s):**{newline}{example_cmd}"
 
             await embed_utils.replace(
                 original_msg,
@@ -308,12 +307,12 @@ def format_entries_message(message: discord.Message, entry_type: str):
     fields = []
 
     msg_link = "[View](https://discordapp.com/channels/" \
-        f"{message.author.guild.id}/{message.channel.id}/{message.id})"
+               f"{message.author.guild.id}/{message.channel.id}/{message.id})"
 
     attachments = ""
     if message.attachments:
         for i, attachment in enumerate(message.attachments):
-            attachments += f" • [Link {i+1}]({attachment.url})\n"
+            attachments += f" • [Link {i + 1}]({attachment.url})\n"
     else:
         attachments = "No attachments"
 
@@ -389,3 +388,59 @@ def code_block(string: str, max_characters=2048):
         return f"```\n{string[:max_characters - 7]} ...```"
     else:
         return f"```\n{string[:max_characters]}```"
+
+
+def remove_all(list_thing, thing_to_remove):
+    copy = list_thing[:]
+    for _ in range(list_thing.count(thing_to_remove)):
+        copy.remove(thing_to_remove)
+    return copy
+
+
+def return_insert(list_to_insert, index, obj):
+    copy = list_to_insert[:]
+    copy.insert(index, obj)
+    return copy
+
+
+async def filter_user(user_context, guild):
+    """Given a user context, returns discord.User or discord.Member"""
+    user = None
+    if re.match('<@![0-9]+>', user_context):
+        user_mode = 'mention'
+    elif user_context.isdigit():
+        user_mode = 'id'
+    elif re.match(r'.+#\d{4}', user_context):
+        user_mode = 'username'
+    else:
+        return None
+
+    if user_mode == 'mention':
+        try:
+            user = await common.bot.fetch_user(user_context[3:-1])
+        except discord.errors.NotFound:
+            return None
+        else:
+            user = guild.get_member(int(user_context[3:-1]))
+    elif user_mode == 'id':
+        try:
+            user = await common.bot.fetch_user(int(user_context))
+        except discord.errors.NotFound:
+            return None
+        else:
+            if user in guild.members:
+                user = guild.get_member(int(user_context))
+    elif user_mode == 'username':
+        print('e')
+        # Only supports members in the server
+        username, discriminator = user_context.split("#")
+        # Gets user by Username+Discriminator, returns None otherwise
+        print(username, discriminator)
+        user = discord.utils.get(common.bot.get_all_members(), name=username, discriminator=discriminator)
+        print(list(common.bot.get_all_members()))
+        if not user:
+            return None
+
+    if user:
+        return user
+    return None

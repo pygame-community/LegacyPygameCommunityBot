@@ -81,7 +81,6 @@ async def on_member_join(member: discord.Member):
             return
 
 
-
 @common.bot.event
 async def on_message(msg: discord.Message):
     """
@@ -92,9 +91,9 @@ async def on_message(msg: discord.Message):
 
     if msg.content.startswith(common.PREFIX):
         if (
-            not common.TEST_MODE
-            or not common.TEST_USER_IDS
-            or msg.author.id in common.TEST_USER_IDS
+                not common.TEST_MODE
+                or not common.TEST_USER_IDS
+                or msg.author.id in common.TEST_USER_IDS
         ):
 
             try:
