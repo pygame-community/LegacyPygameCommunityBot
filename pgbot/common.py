@@ -63,6 +63,9 @@ ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
 CMD_FUNC_PREFIX = "cmd_"
 
+GUILD_LEVEL = 1
+GUILD_MAX_FILE_SIZE = 8000000
+
 # PGC Admin, PGC Moderator, PGC Wizards
 ADMIN_ROLES = {
     772521884373614603,
@@ -150,10 +153,10 @@ BOT_WELCOME_MSG = {
 
     "end": (
         " and have fun!", ", then have fun with pygame!",
-        ", then have fun with pygame! *hiss* ", " and have a nice time!",
+        ", then have fun with pygame! *hiss*", " and have a nice time!",
         " and enjoy your stay!", " and have some fun! *hisss*",
         " and have fun here!", " and have fun with pygame!",
-        "and have a wonderful time!", "and join us!", "and join the fun!", 
+        " and have a wonderful time!", " and join us!", " and join the fun!", 
         " and have fun with pygame! *hisss*", " and have fun here! *hisss*",
     ),
 

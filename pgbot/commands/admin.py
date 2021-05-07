@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import random
 import sys
 import time
 from typing import Optional
@@ -10,6 +12,7 @@ import psutil
 import pygame
 
 from pgbot import common, embed_utils, utils
+import datetime
 from pgbot.commands.base import CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
@@ -211,9 +214,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
+            blank_filename = f"filetoolarge {time.perf_counter_ns()*random.random()}.txt"
+            with open(blank_filename, "w", encoding="utf-8") as toolarge_txt:
+                toolarge_txt.write("This file is too large to be archived.")
+
+            blank_file = discord.File(blank_filename)
             msg_files = [
-                await a.to_file(spoiler=spoiler) for a in msg.attachments
+                await a.to_file(spoiler=spoiler or a.is_spoiler()) if a.size <= common.GUILD_MAX_FILE_SIZE \
+                else blank_file for a in msg.attachments
             ]
+
+            if os.path.exists(blank_filename):
+                try:
+                    os.remove(blank_filename)
+                except PermissionError:
+                    pass     
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
@@ -315,6 +330,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!archive, for admins to archive messages
         """
+
         if destination is None:
             destination = self.invoke_msg.channel
 
@@ -328,14 +344,70 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         messages = await origin.history(limit=quantity).flatten()
         messages.reverse()
-        message_list = await utils.format_archive_messages(messages)
+        msg: discord.Message = None
+        datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
 
-        archive_str = f"+{'=' * 40}+\n" + \
-            f"+{'=' * 40}+\n".join(message_list) + f"+{'=' * 40}+\n"
-        archive_list = utils.split_long_message(archive_str)
+        no_mentions = discord.AllowedMentions.none()
 
-        for message in archive_list:
-            await destination.send(message)
+        blank_filename = f"filetoolarge {time.perf_counter_ns()*random.random()}.txt"
+
+        with open(blank_filename, "w", encoding="utf-8") as toolarge_txt:
+            toolarge_txt.write("This file is too large to be archived.")
+        
+        blank_file = discord.File(blank_filename)
+        
+        if len(messages) > 1:
+            start_date_str = messages[0].created_at.replace(tzinfo=datetime.timezone.utc)\
+                            .strftime(datetime_format_str)
+            end_date_str = messages[-1].created_at.replace(tzinfo=datetime.timezone.utc)\
+                            .strftime(datetime_format_str)
+
+            await destination.send(
+                embed=embed_utils.create(
+                    title=f"Archive of `#{origin.name}`",
+                    description=f"From `{start_date_str}` to `{end_date_str}` (UTC)",
+                    color=0x36393F,
+                )
+            )
+        
+        async with destination.typing():
+            for msg in messages:
+                author = msg.author
+                attached_files = [
+                    (await a.to_file(spoiler=a.is_spoiler()) if a.size <= common.GUILD_MAX_FILE_SIZE \
+                    else blank_file) for a in msg.attachments
+                ]
+                
+                await destination.send(content="-"*56)
+                await destination.send(
+                    embed=embed_utils.create(
+                        description=f"{author.mention} (`{author.name}#{author.discriminator}`)",
+                        color=0x36393F,
+                        footer_text=f"\nID: {author.id}",
+                        timestamp=msg.created_at.replace(tzinfo=datetime.timezone.utc),
+                        footer_icon_url=str(author.avatar_url),
+                    ),
+                    allowed_mentions=no_mentions,
+                )
+
+                await destination.send(
+                    content=msg.content,
+                    embed=msg.embeds[0] if msg.embeds else None,
+                    files=attached_files if attached_files else None,
+                    allowed_mentions=no_mentions,
+                )
+
+                for i in range(1, len(msg.embeds)):
+                    await destination.send(embed=msg.embeds[i])
+
+                async with destination.typing():
+                    await asyncio.sleep(0.05)
+
+        if os.path.exists(blank_filename):
+            try:
+                os.remove(blank_filename)
+            except PermissionError:
+                pass  
 
         await embed_utils.replace(
             self.response_msg,

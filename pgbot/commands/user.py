@@ -162,7 +162,7 @@ class UserCommand(BaseCommand):
 
             await db_msg.edit(content=clock.encode_to_msg(timezones))
 
-        t = time.time()
+        t = time.perf_counter_ns()
         pygame.image.save(clock.user_clock(t, timezones), f"temp{t}.png")
         common.cmd_logs[self.invoke_msg.id] = \
             await self.response_msg.channel.send(file=discord.File(
@@ -208,9 +208,10 @@ class UserCommand(BaseCommand):
         Implement pg!exec, for execution of python code
         """
         tstamp = time.perf_counter_ns()
-        returned = await sandbox.exec_sandbox(
-            code.code, tstamp, 10 if self.is_priv else 5
-        )
+        with self.response_msg.channel.typing():
+            returned = await sandbox.exec_sandbox(
+                code.code, tstamp, 10 if self.is_priv else 5
+            )
         dur = returned.duration  # the execution time of the script alone
 
         if returned.exc is None:
