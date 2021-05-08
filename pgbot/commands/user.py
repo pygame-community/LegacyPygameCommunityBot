@@ -48,8 +48,7 @@ class UserCommand(BaseCommand):
             self.response_msg,
             description=f"The bots ping is `{utils.format_time(sec, 0)}`\n"
                         f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
-            author_name="Pingy Pongy",
-            author_icon_url=common.CHECK_MARK
+            title="Pingy Pongy"
         )
 
     async def cmd_remind(self, msg: String, time: int):
@@ -666,7 +665,10 @@ class UserCommand(BaseCommand):
         copy_msgs = msgs[:]
         while msgs:
             top_10_msg = msgs[:5]
-            current_embed = discord.Embed()
+            current_embed = discord.Embed(
+                title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
+                      f"in #{resource_entries_channel.name}"
+            )
             for i, msg in enumerate(top_10_msg, 1):
                 try:
                     current_embed.add_field(
@@ -680,16 +682,12 @@ class UserCommand(BaseCommand):
                     )
                 except IndexError:
                     pass
-            current_embed.set_author(
-                icon_url=common.CHECK_MARK if len(copy_msgs) > 0 else common.X_MARK,
-                name=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
-                     f"in #{resource_entries_channel.name}"
-            )
             pages.append(current_embed)
             msgs = msgs[5:]
         if len(pages) == 0:
-            failed_embed = discord.Embed(color=discord.Color.red())
-            failed_embed.set_author(name=f"Retrieved 0 entries in #{resource_entries_channel.name}", icon_url=common.X_MARK)
+            failed_embed = discord.Embed(color=discord.Color.red(),
+                                         title=f"Retrieved 0 entries in #{resource_entries_channel.name}",
+                                         description="There are no results of resources with those parameters. Please try again.")
             pages.append(
                 failed_embed
             )

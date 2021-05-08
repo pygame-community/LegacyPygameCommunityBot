@@ -51,11 +51,6 @@ if TEST_USER_ID is not None:
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
 
-DEFAULT_DATETIME_FORMAT = '%a %b %d %Y, %I:%M:%S %p'
-CHECK_MARK = "https://images.emojiterra.com/google/android-10/512px/2611.png"
-X_MARK = "https://datalab.noirlab.edu/images/cross.png"
-INFO_EMOJI = "https://chancelight.com/wp-content/uploads/2020/03/blue-exclamation-point.png"
-
 ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
