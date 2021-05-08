@@ -34,27 +34,100 @@ class AdminCommand(UserCommand, EmsudoCommand):
         else:
             await UserCommand.handle_cmd(self)
 
-    async def cmd_sync_clocks(self):
+    async def cmd_sync_db(self, name: str):
         """
         ->type Admin commands
-        ->signature pg!sync_clocks
-        ->description sync test clock and real clock
+        ->signature pg!sync_db [name]
+        ->description sync 'db' messages between testbot and real bot
+        ->extended description
+        `pg!sync_db clock`
+        `pg!sync_db command_blacklist`
+        Are the available commands now
         -----
-        Implement pg!sync_clocks, to sync clock data between clocks
+        Implement pg!sync_clocks, sync 'db' messages between testbot and real bot
         """
         db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
 
-        dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
-        dest_msg = await db_channel.fetch_message(dest_msg_id)
+        if name == "clock":
+            dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
+            src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
+        elif name == "command_blacklist":
+            dest_msg_id = common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+            src_msg_id = common.DB_BLACKLIST_MSG_IDS[not common.TEST_MODE]
+        else:
+            raise BotException("Invalid Name!", "")
 
-        src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
+        dest_msg = await db_channel.fetch_message(dest_msg_id)
         src_msg = await db_channel.fetch_message(src_msg_id)
 
         await dest_msg.edit(content=src_msg.content)
         await embed_utils.replace(
             self.response_msg,
-            "Clocks synced!",
-            "Test clock and main clock have been synced"
+            "DB messages synced!",
+            "DB messages have been synced between both the bots"
+        )
+
+    async def cmd_whitelist_cmd(self, *cmds: str):
+        """
+        ->type Admin commands
+        ->signature pg!whitelist_cmd [*cmds]
+        ->description Whitelist commands
+        -----
+        Implement pg!whitelist_cmd, to whitelist commands
+        """
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+        splits = db_message.content.split(":")
+        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        cnt = 0
+        for cmd in cmds:
+            if cmd in commands:
+                cnt += 1
+                commands.remove(cmd)
+
+        await db_message.edit(
+            content="Blacklisted Commands: " + " ".join(commands)
+        )
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Whitelisted!",
+            f"Successfully whitelisted {cnt} command(s)"
+        )
+
+    async def cmd_blacklist_cmd(self, *cmds: str):
+        """
+        ->type Admin commands
+        ->signature pg!blacklist_cmd [*cmds]
+        ->description Blacklist commands
+        -----
+        Implement pg!blacklist_cmd, to blacklist commands
+        """
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+
+        splits = db_message.content.split(":")
+        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        cnt = 0
+        for cmd in cmds:
+            if cmd not in commands and cmd != "whitelist_cmd":
+                cnt += 1
+                commands.append(cmd)
+
+        await db_message.edit(
+            content="Blacklisted Commands: " + " ".join(commands)
+        )
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Blacklisted!",
+            f"Successfully blacklisted {cnt} command(s)"
         )
 
     async def cmd_clock(
@@ -337,6 +410,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             raise BotException(
                 "Cannot execute command:",
                 "Origin and destination channels are same"
+            )
+
+        if quantity <= 0:
+            raise BotException(
+                "Invalid quantity argument",
+                "Quantity has to be a positive integer",
             )
 
         datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
