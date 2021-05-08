@@ -689,10 +689,10 @@ class UserCommand(BaseCommand):
                 try:
                     current_embed.add_field(
                         name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
-                             f"{remove_all(msg.content.split(nl), '')[1][:40]}"
-                             f"{'...' if len(remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
-                        value=f'{" ".join(remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
-                              f'Links: {", ".join(return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
+                             f"{utils.remove_all(msg.content.split(nl), '')[1][:40]}"
+                             f"{'...' if len(utils.remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
+                        value=f'{" ".join(utils.remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
+                              f'Links: {", ".join(utils.return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
                               f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
                         inline=False
                     )
