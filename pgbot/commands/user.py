@@ -45,11 +45,11 @@ class UserCommand(BaseCommand):
         if sec < sec2:
             sec2 = sec
 
-        await embed_utils.replace(
+        await embed_utils.replace_2(
             self.response_msg,
-            "Pingy Pongy",
-            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
-            + f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
+            description=f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+                        f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
+            title="Pingy Pongy"
         )
 
     async def cmd_remind(self, msg: String, time: int):
@@ -78,7 +78,7 @@ class UserCommand(BaseCommand):
             f"Reminder set!",
             f"Gonna remind {self.author.name} in {time} minutes.\n"
             + "But do not solely rely on me though, cause I might forget to "
-            + "remind you incase I am down."
+            + "remind you in case I am sleeping."
         )
         await asyncio.sleep(time * 60)
 
@@ -87,11 +87,11 @@ class UserCommand(BaseCommand):
         await self.channel.send(sendmsg)
 
     async def cmd_clock(
-        self,
-        action: str = "",
-        timezone: float = 0,
-        color: Optional[pygame.Color] = None,
-        member: HiddenArg = None,
+            self,
+            action: str = "",
+            timezone: float = 0,
+            color: Optional[pygame.Color] = None,
+            member: HiddenArg = None,
     ):
         """
         ->type Get help
@@ -173,12 +173,12 @@ class UserCommand(BaseCommand):
             await self.response_msg.channel.send(file=discord.File(
                 f"temp{t}.png"
             )
-        )
+            )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
     async def cmd_doc(
-        self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
+            self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
     ):
         """
         ->type Get help
@@ -252,10 +252,10 @@ class UserCommand(BaseCommand):
         await (await self.channel.send("\u200b")).delete()
 
     async def cmd_help(
-        self,
-        name: Optional[str] = None,
-        page: HiddenArg = 0,
-        msg: HiddenArg = None
+            self,
+            name: Optional[str] = None,
+            page: HiddenArg = 0,
+            msg: HiddenArg = None
     ):
         """
         ->type Get help
@@ -292,7 +292,7 @@ class UserCommand(BaseCommand):
         Implement pg!pet, to pet the bot
         """
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
-            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+                emotion.pet_anger / common.JUMPSCARE_THRESHOLD
         ) - common.PET_COST
 
         if emotion.pet_anger < common.PET_COST:
@@ -426,10 +426,10 @@ class UserCommand(BaseCommand):
             )
 
     async def cmd_poll(
-        self,
-        desc: String,
-        *emojis: String,
-        admin_embed: HiddenArg = {},
+            self,
+            desc: String,
+            *emojis: String,
+            admin_embed: HiddenArg = {},
     ):
         """
         ->type Other commands
@@ -524,9 +524,9 @@ class UserCommand(BaseCommand):
                 )
 
     async def cmd_close_poll(
-        self,
-        msg: discord.Message,
-        color: HiddenArg = None,
+            self,
+            msg: discord.Message,
+            color: HiddenArg = None,
     ):
         """
         ->type Other commands
@@ -624,3 +624,90 @@ class UserCommand(BaseCommand):
             timestamp=self.response_msg.created_at.isoformat()
         )
         await self.response_msg.delete()
+
+    async def cmd_resources(
+            self,
+            limit: Optional[int] = None,
+            filter_tag: Optional[String] = None,
+            filter_member: Optional[discord.Member] = None,
+            oldest_first: bool = False,
+    ):
+        """
+        ->type Other commands
+        ->signature pg!resources [*args]
+        ->description Browse through resources.
+        ->extended description
+        pg!resources takes in additional arguments, though they are optional.
+        `oldest_first`: Set oldest_first to True to browse through the oldest resources
+        `limit=[num]`: Limits the number of resources to the number
+        `filter_tag=[tag]`: Includes only the resources with that tag(s)
+        `filter_member=[member]`: Includes only the resources posted by that user
+        ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
+        """
+        # TODO: if someone can refactor this, that'd be bery nais
+        nl = '\n'
+        resource_entries_channel = self.invoke_msg.guild.get_channel(common.RESOURCE_ENTRIES_CHANNEL_ID)
+        msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
+
+        if filter_tag:
+            filter_tag = filter_tag.string.split(",")
+            filter_tag = [tag.strip() for tag in filter_tag]
+            for tag in filter_tag:
+                tag = tag.lower()
+                msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
+        if filter_member:
+            msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
+        if limit is not None:
+            msgs = msgs[:limit]
+
+        links = {
+            msg.id: [
+                match.group() for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
+            ] for msg in msgs
+        }
+        tags = {
+            msg.id: [
+                f"`{match.group().replace('tag_', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+                for match in re.finditer('tag_.+', msg.content.lower())
+            ] for msg in msgs
+        }
+        old_tags = {
+            msg.id: [
+                f"`{match.group().replace('tag-', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+                for match in re.finditer('tag-<.+>', msg.content.lower())
+            ] for msg in msgs
+        }
+        pages = []
+        copy_msgs = msgs[:]
+        while msgs:
+            top_10_msg = msgs[:5]
+            current_embed = discord.Embed(
+                title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
+                      f"in #{resource_entries_channel.name}"
+            )
+            for i, msg in enumerate(top_10_msg, 1):
+                try:
+                    current_embed.add_field(
+                        name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
+                             f"{utils.remove_all(msg.content.split(nl), '')[1][:40]}"
+                             f"{'...' if len(utils.remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
+                        value=f'{" ".join(utils.remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
+                              f'Links: {", ".join(utils.return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
+                              f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
+                        inline=False
+                    )
+                except IndexError:
+                    pass
+            pages.append(current_embed)
+            msgs = msgs[5:]
+        if len(pages) == 0:
+            failed_embed = discord.Embed(color=discord.Color.red(),
+                                         title=f"Retrieved 0 entries in #{resource_entries_channel.name}",
+                                         description="There are no results of resources with those parameters. Please try again.")
+            pages.append(
+                failed_embed
+            )
+        page_embed = embed_utils.PagedEmbed(
+            self.response_msg, pages, caller=self.invoke_msg.author
+        )
+        await page_embed.mainloop()
