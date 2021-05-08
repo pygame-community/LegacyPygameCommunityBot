@@ -612,7 +612,10 @@ class UserCommand(BaseCommand):
 
     async def cmd_resources(
             self,
-            all_params: String = None
+            limit: Optional[int] = None,
+            filter_tag: Optional[String] = None,
+            filter_member: Optional[discord.Member] = None,
+            oldest_first: bool = False,
     ):
         """
         ->type Other commands
@@ -620,47 +623,27 @@ class UserCommand(BaseCommand):
         ->description Browse through resources.
         ->extended description
         pg!resources takes in additional arguments, though they are optional.
-        `oldest first`: Browses the resources according to age
-        `limit [num]`: Limits the number of resources to the number
-        `filter tag [tag]`: Includes only the resources with that tag(s)
-        `filter user [user]`: Includes only the resources posted by that user
-        ->example command pg!resources "limit 5, oldest first, filter tag python, filter user Mega_JC#7835"
+        `oldest_first`: Set oldest_first to True to browse through the oldest resources
+        `limit=[num]`: Limits the number of resources to the number
+        `filter_tag=[tag]`: Includes only the resources with that tag(s)
+        `filter_member=[member]`: Includes only the resources posted by that user
+        ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
-        limit = None
-        tags_to_filter = None
-        oldest_first = False
-        user_to_filter = ''
-        if all_params:
-            all_params_list = all_params.string.split(",")
-            all_params_list_2 = []
-            for i in all_params_list:
-                if 'filter user' not in i:
-                    all_params_list_2.append(i.strip().lower())
-                else:
-                    all_params_list_2.append(i)
-
-            if 'oldest first' in all_params_list_2:
-                oldest_first = True
-            for param in all_params_list_2:
-                if 'limit' in param:
-                    limit = int(param.replace('limit', '').strip())
-                if 'filter tag' in param:
-                    tags_to_filter = param.replace('filter tag', '').strip().lower().split(" ")
-                if 'filter user' in param:
-                    user_to_filter = await filter_user(param.replace('filter user', '').strip(), self.invoke_msg.guild)
-        # TODO: Lol
+        # TODO: if someone can refactor this, that'd be bery nais
         nl = '\n'
         resource_entries_channel = self.invoke_msg.guild.get_channel(common.RESOURCE_ENTRIES_CHANNEL_ID)
-        msgs = await resource_entries_channel.history(oldest_first=oldest_first, limit=limit).flatten()
-        copy_msgs = msgs[:]
+        msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
 
-        if tags_to_filter:
-            for tag in tags_to_filter:
+        if filter_tag:
+            filter_tag = filter_tag.string.split(",")
+            filter_tag = [tag.strip() for tag in filter_tag]
+            for tag in filter_tag:
+                tag = tag.lower()
                 msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
-        if user_to_filter:
-            msgs = list(filter(lambda x: x.author.id == user_to_filter.id, msgs))
-        elif user_to_filter is None:
-            msgs = []
+        if filter_member:
+            msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
+        if limit is not None:
+            msgs = msgs[:limit]
 
         links = {
             msg.id: [
@@ -680,6 +663,7 @@ class UserCommand(BaseCommand):
             ] for msg in msgs
         }
         pages = []
+        copy_msgs = msgs[:]
         while msgs:
             top_10_msg = msgs[:5]
             current_embed = discord.Embed()
