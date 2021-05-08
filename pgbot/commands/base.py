@@ -12,10 +12,36 @@ import pygame
 
 from pgbot import common, embed_utils, utils
 
+ESCAPES = {
+    '0': '\0',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    'b': '\b',
+    'f': '\f',
+    '\\': '\\',
+    '"': '"',
+    "'": "'",
+}
 
-class ArgError(Exception):
+
+class BotException(Exception):
     """
-    Base class for all argument parsing related exceptions
+    Base class for all bot related exceptions, that need to be displayed on
+    discord
+    """
+
+
+class ArgError(BotException):
+    """
+    Base class for arguments related exceptions
+    """
+
+
+class KwargError(BotException):
+    """
+    Base class for keyword arguments related exceptions
     """
 
 
@@ -42,7 +68,46 @@ class String:
     """
 
     def __init__(self, string):
-        self.string = string
+        self.string = self.escape(string)
+
+    def escape(self, string):
+        """
+        Convert a "raw" string to one where characters are escaped
+        """
+        cnt = 0
+        newstr = ""
+        while cnt < len(string):
+            char = string[cnt]
+            cnt += 1
+            if char == "\\":
+                char = string[cnt]
+                cnt += 1
+                if char.lower() in ["x", "u"]:
+                    if char.lower() == "x":
+                        n = 2
+                    else:
+                        n = 4 if char == "u" else 8
+
+                    var = string[cnt:cnt + n]
+                    cnt += n
+                    try:
+                        newstr += chr(int(var, base=16))
+                    except ValueError:
+                        raise BotException(
+                            "Invalid escape character",
+                            "Invalid unicode escape character in string"
+                        )
+                elif char in ESCAPES:
+                    newstr += ESCAPES[char]
+                else:
+                    raise BotException(
+                        "Invalid escape character",
+                        "Invalid unicode escape character in string"
+                    )
+            else:
+                newstr += char
+
+        return newstr
 
 
 # Type hint for an argument that is "hidden", that is, it cannot be passed
@@ -74,6 +139,14 @@ class BaseCommand:
         self.is_priv = True
         self.cmd_str = self.invoke_msg.content[len(common.PREFIX):]
 
+        # Put a few attributes here for easy access
+        self.author = self.invoke_msg.author
+        self.channel = self.invoke_msg.channel
+        self.guild = self.invoke_msg.guild
+        self.is_dm = self.guild is None
+        if self.is_dm:
+            self.guild = common.bot.get_guild(common.SERVER_ID)
+
         self.cmds_and_funcs = {}
         for i in dir(self):
             if i.startswith(common.CMD_FUNC_PREFIX):
@@ -86,16 +159,27 @@ class BaseCommand:
         string based on seperators
         """
         splitchar, splitfunc, exargs = split_flags.pop(0)
-        for cnt, substr in enumerate(split_str.split(splitchar)):
+
+        cnt = 0
+        prev = ""
+        for substr in split_str.split(splitchar):
             if cnt % 2:
-                yield splitfunc(substr, *exargs)
+                if substr.endswith("\\"):
+                    prev += substr + splitchar
+                    continue
+
+                yield splitfunc(prev + substr, *exargs)
+                prev = ""
+
             elif split_flags:
                 yield from self.split_args(substr, split_flags.copy())
             else:
                 yield substr
 
-        if cnt % 2:
-            raise ArgError(
+            cnt += 1
+
+        if not cnt % 2 or prev:
+            raise BotException(
                 f"Invalid {splitfunc.__name__}",
                 f"{splitfunc.__name__} was not properly closed"
             )
@@ -112,7 +196,6 @@ class BaseCommand:
         kwargs = {}
         kwstart = False  # used to make sure that keyword args come after args
         prevkey = None  # temporarily store previous key name
-
         for arg in self.split_args(self.cmd_str, SPLIT_FLAGS.copy()):
             if not isinstance(arg, str):
                 if prevkey is not None:
@@ -136,8 +219,7 @@ class BaseCommand:
                         continue
 
                     if kwstart:
-                        raise ArgError(
-                            "Invalid Keyword Arguments!",
+                        raise KwargError(
                             "Keyword arguments cannot come before positional "
                             + "arguments"
                         )
@@ -146,20 +228,13 @@ class BaseCommand:
                 else:
                     kwstart = True
                     if prevkey:
-                        raise ArgError(
-                            "Invalid Keyword Argument!",
-                            "Did not specify argument after '='"
-                        )
+                        raise KwargError("Did not specify argument after '='")
 
                     if not a:
-                        raise ArgError(
-                            "Invalid Keyword Argument!",
-                            "Missing keyword before '=' symbol"
-                        )
+                        raise KwargError("Missing keyword before '=' symbol")
 
                     if not a[0].isalpha() and not a.startswith("_"):
-                        raise ArgError(
-                            "Invalid Keyword Argument!",
+                        raise KwargError(
                             "Keyword argument must begin with an alphabet or "
                             + "underscore"
                         )
@@ -168,6 +243,9 @@ class BaseCommand:
                         kwargs[a] = c
                     else:
                         prevkey = a
+
+        if prevkey:
+            raise KwargError("Did not specify argument after '='")
 
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
@@ -182,28 +260,29 @@ class BaseCommand:
         # user entered something like 'pg!', display help message
         if not args:
             if kwargs:
-                raise ArgError(
-                    "Invalid Keyword Argument!",
-                    "Keyword argument entered without command!"
+                raise BotException(
+                    "Invalid Command name!", "Command name must be str"
                 )
             args = ["help"]
 
         cmd = args.pop(0)
         if not isinstance(cmd, str):
-            raise ArgError("Invalid Command name!", "")
+            raise BotException(
+                "Invalid Command name!", "Command name must be str"
+            )
 
         if self.invoke_msg.reference is not None:
-            args.insert(
-                0,
-                str(self.invoke_msg.reference.channel_id) + "/"
-                + str(self.invoke_msg.reference.message_id)
-            )
+            msg = str(self.invoke_msg.reference.message_id)
+            if self.invoke_msg.reference.channel_id != self.channel.id:
+                msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
+
+            args.insert(0, msg)
 
         return cmd, args, kwargs
 
-    async def _cast_arg(self, anno, arg):
+    async def _cast_arg(self, anno, arg, cmd):
         """
-        Helper to cast an argument to the type mentioned by the parameter 
+        Helper to cast an argument to the type mentioned by the parameter
         annotation
         Raises ValueErrors on failure to cast arguments
         """
@@ -224,8 +303,8 @@ class BaseCommand:
 
             elif anno == "HiddenArg":
                 raise ArgError(
-                    "Invalid Arguments!",
-                    "Hidden arguments cannot be explicitly passed"
+                    "Hidden arguments cannot be explicitly passed",
+                    cmd
                 )
 
             elif anno == "pygame.Color":
@@ -245,11 +324,9 @@ class BaseCommand:
 
             elif anno == "discord.TextChannel":
                 chan_id = utils.filter_id(arg)
-                chan = self.invoke_msg.guild.get_channel(chan_id)
+                chan = self.guild.get_channel(chan_id)
                 if chan is None:
-                    raise ArgError(
-                        "Invalid Arguments!", "Got invalid channel ID"
-                    )
+                    raise ArgError("Got invalid channel ID", cmd)
 
                 return chan
 
@@ -258,31 +335,27 @@ class BaseCommand:
                 if b:
                     msg = int(c)
                     chan_id = utils.filter_id(a)
-                    chan = self.invoke_msg.guild.get_channel(chan_id)
+                    chan = self.guild.get_channel(chan_id)
 
                     if chan is None:
-                        raise ArgError(
-                            "Invalid Arguments!", "Got invalid channel ID"
-                        )
+                        raise ArgError("Got invalid channel ID", cmd)
                 else:
                     msg = int(a)
-                    chan = self.invoke_msg.channel
+                    chan = self.channel
 
                 try:
                     return await chan.fetch_message(msg)
                 except discord.NotFound:
-                    raise ArgError(
-                        "Invalid Arguments!", "Got invalid message ID"
-                    )
+                    raise ArgError("Got invalid message ID", cmd)
 
             elif anno == "str":
                 return arg
 
-            raise ArgError(
+            raise BotException(
                 "Internal Bot error", f"Invalid type annotation `{anno}`"
             )
 
-        raise ArgError(
+        raise BotException(
             "Internal Bot error", f"Invalid argument of type `{type(arg)}`"
         )
 
@@ -299,7 +372,7 @@ class BaseCommand:
             anno = anno[9:-1].strip()
 
         try:
-            return await self._cast_arg(anno, arg)
+            return await self._cast_arg(anno, arg, cmd)
 
         except ValueError:
             if anno == "CodeBlock":
@@ -324,15 +397,9 @@ class BaseCommand:
                 typ = f"of type `{param.annotation}`"
 
             if key is None:
-                msg = "The variable args/kwargs"
-            else:
-                msg = f"The argument `{key}`"
+                raise ArgError(f"The variable args/kwargs must be {typ}", cmd)
 
-            raise ArgError(
-                "Invalid Arguments!",
-                f"{msg} must be {typ} \n"
-                + f"For help on this bot command, do `pg!help {cmd}`",
-            )
+            raise ArgError(f"The argument `{key}` must be {typ}", cmd)
 
     async def call_cmd(self):
         """
@@ -347,11 +414,28 @@ class BaseCommand:
 
         # command name entered does not exist
         if cmd not in self.cmds_and_funcs:
-            raise ArgError(
+            raise BotException(
                 "Unrecognized command!",
                 f"Make sure that the command '{cmd}' exists, and you have "
                 + "the permission to use it. \nFor help on bot commands, "
                 + "do `pg!help`"
+            )
+
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+        splits = db_message.content.split(":")
+        cmds = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        # command has been blacklisted from running
+        if cmd in cmds:
+            raise BotException(
+                "Cannot execute comamand!",
+                f"The command '{cmd}' has been temporarily been blocked from "
+                + "running, while wizards are casting their spells on it!\n"
+                + "Please try running the command after the maintenance work "
+                + "has been finished"
             )
 
         func = self.cmds_and_funcs[cmd]
@@ -385,10 +469,8 @@ class BaseCommand:
                 keyword_only_args.append(key)
                 if key not in kwargs:
                     if param.default == param.empty:
-                        raise ArgError(
-                            "Invalid Keyword Arguments!",
-                            f"Missed required keyword argument `{key}` \nFor "
-                            + f"help on this bot command, do `pg!help {cmd}`"
+                        raise KwargError(
+                            f"Missed required keyword argument `{key}`", cmd
                         )
                     kwargs[key] = param.default
                     continue
@@ -398,18 +480,13 @@ class BaseCommand:
                 if key in kwargs:
                     if param.kind == param.POSITIONAL_ONLY:
                         raise ArgError(
-                            "Invalid Arguments!",
-                            f"`{key}` cannot be passed as a keyword argument \n"
-                            + f"Run `pg!help {cmd}` for help on this command"
+                            f"`{key}` cannot be passed as a keyword argument",
+                            cmd
                         )
                     args.append(kwargs.pop(key))
 
                 elif param.default == param.empty:
-                    raise ArgError(
-                        "Invalid Arguments!",
-                        f"Missed required argument `{key}` \nFor help on "
-                        + f"this bot command, do `pg!help {cmd}`"
-                    )
+                    raise ArgError(f"Missed required argument `{key}`", cmd)
 
                 else:
                     args.append(param.default)
@@ -417,8 +494,8 @@ class BaseCommand:
 
             elif key in kwargs:
                 raise ArgError(
-                    "Invalid Arguments!",
-                    "Positional cannot be passed again as a keyword argument"
+                    "Positional cannot be passed again as a keyword argument",
+                    cmd
                 )
 
             if iskw:
@@ -429,20 +506,14 @@ class BaseCommand:
         i += 1
         # More arguments were given than required
         if not is_var_pos and i < len(args):
-            raise ArgError(
-                "Invalid Arguments!",
-                f"Too many args were given ({len(args)}) \n"
-                + f"For help on this bot command, do `pg!help {cmd}`",
-            )
+            raise ArgError(f"Too many args were given (`{len(args)}`)", cmd)
 
         # Iterate through kwargs to check if we received invalid ones
         if not is_var_key:
             for key in kwargs:
                 if key not in sig.parameters:
-                    raise ArgError(
-                        "Invalid Keyword Argument!",
-                        f"Received invalid keyword argument `{key}`\n"
-                        + f"For help on this bot command, do `pg!help {cmd}`"
+                    raise KwargError(
+                        f"Received invalid keyword argument `{key}`", cmd
                     )
 
         await func(*args, **kwargs)
@@ -455,6 +526,19 @@ class BaseCommand:
             return await self.call_cmd()
 
         except ArgError as exc:
+            title = "Invalid Arguments!"
+            msg, cmd = exc.args
+            msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
+
+        except KwargError as exc:
+            title = "Invalid Keyword Arguments!"
+            if len(exc.args) == 2:
+                msg, cmd = exc.args
+                msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
+            else:
+                msg = exc.args[0]
+
+        except BotException as exc:
             title, msg = exc.args
 
         except Exception as exc:

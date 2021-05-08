@@ -11,8 +11,9 @@ import discord
 import pygame
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
-from pgbot.commands.base import BaseCommand, CodeBlock, HiddenArg, String
-from pgbot.utils import *
+from pgbot.commands.base import (
+    BaseCommand, BotException, CodeBlock, HiddenArg, String
+)
 
 
 class UserCommand(BaseCommand):
@@ -59,26 +60,31 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
-        if time > 360 or time <= 0:
-            await embed_utils.replace(
-                self.response_msg,
-                f"Failed to set reminder!",
-                f"The maximum time for which you can set reminder is 6 hours"
+        if time < 0:
+            raise BotException(
+                "Failed to set reminder!",
+                "Time cannot go backwards, negative time does not make sense..."
+                + "\n Or can it? *vsauce music plays in the background*"
             )
-            return
+
+        if time > 360:
+            raise BotException(
+                "Failed to set reminder!",
+                "The maximum time for which you can set reminder is 6 hours"
+            )
 
         await embed_utils.replace(
             self.response_msg,
             f"Reminder set!",
-            f"Gonna remind {self.invoke_msg.author.name} in {time} minutes.\n"
+            f"Gonna remind {self.author.name} in {time} minutes.\n"
             + "But do not solely rely on me though, cause I might forget to "
             + "remind you in case I am sleeping."
         )
         await asyncio.sleep(time * 60)
 
         sendmsg = "__**Reminder for "
-        sendmsg += self.invoke_msg.author.mention + ":**__\n" + msg.string
-        await self.invoke_msg.channel.send(sendmsg)
+        sendmsg += self.author.mention + ":**__\n" + msg.string
+        await self.channel.send(sendmsg)
 
     async def cmd_clock(
             self,
@@ -103,26 +109,30 @@ class UserCommand(BaseCommand):
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
         msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
-        db_msg = await self.invoke_msg.guild.get_channel(
+        db_msg = await self.guild.get_channel(
             common.DB_CHANNEL_ID).fetch_message(msg_id)
 
         timezones = await clock.decode_from_msg(db_msg)
         if action:
             if member is None:
-                member = self.invoke_msg.author
+                member = self.author
                 for mem, _, _ in timezones:
                     if mem.id == member.id:
                         break
                 else:
-                    await embed_utils.replace(
-                        self.response_msg,
-                        "Cannot update clock",
+                    raise BotException(
+                        "Cannot update clock!",
                         "You cannot run clock update commands because you are "
                         + "not on the clock"
                     )
-                    return
 
             if action == "update":
+                if abs(timezone) > 12:
+                    raise BotException(
+                        "Failed to update clock!",
+                        "Timezone offset out of range"
+                    )
+
                 for cnt, (mem, _, _) in enumerate(timezones):
                     if mem.id == member.id:
                         timezones[cnt][1] = timezone
@@ -131,12 +141,10 @@ class UserCommand(BaseCommand):
                         break
                 else:
                     if color is None:
-                        await embed_utils.replace(
-                            self.response_msg,
-                            "Failed to update clock",
+                        raise BotException(
+                            "Failed to update clock!",
                             "Color argument is required when adding new people"
                         )
-                        return
                     timezones.append([member, timezone, color])
                     timezones.sort(key=lambda x: x[1])
 
@@ -146,20 +154,16 @@ class UserCommand(BaseCommand):
                         timezones.pop(cnt)
                         break
                 else:
-                    await embed_utils.replace(
-                        self.response_msg,
-                        "Failed to update clock",
+                    raise BotException(
+                        "Failed to update clock!",
                         "Cannot remove non-existing person from clock"
                     )
-                    return
 
             else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "Failed to update clock",
+                raise BotException(
+                    "Failed to update clock!",
                     f"Invalid action specifier {action}"
                 )
-                return
 
             await db_msg.edit(content=clock.encode_to_msg(timezones))
 
@@ -186,7 +190,7 @@ class UserCommand(BaseCommand):
         if not msg:
             msg = self.response_msg
 
-        await docs.put_doc(name, msg, self.invoke_msg.author, page)
+        await docs.put_doc(name, msg, self.author, page)
 
     async def cmd_exec(self, code: CodeBlock):
         """
@@ -209,6 +213,8 @@ class UserCommand(BaseCommand):
         Implement pg!exec, for execution of python code
         """
         tstamp = time.perf_counter_ns()
+        await self.channel.trigger_typing()
+
         returned = await sandbox.exec_sandbox(
             code.code, tstamp, 10 if self.is_priv else 5
         )
@@ -217,14 +223,15 @@ class UserCommand(BaseCommand):
         if returned.exc is None:
             if returned.img:
                 if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                    await self.response_msg.channel.send(
+                    await self.channel.send(
                         file=discord.File(f"temp{tstamp}.png")
                     )
                 else:
-                    await embed_utils.replace(
-                        self.response_msg,
-                        "Image cannot be sent:",
+                    await embed_utils.send(
+                        self.channel,
+                        "Image could not be sent:",
                         "The image file size is above 4MiB",
+                        0xFF0000,
                     )
                 os.remove(f"temp{tstamp}.png")
 
@@ -237,9 +244,12 @@ class UserCommand(BaseCommand):
         else:
             await embed_utils.replace(
                 self.response_msg,
-                common.EXC_TITLES[1],
+                "An exception occured:",
                 utils.code_block(", ".join(map(str, returned.exc.args)))
             )
+
+        # To reset the trigger_typing counter
+        await (await self.channel.send("\u200b")).delete()
 
     async def cmd_help(
             self,
@@ -261,14 +271,14 @@ class UserCommand(BaseCommand):
         if name is None:
             await utils.send_help_message(
                 msg,
-                self.invoke_msg.author,
+                self.author,
                 self.cmds_and_funcs,
                 page=page
             )
         else:
             await utils.send_help_message(
                 msg,
-                self.invoke_msg.author,
+                self.author,
                 self.cmds_and_funcs,
                 name
             )
@@ -382,13 +392,11 @@ class UserCommand(BaseCommand):
         """
 
         if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
-            await embed_utils.replace(
-                self.response_msg,
+            raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
                 "the id of the message is correct."
             )
-            return
 
         data = msg.embeds[0].footer.text.split("\n")
 
@@ -396,13 +404,11 @@ class UserCommand(BaseCommand):
         command = data[2].replace("Command: ", "").split()
 
         if not page or not command or not self.cmds_and_funcs.get(command[0]):
-            await embed_utils.replace(
-                self.response_msg,
+            raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
                 "the id of the message is correct."
             )
-            return
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -435,6 +441,13 @@ class UserCommand(BaseCommand):
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
+        if self.is_dm:
+            raise BotException(
+                "Cannot run poll commands on DM",
+                "Who are you trying to poll? Yourself? :smiley: \n"
+                + "Please run your poll on the Pygame Community Server!"
+            )
+
         newline = "\n"
         base_embed = {
             "title": "Voting in progress",
@@ -451,12 +464,12 @@ class UserCommand(BaseCommand):
                 },
             ],
             "author": {
-                "name": self.invoke_msg.author.name,
+                "name": self.author.name,
             },
             "color": 0x34a832,
             "footer": {
-                "text": f"By {self.invoke_msg.author.display_name}{newline}"
-                        f"({self.invoke_msg.author.id}){newline}Started"
+                "text": f"By {self.author.display_name}{newline}"
+                        f"({self.author.id}){newline}Started"
             },
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string
@@ -465,8 +478,7 @@ class UserCommand(BaseCommand):
 
         if emojis:
             if len(emojis) <= 3 or len(emojis) % 2:
-                return await embed_utils.replace(
-                    self.response_msg,
+                raise BotException(
                     "Invalid arguments for emojis.",
                     "Please add at least 2 emojis with 2 descriptions."
                     " Each emoji should have their own description."
@@ -505,8 +517,7 @@ class UserCommand(BaseCommand):
                 # reactions and prompt the user to make sure it is the currect
                 # emoji.
                 await self.response_msg.clear_reactions()
-                return await embed_utils.replace(
-                    self.response_msg,
+                raise BotException(
                     "Invalid emoji",
                     "The emoji could not be added as a reaction. Make sure it is"
                     " the correct emoji and that it is not from another server"
@@ -525,29 +536,34 @@ class UserCommand(BaseCommand):
         The poll can only be closed by the person who started it or by mods.
         """
         newline = "\n"
+        if self.is_dm:
+            raise BotException(
+                "Cannot run poll commands on DM",
+                "Who are you trying to poll? Yourself? :smiley: \n"
+                + "Please run your poll on the Pygame Community Server!"
+            )
+
         if not msg.embeds:
-            return await embed_utils.replace(
-                self.response_msg,
+            raise BotException(
                 "Invalid message",
                 "The message specified is not an ongiong vote."
                 " Please double-check the id."
             )
+
         embed = msg.embeds[0]
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):
             poll_owner = int(embed.footer.text.split("\n")[1]
                              .replace("(", "").replace(")", ""))
         else:
-            return await embed_utils.replace(
-                self.response_msg,
+            raise BotException(
                 "Invalid message",
                 "The message specified is not an ongiong vote."
                 " Please double-check the id."
             )
 
-        if color is None and self.invoke_msg.author.id != poll_owner:
-            return await embed_utils.replace(
-                self.response_msg,
+        if color is None and self.author.id != poll_owner:
+            raise BotException(
                 "You cant stop this vote",
                 "The vote was not started by you."
                 " Ask the person who started it to close it."
