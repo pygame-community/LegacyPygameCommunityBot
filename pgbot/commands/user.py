@@ -12,7 +12,7 @@ import pygame
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import (
-    BaseCommand, CodeBlock, HiddenArg, String, BotException
+    BaseCommand, BotException, CodeBlock, HiddenArg, String
 )
 
 
@@ -127,6 +127,12 @@ class UserCommand(BaseCommand):
                     )
 
             if action == "update":
+                if abs(timezone) > 12:
+                    raise BotException(
+                        "Failed to update clock!",
+                        "Timezone offset out of range"
+                    )
+
                 for cnt, (mem, _, _) in enumerate(timezones):
                     if mem.id == member.id:
                         timezones[cnt][1] = timezone
@@ -435,6 +441,13 @@ class UserCommand(BaseCommand):
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
+        if self.is_dm:
+            raise BotException(
+                "Cannot run poll commands on DM",
+                "Who are you trying to poll? Yourself? :smiley: \n"
+                + "Please run your poll on the Pygame Community Server!"
+            )
+
         newline = "\n"
         base_embed = {
             "title": "Voting in progress",
@@ -523,12 +536,20 @@ class UserCommand(BaseCommand):
         The poll can only be closed by the person who started it or by mods.
         """
         newline = "\n"
+        if self.is_dm:
+            raise BotException(
+                "Cannot run poll commands on DM",
+                "Who are you trying to poll? Yourself? :smiley: \n"
+                + "Please run your poll on the Pygame Community Server!"
+            )
+
         if not msg.embeds:
             raise BotException(
                 "Invalid message",
                 "The message specified is not an ongiong vote."
                 " Please double-check the id."
             )
+
         embed = msg.embeds[0]
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):

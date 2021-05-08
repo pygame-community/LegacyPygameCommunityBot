@@ -12,6 +12,19 @@ import pygame
 
 from pgbot import common, embed_utils, utils
 
+ESCAPES = {
+    '0': '\0',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    'b': '\b',
+    'f': '\f',
+    '\\': '\\',
+    '"': '"',
+    "'": "'",
+}
+
 
 class BotException(Exception):
     """
@@ -55,7 +68,46 @@ class String:
     """
 
     def __init__(self, string):
-        self.string = string
+        self.string = self.escape(string)
+
+    def escape(self, string):
+        """
+        Convert a "raw" string to one where characters are escaped
+        """
+        cnt = 0
+        newstr = ""
+        while cnt < len(string):
+            char = string[cnt]
+            cnt += 1
+            if char == "\\":
+                char = string[cnt]
+                cnt += 1
+                if char.lower() in ["x", "u"]:
+                    if char.lower() == "x":
+                        n = 2
+                    else:
+                        n = 4 if char == "u" else 8
+
+                    var = string[cnt:cnt + n]
+                    cnt += n
+                    try:
+                        newstr += chr(int(var, base=16))
+                    except ValueError:
+                        raise BotException(
+                            "Invalid escape character",
+                            "Invalid unicode escape character in string"
+                        )
+                elif char in ESCAPES:
+                    newstr += ESCAPES[char]
+                else:
+                    raise BotException(
+                        "Invalid escape character",
+                        "Invalid unicode escape character in string"
+                    )
+            else:
+                newstr += char
+
+        return newstr
 
 
 # Type hint for an argument that is "hidden", that is, it cannot be passed
@@ -107,15 +159,26 @@ class BaseCommand:
         string based on seperators
         """
         splitchar, splitfunc, exargs = split_flags.pop(0)
-        for cnt, substr in enumerate(split_str.split(splitchar)):
+
+        cnt = 0
+        prev = ""
+        for substr in split_str.split(splitchar):
             if cnt % 2:
-                yield splitfunc(substr, *exargs)
+                if substr.endswith("\\"):
+                    prev += substr + splitchar
+                    continue
+
+                yield splitfunc(prev + substr, *exargs)
+                prev = ""
+
             elif split_flags:
                 yield from self.split_args(substr, split_flags.copy())
             else:
                 yield substr
 
-        if cnt % 2:
+            cnt += 1
+
+        if not cnt % 2 or prev:
             raise BotException(
                 f"Invalid {splitfunc.__name__}",
                 f"{splitfunc.__name__} was not properly closed"
@@ -133,7 +196,6 @@ class BaseCommand:
         kwargs = {}
         kwstart = False  # used to make sure that keyword args come after args
         prevkey = None  # temporarily store previous key name
-
         for arg in self.split_args(self.cmd_str, SPLIT_FLAGS.copy()):
             if not isinstance(arg, str):
                 if prevkey is not None:
@@ -182,6 +244,9 @@ class BaseCommand:
                     else:
                         prevkey = a
 
+        if prevkey:
+            raise KwargError("Did not specify argument after '='")
+
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
         for attach in self.invoke_msg.attachments:
@@ -207,11 +272,11 @@ class BaseCommand:
             )
 
         if self.invoke_msg.reference is not None:
-            args.insert(
-                0,
-                str(self.invoke_msg.reference.channel_id) + "/"
-                + str(self.invoke_msg.reference.message_id)
-            )
+            msg = str(self.invoke_msg.reference.message_id)
+            if self.invoke_msg.reference.channel_id != self.channel.id:
+                msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
+
+            args.insert(0, msg)
 
         return cmd, args, kwargs
 
@@ -354,6 +419,23 @@ class BaseCommand:
                 f"Make sure that the command '{cmd}' exists, and you have "
                 + "the permission to use it. \nFor help on bot commands, "
                 + "do `pg!help`"
+            )
+
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+        splits = db_message.content.split(":")
+        cmds = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        # command has been blacklisted from running
+        if cmd in cmds:
+            raise BotException(
+                "Cannot execute comamand!",
+                f"The command '{cmd}' has been temporarily been blocked from "
+                + "running, while wizards are casting their spells on it!\n"
+                + "Please try running the command after the maintenance work "
+                + "has been finished"
             )
 
         func = self.cmds_and_funcs[cmd]
