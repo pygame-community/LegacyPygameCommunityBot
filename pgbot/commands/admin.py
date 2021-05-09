@@ -255,10 +255,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
         await self.response_msg.delete()
 
-    async def cmd_sudo_stats(self, msg: discord.Message):
+    async def cmd_sudo_stats(self, msg: discord.Message, author: bool = True):
         """
         ->type More admin commands
-        ->signature pg!sudo_stats [message]
+        ->signature pg!sudo_stats [message] [author_bool]
         ->description Get information about a message and its author
 
         Get information about a message and its author in an embed and send it to the channel where this command was invoked.
@@ -267,7 +267,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         await self.response_msg.channel.send(
-            embed=embed_utils.get_info_embed(msg)
+            embed=embed_utils.get_msg_info_embed(msg, author=author)
         )
         await self.response_msg.delete()
 
@@ -372,16 +372,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
         
         async with destination.typing():
             for msg in messages:
+                msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
                 author = msg.author
                 attached_files = [
                     (await a.to_file(spoiler=a.is_spoiler()) if a.size <= common.GUILD_MAX_FILE_SIZE \
                     else blank_file) for a in msg.attachments
-                ]
-                
-                await destination.send(content="-"*56)
+                ]                
                 await destination.send(
+                    content="-"*56,
                     embed=embed_utils.create(
-                        description=f"{author.mention} (`{author.name}#{author.discriminator}`)",
+                        description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
+                                    f"**[View Original]({msg_link})**",
                         color=0x36393F,
                         footer_text=f"\nID: {author.id}",
                         timestamp=msg.created_at.replace(tzinfo=datetime.timezone.utc),
