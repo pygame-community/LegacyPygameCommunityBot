@@ -50,9 +50,9 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, code, strip_py=False):
+    def __init__(self, code, strip_py=False, strip_lang=False):
         code = code.strip()
-        if strip_py and code.startswith("`") and code.endswith("`"):
+        if (strip_py or strip_lang) and code.startswith("`") and code.endswith("`"):
             for i in range(3, len(code)):
                 if code[i].isspace():
                     break
