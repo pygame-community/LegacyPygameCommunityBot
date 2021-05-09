@@ -13,7 +13,7 @@ import pygame
 
 from pgbot import common, embed_utils, utils
 import datetime
-from pgbot.commands.base import CodeBlock, String
+from pgbot.commands.base import CodeBlock, String, BotException
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
 
@@ -34,27 +34,100 @@ class AdminCommand(UserCommand, EmsudoCommand):
         else:
             await UserCommand.handle_cmd(self)
 
-    async def cmd_sync_clocks(self):
+    async def cmd_sync_db(self, name: str):
         """
         ->type Admin commands
-        ->signature pg!sync_clocks
-        ->description sync test clock and real clock
+        ->signature pg!sync_db [name]
+        ->description sync 'db' messages between testbot and real bot
+        ->extended description
+        `pg!sync_db clock`
+        `pg!sync_db command_blacklist`
+        Are the available commands now
         -----
-        Implement pg!sync_clocks, to sync clock data between clocks
+        Implement pg!sync_clocks, sync 'db' messages between testbot and real bot
         """
-        db_channel = self.invoke_msg.guild.get_channel(common.DB_CHANNEL_ID)
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
 
-        dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
+        if name == "clock":
+            dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
+            src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
+        elif name == "command_blacklist":
+            dest_msg_id = common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+            src_msg_id = common.DB_BLACKLIST_MSG_IDS[not common.TEST_MODE]
+        else:
+            raise BotException("Invalid Name!", "")
+
         dest_msg = await db_channel.fetch_message(dest_msg_id)
-
-        src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
         src_msg = await db_channel.fetch_message(src_msg_id)
 
         await dest_msg.edit(content=src_msg.content)
         await embed_utils.replace(
             self.response_msg,
-            "Clocks synced!",
-            "Test clock and main clock have been synced"
+            "DB messages synced!",
+            "DB messages have been synced between both the bots"
+        )
+
+    async def cmd_whitelist_cmd(self, *cmds: str):
+        """
+        ->type Admin commands
+        ->signature pg!whitelist_cmd [*cmds]
+        ->description Whitelist commands
+        -----
+        Implement pg!whitelist_cmd, to whitelist commands
+        """
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+        splits = db_message.content.split(":")
+        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        cnt = 0
+        for cmd in cmds:
+            if cmd in commands:
+                cnt += 1
+                commands.remove(cmd)
+
+        await db_message.edit(
+            content="Blacklisted Commands: " + " ".join(commands)
+        )
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Whitelisted!",
+            f"Successfully whitelisted {cnt} command(s)"
+        )
+
+    async def cmd_blacklist_cmd(self, *cmds: str):
+        """
+        ->type Admin commands
+        ->signature pg!blacklist_cmd [*cmds]
+        ->description Blacklist commands
+        -----
+        Implement pg!blacklist_cmd, to blacklist commands
+        """
+        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
+        db_message = await db_channel.fetch_message(
+            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
+        )
+
+        splits = db_message.content.split(":")
+        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
+
+        cnt = 0
+        for cmd in cmds:
+            if cmd not in commands and cmd != "whitelist_cmd":
+                cnt += 1
+                commands.append(cmd)
+
+        await db_message.edit(
+            content="Blacklisted Commands: " + " ".join(commands)
+        )
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Blacklisted!",
+            f"Successfully blacklisted {cnt} command(s)"
         )
 
     async def cmd_clock(
@@ -98,9 +171,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 utils.code_block(repr(eval_output))
             )
         except Exception as ex:
-            await embed_utils.replace(
-                self.response_msg,
-                common.EXC_TITLES[1],
+            raise BotException(
+                "An exception occured:",
                 utils.code_block(
                     type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
                 )
@@ -114,7 +186,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
-        await self.invoke_msg.channel.send(msg.string)
+        await self.channel.send(msg.string)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
@@ -214,21 +286,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
-            blank_filename = f"filetoolarge {time.perf_counter_ns()*random.random()}.txt"
-            with open(blank_filename, "w", encoding="utf-8") as toolarge_txt:
-                toolarge_txt.write("This file is too large to be archived.")
+            blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
+            try:
+                with open(blank_filename, "w", encoding="utf-8") as toolarge:
+                    toolarge.write("This file is too large to be archived.")
 
-            blank_file = discord.File(blank_filename)
-            msg_files = [
-                await a.to_file(spoiler=spoiler or a.is_spoiler()) if a.size <= common.GUILD_MAX_FILE_SIZE \
-                else blank_file for a in msg.attachments
-            ]
+                    msg_files = [
+                        await a.to_file(spoiler=spoiler or a.is_spoiler())
+                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        else discord.File(toolarge)
+                        for a in msg.attachments
+                    ]
 
-            if os.path.exists(blank_filename):
-                try:
+            finally:
+                if os.path.exists(blank_filename):
                     os.remove(blank_filename)
-                except PermissionError:
-                    pass     
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
@@ -332,84 +404,101 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         if destination is None:
-            destination = self.invoke_msg.channel
+            destination = self.channel
 
         if origin == destination:
-            await embed_utils.replace(
-                self.response_msg,
+            raise BotException(
                 "Cannot execute command:",
                 "Origin and destination channels are same"
             )
-            return
 
+        if quantity <= 0:
+            raise BotException(
+                "Invalid quantity argument",
+                "Quantity has to be a positive integer",
+            )
+
+        datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
+        blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
+
+        await destination.trigger_typing()
         messages = await origin.history(limit=quantity).flatten()
         messages.reverse()
-        msg: discord.Message = None
-        datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
 
-        no_mentions = discord.AllowedMentions.none()
+        try:
+            with open(blank_filename, "w") as toolarge_txt:
+                toolarge_txt.write("This file is too large to be archived.")
 
-        blank_filename = f"filetoolarge {time.perf_counter_ns()*random.random()}.txt"
+            if messages:
+                start_date_str = messages[0].created_at.replace(
+                    tzinfo=datetime.timezone.utc
+                ).strftime(datetime_format_str)
+                end_date_str = messages[-1].created_at.replace(
+                    tzinfo=datetime.timezone.utc
+                ).strftime(datetime_format_str)
 
-        with open(blank_filename, "w", encoding="utf-8") as toolarge_txt:
-            toolarge_txt.write("This file is too large to be archived.")
-        
-        blank_file = discord.File(blank_filename)
-        
-        if len(messages) > 1:
-            start_date_str = messages[0].created_at.replace(tzinfo=datetime.timezone.utc)\
-                            .strftime(datetime_format_str)
-            end_date_str = messages[-1].created_at.replace(tzinfo=datetime.timezone.utc)\
-                            .strftime(datetime_format_str)
+                if start_date_str == end_date_str:
+                    msg = f"On `{start_date_str}` (UTC)"
+                else:
+                    msg = f"From `{start_date_str}` to `{end_date_str}` (UTC)"
 
-            await destination.send(
-                embed=embed_utils.create(
-                    title=f"Archive of `#{origin.name}`",
-                    description=f"From `{start_date_str}` to `{end_date_str}` (UTC)",
-                    color=0xffffff,
+                await destination.send(
+                    embed=embed_utils.create(
+                        title=f"Archive of `#{origin.name}`",
+                        description=msg,
+                        color=0xffffff,
+                    )
                 )
-            )
-        
-        async with destination.typing():
+
             for msg in messages:
                 msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
                 author = msg.author
-                attached_files = [
-                    (await a.to_file(spoiler=a.is_spoiler()) if a.size <= common.GUILD_MAX_FILE_SIZE \
-                    else blank_file) for a in msg.attachments
-                ]                
+                await destination.trigger_typing()
+
+                with open(blank_filename) as toolarge:
+                    attached_files = [
+                        (
+                            await a.to_file(spoiler=a.is_spoiler())
+                            if a.size <= common.GUILD_MAX_FILE_SIZE
+                            else discord.File(toolarge)
+                        )
+                        for a in msg.attachments
+                    ]
+
                 await destination.send(
-                    content="-"*56,
+                    content="-" * 56,
                     embed=embed_utils.create(
                         description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
                                     f"**[View Original]({msg_link})**",
                         color=0x36393F,
                         footer_text=f"\nID: {author.id}",
-                        timestamp=msg.created_at.replace(tzinfo=datetime.timezone.utc),
+                        timestamp=msg.created_at.replace(
+                            tzinfo=datetime.timezone.utc
+                        ),
                         footer_icon_url=str(author.avatar_url),
                     ),
-                    allowed_mentions=no_mentions,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
+                await destination.trigger_typing()
 
                 await destination.send(
                     content=msg.content,
                     embed=msg.embeds[0] if msg.embeds else None,
                     files=attached_files if attached_files else None,
-                    allowed_mentions=no_mentions,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
 
                 for i in range(1, len(msg.embeds)):
+                    await destination.trigger_typing()
                     await destination.send(embed=msg.embeds[i])
 
-                async with destination.typing():
-                    await asyncio.sleep(0.05)
+                await destination.trigger_typing()
 
-        if os.path.exists(blank_filename):
-            try:
+        finally:
+            if os.path.exists(blank_filename):
                 os.remove(blank_filename)
-            except PermissionError:
-                pass  
 
+        await destination.send(content="-" * 56)
         await embed_utils.replace(
             self.response_msg,
             f"Successfully archived {len(messages)} message(s)!",
@@ -428,7 +517,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!poll [*args] [author] [color] [url] [image_url] [thumbnail]
+        ->signature pg!poll [description] [*args] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
         The args must be strings with one emoji and one description of said emoji (see example command). \

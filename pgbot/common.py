@@ -22,6 +22,7 @@ entry_channels = {}
 cmd_logs = {}
 
 BOT_ID = 772788653326860288
+SERVER_ID = 772505616680878080
 
 # Misc
 # Pet command constants
@@ -60,6 +61,7 @@ ENTRY_CHANNEL_IDS = {
     "resource": 810516093273768016
 }
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
+RESOURCE_ENTRIES_CHANNEL_ID = 810516093273768016
 
 CMD_FUNC_PREFIX = "cmd_"
 
@@ -101,7 +103,8 @@ ZERO_SPACE = "\u200b"  # U+200B
 DB_CHANNEL_ID = 838090567682490458
 
 # First is normal clock db message, second is testclock db message
-DB_CLOCK_MSG_IDS = [838299905574830080, 838300106880057394]
+DB_CLOCK_MSG_IDS = (838299905574830080, 838300106880057394)
+DB_BLACKLIST_MSG_IDS = (840523987901087765, 840525722292584458)
 
 DOC_EMBED_LIMIT = 3
 
@@ -118,11 +121,6 @@ ROLE_PROMPT = {
         "Tell <@!235148962103951360> in <#772535163195228200>!",
     ]
 }
-
-EXC_TITLES = [
-    'An exception occurred while trying to execute the command:',
-    'An exception occured:',
-]
 
 BOT_WELCOME_MSG = {
     "greet": (
@@ -147,7 +145,7 @@ BOT_WELCOME_MSG = {
         ", then grab yourself some shiny", ". Get some fancy", ", get some",
         ", then get yourself some cool", ", then get yourself some",
         ", take some", ", then take some", ", then take some",
-        ". Go get some cool roles at", 
+        ". Go get some cool roles at",
         ". Then go take some fancy", ", then grab some shiny",
     ),
 
@@ -156,7 +154,7 @@ BOT_WELCOME_MSG = {
         ", then have fun with pygame! *hiss*", " and have a nice time!",
         " and enjoy your stay!", " and have some fun! *hisss*",
         " and have fun here!", " and have fun with pygame!",
-        " and have a wonderful time!", " and join us!", " and join the fun!", 
+        " and have a wonderful time!", " and join us!", " and join the fun!",
         " and have fun with pygame! *hisss*", " and have fun here! *hisss*",
     ),
 
