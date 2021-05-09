@@ -388,16 +388,3 @@ def code_block(string: str, max_characters=2048):
         return f"```\n{string[:max_characters - 7]} ...```"
     else:
         return f"```\n{string[:max_characters]}```"
-
-
-def remove_all(list_thing, thing_to_remove):
-    copy = list_thing[:]
-    for _ in range(list_thing.count(thing_to_remove)):
-        copy.remove(thing_to_remove)
-    return copy
-
-
-def return_insert(list_to_insert, index, obj):
-    copy = list_to_insert[:]
-    copy.insert(index, obj)
-    return copy
