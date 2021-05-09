@@ -52,22 +52,41 @@ class UserCommand(BaseCommand):
             title="Pingy Pongy"
         )
 
-    async def cmd_remind(self, msg: String, time: int):
+    async def cmd_remind(self, time_to_remind: str, msg: String):
         """
         ->type Other commands
-        ->signature pg!remind [message string] [time in minutes]
+        ->signature pg!remind [time] [message string]
         ->description Set a reminder to yourself
+        ->extended description
+        Allows you to set a reminder to yourself
+        `time`: Parameter that specifies the time to remind
+        (E.g 1h42m13s = 1 hour, 42 minutes, and 13 seconds)
+        `message string`: String that includes your message
+        (E.g "!d bump the server")
+        Note that the maximum time for the reminder is 6 hours
+        ->example command pg!remind 1h3m51s "!d bump the server"
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
-        if time < 0:
+        previous = ''
+        parsed_seconds = {}
+        time_to_remind_str = time_to_remind
+        time_formats = {'h': 60*60, "m": 60, "s": 1}
+        total_seconds = 0
+        for time_format, sec_per_time_format in time_formats.items():
+            if time_format in time_to_remind_str:
+                semiparsed_var = time_to_remind_str[:time_to_remind_str.index(time_format) + 1].replace(previous, '')
+                previous = time_to_remind_str[:time_to_remind_str.index(time_format) + 1]
+                parsed_seconds[time_format] = semiparsed_var.replace(time_format, '')
+                total_seconds += int(semiparsed_var.replace(time_format, ''))*sec_per_time_format
+        if total_seconds < 0:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
-                + "\n Or can it? *vsauce music plays in the background*"
+                "\n Or does it? \\*vsauce music plays in the background\\*"
             )
 
-        if time > 360:
+        if total_seconds > 360*60:
             raise BotException(
                 "Failed to set reminder!",
                 "The maximum time for which you can set reminder is 6 hours"
@@ -76,15 +95,17 @@ class UserCommand(BaseCommand):
         await embed_utils.replace(
             self.response_msg,
             f"Reminder set!",
-            f"Gonna remind {self.author.name} in {time} minutes.\n"
-            + "But do not solely rely on me though, cause I might forget to "
-            + "remind you in case I am sleeping."
+            f"Gonna remind {self.author.name} in "
+            f"{f'{total_seconds // 60} minute(s)' if total_seconds // 60 != 0 else ''}"
+            f"{f' and' if total_seconds // 60 != 0 and total_seconds % 60 != 0 else ''} "
+            f"{f'{total_seconds % 60} second(s)' if total_seconds % 60 != 0 else '.'}\n"
+            "But do not solely rely on me though, cause I might forget to "
+            "remind you in case I am sleeping."
         )
-        await asyncio.sleep(time * 60)
+        await asyncio.sleep(total_seconds)
 
-        sendmsg = "__**Reminder for "
-        sendmsg += self.author.mention + ":**__\n" + msg.string
-        await self.channel.send(sendmsg)
+        sendmsg = f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+        await self.invoke_msg.reply(sendmsg)
 
     async def cmd_clock(
             self,

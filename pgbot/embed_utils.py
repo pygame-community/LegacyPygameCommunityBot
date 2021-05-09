@@ -6,7 +6,15 @@ from collections.abc import Mapping
 import discord
 from discord.embeds import EmptyEmbed
 
+
 from . import common
+
+
+def discordify(message):
+    """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
+    # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
+    message = message.replace('\\', r'\\').replace('*', r'\*').replace('`', r'\`').replace('_', r'\_')
+    return message
 
 
 def recursive_update(old_dict, update_dict):
@@ -601,7 +609,7 @@ def get_info_embed(msg: discord.Message):
     """
     Generate an embed containing info about a message and its author.
     """
-    msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
+    msg_link = msg.jump_url
 
     member = msg.author
     datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
@@ -680,7 +688,7 @@ def get_user_info_embed(member: discord.Member):
     datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
 
     member_name_info = "*Name*: \n> " + (
-        f"**{member.nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        f"**{discordify(member.nick)}**\n> (*{member.name}#{member.discriminator}*)\n\n"
         if member.nick else f"**{member.name}**#{member.discriminator}\n\n"
     )
 
