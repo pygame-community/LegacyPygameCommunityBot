@@ -3431,7 +3431,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            await embed_utils.remove_field(edit_msg, edit_msg_embed, field_indices)
+            await embed_utils.remove_fields(edit_msg, edit_msg_embed, field_indices)
         except IndexError:
             await embed_utils.replace(
                 self.response_msg,
