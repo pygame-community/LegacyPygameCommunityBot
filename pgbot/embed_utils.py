@@ -617,84 +617,6 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
 
     msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
-<<<<<<< HEAD
-
-    if author:
-        member_name_info = "*Name*: \n> "+(
-            f"**{member.nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"\
-            if member.nick else f"**{member.name}**#{member.discriminator}\n\n"
-            )
-
-        member_created_at_fdtime = member.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
-        member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime}\n\n"
-        
-        member_joined_at_fdtime = member.joined_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
-        member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
-
-        
-        member_func_role_count = max(
-            len(tuple(member.roles[i] for i in range(1, len(member.roles))\
-                if member.roles[i].id not in common.DIVIDER_ROLES
-                )),
-            0)
-
-        if member_func_role_count:
-            member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
-            if member_func_role_count != len(member.roles) - 1:
-                member_role_count_info =  f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles)-1})`\n\n"
-            else:
-                member_role_count_info =  f"*Role Count*: \n> `{member_func_role_count}`\n\n"
-        else:
-            member_top_role_info = member_role_count_info = ""
-        
-        member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
-
-        msg_info = f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
-        member_info = f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"+\
-                        f"{member_role_count_info}{member_id_info}"
-
-        return create(
-            title="__Message & Author Stats__",
-            thumbnail_url=str(member.avatar_url),
-            description=(f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else discord.embeds.EmptyEmbed),
-            fields=(
-                (
-                    "__Message Info__",
-                    msg_info,
-                    True
-                ),
-                (
-                    "__Message Author Info__",
-                    member_info,
-                    True
-                ),
-                (
-                    "\u2800",
-                    f"**[View Original Message]({msg_link})**",
-                    False
-                ),
-            ),
-        )
-    else:
-        return create(
-            title="__Message Stats__",
-            thumbnail_url=str(member.avatar_url),
-            description=(f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else discord.embeds.EmptyEmbed),
-            fields=(
-                (
-                    "__Message Info__",
-                    msg_info,
-                    True
-                ),
-                (
-                    "\u2800",
-                    f"**[View Original Message]({msg_link})**",
-                    False
-                ),
-            ),
-        )
-
-=======
     member_name_info = "*Name*: \n> " + (
         f"**{member.nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
         if member.nick else f"**{member.name}**#{member.discriminator}\n\n"
@@ -707,10 +629,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
 
     member_func_role_count = max(
-        len(tuple(member.roles[i] for i in range(1, len(member.roles))
-                  if member.roles[i].id not in common.DIVIDER_ROLES
-                  )),
-        0)
+        len(
+            tuple(
+                member.roles[i] for i in range(1, len(member.roles)) \
+                if member.roles[i].id not in common.DIVIDER_ROLES
+            )
+        ),
+    0)
 
     if member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
@@ -749,7 +674,6 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             )
         ]
     )
->>>>>>> 3d5b9c0b9689f886831692f004f00a66a6b5d68b
 
 
 def get_user_info_embed(member: discord.Member):
