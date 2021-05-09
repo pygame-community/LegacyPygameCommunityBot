@@ -410,7 +410,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         divider_str = divider_str.string if divider_str is not None else None
-        divider_str = ( (divider_str.string if divider_str.string is not None else "-" * 56) if show_divider else "")
+        divider_str = ( (divider_str.string if divider_str is not None else "-" * 56) if show_divider else "")
 
         if destination is None:
             destination = self.channel
