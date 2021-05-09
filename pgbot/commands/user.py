@@ -212,6 +212,8 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!exec, for execution of python code
         """
+        print("EXEC TIME")
+        print(code.code)
         tstamp = time.perf_counter_ns()
         await self.channel.trigger_typing()
 
