@@ -286,7 +286,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
-            blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
+            blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
             try:
                 with open(blank_filename, "w", encoding="utf-8") as toolarge:
                     toolarge.write("This file is too large to be archived.")
@@ -394,14 +394,23 @@ class AdminCommand(UserCommand, EmsudoCommand):
         origin: discord.TextChannel,
         quantity: int,
         destination: Optional[discord.TextChannel] = None,
+        raw: bool = False,
+        show_header: bool = True,
+        show_author: bool = True,
+        show_divider: bool = True,
+        divider_str: String = None,
     ):
         """
         ->type Admin commands
         ->signature pg!archive [origin channel] [quantity] [destination channel]
+[raw=False] [show_header=True] [show_author=True] [raw=False] [divider_str=None]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
         """
+
+        divider_str = divider_str.string if divider_str is not None else None
+        divider_str = ( (divider_str.string if divider_str.string is not None else "-" * 56) if show_divider else "")
 
         if destination is None:
             destination = self.channel
@@ -419,7 +428,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
         datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
-        blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
+        blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
 
         await destination.trigger_typing()
         messages = await origin.history(limit=quantity).flatten()
@@ -429,7 +438,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             with open(blank_filename, "w") as toolarge_txt:
                 toolarge_txt.write("This file is too large to be archived.")
 
-            if messages:
+            if messages and show_header and not raw:
                 start_date_str = messages[0].created_at.replace(
                     tzinfo=datetime.timezone.utc
                 ).strftime(datetime_format_str)
@@ -450,7 +459,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                 )
 
-            for msg in messages:
+            for i, msg in enumerate(messages):
                 msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
                 author = msg.author
                 await destination.trigger_typing()
@@ -464,21 +473,32 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         )
                         for a in msg.attachments
                     ]
+                
+                if not raw:
+                    author_embed = None
+                    current_divider_str = divider_str
+                    if show_author:
+                        if i > 0 and messages[i-1].author == author:
+                            # no author info or divider for mesmages next to each other sharing an author
+                            current_divider_str = None
+                        else:
+                            author_embed = embed_utils.create(
+                                description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
+                                            f"**[View Original]({msg_link})**",
+                                color=0x36393F,
+                                footer_text=f"\nID: {author.id}",
+                                timestamp=msg.created_at.replace(
+                                    tzinfo=datetime.timezone.utc
+                                ),
+                                footer_icon_url=str(author.avatar_url),
+                            )
+                        if author_embed or current_divider_str:                        
+                            await destination.send(
+                                content=current_divider_str,
+                                embed=author_embed,
+                                allowed_mentions=discord.AllowedMentions.none(),
+                            )
 
-                await destination.send(
-                    content="-" * 56,
-                    embed=embed_utils.create(
-                        description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
-                                    f"**[View Original]({msg_link})**",
-                        color=0x36393F,
-                        footer_text=f"\nID: {author.id}",
-                        timestamp=msg.created_at.replace(
-                            tzinfo=datetime.timezone.utc
-                        ),
-                        footer_icon_url=str(author.avatar_url),
-                    ),
-                    allowed_mentions=discord.AllowedMentions.none(),
-                )
                 await destination.trigger_typing()
 
                 await destination.send(
@@ -498,7 +518,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if os.path.exists(blank_filename):
                 os.remove(blank_filename)
 
-        await destination.send(content="-" * 56)
+        if show_author and divider_str and not raw:
+            await destination.send(content=divider_str)
+        
         await embed_utils.replace(
             self.response_msg,
             f"Successfully archived {len(messages)} message(s)!",
