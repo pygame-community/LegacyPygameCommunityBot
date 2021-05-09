@@ -51,15 +51,14 @@ class CodeBlock:
     """
 
     def __init__(self, code, strip_py=False):
-        if strip_py:
-            if code[:6] == "python":
-                code = code[6:]
-            elif code[:2] == "py":
-                code = code[2:]
-
-        code = code.strip().strip("\\")  # because \\ causes problems
-        self.code = code
-
+        code = code.strip()
+        if strip_py and code.startswith("`") and code.endswith("`"):
+            for i in range(3, len(code)):
+                if code[i].isspace():
+                    break
+            code = code.lstrip(code[:i])
+        
+        self.code = code.strip("```").strip().strip("\\")  # because \\ causes problems
 
 class String:
     """
