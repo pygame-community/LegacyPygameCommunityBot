@@ -600,11 +600,14 @@ class UserCommand(BaseCommand):
 
         top = [(0, None)]
         for reaction in msg.reactions:
-            if reaction.emoji not in reactions:
+            if getattr(reaction.emoji, "id", reaction.emoji) not in reactions:
                 continue
 
             if reaction.count - 1 > top[0][0]:
-                top = [(reaction.count - 1, reaction.emoji)]
+                top = [(
+                    reaction.count - 1,
+                    getattr(reaction.emoji, "id", reaction.emoji)
+                )]
                 continue
 
             if reaction.count - 1 == top[0][0]:
@@ -625,9 +628,9 @@ class UserCommand(BaseCommand):
                 True
             ])
 
-            if field.name == top[0][1]:
+            if utils.filter_emoji_id(field.name) == top[0][1]:
                 title += (
-                    f"{newline}{field.value}({top[0][1]}) "
+                    f"{newline}{field.value}({field.name}) "
                     f"has won with {top[0][0]} votes!"
                 )
 
@@ -666,8 +669,15 @@ class UserCommand(BaseCommand):
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
         # TODO: if someone can refactor this, that'd be bery nais
-        nl = '\n'
-        resource_entries_channel = self.invoke_msg.guild.get_channel(common.RESOURCE_ENTRIES_CHANNEL_ID)
+        def process_tag(tag: str):
+            for to_replace in ("tag_", "tag-", "<", ">", "`"):
+                tag = tag.replace(to_replace, "")
+            return tag.title()
+
+        resource_entries_channel = self.invoke_msg.guild.get_channel(
+            common.RESOURCE_ENTRIES_CHANNEL_ID
+        )
+        
         msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
 
         if filter_tag:
@@ -676,59 +686,84 @@ class UserCommand(BaseCommand):
             for tag in filter_tag:
                 tag = tag.lower()
                 msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
+
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
         if limit is not None:
             msgs = msgs[:limit]
 
-        links = {
-            msg.id: [
-                match.group() for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
-            ] for msg in msgs
-        }
-        tags = {
-            msg.id: [
-                f"`{match.group().replace('tag_', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+        tags = {}
+        old_tags = {}
+        links = {}
+        for msg in msgs:
+            links[msg.id] = [
+                match.group()
+                for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
+            ]
+            tags[msg.id] = [
+                f"`{process_tag(match.group())}` "
                 for match in re.finditer('tag_.+', msg.content.lower())
-            ] for msg in msgs
-        }
-        old_tags = {
-            msg.id: [
-                f"`{match.group().replace('tag-', '').replace('<', '').replace('>', '').replace('`', '').title()}` "
+            ]
+            old_tags[msg.id] = [
+                f"`{process_tag(match.group())}` "
                 for match in re.finditer('tag-<.+>', msg.content.lower())
-            ] for msg in msgs
-        }
+            ]
+
         pages = []
         copy_msgs = msgs[:]
+        i = 1
         while msgs:
-            top_10_msg = msgs[:5]
+            top_msg = msgs[:6]
             current_embed = discord.Embed(
                 title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
                       f"in #{resource_entries_channel.name}"
             )
-            for i, msg in enumerate(top_10_msg, 1):
+
+            for msg in top_msg:
                 try:
+                    name = msg.content.split("\n")[1].strip().replace("**", "")
+                    if not name:
+                        continue
+
+                    if len(name) > 40:
+                        field_name = f"{name[:40]}..."
+                    field_name = f"{i}. {name}, posted by {msg.author.display_name}"
+
+                    value = msg.content.split(name)[1].removeprefix("**").strip()
+                    if len(value) > 80:
+                        value = f"{value[:80]}..."
+                    value += f"\n\nLinks: **[Message]({msg.jump_url})**"
+
+                    for j, link in enumerate(links[msg.id]):
+                        value += f", [Link {j + 1}]({link})"
+
+                    value += "\nTags: "
+                    if tags[msg.id]:
+                        value += "".join(tags[msg.id]).removesuffix(",")
+                    else:
+                        value += "".join(old_tags[msg.id]).removesuffix(",")
+
                     current_embed.add_field(
-                        name=f"{[msg.id for msg in copy_msgs].index(msg.id) + 1}. "
-                             f"{utils.remove_all(msg.content.split(nl), '')[1][:40]}"
-                             f"{'...' if len(utils.remove_all(msg.content.split(nl), '')[1]) > 40 else ''}",
-                        value=f'{" ".join(utils.remove_all(msg.content.split(nl), "")[2:])[:80]}...\n\n'
-                              f'Links: {", ".join(utils.return_insert([f"[Link {i + 1}]({link})" for i, link in enumerate(links[msg.id])], 0, f"**[Message]({msg.jump_url})**"))}\n'
-                              f'Tags: {"".join(tags[msg.id] if tags[msg.id] else old_tags[msg.id]).removesuffix(",")}\n',
-                        inline=False
+                        name=field_name,
+                        value=f"{value}\n{common.ZERO_SPACE}",
+                        inline=True
                     )
-                except IndexError:
+                    i += 1
+                except IndexError as err:
                     pass
+
             pages.append(current_embed)
-            msgs = msgs[5:]
+            msgs = msgs[6:]
+
         if len(pages) == 0:
-            failed_embed = discord.Embed(color=discord.Color.red(),
-                                         title=f"Retrieved 0 entries in #{resource_entries_channel.name}",
-                                         description="There are no results of resources with those parameters. Please try again.")
-            pages.append(
-                failed_embed
+            raise BotException(
+                f"Retrieved 0 entries in #{resource_entries_channel.name}",
+                "There are no results of resources with those parameters. Please try again."
             )
+
+
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author
         )
+
         await page_embed.mainloop()

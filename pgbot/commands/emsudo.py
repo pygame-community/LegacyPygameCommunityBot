@@ -12,7 +12,7 @@ import psutil
 from discord.embeds import EmptyEmbed
 
 from pgbot import embed_utils
-from pgbot.commands.base import OldBaseCommand
+from pgbot.commands.base import OldBaseCommand, CodeBlock
 
 process = psutil.Process(os.getpid())
 
@@ -31,7 +31,7 @@ class EmsudoCommand(OldBaseCommand):
         Implement pg!emsudo_c, for admins to send embeds via the bot
         """
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -111,7 +111,7 @@ class EmsudoCommand(OldBaseCommand):
         Implement pg!emsudo_edit_c, for admins to edit embeds via the bot
         """
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -262,7 +262,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -614,7 +614,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -979,7 +979,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1377,7 +1377,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1640,7 +1640,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1769,7 +1769,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2063,7 +2063,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2191,7 +2191,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2506,7 +2506,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2639,7 +2639,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2908,7 +2908,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(self.string)
+            args = eval(CodeBlock(self.string, strip_py=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -3108,7 +3108,7 @@ class EmsudoCommand(OldBaseCommand):
 
         if break_1:
             try:
-                args = eval(self.string)
+                args = eval(CodeBlock(self.string, strip_py=True).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
@@ -3355,7 +3355,7 @@ class EmsudoCommand(OldBaseCommand):
 
         else:
             try:
-                args = eval(self.string)
+                args = eval(CodeBlock(self.string, strip_py=True).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
@@ -3431,7 +3431,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            await embed_utils.remove_field(edit_msg, edit_msg_embed, field_indices)
+            await embed_utils.remove_fields(edit_msg, edit_msg_embed, field_indices)
         except IndexError:
             await embed_utils.replace(
                 self.response_msg,

@@ -605,7 +605,7 @@ async def clear_fields(message, embed):
     return await message.edit(embed=embed)
 
 
-def get_info_embed(msg: discord.Message):
+def get_msg_info_embed(msg: discord.Message, author: bool = True):
     """
     Generate an embed containing info about a message and its author.
     """
@@ -637,10 +637,13 @@ def get_info_embed(msg: discord.Message):
     member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
 
     member_func_role_count = max(
-        len(tuple(member.roles[i] for i in range(1, len(member.roles))
-                  if member.roles[i].id not in common.DIVIDER_ROLES
-                  )),
-        0)
+        len(
+            tuple(
+                member.roles[i] for i in range(1, len(member.roles)) \
+                if member.roles[i].id not in common.DIVIDER_ROLES
+            )
+        ),
+    0)
 
     if member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
