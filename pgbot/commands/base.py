@@ -50,12 +50,29 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, code, strip_lang=False, strip_ticks=False):
-        if strip_ticks:
-            code = code.strip("`")
+    def __init__(self, text, no_backticks=False):
+        self.lang = None
+        self.text = code = text
+        md_bacticks = ("```", "`")
 
-        if strip_lang and "\n" in code:
-            code = code[code.index("\n") + 1:]
+        if no_backticks:
+            if code[0].isalnum():
+                for i in range(len(code)):
+                    if code[i].isspace():
+                        break
+                self.lang = code[:i]
+                code = code[i+1:]
+        
+        elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
+            code = code.strip("`")
+            if code[0].isspace():
+                code = code[1:]
+            elif code[0].isalnum():
+                for i in range(len(code)):
+                    if code[i].isspace():
+                        break
+                self.lang = code[:i]
+                code = code[i+1:]
 
         self.code = code.strip().strip("\\")  # because \\ causes problems
 
