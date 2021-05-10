@@ -69,7 +69,6 @@ class CodeBlock:
                         break
                 code = code.lstrip(code[:i])
 
-
         self.code = code.strip("```").strip().strip("\\")  # because \\ causes problems
 
 class String:
