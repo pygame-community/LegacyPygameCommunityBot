@@ -13,7 +13,12 @@ from . import common
 def discordify(message):
     """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
     # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
-    message = message.replace('\\', r'\\').replace('*', r'\*').replace('`', r'\`').replace('_', r'\_')
+    message = (
+        message.replace("\\", r"\\")
+        .replace("*", r"\*")
+        .replace("`", r"\`")
+        .replace("_", r"\_")
+    )
     return message
 
 
@@ -221,7 +226,9 @@ class PagedEmbed:
         await self.message.clear_reactions()
 
 
-async def replace(message, title, description, color=0xFFFFAA, url_image=None, fields=[]):
+async def replace(
+    message, title, description, color=0xFFFFAA, url_image=None, fields=[]
+):
     """
     Edits the embed of a message with a much more tight function
     """
@@ -235,7 +242,15 @@ async def replace(message, title, description, color=0xFFFFAA, url_image=None, f
     return await message.edit(embed=embed)
 
 
-async def send(channel, title, description, color=0xFFFFAA, url_image=None, fields=[], do_return=False):
+async def send(
+    channel,
+    title,
+    description,
+    color=0xFFFFAA,
+    url_image=None,
+    fields=[],
+    do_return=False,
+):
     """
     Sends an embed with a much more tight function
     """
@@ -253,16 +268,27 @@ async def send(channel, title, description, color=0xFFFFAA, url_image=None, fiel
 
 
 def create(
-        embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed, url=EmptyEmbed,
-        thumbnail_url=EmptyEmbed,
-        description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed,
-        timestamp=EmptyEmbed
+    embed_type="rich",
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=[],
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
 ):
     """
     Creates an embed with a much more tight function.
     """
-    embed = discord.Embed(title=title, type=embed_type,
-                          url=url, description=description, color=color)
+    embed = discord.Embed(
+        title=title, type=embed_type, url=url, description=description, color=color
+    )
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -271,8 +297,7 @@ def create(
             embed.timestamp = timestamp
 
     if author_name:
-        embed.set_author(name=author_name, url=author_url,
-                         icon_url=author_icon_url)
+        embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
 
     if thumbnail_url:
         embed.set_thumbnail(url=thumbnail_url)
@@ -282,7 +307,11 @@ def create(
 
     for field in fields:
         if isinstance(field, dict):
-            embed.add_field(name=field.get("name", ""), value=field.get("value", ""), inline=field.get("inline", True))
+            embed.add_field(
+                name=field.get("name", ""),
+                value=field.get("value", ""),
+                inline=field.get("inline", True),
+            )
         else:
             embed.add_field(name=field[0], value=field[1], inline=field[2])
 
@@ -292,10 +321,21 @@ def create(
 
 
 async def send_2(
-        channel, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed,
-        url=EmptyEmbed, thumbnail_url=EmptyEmbed,
-        description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed,
-        timestamp=EmptyEmbed
+    channel,
+    embed_type="rich",
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=[],
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
 ):
     """
     Sends an embed with a much more tight function. If the channel is
@@ -316,7 +356,7 @@ async def send_2(
         fields=fields,
         footer_text=footer_text,
         footer_icon_url=footer_icon_url,
-        timestamp=timestamp
+        timestamp=timestamp,
     )
 
     if channel is None:
@@ -326,10 +366,21 @@ async def send_2(
 
 
 async def replace_2(
-        message, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed,
-        url=EmptyEmbed, thumbnail_url=EmptyEmbed,
-        description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed,
-        timestamp=EmptyEmbed
+    message,
+    embed_type="rich",
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=[],
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
 ):
     """
     Replaces the embed of a message with a much more tight function
@@ -348,17 +399,29 @@ async def replace_2(
         fields=fields,
         footer_text=footer_text,
         footer_icon_url=footer_icon_url,
-        timestamp=timestamp
+        timestamp=timestamp,
     )
 
     return await message.edit(embed=embed)
 
 
 async def edit_2(
-        message, embed, embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed, title=EmptyEmbed,
-        url=EmptyEmbed, thumbnail_url=EmptyEmbed,
-        description=EmptyEmbed, image_url=EmptyEmbed, color=0xFFFFAA, fields=[], footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed,
-        timestamp=EmptyEmbed
+    message,
+    embed,
+    embed_type="rich",
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=[],
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
 ):
     """
     Updates the changed attributes of the embed of a message with a much more tight function
@@ -377,7 +440,7 @@ async def edit_2(
         fields=fields,
         footer_text=footer_text,
         footer_icon_url=footer_icon_url,
-        timestamp=timestamp
+        timestamp=timestamp,
     )
 
     old_embed_dict = embed.to_dict()
@@ -397,7 +460,7 @@ async def send_from_dict(channel, data):
 
 async def replace_from_dict(message, data):
     """
-    Replaces the embed of a message from a dictionary with a much more tight 
+    Replaces the embed of a message from a dictionary with a much more tight
     function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
@@ -565,7 +628,10 @@ async def swap_fields(message, embed, index_a, index_b):
     """
     embed_dict = embed.to_dict()
     fields_list = embed_dict["fields"]
-    fields_list[index_a], fields_list[index_b] = fields_list[index_b], fields_list[index_a]
+    fields_list[index_a], fields_list[index_b] = (
+        fields_list[index_b],
+        fields_list[index_a],
+    )
     return await message.edit(embed=discord.Embed.from_dict(embed_dict))
 
 
@@ -586,7 +652,10 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
     embed_dict = embed.to_dict()
 
     if isinstance(insertion_index, int):
-        cloned_fields = tuple(embed_dict["fields"][index].copy() for index in sorted(field_indices, reverse=True))
+        cloned_fields = tuple(
+            embed_dict["fields"][index].copy()
+            for index in sorted(field_indices, reverse=True)
+        )
         for cloned_field in cloned_fields:
             embed_dict["fields"].insert(insertion_index, cloned_field)
     else:
@@ -613,12 +682,16 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
 
     member = msg.author
     datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
-    msg_created_at_fdtime = msg.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+    msg_created_at_fdtime = msg.created_at.replace(
+        tzinfo=datetime.timezone.utc
+    ).strftime(datetime_format_str)
 
     msg_created_at_info = f"*Created On*: \n> {msg_created_at_fdtime}\n\n"
 
     if msg.edited_at:
-        msg_edited_at_fdtime = msg.edited_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+        msg_edited_at_fdtime = msg.edited_at.replace(
+            tzinfo=datetime.timezone.utc
+        ).strftime(datetime_format_str)
         msg_edited_at_info = f"*Last Edited On*: \n> {msg_edited_at_fdtime}\n\n"
     else:
         msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
@@ -627,23 +700,30 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
     member_name_info = "*Name*: \n> " + (
         f"**{member.nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-        if member.nick else f"**{member.name}**#{member.discriminator}\n\n"
+        if member.nick
+        else f"**{member.name}**#{member.discriminator}\n\n"
     )
 
-    member_created_at_fdtime = member.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+    member_created_at_fdtime = member.created_at.replace(
+        tzinfo=datetime.timezone.utc
+    ).strftime(datetime_format_str)
     member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime}\n\n"
 
-    member_joined_at_fdtime = member.joined_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+    member_joined_at_fdtime = member.joined_at.replace(
+        tzinfo=datetime.timezone.utc
+    ).strftime(datetime_format_str)
     member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
 
     member_func_role_count = max(
         len(
             tuple(
-                member.roles[i] for i in range(1, len(member.roles)) \
+                member.roles[i]
+                for i in range(1, len(member.roles))
                 if member.roles[i].id not in common.DIVIDER_ROLES
             )
         ),
-    0)
+        0,
+    )
 
     if member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
@@ -656,31 +736,27 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
 
     member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
 
-    msg_info = f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
-    member_info = f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}" + \
-                  f"{member_role_count_info}{member_id_info}"
+    msg_info = (
+        f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
+    )
+    member_info = (
+        f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"
+        + f"{member_role_count_info}{member_id_info}"
+    )
 
     return create(
         title="__Message & Author Stats__",
         thumbnail_url=str(member.avatar_url),
-        description=(f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else discord.embeds.EmptyEmbed),
+        description=(
+            f"__Text__:\n\n {msg.content}\n\u2800"
+            if msg.content
+            else discord.embeds.EmptyEmbed
+        ),
         fields=[
-            (
-                "__Message Info__",
-                msg_info,
-                True
-            ),
-            (
-                "__Message Author Info__",
-                member_info,
-                True
-            ),
-            (
-                "\u2800",
-                f"**[View Original Message]({msg_link})**",
-                False
-            )
-        ]
+            ("__Message Info__", msg_info, True),
+            ("__Message Author Info__", member_info, True),
+            ("\u2800", f"**[View Original Message]({msg_link})**", False),
+        ],
     )
 
 
@@ -692,20 +768,30 @@ def get_user_info_embed(member: discord.Member):
 
     member_name_info = "*Name*: \n> " + (
         f"**{discordify(member.nick)}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-        if member.nick else f"**{member.name}**#{member.discriminator}\n\n"
+        if member.nick
+        else f"**{member.name}**#{member.discriminator}\n\n"
     )
 
-    member_created_at_fdtime = member.created_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+    member_created_at_fdtime = member.created_at.replace(
+        tzinfo=datetime.timezone.utc
+    ).strftime(datetime_format_str)
     member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime}\n\n"
 
-    member_joined_at_fdtime = member.joined_at.replace(tzinfo=datetime.timezone.utc).strftime(datetime_format_str)
+    member_joined_at_fdtime = member.joined_at.replace(
+        tzinfo=datetime.timezone.utc
+    ).strftime(datetime_format_str)
     member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
 
     member_func_role_count = max(
-        len(tuple(member.roles[i] for i in range(1, len(member.roles))
-                  if member.roles[i].id not in common.DIVIDER_ROLES
-                  )),
-        0)
+        len(
+            tuple(
+                member.roles[i]
+                for i in range(1, len(member.roles))
+                if member.roles[i].id not in common.DIVIDER_ROLES
+            )
+        ),
+        0,
+    )
 
     if member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
@@ -718,11 +804,13 @@ def get_user_info_embed(member: discord.Member):
 
     member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
 
-    member_info = f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}" + \
-                  f"{member_role_count_info}{member_id_info}"
+    member_info = (
+        f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"
+        + f"{member_role_count_info}{member_id_info}"
+    )
 
     return create(
         title="__Member Info__",
         description=member_info,
-        thumbnail_url=str(member.avatar_url)
+        thumbnail_url=str(member.avatar_url),
     )

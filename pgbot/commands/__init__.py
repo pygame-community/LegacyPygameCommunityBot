@@ -14,7 +14,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
     await embed_utils.send(
         common.log_channel,
         f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-        invoke_msg.content
+        invoke_msg.content,
     )
 
     is_priv = False

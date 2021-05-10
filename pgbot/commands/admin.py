@@ -65,7 +65,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await embed_utils.replace(
             self.response_msg,
             "DB messages synced!",
-            "DB messages have been synced between both the bots"
+            "DB messages have been synced between both the bots",
         )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
@@ -89,14 +89,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 cnt += 1
                 commands.remove(cmd)
 
-        await db_message.edit(
-            content="Blacklisted Commands: " + " ".join(commands)
-        )
+        await db_message.edit(content="Blacklisted Commands: " + " ".join(commands))
 
         await embed_utils.replace(
             self.response_msg,
             "Whitelisted!",
-            f"Successfully whitelisted {cnt} command(s)"
+            f"Successfully whitelisted {cnt} command(s)",
         )
 
     async def cmd_blacklist_cmd(self, *cmds: str):
@@ -121,22 +119,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 cnt += 1
                 commands.append(cmd)
 
-        await db_message.edit(
-            content="Blacklisted Commands: " + " ".join(commands)
-        )
+        await db_message.edit(content="Blacklisted Commands: " + " ".join(commands))
 
         await embed_utils.replace(
             self.response_msg,
             "Blacklisted!",
-            f"Successfully blacklisted {cnt} command(s)"
+            f"Successfully blacklisted {cnt} command(s)",
         )
 
     async def cmd_clock(
-            self,
-            action: str = "",
-            timezone: float = 0,
-            color: Optional[pygame.Color] = None,
-            member: Optional[discord.Member] = None,
+        self,
+        action: str = "",
+        timezone: float = 0,
+        color: Optional[pygame.Color] = None,
+        member: Optional[discord.Member] = None,
     ):
         """
         ->type Admin commands
@@ -169,14 +165,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await embed_utils.replace(
                 self.response_msg,
                 f"Return output (code executed in {utils.format_time(total)}):",
-                utils.code_block(repr(eval_output))
+                utils.code_block(repr(eval_output)),
             )
         except Exception as ex:
             raise BotException(
                 "An exception occured:",
                 utils.code_block(
                     type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
-                )
+                ),
             )
 
     async def cmd_sudo(self, msg: String):
@@ -204,10 +200,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.invoke_msg.delete()
 
     async def cmd_sudo_get(
-            self,
-            msg: discord.Message,
-            attach: bool = False,
-            stats: bool = False
+        self, msg: discord.Message, attach: bool = False, stats: bool = False
     ):
         """
         ->type More admin commands
@@ -231,8 +224,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         None,
                         author_name="Message data",
                         description=f"**[View Original Message]({msg.jump_url})**",
-                        color=0xFFFFAA
-                    )
+                        color=0xFFFFAA,
+                    ),
                 )
             finally:
                 if os.path.exists("messagedata.txt"):
@@ -243,9 +236,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             stats_embed.set_author(name="Message data & stats")
             stats_embed.title = ""
             stats_embed.description = f"```\n{msg.content}```\n\u2800"
-            await self.response_msg.channel.send(
-                embed=stats_embed
-            )
+            await self.response_msg.channel.send(embed=stats_embed)
 
         else:
             await embed_utils.send_2(
@@ -255,23 +246,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     msg.content.replace("```", "\\`\\`\\`")
                 ),
                 fields=(
-                    (
-                        "\u2800",
-                        f"**[View Original Message]({msg.jump_url})**",
-                        False
-                    ),
-                )
+                    ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
+                ),
             )
 
         await self.response_msg.delete()
 
     async def cmd_sudo_clone(
-            self,
-            msg: discord.Message,
-            embeds: bool = True,
-            attach: bool = True,
-            spoiler: bool = False,
-            stats: bool = False,
+        self,
+        msg: discord.Message,
+        embeds: bool = True,
+        attach: bool = True,
+        spoiler: bool = False,
+        stats: bool = False,
     ):
         """
         ->type More admin commands
@@ -305,9 +292,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
-                content=msg.content,
-                embed=msg.embeds[0],
-                files=msg_files
+                content=msg.content, embed=msg.embeds[0], files=msg_files
             )
 
             for i in range(1, len(msg.embeds)):
@@ -318,7 +303,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             cloned_msg = await self.response_msg.channel.send(
                 content=msg.content,
                 embed=msg.embeds[0] if msg.embeds and embeds else None,
-                files=msg_files
+                files=msg_files,
             )
 
         if stats:
@@ -377,7 +362,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await embed_utils.replace(
             self.response_msg,
             "Total memory used:",
-            f"**{utils.format_byte(mem, 4)}**\n({mem} B)"
+            f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
         )
 
     async def cmd_stop(self):
@@ -391,7 +376,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await embed_utils.replace(
             self.response_msg,
             "Stopping bot...",
-            "Change da world,\nMy final message,\nGoodbye."
+            "Change da world,\nMy final message,\nGoodbye.",
         )
         sys.exit(0)
 
@@ -408,7 +393,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         ->type Admin commands
         ->signature pg!archive [origin channel] [quantity] [destination channel]
-[raw=False] [show_header=True] [show_author=True] [raw=False] [divider_str=None]
+        [raw=False] [show_header=True] [show_author=True] [raw=False] [divider_str=None]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -418,8 +403,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if origin == destination:
             raise BotException(
-                "Cannot execute command:",
-                "Origin and destination channels are same"
+                "Cannot execute command:", "Origin and destination channels are same"
             )
 
         if quantity <= 0:
@@ -440,12 +424,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 toolarge_txt.write("This file is too large to be archived.")
 
             if messages and show_header and not raw:
-                start_date_str = messages[0].created_at.replace(
-                    tzinfo=datetime.timezone.utc
-                ).strftime(datetime_format_str)
-                end_date_str = messages[-1].created_at.replace(
-                    tzinfo=datetime.timezone.utc
-                ).strftime(datetime_format_str)
+                start_date_str = (
+                    messages[0]
+                    .created_at.replace(tzinfo=datetime.timezone.utc)
+                    .strftime(datetime_format_str)
+                )
+                end_date_str = (
+                    messages[-1]
+                    .created_at.replace(tzinfo=datetime.timezone.utc)
+                    .strftime(datetime_format_str)
+                )
 
                 if start_date_str == end_date_str:
                     msg = f"On `{start_date_str}` (UTC)"
@@ -456,7 +444,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed=embed_utils.create(
                         title=f"Archive of `#{origin.name}`",
                         description=msg,
-                        color=0xffffff,
+                        color=0xFFFFFF,
                     )
                 )
 
@@ -484,7 +472,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         else:
                             author_embed = embed_utils.create(
                                 description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
-                                            f"**[View Original]({msg.jump_url})**",
+                                f"**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
                                 footer_text=f"\nID: {author.id}",
                                 timestamp=msg.created_at.replace(
@@ -522,20 +510,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await destination.send(content=divider_str.string)
 
         await embed_utils.replace(
-            self.response_msg,
-            f"Successfully archived {len(messages)} message(s)!",
-            ""
+            self.response_msg, f"Successfully archived {len(messages)} message(s)!", ""
         )
 
     async def cmd_poll(
-            self,
-            desc: String,
-            *emojis: String,
-            author: Optional[String] = None,
-            color: Optional[pygame.Color] = None,
-            url: Optional[String] = None,
-            img_url: Optional[String] = None,
-            thumbnail: Optional[String] = None,
+        self,
+        desc: String,
+        *emojis: String,
+        author: Optional[String] = None,
+        color: Optional[pygame.Color] = None,
+        url: Optional[String] = None,
+        img_url: Optional[String] = None,
+        thumbnail: Optional[String] = None,
     ):
         """
         ->type Admin commands
@@ -566,9 +552,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
 
     async def cmd_close_poll(
-            self,
-            msg: discord.Message,
-            color: pygame.Color = pygame.Color("#A83232"),
+        self,
+        msg: discord.Message,
+        color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
         ->type Admin commands

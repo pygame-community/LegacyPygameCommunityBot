@@ -29,15 +29,15 @@ def format_time(seconds: float, decimal_places: int = 4):
     Formats time with a prefix
     """
     for fractions, unit in (
-            (1.0, "s"),
-            (1e-03, "ms"),
-            (1e-06, "\u03bcs"),
-            (1e-09, "ns"),
-            (1e-12, "ps"),
-            (1e-15, "fs"),
-            (1e-18, "as"),
-            (1e-21, "zs"),
-            (1e-24, "ys"),
+        (1.0, "s"),
+        (1e-03, "ms"),
+        (1e-06, "\u03bcs"),
+        (1e-09, "ns"),
+        (1e-12, "ps"),
+        (1e-15, "fs"),
+        (1e-18, "as"),
+        (1e-21, "zs"),
+        (1e-24, "ys"),
     ):
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
@@ -51,11 +51,11 @@ def format_long_time(seconds: int):
     result = []
 
     for name, count in (
-            ('weeks', 604800),
-            ('days', 86400),
-            ('hours', 3600),
-            ('minutes', 60),
-            ('seconds', 1),
+        ("weeks", 604800),
+        ("days", 86400),
+        ("hours", 3600),
+        ("minutes", 60),
+        ("seconds", 1),
     ):
         value = seconds // count
         if value:
@@ -63,7 +63,7 @@ def format_long_time(seconds: int):
             if value == 1:
                 name = name[:-1]
             result.append("{} {}".format(value, name))
-    return ', '.join(result)
+    return ", ".join(result)
 
 
 def format_byte(size: int, decimal_places=3):
@@ -85,15 +85,15 @@ def split_long_message(message: str):
     Splits message string by 2000 characters with safe newline splitting
     """
     split_output = []
-    lines = message.split('\n')
+    lines = message.split("\n")
     temp = ""
 
     for line in lines:
         if len(temp) + len(line) + 1 > 2000:
             split_output.append(temp[:-1])
-            temp = line + '\n'
+            temp = line + "\n"
         else:
-            temp += line + '\n'
+            temp += line + "\n"
 
     if temp:
         split_output.append(temp)
@@ -221,8 +221,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
             fields[data["type"]][0] += f"{data['signature'][2:]}{newline}"
             fields[data["type"]][1] += (
-                f"`{data['signature']}`{newline}"
-                f"{data['description']}{newline * 2}"
+                f"`{data['signature']}`{newline}" f"{data['description']}{newline * 2}"
             )
 
         fields_cpy = fields.copy()
@@ -247,11 +246,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             )
 
         page_system = embed_utils.PagedEmbed(
-            original_msg,
-            embeds,
-            invoker,
-            "help",
-            page
+            original_msg, embeds, invoker, "help", page
         )
 
         await page_system.mainloop()
@@ -263,10 +258,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             if func_name != command:
                 continue
 
-            doc = get_doc_from_docstr(
-                functions[func_name].__doc__,
-                regex
-            )
+            doc = get_doc_from_docstr(functions[func_name].__doc__, regex)
 
             if not doc:
                 # function found, but does not have help.
@@ -275,7 +267,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             body = f"`{doc['signature']}`{newline}"
             body += f"`Category: {doc['type']}`{newline * 2}"
 
-            desc = doc['description']
+            desc = doc["description"]
             if ext_desc := doc.get("extended description"):
                 desc += " " + ext_desc
 
@@ -285,17 +277,14 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
                 body += f"{newline * 2}**Example command(s):**{newline}{example_cmd}"
 
             await embed_utils.replace(
-                original_msg,
-                f"Help for `{func_name}`",
-                body,
-                0xFFFF00
+                original_msg, f"Help for `{func_name}`", body, 0xFFFF00
             )
             return
 
     await embed_utils.replace(
         original_msg,
         "Command not found",
-        f"Help message for command {command} was not found or has no documentation."
+        f"Help message for command {command} was not found or has no documentation.",
     )
 
 
@@ -306,8 +295,10 @@ def format_entries_message(message: discord.Message, entry_type: str):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 
-    msg_link = "[View](https://discordapp.com/channels/" \
-               f"{message.author.guild.id}/{message.channel.id}/{message.id})"
+    msg_link = (
+        "[View](https://discordapp.com/channels/"
+        f"{message.author.guild.id}/{message.channel.id}/{message.id})"
+    )
 
     attachments = ""
     if message.attachments:
@@ -332,19 +323,19 @@ async def format_archive_messages(messages: list[discord.Message]):
     """
     formatted_msgs = []
     for message in messages:
-        triple_block_quote = '```'
+        triple_block_quote = "```"
 
         author = f"{message.author} ({message.author.mention}) [{message.author.id}]"
-        content = message.content.replace(
-            '\n', '\n> ') if message.content else None
+        content = message.content.replace("\n", "\n> ") if message.content else None
 
         if message.attachments:
             attachment_list = []
             for i, attachment in enumerate(message.attachments, 1):
                 filename = repr(attachment.filename)
                 attachment_list.append(
-                    f'{i}:\n    **Name**: {filename}\n    **URL**: {attachment.url}')
-            attachments = '\n> '.join(attachment_list)
+                    f"{i}:\n    **Name**: {filename}\n    **URL**: {attachment.url}"
+                )
+            attachments = "\n> ".join(attachment_list)
         else:
             attachments = ""
 
@@ -354,15 +345,17 @@ async def format_archive_messages(messages: list[discord.Message]):
                 if isinstance(embed, discord.Embed):
                     if isinstance(embed.description, str):
                         desc = embed.description.replace(
-                            triple_block_quote, common.ESC_BACKTICK_3X)
+                            triple_block_quote, common.ESC_BACKTICK_3X
+                        )
                     else:
-                        desc = '\n'
+                        desc = "\n"
 
                     embed_list.append(
-                        f'{i}:\n\t**Title**: {embed.title}\n\t**Description**: ```\n{desc}```\n\t**Image URL**: {embed.image.url}')
+                        f"{i}:\n\t**Title**: {embed.title}\n\t**Description**: ```\n{desc}```\n\t**Image URL**: {embed.image.url}"
+                    )
                 else:
-                    embed_list.append('\n')
-            embeds = '\n> '.join(embed_list)
+                    embed_list.append("\n")
+            embeds = "\n> ".join(embed_list)
         else:
             embeds = ""
 

@@ -84,9 +84,7 @@ async def put_main_doc(name, original_msg):
 
     if splits[0] not in doc_module_dict and not is_builtin:
         await embed_utils.replace(
-            original_msg,
-            "Unknown module!",
-            "No such module was found."
+            original_msg, "Unknown module!", "No such module was found."
         )
         return None, None, None
 
@@ -107,7 +105,7 @@ async def put_main_doc(name, original_msg):
             await embed_utils.replace(
                 original_msg,
                 "Class/function/sub-module not found!",
-                f"There's no such thing here named `{name}`"
+                f"There's no such thing here named `{name}`",
             )
             return None, None, None
 
@@ -116,7 +114,7 @@ async def put_main_doc(name, original_msg):
             original_msg,
             f"Documentation for `{name}`",
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
-            " which does not have documentation."
+            " which does not have documentation.",
         )
         return None, None, None
 
@@ -139,7 +137,7 @@ async def put_main_doc(name, original_msg):
         if cnt >= common.DOC_EMBED_LIMIT:
             text = docs[lastchar:]
         else:
-            text = docs[lastchar: lastchar + 2040]
+            text = docs[lastchar : lastchar + 2040]
 
             # Try to split docs into paragraphs. If that does not work, split
             # based on sentences. If that too does not work, then just split
@@ -157,11 +155,13 @@ async def put_main_doc(name, original_msg):
                     lastchar += 2040
 
         if text:
-            embeds.append(await embed_utils.send_2(
-                None,
-                title=f"Documentation for `{name}`",
-                description=header + utils.code_block(text),
-            ))
+            embeds.append(
+                await embed_utils.send_2(
+                    None,
+                    title=f"Documentation for `{name}`",
+                    description=header + utils.code_block(text),
+                )
+            )
 
         header = ""
         if cnt >= common.DOC_EMBED_LIMIT:
@@ -214,14 +214,17 @@ async def put_doc(name, original_msg, msg_invoker, page=0):
         if not olist:
             continue
 
-        embeds.append(await embed_utils.send_2(
-            None,
-            title=f"{otype} in `{name}`",
-            description=utils.code_block('\n'.join(olist)),
-        ))
+        embeds.append(
+            await embed_utils.send_2(
+                None,
+                title=f"{otype} in `{name}`",
+                description=utils.code_block("\n".join(olist)),
+            )
+        )
 
     main_embeds.extend(embeds)
 
     page_embed = embed_utils.PagedEmbed(
-        original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+        original_msg, main_embeds, msg_invoker, f"doc {name}", page
+    )
     await page_embed.mainloop()

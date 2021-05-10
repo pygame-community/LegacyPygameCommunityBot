@@ -36,15 +36,13 @@ async def on_ready():
     while True:
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.watching,
-                name="discord.io/pygame_community"
+                type=discord.ActivityType.watching, name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.playing,
-                name="in discord.io/pygame_community"
+                type=discord.ActivityType.playing, name="in discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
@@ -91,16 +89,14 @@ async def on_message(msg: discord.Message):
 
     if msg.content.startswith(common.PREFIX):
         if (
-                not common.TEST_MODE
-                or not common.TEST_USER_IDS
-                or msg.author.id in common.TEST_USER_IDS
+            not common.TEST_MODE
+            or not common.TEST_USER_IDS
+            or msg.author.id in common.TEST_USER_IDS
         ):
 
             try:
                 response = await embed_utils.send(
-                    msg.channel,
-                    "Your command is being processed!",
-                    ""
+                    msg.channel, "Your command is being processed!", ""
                 )
 
                 await commands.handle(msg, response)
@@ -124,11 +120,7 @@ async def on_message(msg: discord.Message):
 
         title, fields = utils.format_entries_message(msg, entry_type)
         await embed_utils.send(
-            common.entries_discussion_channel,
-            title,
-            "",
-            color,
-            fields=fields
+            common.entries_discussion_channel, title, "", color, fields=fields
         )
 
 
