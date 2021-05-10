@@ -51,25 +51,14 @@ class CodeBlock:
     """
 
     def __init__(self, code, strip_py=False, strip_lang=False):
-        if strip_py or strip_lang:
-            if code.startswith("```") and code.endswith("```"):
-                for i in range(3, len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
+        code = code.strip().strip("```").strip("`").strip()
+        if strip_py or strip_lang and code[0].isalnum():
+            for i in range(len(code)):
+                if code[i].isspace():
+                    break
+            code = code.lstrip(code[:i])
 
-            elif code.startswith("`") and code.endswith("`"):
-                for i in range(1, len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
-            else:
-                for i in range(len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
-
-        self.code = code.strip("```").strip().strip("\\")  # because \\ causes problems
+        self.code = code.strip("\\")  # because \\ causes problems
 
 class String:
     """
