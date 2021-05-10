@@ -50,27 +50,15 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, code, strip_py=False, strip_lang=False):
-        if strip_py or strip_lang:
-            if code.startswith("```") and code.endswith("```"):
-                for i in range(3, len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
+    def __init__(self, code, strip_lang=False, strip_ticks=False):
+        if strip_ticks:
+            code = code.strip("`")
 
-            elif code.startswith("`") and code.endswith("`"):
-                for i in range(1, len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
-            else:
-                for i in range(len(code)):
-                    if code[i].isspace():
-                        break
-                code = code.lstrip(code[:i])
+        if strip_lang and "\n" in code:
+            code = code[code.index("\n") + 1:]
 
+        self.code = code.strip().strip("\\")  # because \\ causes problems
 
-        self.code = code.strip("```").strip().strip("\\")  # because \\ causes problems
 
 class String:
     """

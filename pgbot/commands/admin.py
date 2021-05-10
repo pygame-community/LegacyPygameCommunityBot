@@ -239,7 +239,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     os.remove("messagedata.txt")
 
         elif stats:
-            stats_embed = embed_utils.get_info_embed(msg)
+            stats_embed = embed_utils.get_msg_info_embed(msg)
             stats_embed.set_author(name="Message data & stats")
             stats_embed.title = ""
             stats_embed.description = f"```\n{msg.content}```\n\u2800"
@@ -323,7 +323,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if stats:
             await self.response_msg.channel.send(
-                embed=embed_utils.get_info_embed(msg),
+                embed=embed_utils.get_msg_info_embed(msg),
                 reference=cloned_msg,
             )
         await self.response_msg.delete()
@@ -403,8 +403,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
-        show_divider: bool = True,
-        divider_str: String = None,
+        divider_str: String = String("-" * 56),
     ):
         """
         ->type Admin commands
@@ -414,10 +413,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!archive, for admins to archive messages
         """
-
-        divider_str = divider_str.string if divider_str is not None else None
-        divider_str = ( (divider_str.string if divider_str is not None else "-" * 56) if show_divider else "")
-
         if destination is None:
             destination = self.channel
 
@@ -466,7 +461,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
             for i, msg in enumerate(messages):
-                msg_link = f"https://discord.com/channels/{msg.guild.id}/{msg.channel.id}/{msg.id}"
                 author = msg.author
                 await destination.trigger_typing()
 
@@ -479,18 +473,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         )
                         for a in msg.attachments
                     ]
-                
+
                 if not raw:
                     author_embed = None
-                    current_divider_str = divider_str
+                    current_divider_str = divider_str.string
                     if show_author:
-                        if i > 0 and messages[i-1].author == author:
+                        if i > 0 and messages[i - 1].author == author:
                             # no author info or divider for mesmages next to each other sharing an author
                             current_divider_str = None
                         else:
                             author_embed = embed_utils.create(
                                 description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
-                                            f"**[View Original]({msg_link})**",
+                                            f"**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
                                 footer_text=f"\nID: {author.id}",
                                 timestamp=msg.created_at.replace(
@@ -498,7 +492,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                                 ),
                                 footer_icon_url=str(author.avatar_url),
                             )
-                        if author_embed or current_divider_str:                        
+                        if author_embed or current_divider_str:
                             await destination.send(
                                 content=current_divider_str,
                                 embed=author_embed,
@@ -524,9 +518,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if os.path.exists(blank_filename):
                 os.remove(blank_filename)
 
-        if show_author and divider_str and not raw:
-            await destination.send(content=divider_str)
-        
+        if show_author and divider_str.string and not raw:
+            await destination.send(content=divider_str.string)
+
         await embed_utils.replace(
             self.response_msg,
             f"Successfully archived {len(messages)} message(s)!",

@@ -124,8 +124,8 @@ def user_clock(t, clock_timezones):
     """
     Generate a 24 hour clock for special server roles
     """
-    font_size = 60
-    names_per_column = 5
+    font_size = 58
+    names_per_column = 6
     image_height = 1280 + font_size * names_per_column
     image = pygame.Surface((1280, image_height)).convert_alpha()
     font = pygame.font.Font(os.path.join(
