@@ -64,7 +64,7 @@ class CodeBlock:
                 code = code[1:]
             elif code[0].isalnum():
                 for i in range(len(code)):
-                    if code[i] == "\n":
+                    if code[i].isspace():
                         break
                 self.lang = code[:i]
                 code = code[i+1:]
