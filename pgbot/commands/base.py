@@ -331,7 +331,13 @@ class BaseCommand:
                 return float(arg)
 
             elif anno == "discord.Member":
-                return await utils.get_mention_from_id(arg, self.invoke_msg)
+                try:
+                    return await utils.get_mention_from_id(arg, self.invoke_msg)
+                except discord.errors.NotFound:
+                    raise BotException(
+                        f"Member does not exist!",
+                        f"The member \"{arg}\" does not exist, please try again."
+                    )
 
             elif anno == "discord.TextChannel":
                 chan_id = utils.filter_id(arg)

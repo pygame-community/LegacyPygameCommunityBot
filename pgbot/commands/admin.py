@@ -24,6 +24,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     """
     Base class for all admin commands
     """
+
     async def handle_cmd(self):
         """
         Temporary function, to divert paths for emsudo commands and other
@@ -131,11 +132,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
 
     async def cmd_clock(
-        self,
-        action: str = "",
-        timezone: float = 0,
-        color: Optional[pygame.Color] = None,
-        member: Optional[discord.Member] = None,
+            self,
+            action: str = "",
+            timezone: float = 0,
+            color: Optional[pygame.Color] = None,
+            member: Optional[discord.Member] = None,
     ):
         """
         ->type Admin commands
@@ -203,10 +204,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.invoke_msg.delete()
 
     async def cmd_sudo_get(
-        self,
-        msg: discord.Message,
-        attach: bool = False,
-        stats: bool = False
+            self,
+            msg: discord.Message,
+            attach: bool = False,
+            stats: bool = False
     ):
         """
         ->type More admin commands
@@ -265,12 +266,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete()
 
     async def cmd_sudo_clone(
-        self,
-        msg: discord.Message,
-        embeds: bool = True,
-        attach: bool = True,
-        spoiler: bool = False,
-        stats: bool = False,
+            self,
+            msg: discord.Message,
+            embeds: bool = True,
+            attach: bool = True,
+            spoiler: bool = False,
+            stats: bool = False,
     ):
         """
         ->type More admin commands
@@ -343,7 +344,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
         await self.response_msg.delete()
 
-    async def cmd_member_info(self, member: discord.Member):
+    async def cmd_member_info(self, member: Optional[discord.Member] = None):
         """
         ->type More admin commands
         ->signature pg!member_info [member]
@@ -353,10 +354,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!member_info, to get information about a member.
         """
+        if member is not None:
+            await self.response_msg.channel.send(
+                embed=embed_utils.get_user_info_embed(member)
+            )
+        else:
+            await self.response_msg.channel.send(
+                embed=embed_utils.get_user_info_embed(self.invoke_msg.author)
+            )
 
-        await self.response_msg.channel.send(
-            embed=embed_utils.get_user_info_embed(member)
-        )
         await self.response_msg.delete()
 
     async def cmd_heap(self):
@@ -528,14 +534,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
 
     async def cmd_poll(
-        self,
-        desc: String,
-        *emojis: String,
-        author: Optional[String] = None,
-        color: Optional[pygame.Color] = None,
-        url: Optional[String] = None,
-        img_url: Optional[String] = None,
-        thumbnail: Optional[String] = None,
+            self,
+            desc: String,
+            *emojis: String,
+            author: Optional[String] = None,
+            color: Optional[pygame.Color] = None,
+            url: Optional[String] = None,
+            img_url: Optional[String] = None,
+            thumbnail: Optional[String] = None,
     ):
         """
         ->type Admin commands
@@ -566,9 +572,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
 
     async def cmd_close_poll(
-        self,
-        msg: discord.Message,
-        color: pygame.Color = pygame.Color("#A83232"),
+            self,
+            msg: discord.Message,
+            color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
         ->type Admin commands

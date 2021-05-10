@@ -52,22 +52,50 @@ class UserCommand(BaseCommand):
             title="Pingy Pongy"
         )
 
-    async def cmd_remind(self, msg: String, time: int):
+    async def cmd_remind(self, time_to_remind: str, msg: String):
         """
         ->type Other commands
-        ->signature pg!remind [message string] [time in minutes]
+        ->signature pg!remind [time] [message string]
         ->description Set a reminder to yourself
+        ->extended description
+        Allows you to set a reminder to yourself
+        `time`: Parameter that specifies the time to remind
+        (E.g 1h42m13s = 1 hour, 42 minutes, and 13 seconds)
+        `message string`: String that includes your message
+        (E.g "!d bump the server")
+        Note that the maximum time for the reminder is 6 hours
+        ->example command pg!remind 1h3m51s "!d bump the server"
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
-        if time < 0:
+        previous = ''
+        time_formats = {'h': 60 * 60, "m": 60, "s": 1}
+        total_seconds = 0
+        for time_format, sec_per_time_format in time_formats.items():
+            if time_format in time_to_remind:
+                semiparsed_var = time_to_remind[:time_to_remind.index(time_format) + 1].replace(previous, '')
+                previous = time_to_remind[:time_to_remind.index(time_format) + 1]
+                try:
+                    total_seconds += int(semiparsed_var.replace(time_format, '')) * sec_per_time_format
+                except ValueError:
+                    raise BotException(
+                        "Failed to set reminder!",
+                        "There is something wrong with your time parameter.\n"
+                        "Please check that it is correct and try again"
+                    )
+
+        if total_seconds < 0:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
-                + "\n Or can it? *vsauce music plays in the background*"
+                "\n Or does it? \\*vsauce music plays in the background\\*"
             )
-
-        if time > 360:
+        elif total_seconds == 0:
+            raise BotException(
+                "Failed to set reminder!",
+                "Time cannot be 0, what would even happen if time is 0?"
+            )
+        elif total_seconds > 360 * 60:
             raise BotException(
                 "Failed to set reminder!",
                 "The maximum time for which you can set reminder is 6 hours"
@@ -76,15 +104,17 @@ class UserCommand(BaseCommand):
         await embed_utils.replace(
             self.response_msg,
             f"Reminder set!",
-            f"Gonna remind {self.author.name} in {time} minutes.\n"
-            + "But do not solely rely on me though, cause I might forget to "
-            + "remind you in case I am sleeping."
+            f"Gonna remind {self.author.name} in "
+            f"{f'{total_seconds // 60} minute(s)' if total_seconds // 60 != 0 else ''}"
+            f"{f' and' if total_seconds // 60 != 0 and total_seconds % 60 != 0 else ''} "
+            f"{f'{total_seconds % 60} second(s)' if total_seconds % 60 != 0 else '.'}\n"
+            "But do not solely rely on me though, cause I might forget to "
+            "remind you in case I am sleeping."
         )
-        await asyncio.sleep(time * 60)
+        await asyncio.sleep(total_seconds)
 
-        sendmsg = "__**Reminder for "
-        sendmsg += self.author.mention + ":**__\n" + msg.string
-        await self.channel.send(sendmsg)
+        sendmsg = f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+        await self.invoke_msg.reply(sendmsg)
 
     async def cmd_clock(
             self,
@@ -647,6 +677,7 @@ class UserCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
+
         # TODO: if someone can refactor this, that'd be bery nais
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
@@ -697,6 +728,7 @@ class UserCommand(BaseCommand):
                 title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
                       f"in #{resource_entries_channel.name}"
             )
+
             for msg in top_msg:
                 try:
                     name = msg.content.split("\n")[1].strip().replace("**", "")
@@ -738,7 +770,6 @@ class UserCommand(BaseCommand):
                 f"Retrieved 0 entries in #{resource_entries_channel.name}",
                 "There are no results of resources with those parameters. Please try again."
             )
-
 
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author
