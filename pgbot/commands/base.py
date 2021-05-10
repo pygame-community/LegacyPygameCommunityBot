@@ -55,13 +55,8 @@ class CodeBlock:
         self.text = code = text
         md_bacticks = ("```", "`")
 
-        if no_backticks:
-            if code[0].isalnum():
-                for i in range(len(code)):
-                    if code[i].isspace():
-                        break
-                self.lang = code[:i]
-                code = code[i+1:]
+        if no_backticks and "\n" in code:
+            code = code[code.index("\n") + 1:]
         
         elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
             code = code.strip("`")
@@ -132,7 +127,7 @@ HiddenArg = TypeVar("HiddenArg")
 
 SPLIT_FLAGS = [
     ("```", CodeBlock, (True,)),
-    ("`", CodeBlock, ()),
+    ("`", CodeBlock, (True,)),
     ('"', String, ()),
 ]
 
