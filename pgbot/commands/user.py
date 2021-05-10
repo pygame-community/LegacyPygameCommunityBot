@@ -69,24 +69,33 @@ class UserCommand(BaseCommand):
         Implement pg!remind, for users to set reminders for themselves
         """
         previous = ''
-        parsed_seconds = {}
-        time_to_remind_str = time_to_remind
-        time_formats = {'h': 60*60, "m": 60, "s": 1}
+        time_formats = {'h': 60 * 60, "m": 60, "s": 1}
         total_seconds = 0
         for time_format, sec_per_time_format in time_formats.items():
-            if time_format in time_to_remind_str:
-                semiparsed_var = time_to_remind_str[:time_to_remind_str.index(time_format) + 1].replace(previous, '')
-                previous = time_to_remind_str[:time_to_remind_str.index(time_format) + 1]
-                parsed_seconds[time_format] = semiparsed_var.replace(time_format, '')
-                total_seconds += int(semiparsed_var.replace(time_format, ''))*sec_per_time_format
+            if time_format in time_to_remind:
+                semiparsed_var = time_to_remind[:time_to_remind.index(time_format) + 1].replace(previous, '')
+                previous = time_to_remind[:time_to_remind.index(time_format) + 1]
+                try:
+                    total_seconds += int(semiparsed_var.replace(time_format, '')) * sec_per_time_format
+                except ValueError:
+                    raise BotException(
+                        "Failed to set reminder!",
+                        "There is something wrong with your time parameter.\n"
+                        "Please check that it is correct and try again"
+                    )
+
         if total_seconds < 0:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
                 "\n Or does it? \\*vsauce music plays in the background\\*"
             )
-
-        if total_seconds > 360*60:
+        elif total_seconds == 0:
+            raise BotException(
+                "Failed to set reminder!",
+                "Time cannot be 0, what would even happen if time is 0?"
+            )
+        elif total_seconds > 360 * 60:
             raise BotException(
                 "Failed to set reminder!",
                 "The maximum time for which you can set reminder is 6 hours"
@@ -668,6 +677,7 @@ class UserCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
+
         # TODO: if someone can refactor this, that'd be bery nais
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
@@ -677,7 +687,7 @@ class UserCommand(BaseCommand):
         resource_entries_channel = self.invoke_msg.guild.get_channel(
             common.RESOURCE_ENTRIES_CHANNEL_ID
         )
-        
+
         msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
 
         if filter_tag:
@@ -760,7 +770,6 @@ class UserCommand(BaseCommand):
                 f"Retrieved 0 entries in #{resource_entries_channel.name}",
                 "There are no results of resources with those parameters. Please try again."
             )
-
 
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author
