@@ -1,7 +1,15 @@
 """
 A simple script to automate code cleanups.
 """
-import os, glob
+import os
+import pathlib
+import glob
+
+try:
+    import black
+except ImportError:
+    print("We use black to format code. Please install it with 'pip install black'")
+    raise SystemExit
 
 
 def cleanup_code():
@@ -9,8 +17,13 @@ def cleanup_code():
     Clean up all files of a given extension under a directory
     """
     for filepath in glob.iglob(f"**/*.py", recursive=True):
-        print("Formatting file: ", filepath)
-        os.system(f"python -m black {filepath}")
+        path = pathlib.Path(os.getcwd(), filepath)
+        if black.format_file_in_place(
+            path, False, black.FileMode(), black.WriteBack.YES
+        ):
+            print("Formatted file: ", filepath)
+        else:
+            print(f"Skipping file {filepath} as it is already formatted")
 
 
 if __name__ == "__main__":

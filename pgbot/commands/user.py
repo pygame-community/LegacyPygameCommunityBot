@@ -15,7 +15,7 @@ from pgbot.commands.base import BaseCommand, BotException, CodeBlock, HiddenArg,
 
 
 class UserCommand(BaseCommand):
-    """ Base class to handle user commands. """
+    """Base class to handle user commands."""
 
     async def cmd_version(self):
         """
