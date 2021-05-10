@@ -52,6 +52,64 @@ class UserCommand(BaseCommand):
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
         )
 
+    async def cmd_rules(self, *rules: int):
+        """
+        ->type Get help
+        ->signature pg!rules [*rule_numbers]
+        ->description Get rules of the server
+        -----
+        Implement pg!rules, to get rules of the server
+        """
+        if not rules:
+            raise BotException("Please enter rule number(s)", "")
+
+        rule_chan = self.guild.get_channel(common.RULES_CHANNEL_ID)
+        fields = []
+        for rule in sorted(set(rules)):
+            if 0 < rule <= len(common.RULES):
+                msg = await rule_chan.fetch_message(common.RULES[rule - 1])
+                value = msg.content
+
+            elif rule == 42:
+                value = (
+                    "*Shhhhh*, you have found an unwritten rule!\n"
+                    "Click [here](https://bitly.com/98K8eH) to gain the most "
+                    "secret and ultimate info!"
+                )
+
+            else:
+                value = "Does not exist lol"
+
+            fields.append(
+                {
+                    "name": f"__Rule number {rule}:__",
+                    "value": value,
+                    "inline": False,
+                }
+            )
+
+        if len(rules) == 1:
+            await embed_utils.replace_2(
+                self.response_msg,
+                author_name="Pygame Community Discord",
+                author_icon_url=common.PYGAME_SNEK,
+                title=fields[0]["name"],
+                description=fields[0]["value"][:2048],
+                color=0x228B22,
+            )
+        else:
+            for field in fields:
+                field["value"] = field["value"][:1024]
+
+            await embed_utils.replace_2(
+                self.response_msg,
+                author_name="Pygame Community Discord",
+                author_icon_url=common.PYGAME_SNEK,
+                title="Rules",
+                fields=fields,
+                color=0x228B22,
+            )
+
     async def cmd_remind(self, time: str, msg: String):
         """
         ->type Other commands
