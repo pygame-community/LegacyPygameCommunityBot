@@ -50,15 +50,32 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, code, strip_py=False, strip_lang=False):
-        code = code.strip().strip("```").strip("`").strip()
-        if strip_py or strip_lang and code[0].isalnum():
-            for i in range(len(code)):
-                if code[i].isspace():
-                    break
-            code = code.lstrip(code[:i])
+    def __init__(self, text, no_backticks=False):
+        self.lang = None
+        self.text = code = text
+        md_bacticks = ("```", "`")
 
-        self.code = code.strip("\\")  # because \\ causes problems
+        if no_backticks:
+            if code[0].isalnum():
+                for i in range(len(code)):
+                    if code[i].isspace():
+                        break
+                self.lang = code[:i]
+                code = code[i+1:]
+        
+        elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
+            code = code.strip("`")
+            if code[0].isspace():
+                code = code[1:]
+            elif code[0].isalnum():
+                for i in range(len(code)):
+                    if code[i].isspace():
+                        break
+                self.lang = code[:i]
+                code = code[i+1:]
+
+        self.code = code.strip().strip("\\")  # because \\ causes problems
+
 
 class String:
     """
@@ -319,7 +336,13 @@ class BaseCommand:
                 return float(arg)
 
             elif anno == "discord.Member":
-                return await utils.get_mention_from_id(arg, self.invoke_msg)
+                try:
+                    return await utils.get_mention_from_id(arg, self.invoke_msg)
+                except discord.errors.NotFound:
+                    raise BotException(
+                        f"Member does not exist!",
+                        f"The member \"{arg}\" does not exist, please try again."
+                    )
 
             elif anno == "discord.TextChannel":
                 chan_id = utils.filter_id(arg)

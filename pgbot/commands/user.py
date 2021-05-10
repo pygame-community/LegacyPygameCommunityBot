@@ -45,29 +45,58 @@ class UserCommand(BaseCommand):
         if sec < sec2:
             sec2 = sec
 
-        await embed_utils.replace_2(
+        await embed_utils.replace(
             self.response_msg,
-            description=f"The bots ping is `{utils.format_time(sec, 0)}`\n"
-                        f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
-            title="Pingy Pongy"
+            "Pingy Pongy",
+            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+            f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
         )
 
-    async def cmd_remind(self, msg: String, time: int):
+    async def cmd_remind(self, time: str, msg: String):
         """
         ->type Other commands
-        ->signature pg!remind [message string] [time in minutes]
+        ->signature pg!remind [time] [message string]
         ->description Set a reminder to yourself
+        ->extended description
+        Allows you to set a reminder to yourself
+        `time`: Parameter that specifies the time to remind
+        (E.g 1h42m13s = 1 hour, 42 minutes, and 13 seconds)
+        `message string`: String that includes your message
+        (E.g "!d bump the server")
+        Note that the maximum time for the reminder is 6 hours
+        ->example command pg!remind 1h3m51s "!d bump the server"
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
-        if time < 0:
+        previous = ''
+        time_formats = {'h': 60 * 60, "m": 60, "s": 1}
+        sec = 0
+        for time_format, dt in time_formats.items():
+            if time_format in time:
+                format_split = time[:time.index(time_format) + 1]
+                parsed_time = format_split.replace(previous, '')
+                previous = format_split
+                try:
+                    sec += int(parsed_time.replace(time_format, '')) * dt
+                except ValueError:
+                    raise BotException(
+                        "Failed to set reminder!",
+                        "There is something wrong with your time parameter.\n"
+                        "Please check that it is correct and try again"
+                    )
+
+        if sec < 0:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
-                + "\n Or can it? *vsauce music plays in the background*"
+                "\n Or does it? \\*vsauce music plays in the background\\*"
             )
-
-        if time > 360:
+        elif sec == 0:
+            raise BotException(
+                "Failed to set reminder!",
+                "Time cannot be 0, what would even happen if time is 0?"
+            )
+        elif sec > 360 * 60:
             raise BotException(
                 "Failed to set reminder!",
                 "The maximum time for which you can set reminder is 6 hours"
@@ -75,16 +104,18 @@ class UserCommand(BaseCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            f"Reminder set!",
-            f"Gonna remind {self.author.name} in {time} minutes.\n"
-            + "But do not solely rely on me though, cause I might forget to "
-            + "remind you in case I am sleeping."
+            "Reminder set!",
+            f"Gonna remind {self.author.name} in "
+            f"{f'{sec // 60} minute(s)' if sec // 60 else ''}"
+            f"{f' and' if sec // 60 and sec % 60 else ''} "
+            f"{f'{sec % 60} second(s)' if sec % 60 else '.'}\n"
+            "But do not solely rely on me though, cause I might forget to "
+            "remind you in case I am sleeping."
         )
-        await asyncio.sleep(time * 60)
-
-        sendmsg = "__**Reminder for "
-        sendmsg += self.author.mention + ":**__\n" + msg.string
-        await self.channel.send(sendmsg)
+        await asyncio.sleep(sec)
+        await self.invoke_msg.reply(
+            f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+        )
 
     async def cmd_clock(
             self,
@@ -110,7 +141,8 @@ class UserCommand(BaseCommand):
         """
         msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
         db_msg = await self.guild.get_channel(
-            common.DB_CHANNEL_ID).fetch_message(msg_id)
+            common.DB_CHANNEL_ID
+        ).fetch_message(msg_id)
 
         timezones = await clock.decode_from_msg(db_msg)
         if action:
@@ -173,7 +205,7 @@ class UserCommand(BaseCommand):
             await self.response_msg.channel.send(file=discord.File(
                 f"temp{t}.png"
             )
-            )
+        )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
@@ -292,7 +324,7 @@ class UserCommand(BaseCommand):
         Implement pg!pet, to pet the bot
         """
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
-                emotion.pet_anger / common.JUMPSCARE_THRESHOLD
+            emotion.pet_anger / common.JUMPSCARE_THRESHOLD
         ) - common.PET_COST
 
         if emotion.pet_anger < common.PET_COST:
@@ -647,6 +679,7 @@ class UserCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
+
         # TODO: if someone can refactor this, that'd be bery nais
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
@@ -664,7 +697,8 @@ class UserCommand(BaseCommand):
             filter_tag = [tag.strip() for tag in filter_tag]
             for tag in filter_tag:
                 tag = tag.lower()
-                msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower() or f"tag-<{tag}>" in x.content.lower(), msgs))
+                msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower(
+                ) or f"tag-<{tag}>" in x.content.lower(), msgs))
 
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
@@ -697,6 +731,7 @@ class UserCommand(BaseCommand):
                 title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
                       f"in #{resource_entries_channel.name}"
             )
+
             for msg in top_msg:
                 try:
                     name = msg.content.split("\n")[1].strip().replace("**", "")
@@ -707,7 +742,8 @@ class UserCommand(BaseCommand):
                         field_name = f"{name[:40]}..."
                     field_name = f"{i}. {name}, posted by {msg.author.display_name}"
 
-                    value = msg.content.split(name)[1].removeprefix("**").strip()
+                    value = msg.content.split(
+                        name)[1].removeprefix("**").strip()
                     if len(value) > 80:
                         value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"
@@ -727,7 +763,7 @@ class UserCommand(BaseCommand):
                         inline=True
                     )
                     i += 1
-                except IndexError as err:
+                except IndexError:
                     pass
 
             pages.append(current_embed)
@@ -738,7 +774,6 @@ class UserCommand(BaseCommand):
                 f"Retrieved 0 entries in #{resource_entries_channel.name}",
                 "There are no results of resources with those parameters. Please try again."
             )
-
 
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author

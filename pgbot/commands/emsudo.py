@@ -31,7 +31,7 @@ class EmsudoCommand(OldBaseCommand):
         Implement pg!emsudo_c, for admins to send embeds via the bot
         """
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -111,7 +111,7 @@ class EmsudoCommand(OldBaseCommand):
         Implement pg!emsudo_edit_c, for admins to edit embeds via the bot
         """
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string, strip_lang=True, strip_ticks=True).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -262,7 +262,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -614,7 +614,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -979,7 +979,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1377,7 +1377,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1640,7 +1640,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -1769,7 +1769,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2063,7 +2063,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2191,7 +2191,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2506,7 +2506,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2639,7 +2639,7 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -2908,7 +2908,7 @@ class EmsudoCommand(OldBaseCommand):
                 return
 
         try:
-            args = eval(CodeBlock(self.string, strip_py=True).code)
+            args = eval(CodeBlock(self.string).code)
         except Exception as e:
             tbs = traceback.format_exception(type(e), e, e.__traceback__)
             # Pop out the first entry in the traceback, because that's
@@ -3108,7 +3108,8 @@ class EmsudoCommand(OldBaseCommand):
 
         if break_1:
             try:
-                args = eval(CodeBlock(self.string, strip_py=True).code)
+                args = eval(
+                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
@@ -3355,7 +3356,8 @@ class EmsudoCommand(OldBaseCommand):
 
         else:
             try:
-                args = eval(CodeBlock(self.string, strip_py=True).code)
+                args = eval(
+                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
