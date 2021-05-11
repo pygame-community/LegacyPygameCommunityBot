@@ -737,20 +737,29 @@ class UserCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
-
-        # TODO: if someone can refactor this, that'd be bery nais
+        # NOTE: It is hardcoded in the bot to remove some messages in resource-entries, if you want to remove more, add the ID to the
+        #       list below
+        msgs_to_filter = [817137523905527889, 810942002114986045]
+        
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
                 tag = tag.replace(to_replace, "")
             return tag.title()
+        
+        def filter_func(x):
+            return x.id != msg_to_filter
 
         resource_entries_channel = self.invoke_msg.guild.get_channel(
-            common.RESOURCE_ENTRIES_CHANNEL_ID
+            common.ENTRY_CHANNEL_IDS["resource"]
         )
 
         msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
 
+        for msg_to_filter in msgs_to_filter:
+            msgs = list(filter(filter_func, msgs))
+
         if filter_tag:
+            # Filter messages based on tag
             filter_tag = filter_tag.string.split(",")
             filter_tag = [tag.strip() for tag in filter_tag]
             for tag in filter_tag:
@@ -761,12 +770,15 @@ class UserCommand(BaseCommand):
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
         if limit is not None:
+            # Uses list slicing instead of TextChannel.history's limit param to include all param specified messages
             msgs = msgs[:limit]
 
         tags = {}
         old_tags = {}
         links = {}
         for msg in msgs:
+            # Stores the tags (tag_{Your tag here}), old tags (tag-<{your tag here}>),
+            # And links inside separate dicts with regex
             links[msg.id] = [
                 match.group()
                 for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
@@ -784,9 +796,11 @@ class UserCommand(BaseCommand):
         copy_msgs = msgs[:]
         i = 1
         while msgs:
+            # Constructs embeds based on messages, and store them in pages to be used in the paginator
             top_msg = msgs[:6]
             current_embed = discord.Embed(
-                title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
+                title=f"Retrieved {len(copy_msgs)} "
+                      f"{'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
                       f"in #{resource_entries_channel.name}"
             )
 
@@ -806,14 +820,17 @@ class UserCommand(BaseCommand):
                         value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"
 
-                    for j, link in enumerate(links[msg.id]):
-                        value += f", [Link {j + 1}]({link})"
+                    for j, link in enumerate(links[msg.id], 1):
+                        value += f", [Link {j}]({link})"
 
                     value += "\nTags: "
                     if tags[msg.id]:
                         value += "".join(tags[msg.id]).removesuffix(",")
                     else:
                         value += "".join(old_tags[msg.id]).removesuffix(",")
+
+                    if not (tags[msg.id] or old_tags[msg.id]):
+                        value += "None"
 
                     current_embed.add_field(
                         name=field_name,
@@ -822,6 +839,7 @@ class UserCommand(BaseCommand):
                     )
                     i += 1
                 except IndexError:
+                    # Suppresses IndexError because of rare bug
                     pass
 
             pages.append(current_embed)
@@ -833,6 +851,7 @@ class UserCommand(BaseCommand):
                 "There are no results of resources with those parameters. Please try again."
             )
 
+        # Creates a paginator for the caller to use
         page_embed = embed_utils.PagedEmbed(
             self.response_msg, pages, caller=self.invoke_msg.author
         )
