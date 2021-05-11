@@ -11,13 +11,11 @@ import discord
 import pygame
 
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
-from pgbot.commands.base import (
-    BaseCommand, BotException, CodeBlock, HiddenArg, String
-)
+from pgbot.commands.base import BaseCommand, BotException, CodeBlock, HiddenArg, String
 
 
 class UserCommand(BaseCommand):
-    """ Base class to handle user commands. """
+    """Base class to handle user commands."""
 
     async def cmd_version(self):
         """
@@ -49,7 +47,7 @@ class UserCommand(BaseCommand):
             self.response_msg,
             "Pingy Pongy",
             f"The bots ping is `{utils.format_time(sec, 0)}`\n"
-            f"The Discord API latency is `{utils.format_time(sec2, 0)}`"
+            f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
 
     async def cmd_rules(self, *rules: int):
@@ -126,38 +124,38 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
-        previous = ''
-        time_formats = {'h': 60 * 60, "m": 60, "s": 1}
+        previous = ""
+        time_formats = {"h": 60 * 60, "m": 60, "s": 1}
         sec = 0
         for time_format, dt in time_formats.items():
             if time_format in time:
-                format_split = time[:time.index(time_format) + 1]
-                parsed_time = format_split.replace(previous, '')
+                format_split = time[: time.index(time_format) + 1]
+                parsed_time = format_split.replace(previous, "")
                 previous = format_split
                 try:
-                    sec += int(parsed_time.replace(time_format, '')) * dt
+                    sec += int(parsed_time.replace(time_format, "")) * dt
                 except ValueError:
                     raise BotException(
                         "Failed to set reminder!",
                         "There is something wrong with your time parameter.\n"
-                        "Please check that it is correct and try again"
+                        "Please check that it is correct and try again",
                     )
 
         if sec < 0:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
-                "\n Or does it? \\*vsauce music plays in the background\\*"
+                "\n Or does it? \\*vsauce music plays in the background\\*",
             )
         elif sec == 0:
             raise BotException(
                 "Failed to set reminder!",
-                "Time cannot be 0, what would even happen if time is 0?"
+                "Time cannot be 0, what would even happen if time is 0?",
             )
         elif sec > 360 * 60:
             raise BotException(
                 "Failed to set reminder!",
-                "The maximum time for which you can set reminder is 6 hours"
+                "The maximum time for which you can set reminder is 6 hours",
             )
 
         await embed_utils.replace(
@@ -168,7 +166,7 @@ class UserCommand(BaseCommand):
             f"{f' and' if sec // 60 and sec % 60 else ''} "
             f"{f'{sec % 60} second(s)' if sec % 60 else '.'}\n"
             "But do not solely rely on me though, cause I might forget to "
-            "remind you in case I am sleeping."
+            "remind you in case I am sleeping.",
         )
         await asyncio.sleep(sec)
         await self.invoke_msg.reply(
@@ -176,11 +174,11 @@ class UserCommand(BaseCommand):
         )
 
     async def cmd_clock(
-            self,
-            action: str = "",
-            timezone: float = 0,
-            color: Optional[pygame.Color] = None,
-            member: HiddenArg = None,
+        self,
+        action: str = "",
+        timezone: float = 0,
+        color: Optional[pygame.Color] = None,
+        member: HiddenArg = None,
     ):
         """
         ->type Get help
@@ -198,9 +196,9 @@ class UserCommand(BaseCommand):
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
         msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
-        db_msg = await self.guild.get_channel(
-            common.DB_CHANNEL_ID
-        ).fetch_message(msg_id)
+        db_msg = await self.guild.get_channel(common.DB_CHANNEL_ID).fetch_message(
+            msg_id
+        )
 
         timezones = await clock.decode_from_msg(db_msg)
         if action:
@@ -213,14 +211,13 @@ class UserCommand(BaseCommand):
                     raise BotException(
                         "Cannot update clock!",
                         "You cannot run clock update commands because you are "
-                        + "not on the clock"
+                        + "not on the clock",
                     )
 
             if action == "update":
                 if abs(timezone) > 12:
                     raise BotException(
-                        "Failed to update clock!",
-                        "Timezone offset out of range"
+                        "Failed to update clock!", "Timezone offset out of range"
                     )
 
                 for cnt, (mem, _, _) in enumerate(timezones):
@@ -233,7 +230,7 @@ class UserCommand(BaseCommand):
                     if color is None:
                         raise BotException(
                             "Failed to update clock!",
-                            "Color argument is required when adding new people"
+                            "Color argument is required when adding new people",
                         )
                     timezones.append([member, timezone, color])
                     timezones.sort(key=lambda x: x[1])
@@ -246,30 +243,25 @@ class UserCommand(BaseCommand):
                 else:
                     raise BotException(
                         "Failed to update clock!",
-                        "Cannot remove non-existing person from clock"
+                        "Cannot remove non-existing person from clock",
                     )
 
             else:
                 raise BotException(
-                    "Failed to update clock!",
-                    f"Invalid action specifier {action}"
+                    "Failed to update clock!", f"Invalid action specifier {action}"
                 )
 
             await db_msg.edit(content=clock.encode_to_msg(timezones))
 
         t = time.time()
         pygame.image.save(clock.user_clock(t, timezones), f"temp{t}.png")
-        common.cmd_logs[self.invoke_msg.id] = \
-            await self.response_msg.channel.send(file=discord.File(
-                f"temp{t}.png"
-            )
+        common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
+            file=discord.File(f"temp{t}.png")
         )
         await self.response_msg.delete()
         os.remove(f"temp{t}.png")
 
-    async def cmd_doc(
-            self, name: str, page: HiddenArg = 0, msg: HiddenArg = None
-    ):
+    async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
         ->signature pg!doc [module.Class.method]
@@ -313,9 +305,7 @@ class UserCommand(BaseCommand):
         if returned.exc is None:
             if returned.img:
                 if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                    await self.channel.send(
-                        file=discord.File(f"temp{tstamp}.png")
-                    )
+                    await self.channel.send(file=discord.File(f"temp{tstamp}.png"))
                 else:
                     await embed_utils.send(
                         self.channel,
@@ -328,24 +318,21 @@ class UserCommand(BaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 f"Returned text (code executed in {utils.format_time(dur)}):",
-                utils.code_block(returned.text)
+                utils.code_block(returned.text),
             )
 
         else:
             await embed_utils.replace(
                 self.response_msg,
                 "An exception occured:",
-                utils.code_block(", ".join(map(str, returned.exc.args)))
+                utils.code_block(", ".join(map(str, returned.exc.args))),
             )
 
         # To reset the trigger_typing counter
         await (await self.channel.send("\u200b")).delete()
 
     async def cmd_help(
-            self,
-            name: Optional[str] = None,
-            page: HiddenArg = 0,
-            msg: HiddenArg = None
+        self, name: Optional[str] = None, page: HiddenArg = 0, msg: HiddenArg = None
     ):
         """
         ->type Get help
@@ -360,18 +347,10 @@ class UserCommand(BaseCommand):
 
         if name is None:
             await utils.send_help_message(
-                msg,
-                self.author,
-                self.cmds_and_funcs,
-                page=page
+                msg, self.author, self.cmds_and_funcs, page=page
             )
         else:
-            await utils.send_help_message(
-                msg,
-                self.author,
-                self.cmds_and_funcs,
-                name
-            )
+            await utils.send_help_message(msg, self.author, self.cmds_and_funcs, name)
 
     async def cmd_pet(self):
         """
@@ -389,14 +368,16 @@ class UserCommand(BaseCommand):
             emotion.pet_anger = common.PET_COST
         emotion.last_pet = time.time()
 
-        fname = "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
+        fname = (
+            "die.gif" if emotion.pet_anger > common.JUMPSCARE_THRESHOLD else "pet.gif"
+        )
         await embed_utils.replace(
             self.response_msg,
             "",
             "",
             0xFFFFAA,
             "https://raw.githubusercontent.com/PygameCommunityDiscord/"
-            + f"PygameCommunityBot/main/assets/images/{fname}"
+            + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
     async def cmd_vibecheck(self):
@@ -427,7 +408,7 @@ class UserCommand(BaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
-                "Snek is happy. Awww, don't be sorry."
+                "Snek is happy. Awww, don't be sorry.",
             )
             return
 
@@ -440,7 +421,7 @@ class UserCommand(BaseCommand):
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Your pythonic lord accepts your apology.\n"
-                + f"Now go to code again.\nThe boncc count is {emotion.boncc_count}"
+                + f"Now go to code again.\nThe boncc count is {emotion.boncc_count}",
             )
         else:
             await embed_utils.replace(
@@ -448,7 +429,7 @@ class UserCommand(BaseCommand):
                 "Ask forgiveness from snek?",
                 "How did you dare to boncc a snake?\nBold of you to assume "
                 + "I would apologize to you, two-feet-standing being!\nThe "
-                + f"boncc count is {emotion.boncc_count}"
+                + f"boncc count is {emotion.boncc_count}",
             )
 
     async def cmd_bonkcheck(self):
@@ -463,13 +444,11 @@ class UserCommand(BaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "The snek is hurt and angry:",
-                f"The boncc count is {emotion.boncc_count}"
+                f"The boncc count is {emotion.boncc_count}",
             )
         else:
             await embed_utils.replace(
-                self.response_msg,
-                "The snek is right",
-                "Please, don't hit the snek"
+                self.response_msg, "The snek is right", "Please, don't hit the snek"
             )
 
     async def cmd_refresh(self, msg: discord.Message):
@@ -485,19 +464,19 @@ class UserCommand(BaseCommand):
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
-                "the id of the message is correct."
+                "the id of the message is correct.",
             )
 
         data = msg.embeds[0].footer.text.split("\n")
 
-        page = re.search(r'\d+', data[0]).group()
+        page = re.search(r"\d+", data[0]).group()
         command = data[2].replace("Command: ", "").split()
 
         if not page or not command or not self.cmds_and_funcs.get(command[0]):
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
-                "the id of the message is correct."
+                "the id of the message is correct.",
             )
 
         await self.response_msg.delete()
@@ -507,19 +486,15 @@ class UserCommand(BaseCommand):
             if len(command) == 1:
                 command.append(None)
 
-            await self.cmd_help(
-                command[1], page=int(page) - 1, msg=msg
-            )
+            await self.cmd_help(command[1], page=int(page) - 1, msg=msg)
         elif command[0] == "doc":
-            await self.cmd_doc(
-                command[1], page=int(page) - 1, msg=msg
-            )
+            await self.cmd_doc(command[1], page=int(page) - 1, msg=msg)
 
     async def cmd_poll(
-            self,
-            desc: String,
-            *emojis: String,
-            admin_embed: HiddenArg = {},
+        self,
+        desc: String,
+        *emojis: String,
+        admin_embed: HiddenArg = {},
     ):
         """
         ->type Other commands
@@ -535,7 +510,7 @@ class UserCommand(BaseCommand):
             raise BotException(
                 "Cannot run poll commands on DM",
                 "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!"
+                + "Please run your poll on the Pygame Community Server!",
             )
 
         newline = "\n"
@@ -556,13 +531,13 @@ class UserCommand(BaseCommand):
             "author": {
                 "name": self.author.name,
             },
-            "color": 0x34a832,
+            "color": 0x34A832,
             "footer": {
                 "text": f"By {self.author.display_name}{newline}"
-                        f"({self.author.id}){newline}Started"
+                f"({self.author.id}){newline}Started"
             },
             "timestamp": self.response_msg.created_at.isoformat(),
-            "description": desc.string
+            "description": desc.string,
         }
         base_embed.update(admin_embed)
 
@@ -573,20 +548,21 @@ class UserCommand(BaseCommand):
                     "Please add at least 2 emojis with 2 descriptions."
                     " Each emoji should have their own description."
                     " Make sure each argument is a different string. For more"
-                    " information see `pg!help poll`"
+                    " information see `pg!help poll`",
                 )
 
             base_embed["fields"] = []
             for i, substr in enumerate(emojis):
                 if not i % 2:
-                    base_embed["fields"].append({
-                        "name": substr.string.strip(),
-                        "value": common.ZERO_SPACE,
-                        "inline": True
-                    })
+                    base_embed["fields"].append(
+                        {
+                            "name": substr.string.strip(),
+                            "value": common.ZERO_SPACE,
+                            "inline": True,
+                        }
+                    )
                 else:
-                    base_embed["fields"][i // 2]["value"] = \
-                        substr.string.strip()
+                    base_embed["fields"][i // 2]["value"] = substr.string.strip()
 
         await embed_utils.replace_from_dict(self.response_msg, base_embed)
 
@@ -610,13 +586,13 @@ class UserCommand(BaseCommand):
                 raise BotException(
                     "Invalid emoji",
                     "The emoji could not be added as a reaction. Make sure it is"
-                    " the correct emoji and that it is not from another server"
+                    " the correct emoji and that it is not from another server",
                 )
 
     async def cmd_close_poll(
-            self,
-            msg: discord.Message,
-            color: HiddenArg = None,
+        self,
+        msg: discord.Message,
+        color: HiddenArg = None,
     ):
         """
         ->type Other commands
@@ -630,33 +606,34 @@ class UserCommand(BaseCommand):
             raise BotException(
                 "Cannot run poll commands on DM",
                 "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!"
+                + "Please run your poll on the Pygame Community Server!",
             )
 
         if not msg.embeds:
             raise BotException(
                 "Invalid message",
                 "The message specified is not an ongiong vote."
-                " Please double-check the id."
+                " Please double-check the id.",
             )
 
         embed = msg.embeds[0]
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):
-            poll_owner = int(embed.footer.text.split("\n")[1]
-                             .replace("(", "").replace(")", ""))
+            poll_owner = int(
+                embed.footer.text.split("\n")[1].replace("(", "").replace(")", "")
+            )
         else:
             raise BotException(
                 "Invalid message",
                 "The message specified is not an ongiong vote."
-                " Please double-check the id."
+                " Please double-check the id.",
             )
 
         if color is None and self.author.id != poll_owner:
             raise BotException(
                 "You cant stop this vote",
                 "The vote was not started by you."
-                " Ask the person who started it to close it."
+                " Ask the person who started it to close it.",
             )
 
         title = "Voting has ended"
@@ -673,10 +650,9 @@ class UserCommand(BaseCommand):
                 continue
 
             if reaction.count - 1 > top[0][0]:
-                top = [(
-                    reaction.count - 1,
-                    getattr(reaction.emoji, "id", reaction.emoji)
-                )]
+                top = [
+                    (reaction.count - 1, getattr(reaction.emoji, "id", reaction.emoji))
+                ]
                 continue
 
             if reaction.count - 1 == top[0][0]:
@@ -691,11 +667,7 @@ class UserCommand(BaseCommand):
                 # Someone is abusing their mod powers if this happens probably.
                 continue
 
-            fields.append([
-                field.name,
-                f"{field.value} ({r_count} votes)",
-                True
-            ])
+            fields.append([field.name, f"{field.value} ({r_count} votes)", True])
 
             if utils.filter_emoji_id(field.name) == top[0][1]:
                 title += (
@@ -710,20 +682,20 @@ class UserCommand(BaseCommand):
         await embed_utils.edit_2(
             msg,
             embed,
-            color=0xa83232 if not color else utils.color_to_rgb_int(color),
+            color=0xA83232 if not color else utils.color_to_rgb_int(color),
             title=title,
             fields=fields,
             footer_text="Ended",
-            timestamp=self.response_msg.created_at.isoformat()
+            timestamp=self.response_msg.created_at.isoformat(),
         )
         await self.response_msg.delete()
 
     async def cmd_resources(
-            self,
-            limit: Optional[int] = None,
-            filter_tag: Optional[String] = None,
-            filter_member: Optional[discord.Member] = None,
-            oldest_first: bool = False,
+        self,
+        limit: Optional[int] = None,
+        filter_tag: Optional[String] = None,
+        filter_member: Optional[discord.Member] = None,
+        oldest_first: bool = False,
     ):
         """
         ->type Other commands
@@ -753,7 +725,9 @@ class UserCommand(BaseCommand):
             common.ENTRY_CHANNEL_IDS["resource"]
         )
 
-        msgs = await resource_entries_channel.history(oldest_first=oldest_first).flatten()
+        msgs = await resource_entries_channel.history(
+            oldest_first=oldest_first
+        ).flatten()
 
         for msg_to_filter in msgs_to_filter:
             msgs = list(filter(filter_func, msgs))
@@ -764,8 +738,13 @@ class UserCommand(BaseCommand):
             filter_tag = [tag.strip() for tag in filter_tag]
             for tag in filter_tag:
                 tag = tag.lower()
-                msgs = list(filter(lambda x: f"tag_{tag}" in x.content.lower(
-                ) or f"tag-<{tag}>" in x.content.lower(), msgs))
+                msgs = list(
+                    filter(
+                        lambda x: f"tag_{tag}" in x.content.lower()
+                        or f"tag-<{tag}>" in x.content.lower(),
+                        msgs,
+                    )
+                )
 
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
@@ -781,15 +760,15 @@ class UserCommand(BaseCommand):
             # And links inside separate dicts with regex
             links[msg.id] = [
                 match.group()
-                for match in re.finditer(r'http[s]?://(www.)?.+', msg.content)
+                for match in re.finditer(r"http[s]?://(www.)?.+", msg.content)
             ]
             tags[msg.id] = [
                 f"`{process_tag(match.group())}` "
-                for match in re.finditer('tag_.+', msg.content.lower())
+                for match in re.finditer("tag_.+", msg.content.lower())
             ]
             old_tags[msg.id] = [
                 f"`{process_tag(match.group())}` "
-                for match in re.finditer('tag-<.+>', msg.content.lower())
+                for match in re.finditer("tag-<.+>", msg.content.lower())
             ]
 
         pages = []
@@ -799,9 +778,8 @@ class UserCommand(BaseCommand):
             # Constructs embeds based on messages, and store them in pages to be used in the paginator
             top_msg = msgs[:6]
             current_embed = discord.Embed(
-                title=f"Retrieved {len(copy_msgs)} "
-                      f"{'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
-                      f"in #{resource_entries_channel.name}"
+                title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
+                f"in #{resource_entries_channel.name}"
             )
 
             for msg in top_msg:
@@ -814,8 +792,7 @@ class UserCommand(BaseCommand):
                         field_name = f"{name[:40]}..."
                     field_name = f"{i}. {name}, posted by {msg.author.display_name}"
 
-                    value = msg.content.split(
-                        name)[1].removeprefix("**").strip()
+                    value = msg.content.split(name)[1].removeprefix("**").strip()
                     if len(value) > 80:
                         value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"
@@ -835,7 +812,7 @@ class UserCommand(BaseCommand):
                     current_embed.add_field(
                         name=field_name,
                         value=f"{value}\n{common.ZERO_SPACE}",
-                        inline=True
+                        inline=True,
                     )
                     i += 1
                 except IndexError:
@@ -848,7 +825,7 @@ class UserCommand(BaseCommand):
         if len(pages) == 0:
             raise BotException(
                 f"Retrieved 0 entries in #{resource_entries_channel.name}",
-                "There are no results of resources with those parameters. Please try again."
+                "There are no results of resources with those parameters. Please try again.",
             )
 
         # Creates a paginator for the caller to use

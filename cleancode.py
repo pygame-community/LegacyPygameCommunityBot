@@ -1,9 +1,15 @@
 """
-A simple script to automate simple code cleanups. Currently it just strips all
-trailing whitespaces on lines, replaces all tabs to spaces, normalises newlines
-and terminates files with newlines.
+A simple script to automate code cleanups.
 """
+import os
+import pathlib
 import glob
+
+try:
+    import black
+except ImportError:
+    print("We use black to format code. Please install it with 'pip install black'")
+    raise SystemExit
 
 
 def cleanup_code():
@@ -11,13 +17,13 @@ def cleanup_code():
     Clean up all files of a given extension under a directory
     """
     for filepath in glob.iglob(f"**/*.py", recursive=True):
-        newfile = ""
-        with open(filepath, "r", encoding="utf-8") as f:
-            for line in f.read().splitlines():
-                newfile += line.rstrip().replace("\t", " " * 4) + "\n"
-
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(newfile)
+        path = pathlib.Path(os.getcwd(), filepath)
+        if black.format_file_in_place(
+            path, False, black.FileMode(), black.WriteBack.YES
+        ):
+            print("Formatted file: ", filepath)
+        else:
+            print(f"Skipping file {filepath} as it is already formatted")
 
 
 if __name__ == "__main__":

@@ -13,14 +13,14 @@ import pygame
 from pgbot import common, embed_utils, utils
 
 ESCAPES = {
-    '0': '\0',
-    'n': '\n',
-    'r': '\r',
-    't': '\t',
-    'v': '\v',
-    'b': '\b',
-    'f': '\f',
-    '\\': '\\',
+    "0": "\0",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "b": "\b",
+    "f": "\f",
+    "\\": "\\",
     '"': '"',
     "'": "'",
 }
@@ -56,8 +56,8 @@ class CodeBlock:
         md_bacticks = ("```", "`")
 
         if no_backticks and "\n" in code:
-            code = code[code.index("\n") + 1:]
-        
+            code = code[code.index("\n") + 1 :]
+
         elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
             code = code.strip("`")
             if code[0].isspace():
@@ -67,7 +67,7 @@ class CodeBlock:
                     if code[i].isspace():
                         break
                 self.lang = code[:i]
-                code = code[i+1:]
+                code = code[i + 1 :]
 
         self.code = code.strip().strip("\\")  # because \\ causes problems
 
@@ -99,21 +99,21 @@ class String:
                     else:
                         n = 4 if char == "u" else 8
 
-                    var = string[cnt:cnt + n]
+                    var = string[cnt : cnt + n]
                     cnt += n
                     try:
                         newstr += chr(int(var, base=16))
                     except ValueError:
                         raise BotException(
                             "Invalid escape character",
-                            "Invalid unicode escape character in string"
+                            "Invalid unicode escape character in string",
                         )
                 elif char in ESCAPES:
                     newstr += ESCAPES[char]
                 else:
                     raise BotException(
                         "Invalid escape character",
-                        "Invalid unicode escape character in string"
+                        "Invalid unicode escape character in string",
                     )
             else:
                 newstr += char
@@ -139,7 +139,9 @@ class BaseCommand:
     """
 
     def __init__(
-        self, invoke_msg: discord.Message, resp_msg: discord.Message,
+        self,
+        invoke_msg: discord.Message,
+        resp_msg: discord.Message,
     ):
         """
         Initialise UserCommand class
@@ -148,7 +150,7 @@ class BaseCommand:
         self.invoke_msg = invoke_msg
         self.response_msg = resp_msg
         self.is_priv = True
-        self.cmd_str = self.invoke_msg.content[len(common.PREFIX):]
+        self.cmd_str = self.invoke_msg.content[len(common.PREFIX) :]
 
         # Put a few attributes here for easy access
         self.author = self.invoke_msg.author
@@ -161,8 +163,9 @@ class BaseCommand:
         self.cmds_and_funcs = {}
         for i in dir(self):
             if i.startswith(common.CMD_FUNC_PREFIX):
-                self.cmds_and_funcs[i[len(common.CMD_FUNC_PREFIX):]] = \
-                    self.__getattribute__(i)
+                self.cmds_and_funcs[
+                    i[len(common.CMD_FUNC_PREFIX) :]
+                ] = self.__getattribute__(i)
 
     def split_args(self, split_str, split_flags):
         """
@@ -192,7 +195,7 @@ class BaseCommand:
         if not cnt % 2 or prev:
             raise BotException(
                 f"Invalid {splitfunc.__name__}",
-                f"{splitfunc.__name__} was not properly closed"
+                f"{splitfunc.__name__} was not properly closed",
             )
 
     async def parse_args(self):
@@ -261,9 +264,8 @@ class BaseCommand:
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
         for attach in self.invoke_msg.attachments:
-            if (
-                attach.content_type is not None
-                and attach.content_type.startswith("text")
+            if attach.content_type is not None and attach.content_type.startswith(
+                "text"
             ):
                 contents = await attach.read()
                 args.append(CodeBlock(contents.decode()))
@@ -271,16 +273,12 @@ class BaseCommand:
         # user entered something like 'pg!', display help message
         if not args:
             if kwargs:
-                raise BotException(
-                    "Invalid Command name!", "Command name must be str"
-                )
+                raise BotException("Invalid Command name!", "Command name must be str")
             args = ["help"]
 
         cmd = args.pop(0)
         if not isinstance(cmd, str):
-            raise BotException(
-                "Invalid Command name!", "Command name must be str"
-            )
+            raise BotException("Invalid Command name!", "Command name must be str")
 
         if self.invoke_msg.reference is not None:
             msg = str(self.invoke_msg.reference.message_id)
@@ -313,10 +311,7 @@ class BaseCommand:
                 raise ValueError()
 
             elif anno == "HiddenArg":
-                raise ArgError(
-                    "Hidden arguments cannot be explicitly passed",
-                    cmd
-                )
+                raise ArgError("Hidden arguments cannot be explicitly passed", cmd)
 
             elif anno == "pygame.Color":
                 return pygame.Color(arg)
@@ -336,7 +331,7 @@ class BaseCommand:
                 except discord.errors.NotFound:
                     raise BotException(
                         f"Member does not exist!",
-                        f"The member \"{arg}\" does not exist, please try again."
+                        f'The member "{arg}" does not exist, please try again.',
                     )
 
             elif anno == "discord.TextChannel":
@@ -396,7 +391,7 @@ class BaseCommand:
                 typ = "a codeblock, please surround your code in codeticks"
 
             elif anno == "String":
-                typ = "a string, please surround it in quotes (`\"\"`)"
+                typ = 'a string, please surround it in quotes (`""`)'
 
             elif anno == "discord.Member":
                 typ = "an id of a person or a mention to them"
@@ -435,7 +430,7 @@ class BaseCommand:
                 "Unrecognized command!",
                 f"Make sure that the command '{cmd}' exists, and you have "
                 + "the permission to use it. \nFor help on bot commands, "
-                + "do `pg!help`"
+                + "do `pg!help`",
             )
 
         db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
@@ -452,7 +447,7 @@ class BaseCommand:
                 f"The command '{cmd}' has been temporarily been blocked from "
                 + "running, while wizards are casting their spells on it!\n"
                 + "Please try running the command after the maintenance work "
-                + "has been finished"
+                + "has been finished",
             )
 
         func = self.cmds_and_funcs[cmd]
@@ -497,8 +492,7 @@ class BaseCommand:
                 if key in kwargs:
                     if param.kind == param.POSITIONAL_ONLY:
                         raise ArgError(
-                            f"`{key}` cannot be passed as a keyword argument",
-                            cmd
+                            f"`{key}` cannot be passed as a keyword argument", cmd
                         )
                     args.append(kwargs.pop(key))
 
@@ -511,8 +505,7 @@ class BaseCommand:
 
             elif key in kwargs:
                 raise ArgError(
-                    "Positional cannot be passed again as a keyword argument",
-                    cmd
+                    "Positional cannot be passed again as a keyword argument", cmd
                 )
 
             if iskw:
@@ -529,9 +522,7 @@ class BaseCommand:
         if not is_var_key:
             for key in kwargs:
                 if key not in sig.parameters:
-                    raise KwargError(
-                        f"Received invalid keyword argument `{key}`", cmd
-                    )
+                    raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
 
@@ -588,16 +579,14 @@ class OldBaseCommand:
     commands
     """
 
-    def __init__(
-        self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv
-    ):
+    def __init__(self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv):
         """
         Initialise OldBaseCommand class
         """
         self.invoke_msg = invoke_msg
         self.response_msg = resp_msg
         self.is_priv = is_priv
-        self.cmd_str = self.invoke_msg.content[len(common.PREFIX):].lstrip()
+        self.cmd_str = self.invoke_msg.content[len(common.PREFIX) :].lstrip()
         self.string = ""
         self.args = []
 
@@ -605,7 +594,7 @@ class OldBaseCommand:
         self.cmds_and_funcs = {}
         for i in dir(self):
             if i.startswith("cmd_"):
-                self.cmds_and_funcs[i[len("cmd_"):]] = self.__getattribute__(i)
+                self.cmds_and_funcs[i[len("cmd_") :]] = self.__getattribute__(i)
 
     async def handle_cmd(self):
         """
@@ -614,7 +603,7 @@ class OldBaseCommand:
         """
         self.args = self.cmd_str.split()
         cmd = self.args.pop(0) if self.args else ""
-        self.string = self.cmd_str[len(cmd):].strip()
+        self.string = self.cmd_str[len(cmd) :].strip()
 
         title = "Unrecognized command!"
         msg = (
@@ -646,9 +635,7 @@ class OldBaseCommand:
             )
             elog += "".join(tbs).replace(os.getcwd(), "PgBot")
             if platform.system() == "Windows":
-                elog = elog.replace(
-                    os.path.dirname(sys.executable), "Python"
-                )
+                elog = elog.replace(os.path.dirname(sys.executable), "Python")
 
             msg = utils.code_block(elog)
 

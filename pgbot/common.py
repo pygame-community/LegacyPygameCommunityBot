@@ -38,13 +38,13 @@ BONCC_THRESHOLD = 10
 # Constants
 VERSION = "1.5.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
-TEST_USER_ID = int(
-    os.environ["TEST_USER_ID"]
-) if "TEST_USER_ID" in os.environ else None
+TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
 
-TEST_USER_IDS = set(
-    int(user_id) for user_id in os.environ["TEST_USER_IDS"].split()
-) if "TEST_USER_IDS" in os.environ else set()
+TEST_USER_IDS = (
+    set(int(user_id) for user_id in os.environ["TEST_USER_IDS"].split())
+    if "TEST_USER_IDS" in os.environ
+    else set()
+)
 
 if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)
@@ -57,10 +57,7 @@ ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
-ENTRY_CHANNEL_IDS = {
-    "showcase": 772507247540437032,
-    "resource": 810516093273768016
-}
+ENTRY_CHANNEL_IDS = {"showcase": 772507247540437032, "resource": 810516093273768016}
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 RESOURCE_ENTRIES_CHANNEL_ID = 810516093273768016
 
@@ -82,7 +79,7 @@ ADMIN_USERS = {
     414330602930700288,
     265154376409153537,
     444116866944991236,
-    763015391710281729
+    763015391710281729,
 }
 
 # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
@@ -93,10 +90,7 @@ PRIV_ROLES = {
     787473199088533504,
 }
 
-DIVIDER_ROLES = {
-    836645525372665887,
-    836645368744771654
-}
+DIVIDER_ROLES = {836645525372665887, 836645368744771654}
 
 # IDs of rules messages, in the order from rule 1 to rule 7
 RULES = (
@@ -128,63 +122,95 @@ ROLE_PROMPT = {
     "title": [
         "Get more roles",
         "You need more roles for this channel (It's written everywhere!)",
-        "I won't stop until you get more roles"
+        "I won't stop until you get more roles",
     ],
-
     "message": [
         "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a "
         "@ Pygame Pro, or even a @ Pygame Contributor?\n"
         "Tell <@!235148962103951360> in <#772535163195228200>!",
-    ]
+    ],
 }
 
 BOT_WELCOME_MSG = {
     "greet": (
-        "Hi", "Hello", "Welcome to **Pygame Community**", "Greetings",
-        "Howdy", "Hi there, ", "Hey there", "*Hiss* Who's that? It's",
-        "*Hiss* Welcome", "Hello there,", "Ooooh! Hello", "Hi there,",
-        "*Hiss* Do I see a new user? *hiss*\n"
-        + "Welcome to our wonderful chatroom",
-        "Ooooh! It's", "Oooh! Look who has joined us, it's",
+        "Hi",
+        "Hello",
+        "Welcome to **Pygame Community**",
+        "Greetings",
+        "Howdy",
+        "Hi there, ",
+        "Hey there",
+        "*Hiss* Who's that? It's",
+        "*Hiss* Welcome",
+        "Hello there,",
+        "Ooooh! Hello",
+        "Hi there,",
+        "*Hiss* Do I see a new user? *hiss*\n" + "Welcome to our wonderful chatroom",
+        "Ooooh! It's",
+        "Oooh! Look who has joined us, it's",
     ),
-
     "check": (
-        "Check out our", "Make sure to check out the",
-        "Take a look at our", "See our", "Please see our",
-        "Be sure to read our", "Be sure to check the",
-        "Be sure to check out our", "Read our",
-        "Have a look at our", "To get started here, please read the"
+        "Check out our",
+        "Make sure to check out the",
+        "Take a look at our",
+        "See our",
+        "Please see our",
+        "Be sure to read our",
+        "Be sure to check the",
+        "Be sure to check out our",
+        "Read our",
+        "Have a look at our",
+        "To get started here, please read the",
     ),
-
     "grab": (
-        ", grab", ". Then get some", ", take",
-        ", then grab yourself some shiny", ". Get some fancy", ", get some",
-        ", then get yourself some cool", ", then get yourself some",
-        ", take some", ", then take some", ", then take some",
+        ", grab",
+        ". Then get some",
+        ", take",
+        ", then grab yourself some shiny",
+        ". Get some fancy",
+        ", get some",
+        ", then get yourself some cool",
+        ", then get yourself some",
+        ", take some",
+        ", then take some",
+        ", then take some",
         ". Go get some cool roles at",
-        ". Then go take some fancy", ", then grab some shiny",
+        ". Then go take some fancy",
+        ", then grab some shiny",
     ),
-
     "end": (
-        " and have fun!", ", then have fun with pygame!",
-        ", then have fun with pygame! *hiss*", " and have a nice time!",
-        " and enjoy your stay!", " and have some fun! *hisss*",
-        " and have fun here!", " and have fun with pygame!",
-        " and have a wonderful time!", " and join us!", " and join the fun!",
-        " and have fun with pygame! *hisss*", " and have fun here! *hisss*",
+        " and have fun!",
+        ", then have fun with pygame!",
+        ", then have fun with pygame! *hiss*",
+        " and have a nice time!",
+        " and enjoy your stay!",
+        " and have some fun! *hisss*",
+        " and have fun here!",
+        " and have fun with pygame!",
+        " and have a wonderful time!",
+        " and join us!",
+        " and join the fun!",
+        " and have fun with pygame! *hisss*",
+        " and have fun here! *hisss*",
     ),
-
 }
 
 ILLEGAL_ATTRIBUTES = (
-    "__subclasses__", "__loader__", "__bases__", "__code__", "__getattribute__",
-    "__setattr__", "__delattr_", "mro", "__class__", "__dict__"
+    "__subclasses__",
+    "__loader__",
+    "__bases__",
+    "__code__",
+    "__getattribute__",
+    "__setattr__",
+    "__delattr_",
+    "mro",
+    "__class__",
+    "__dict__",
 )
 
 BOT_HELP_PROMPT = {
     "title": "Help",
     "color": 0xFFFF00,
-
     "body": f"""
 Hey there, do you want to use <@{BOT_ID}> ?
 My command prefix is `{PREFIX}`.

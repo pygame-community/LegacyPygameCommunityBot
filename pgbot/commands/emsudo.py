@@ -38,48 +38,25 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
         if len(args) == 1:
-            await embed_utils.send(
-                self.invoke_msg.channel,
-                args[0],
-                ""
-            )
+            await embed_utils.send(self.invoke_msg.channel, args[0], "")
         elif len(args) == 2:
-            await embed_utils.send(
-                self.invoke_msg.channel,
-                args[0],
-                args[1]
-            )
+            await embed_utils.send(self.invoke_msg.channel, args[0], args[1])
         elif len(args) == 3:
-            await embed_utils.send(
-                self.invoke_msg.channel,
-                args[0],
-                args[1],
-                args[2]
-            )
+            await embed_utils.send(self.invoke_msg.channel, args[0], args[1], args[2])
         elif len(args) == 4:
             if isinstance(args[3], list):
                 fields = embed_utils.get_fields(args[3])
                 await embed_utils.send(
-                    self.invoke_msg.channel,
-                    args[0],
-                    args[1],
-                    args[2],
-                    fields=fields
+                    self.invoke_msg.channel, args[0], args[1], args[2], fields=fields
                 )
             else:
                 await embed_utils.send(
-                    self.invoke_msg.channel,
-                    args[0],
-                    args[1],
-                    args[2],
-                    args[3]
+                    self.invoke_msg.channel, args[0], args[1], args[2], args[3]
                 )
         elif len(args) == 5:
             fields = embed_utils.get_fields(args[3])
@@ -89,14 +66,10 @@ class EmsudoCommand(OldBaseCommand):
                 args[1],
                 args[2],
                 args[3],
-                fields=fields
+                fields=fields,
             )
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         await self.response_msg.delete()
@@ -118,68 +91,32 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
-        edit_msg = await self.invoke_msg.channel.fetch_message(
-            args[0]
-        )
+        edit_msg = await self.invoke_msg.channel.fetch_message(args[0])
 
         if len(args) == 2:
-            await embed_utils.replace(
-                edit_msg,
-                args[1],
-                ""
-            )
+            await embed_utils.replace(edit_msg, args[1], "")
         elif len(args) == 3:
-            await embed_utils.replace(
-                edit_msg,
-                args[1],
-                args[2]
-            )
+            await embed_utils.replace(edit_msg, args[1], args[2])
         elif len(args) == 4:
-            await embed_utils.replace(
-                edit_msg,
-                args[1],
-                args[2],
-                args[3]
-            )
+            await embed_utils.replace(edit_msg, args[1], args[2], args[3])
         elif len(args) == 5:
             if isinstance(args[4], list):
                 fields = embed_utils.get_fields(args[4])
                 await embed_utils.replace(
-                    edit_msg,
-                    args[1],
-                    args[2],
-                    args[3],
-                    fields=fields
+                    edit_msg, args[1], args[2], args[3], fields=fields
                 )
             else:
-                await embed_utils.replace(
-                    edit_msg,
-                    args[1],
-                    args[2],
-                    args[3],
-                    args[4]
-                )
+                await embed_utils.replace(edit_msg, args[1], args[2], args[3], args[4])
         elif len(args) == 6:
             fields = embed_utils.get_fields(args[4])
             await embed_utils.replace(
-                edit_msg,
-                args[1],
-                args[2],
-                args[3],
-                args[4],
-                fields=fields
+                edit_msg, args[1], args[2], args[3], args[4], fields=fields
             )
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         await self.response_msg.delete()
@@ -204,33 +141,39 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         util_send_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
-            title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
-            color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
         )
 
         if len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[0]))
+                    int(self.args[0])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid channel id!",
-                        ""
+                        self.response_msg, "Invalid channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -238,19 +181,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -269,9 +215,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -283,34 +227,31 @@ class EmsudoCommand(OldBaseCommand):
 
         elif isinstance(args, int):
             try:
-                attachment_msg = await self.invoke_msg.channel.fetch_message(
-                    args
-                )
+                attachment_msg = await self.invoke_msg.channel.fetch_message(args)
             except discord.NotFound:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid message id!",
-                    ""
-                )
+                await embed_utils.replace(self.response_msg, "Invalid message id!", "")
                 return
 
             if not attachment_msg.attachments:
                 await embed_utils.replace(
                     self.response_msg,
                     "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                    "",
                 )
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text")
+                ):
                     attachment_obj = attachment
                     break
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                    "",
                 )
                 return
 
@@ -328,19 +269,22 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                    "",
                 )
                 return
 
             for attachment in attachment_msg.attachments:
-                if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text")
+                ):
                     attachment_obj = attachment
                     break
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    ""
+                    "",
                 )
                 return
 
@@ -376,11 +320,7 @@ class EmsudoCommand(OldBaseCommand):
                     author_name=args[0],
                 )
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         if arg_count > 1:
@@ -434,14 +374,10 @@ class EmsudoCommand(OldBaseCommand):
 
         if arg_count > 4:
             try:
-                util_send_embed_args.update(
-                    fields=embed_utils.get_fields(args[4])
-                )
+                util_send_embed_args.update(fields=embed_utils.get_fields(args[4]))
             except TypeError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid format for field string!",
-                    ""
+                    self.response_msg, "Invalid format for field string!", ""
                 )
                 return
 
@@ -489,45 +425,51 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         util_add_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
-            title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
-            color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
         )
 
         if len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[1]))
+                    int(self.args[1])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -535,19 +477,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -561,28 +506,20 @@ class EmsudoCommand(OldBaseCommand):
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
                 src_channel = self.invoke_msg.channel
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -590,19 +527,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -621,22 +561,14 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
         try:
-            edit_msg = await self.invoke_msg.channel.fetch_message(
-                args[0]
-            )
+            edit_msg = await self.invoke_msg.channel.fetch_message(args[0])
         except (discord.NotFound, IndexError, ValueError):
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         args = args[1:]
@@ -673,9 +605,7 @@ class EmsudoCommand(OldBaseCommand):
                     )
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -683,19 +613,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -713,19 +646,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -741,11 +677,7 @@ class EmsudoCommand(OldBaseCommand):
                     author_name=args[0],
                 )
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         if arg_count > 1:
@@ -799,14 +731,10 @@ class EmsudoCommand(OldBaseCommand):
 
         if arg_count > 4:
             try:
-                util_add_embed_args.update(
-                    fields=embed_utils.get_fields(args[4])
-                )
+                util_add_embed_args.update(fields=embed_utils.get_fields(args[4]))
             except TypeError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid format for field string!",
-                    ""
+                    self.response_msg, "Invalid format for field string!", ""
                 )
                 return
 
@@ -854,45 +782,51 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         util_replace_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
-            title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
-            color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
         )
 
         if len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[1]))
+                    int(self.args[1])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -900,19 +834,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -926,28 +863,20 @@ class EmsudoCommand(OldBaseCommand):
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
                 src_channel = self.invoke_msg.channel
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -955,19 +884,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -986,22 +918,14 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
         try:
-            edit_msg = await self.invoke_msg.channel.fetch_message(
-                args[0]
-            )
+            edit_msg = await self.invoke_msg.channel.fetch_message(args[0])
         except (discord.NotFound, IndexError, ValueError, TypeError):
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         args = args[1:]
@@ -1038,9 +962,7 @@ class EmsudoCommand(OldBaseCommand):
                     )
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -1048,19 +970,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -1083,19 +1008,22 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                            ""
+                            "",
                         )
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                        if (
+                            attachment.content_type is not None
+                            and attachment.content_type.startswith("text")
+                        ):
                             attachment_obj = attachment
                             break
                     else:
                         await embed_utils.replace(
                             self.response_msg,
                             "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                            ""
+                            "",
                         )
                         return
 
@@ -1112,18 +1040,10 @@ class EmsudoCommand(OldBaseCommand):
                 )
 
             else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid arguments!",
-                    ""
-                )
+                await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
                 return
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         if arg_count > 1:
@@ -1177,14 +1097,10 @@ class EmsudoCommand(OldBaseCommand):
 
         if arg_count > 4:
             try:
-                util_replace_embed_args.update(
-                    fields=embed_utils.get_fields(args[4])
-                )
+                util_replace_embed_args.update(fields=embed_utils.get_fields(args[4]))
             except TypeError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid format for field string!",
-                    ""
+                    self.response_msg, "Invalid format for field string!", ""
                 )
                 return
 
@@ -1232,22 +1148,33 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         util_edit_embed_args = dict(
-            embed_type="rich", author_name=EmptyEmbed, author_url=EmptyEmbed, author_icon_url=EmptyEmbed,
-            title=EmptyEmbed, url=EmptyEmbed, thumbnail_url=EmptyEmbed, description=EmptyEmbed, image_url=EmptyEmbed,
-            color=0xFFFFAA, fields=(), footer_text=EmptyEmbed, footer_icon_url=EmptyEmbed, timestamp=None
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
         )
 
         if len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -1255,32 +1182,27 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[1]))
+                    int(self.args[1])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -1288,19 +1210,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -1314,14 +1239,10 @@ class EmsudoCommand(OldBaseCommand):
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -1331,21 +1252,17 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -1353,19 +1270,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -1384,29 +1304,21 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
         try:
-            edit_msg = await self.invoke_msg.channel.fetch_message(
-                args[0]
-            )
+            edit_msg = await self.invoke_msg.channel.fetch_message(args[0])
         except (discord.NotFound, IndexError, ValueError, TypeError):
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         if not edit_msg.embeds:
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
-                "No embed data found in message."
+                "No embed data found in message.",
             )
             return
 
@@ -1446,9 +1358,7 @@ class EmsudoCommand(OldBaseCommand):
                     )
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -1456,19 +1366,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -1491,25 +1404,30 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                            ""
+                            "",
                         )
                         return
 
                     for attachment in attachment_msg.attachments:
-                        if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                        if (
+                            attachment.content_type is not None
+                            and attachment.content_type.startswith("text")
+                        ):
                             attachment_obj = attachment
                             break
                     else:
                         await embed_utils.replace(
                             self.response_msg,
                             "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                            ""
+                            "",
                         )
                         return
 
                     txt_dict = await attachment_obj.read()
                     embed_dict = eval(txt_dict.decode())
-                    await embed_utils.edit_from_dict(edit_msg, edit_msg_embed, embed_dict)
+                    await embed_utils.edit_from_dict(
+                        edit_msg, edit_msg_embed, embed_dict
+                    )
                     await self.response_msg.delete()
                     await self.invoke_msg.delete()
                     return
@@ -1520,18 +1438,10 @@ class EmsudoCommand(OldBaseCommand):
                 )
 
             else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid arguments!",
-                    ""
-                )
+                await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
                 return
         else:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid arguments!", "")
             return
 
         if arg_count > 1:
@@ -1588,14 +1498,10 @@ class EmsudoCommand(OldBaseCommand):
 
         if arg_count > 4:
             try:
-                util_edit_embed_args.update(
-                    fields=embed_utils.get_fields(args[4])
-                )
+                util_edit_embed_args.update(fields=embed_utils.get_fields(args[4]))
             except TypeError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid format for field string!",
-                    ""
+                    self.response_msg, "Invalid format for field string!", ""
                 )
                 return
 
@@ -1647,9 +1553,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -1664,19 +1568,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -1684,7 +1584,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -1696,7 +1596,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -1708,28 +1608,27 @@ class EmsudoCommand(OldBaseCommand):
                     field_list = embed_utils.get_fields((args[2],))[0]
                 except (TypeError, IndexError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
 
                 if len(field_list) == 3:
                     field_dict = {
-                        "name": field_list[0], "value": field_list[1], "inline": field_list[2]}
+                        "name": field_list[0],
+                        "value": field_list[1],
+                        "inline": field_list[2],
+                    }
 
                 elif not field_list:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -1737,18 +1636,16 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                ""
+                "",
             )
             return
 
         try:
-            await embed_utils.replace_field_from_dict(edit_msg, edit_msg_embed, field_dict, field_index)
-        except IndexError:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index!",
-                ""
+            await embed_utils.replace_field_from_dict(
+                edit_msg, edit_msg_embed, field_dict, field_index
             )
+        except IndexError:
+            await embed_utils.replace(self.response_msg, "Invalid field index!", "")
             return
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -1776,9 +1673,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -1793,19 +1688,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -1813,7 +1704,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -1825,7 +1716,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -1837,52 +1728,47 @@ class EmsudoCommand(OldBaseCommand):
                     field_list = embed_utils.get_fields((args[2],))[0]
                 except (TypeError, IndexError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
 
                 if len(field_list) == 3:
                     field_dict = {
-                        "name": field_list[0], "value": field_list[1], "inline": field_list[2]}
+                        "name": field_list[0],
+                        "value": field_list[1],
+                        "inline": field_list[2],
+                    }
 
                 elif not field_list:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
         else:
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                ""
+                "",
             )
             return
 
         try:
-            await embed_utils.edit_field_from_dict(edit_msg, edit_msg_embed, field_dict, field_index)
-        except IndexError:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index!",
-                ""
+            await embed_utils.edit_field_from_dict(
+                edit_msg, edit_msg_embed, field_dict, field_index
             )
+        except IndexError:
+            await embed_utils.replace(self.response_msg, "Invalid field index!", "")
             return
         except KeyError:
             await embed_utils.replace(
-                self.response_msg,
-                "No embed fields found in message.",
-                ""
+                self.response_msg, "No embed fields found in message.", ""
             )
             return
         await self.response_msg.delete()
@@ -1908,16 +1794,16 @@ class EmsudoCommand(OldBaseCommand):
         field_dicts_list = []
 
         if len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -1925,32 +1811,27 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[1]))
+                    int(self.args[1])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -1958,19 +1839,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -1980,11 +1864,13 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await embed_utils.edit_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"]
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -1992,14 +1878,10 @@ class EmsudoCommand(OldBaseCommand):
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -2009,21 +1891,17 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -2031,19 +1909,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -2053,11 +1934,13 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await embed_utils.edit_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"]
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -2070,9 +1953,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -2085,19 +1966,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -2105,7 +1982,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -2124,22 +2001,28 @@ class EmsudoCommand(OldBaseCommand):
                                 await embed_utils.replace(
                                     self.response_msg,
                                     "Invalid format for field string!",
-                                    ""
+                                    "",
                                 )
                                 return
 
                             if len(data_list) == 3:
                                 data_dict = {
-                                    "name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": data_list[2],
+                                }
                             elif len(data_list) == 2:
                                 data_dict = {
-                                    "name": data_list[0], "value": data_list[1], "inline": False}
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": False,
+                                }
 
                             elif not data_list:
                                 await embed_utils.replace(
                                     self.response_msg,
                                     "Invalid format for field string!",
-                                    ""
+                                    "",
                                 )
                                 return
                         else:
@@ -2150,7 +2033,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                            ""
+                            "",
                         )
                         return
 
@@ -2158,7 +2041,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2166,11 +2049,13 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                ""
+                "",
             )
             return
 
-        await embed_utils.edit_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
+        await embed_utils.edit_fields_from_dicts(
+            edit_msg, edit_msg_embed, field_dicts_list
+        )
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -2198,9 +2083,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -2215,19 +2098,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -2235,7 +2114,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -2247,7 +2126,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2259,28 +2138,27 @@ class EmsudoCommand(OldBaseCommand):
                     field_list = embed_utils.get_fields((args[2],))[0]
                 except (TypeError, IndexError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
 
                 if len(field_list) == 3:
                     field_dict = {
-                        "name": field_list[0], "value": field_list[1], "inline": field_list[2]}
+                        "name": field_list[0],
+                        "value": field_list[1],
+                        "inline": field_list[2],
+                    }
 
                 elif not field_list:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2288,18 +2166,16 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by an index and a dictionary or a string is required.",
-                ""
+                "",
             )
             return
 
         try:
-            await embed_utils.insert_field_from_dict(edit_msg, edit_msg_embed, field_dict, field_index)
-        except IndexError:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index!",
-                ""
+            await embed_utils.insert_field_from_dict(
+                edit_msg, edit_msg_embed, field_dict, field_index
             )
+        except IndexError:
+            await embed_utils.replace(self.response_msg, "Invalid field index!", "")
             return
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -2323,16 +2199,17 @@ class EmsudoCommand(OldBaseCommand):
         """
 
         if len(self.args) == 4:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric() and self.args[3].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+                and self.args[3].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -2340,7 +2217,7 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
@@ -2350,40 +2227,31 @@ class EmsudoCommand(OldBaseCommand):
                     insert_index = int(self.args[1])
                 except ValueError:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid field insertion index!",
-                        ""
+                        self.response_msg, "Invalid field insertion index!", ""
                     )
                     return
 
                 try:
                     src_channel = self.invoke_msg.author.guild.get_channel(
-                        int(self.args[2]))
+                        int(self.args[2])
+                    )
                 except ValueError:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[3])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[3]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -2391,19 +2259,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -2413,26 +2284,28 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.insert_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
+                await embed_utils.insert_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"], insert_index
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
 
         elif len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -2440,7 +2313,7 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
@@ -2452,21 +2325,15 @@ class EmsudoCommand(OldBaseCommand):
                     insert_index = int(self.args[1])
                 except ValueError:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid field insertion index!",
-                        ""
+                        self.response_msg, "Invalid field insertion index!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -2474,19 +2341,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -2496,11 +2366,13 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.insert_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"], insert_index)
+                await embed_utils.insert_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"], insert_index
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -2513,9 +2385,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -2530,19 +2400,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -2550,7 +2416,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -2562,7 +2428,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2578,19 +2444,22 @@ class EmsudoCommand(OldBaseCommand):
                             await embed_utils.replace(
                                 self.response_msg,
                                 "Invalid format for field string!",
-                                ""
+                                "",
                             )
                             return
 
                         if len(data_list) == 3:
                             data_dict = {
-                                "name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                                "name": data_list[0],
+                                "value": data_list[1],
+                                "inline": data_list[2],
+                            }
 
                         elif not data_list:
                             await embed_utils.replace(
                                 self.response_msg,
                                 "Invalid format for field string!",
-                                ""
+                                "",
                             )
                             return
 
@@ -2599,7 +2468,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                            ""
+                            "",
                         )
                         return
 
@@ -2607,7 +2476,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by an index and a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2615,11 +2484,13 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by an index and a list/tuple of dictionaries or strings is required.",
-                ""
+                "",
             )
             return
 
-        await embed_utils.insert_fields_from_dicts(edit_msg, edit_msg_embed, reversed(field_dicts_list), field_index)
+        await embed_utils.insert_fields_from_dicts(
+            edit_msg, edit_msg_embed, reversed(field_dicts_list), field_index
+        )
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
@@ -2646,9 +2517,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -2663,19 +2532,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -2683,7 +2548,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -2697,28 +2562,27 @@ class EmsudoCommand(OldBaseCommand):
                     field_list = embed_utils.get_fields((args[1],))[0]
                 except (TypeError, IndexError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
 
                 if len(field_list) == 3:
                     field_dict = {
-                        "name": field_list[0], "value": field_list[1], "inline": field_list[2]}
+                        "name": field_list[0],
+                        "value": field_list[1],
+                        "inline": field_list[2],
+                    }
 
                 elif not field_list:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid format for field string!",
-                        ""
+                        self.response_msg, "Invalid format for field string!", ""
                     )
                     return
             else:
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a dictionary or a string is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -2726,7 +2590,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by a dictionary or a string is required.",
-                ""
+                "",
             )
             return
 
@@ -2753,16 +2617,16 @@ class EmsudoCommand(OldBaseCommand):
         field_dicts_list = []
 
         if len(self.args) == 3:
-            if self.args[0].isnumeric() and self.args[1].isnumeric() and self.args[2].isnumeric():
+            if (
+                self.args[0].isnumeric()
+                and self.args[1].isnumeric()
+                and self.args[2].isnumeric()
+            ):
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -2770,32 +2634,27 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 src_channel = self.invoke_msg.author.guild.get_channel(
-                    int(self.args[1]))
+                    int(self.args[1])
+                )
 
                 if not src_channel:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source channel id!",
-                        ""
+                        self.response_msg, "Invalid source channel id!", ""
                     )
                     return
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[2])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[2]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid source message id!",
-                        ""
+                        self.response_msg, "Invalid source message id!", ""
                     )
                     return
 
@@ -2803,19 +2662,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -2825,11 +2687,13 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.add_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await embed_utils.add_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"]
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -2837,14 +2701,10 @@ class EmsudoCommand(OldBaseCommand):
         elif len(self.args) == 2:
             if self.args[0].isnumeric() and self.args[1].isnumeric():
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        self.args[0]
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(self.args[0])
                 except (discord.NotFound, IndexError, ValueError):
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid arguments!",
-                        ""
+                        self.response_msg, "Invalid arguments!", ""
                     )
                     return
 
@@ -2854,21 +2714,17 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
                 edit_msg_embed = edit_msg.embeds[0]
 
                 try:
-                    attachment_msg = await src_channel.fetch_message(
-                        int(self.args[1])
-                    )
+                    attachment_msg = await src_channel.fetch_message(int(self.args[1]))
                 except discord.NotFound:
                     await embed_utils.replace(
-                        self.response_msg,
-                        "Invalid message id!",
-                        ""
+                        self.response_msg, "Invalid message id!", ""
                     )
                     return
 
@@ -2876,19 +2732,22 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
                 for attachment in attachment_msg.attachments:
-                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith("text")
+                    ):
                         attachment_obj = attachment
                         break
                 else:
                     await embed_utils.replace(
                         self.response_msg,
                         "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                        ""
+                        "",
                     )
                     return
 
@@ -2898,11 +2757,13 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "No field attribute found in embed dictionary.",
-                        ""
+                        "",
                     )
                     return
 
-                await embed_utils.add_fields_from_dicts(edit_msg, edit_msg_embed, embed_dict["fields"])
+                await embed_utils.add_fields_from_dicts(
+                    edit_msg, edit_msg_embed, embed_dict["fields"]
+                )
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -2915,9 +2776,7 @@ class EmsudoCommand(OldBaseCommand):
             # this function call itself
             tbs.pop(1)
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid arguments!",
-                f"```\n{''.join(tbs)}```"
+                self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
             )
             return
 
@@ -2930,19 +2789,15 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -2950,7 +2805,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -2968,22 +2823,28 @@ class EmsudoCommand(OldBaseCommand):
                             await embed_utils.replace(
                                 self.response_msg,
                                 "Invalid format for field string!",
-                                ""
+                                "",
                             )
                             return
 
                         if len(data_list) == 3:
                             data_dict = {
-                                "name": data_list[0], "value": data_list[1], "inline": data_list[2]}
+                                "name": data_list[0],
+                                "value": data_list[1],
+                                "inline": data_list[2],
+                            }
                         elif len(data_list) == 2:
                             data_dict = {
-                                "name": data_list[0], "value": data_list[1], "inline": False}
+                                "name": data_list[0],
+                                "value": data_list[1],
+                                "inline": False,
+                            }
 
                         elif not data_list:
                             await embed_utils.replace(
                                 self.response_msg,
                                 "Invalid format for field string!",
-                                ""
+                                "",
                             )
                             return
 
@@ -2992,7 +2853,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                            ""
+                            "",
                         )
                         return
 
@@ -3000,7 +2861,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                    ""
+                    "",
                 )
                 return
 
@@ -3008,11 +2869,13 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by a list/tuple of dictionaries or strings is required.",
-                ""
+                "",
             )
             return
 
-        await embed_utils.add_fields_from_dicts(edit_msg, edit_msg_embed, field_dicts_list)
+        await embed_utils.add_fields_from_dicts(
+            edit_msg, edit_msg_embed, field_dicts_list
+        )
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -3049,7 +2912,7 @@ class EmsudoCommand(OldBaseCommand):
                             self.response_msg,
                             "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                             + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                            ""
+                            "",
                         )
                         return
                     else:
@@ -3069,19 +2932,15 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                     + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -3089,7 +2948,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -3102,23 +2961,22 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                     + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                    ""
+                    "",
                 )
                 return
 
         if break_1:
             try:
                 args = eval(
-                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code)
+                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code
+                )
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
                 # this function call itself
                 tbs.pop(1)
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid arguments!",
-                    f"```\n{''.join(tbs)}```"
+                    self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
                 )
                 return
 
@@ -3131,7 +2989,7 @@ class EmsudoCommand(OldBaseCommand):
                             self.response_msg,
                             "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                             + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                            ""
+                            "",
                         )
                         return
 
@@ -3143,7 +3001,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "Invalid message id!"
+                            "Invalid message id!",
                         )
                         return
 
@@ -3151,7 +3009,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "No embed data found in message."
+                            "No embed data found in message.",
                         )
                         return
 
@@ -3165,7 +3023,7 @@ class EmsudoCommand(OldBaseCommand):
                                 self.response_msg,
                                 "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                                 + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                                ""
+                                "",
                             )
                             return
 
@@ -3174,7 +3032,7 @@ class EmsudoCommand(OldBaseCommand):
                             await embed_utils.replace(
                                 self.response_msg,
                                 "Invalid range object passed as an argument!",
-                                ""
+                                "",
                             )
                             return
 
@@ -3184,7 +3042,7 @@ class EmsudoCommand(OldBaseCommand):
                             self.response_msg,
                             "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                             + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                            ""
+                            "",
                         )
                         return
 
@@ -3193,17 +3051,17 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices and an optional index specifier 'i={n}',"
                     + "or a tuple containing a valid integer message id followed by a `range()` object and an index is required.",
-                    ""
+                    "",
                 )
                 return
 
         try:
-            await embed_utils.clone_fields(edit_msg, edit_msg_embed, field_indices, insertion_index=insertion_index)
+            await embed_utils.clone_fields(
+                edit_msg, edit_msg_embed, field_indices, insertion_index=insertion_index
+            )
         except IndexError:
             await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index/indices!",
-                ""
+                self.response_msg, "Invalid field index/indices!", ""
             )
             return
 
@@ -3232,19 +3090,15 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by two indices is required.",
-                ""
+                "",
             )
             return
 
         try:
-            edit_msg = await self.invoke_msg.channel.fetch_message(
-                edit_msg_id
-            )
+            edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
         except discord.NotFound:
             await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
+                self.response_msg, "Cannot execute command:", "Invalid message id!"
             )
             return
 
@@ -3252,7 +3106,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
-                "No embed data found in message."
+                "No embed data found in message.",
             )
             return
 
@@ -3264,7 +3118,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by two indices is required.",
-                ""
+                "",
             )
             return
 
@@ -3274,18 +3128,16 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid arguments! A valid integer message id followed by two indices is required.",
-                ""
+                "",
             )
             return
 
         try:
-            await embed_utils.swap_fields(edit_msg, edit_msg_embed, field_index_a, field_index_b)
-        except IndexError:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index!",
-                ""
+            await embed_utils.swap_fields(
+                edit_msg, edit_msg_embed, field_index_a, field_index_b
             )
+        except IndexError:
+            await embed_utils.replace(self.response_msg, "Invalid field index!", "")
             return
 
         await self.response_msg.delete()
@@ -3317,19 +3169,15 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices,"
                     + "or a valid integer message id followed by a comma and a `range()` object is required.",
-                    ""
+                    "",
                 )
                 return
 
             try:
-                edit_msg = await self.invoke_msg.channel.fetch_message(
-                    edit_msg_id
-                )
+                edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
             except discord.NotFound:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -3337,7 +3185,7 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "No embed data found in message."
+                    "No embed data found in message.",
                 )
                 return
 
@@ -3350,23 +3198,22 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices,"
                     + "or a valid integer message id followed by a comma and a `range()` object is required.",
-                    ""
+                    "",
                 )
                 return
 
         else:
             try:
                 args = eval(
-                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code)
+                    CodeBlock(self.string, strip_lang=True, strip_ticks=True).code
+                )
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
                 # this function call itself
                 tbs.pop(1)
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Invalid arguments!",
-                    f"```\n{''.join(tbs)}```"
+                    self.response_msg, "Invalid arguments!", f"```\n{''.join(tbs)}```"
                 )
                 return
 
@@ -3378,19 +3225,17 @@ class EmsudoCommand(OldBaseCommand):
                         self.response_msg,
                         "Invalid arguments! A valid integer message id followed by indices,"
                         + "or a valid integer message id followed by a comma and a `range()` object is required.",
-                        ""
+                        "",
                     )
                     return
 
                 try:
-                    edit_msg = await self.invoke_msg.channel.fetch_message(
-                        edit_msg_id
-                    )
+                    edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
                 except discord.NotFound:
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "Invalid message id!"
+                        "Invalid message id!",
                     )
                     return
 
@@ -3398,7 +3243,7 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "No embed data found in message."
+                        "No embed data found in message.",
                     )
                     return
 
@@ -3409,7 +3254,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Invalid range object passed as an argument!",
-                            ""
+                            "",
                         )
                         return
 
@@ -3419,7 +3264,7 @@ class EmsudoCommand(OldBaseCommand):
                         self.response_msg,
                         "Invalid arguments! A valid integer message id followed by indices,"
                         + "or a valid integer message id followed by a comma and a `range()` object is required.",
-                        ""
+                        "",
                     )
                     return
 
@@ -3428,18 +3273,14 @@ class EmsudoCommand(OldBaseCommand):
                     self.response_msg,
                     "Invalid arguments! A valid integer message id followed by indices,"
                     + "or a valid integer message id followed by a comma and a `range()` object is required.",
-                    ""
+                    "",
                 )
                 return
 
         try:
             await embed_utils.remove_fields(edit_msg, edit_msg_embed, field_indices)
         except IndexError:
-            await embed_utils.replace(
-                self.response_msg,
-                "Invalid field index!",
-                ""
-            )
+            await embed_utils.replace(self.response_msg, "Invalid field index!", "")
             return
 
         await self.response_msg.delete()
@@ -3467,19 +3308,15 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Invalid argument! A valid integer message id is required.",
-                ""
+                "",
             )
             return
 
         try:
-            edit_msg = await self.invoke_msg.channel.fetch_message(
-                edit_msg_id
-            )
+            edit_msg = await self.invoke_msg.channel.fetch_message(edit_msg_id)
         except discord.NotFound:
             await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
+                self.response_msg, "Cannot execute command:", "Invalid message id!"
             )
             return
 
@@ -3487,7 +3324,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
-                "No embed data found in message."
+                "No embed data found in message.",
             )
             return
 
@@ -3521,11 +3358,22 @@ class EmsudoCommand(OldBaseCommand):
         src_msg = None
         src_channel_id = self.invoke_msg.channel.id
         src_channel = self.invoke_msg.channel
-        embed_attr_keys = set((
-            "author", "provider", "title", "url",
-            "description", "type", "color", "fields",
-            "thumbnail", "image", "footer", "timestamp"
-        ))
+        embed_attr_keys = set(
+            (
+                "author",
+                "provider",
+                "title",
+                "url",
+                "description",
+                "type",
+                "color",
+                "fields",
+                "thumbnail",
+                "image",
+                "footer",
+                "timestamp",
+            )
+        )
         reduced_embed_attr_keys = set()
         filtered_field_indices = []
         offset_idx_2 = None
@@ -3542,17 +3390,18 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "Invalid message and/or channel id(s)!"
+                            "Invalid message and/or channel id(s)!",
                         )
                         return
 
                     src_channel = self.invoke_msg.author.guild.get_channel(
-                        src_channel_id)
+                        src_channel_id
+                    )
                     if src_channel is None:
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "Invalid channel id!"
+                            "Invalid channel id!",
                         )
                         return
                 else:
@@ -3563,7 +3412,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "Invalid message id!"
+                            "Invalid message id!",
                         )
                         return
 
@@ -3588,7 +3437,7 @@ class EmsudoCommand(OldBaseCommand):
                     await embed_utils.replace(
                         self.response_msg,
                         "Cannot execute command:",
-                        "Invalid embed attribute names!"
+                        "Invalid embed attribute names!",
                     )
                     return
 
@@ -3600,7 +3449,7 @@ class EmsudoCommand(OldBaseCommand):
                         await embed_utils.replace(
                             self.response_msg,
                             "Cannot execute command:",
-                            "Invalid embed attribute names!"
+                            "Invalid embed attribute names!",
                         )
                         return
 
@@ -3612,17 +3461,14 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "Invalid message and/or channel id(s)!"
+                    "Invalid message and/or channel id(s)!",
                 )
                 return
 
-            src_channel = self.invoke_msg.author.guild.get_channel(
-                src_channel_id)
+            src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid channel id!"
+                    self.response_msg, "Cannot execute command:", "Invalid channel id!"
                 )
                 return
         else:
@@ -3630,18 +3476,14 @@ class EmsudoCommand(OldBaseCommand):
                 src_msg_id = int(self.args[0])
             except ValueError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
         try:
             src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
             await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
+                self.response_msg, "Cannot execute command:", "Invalid message id!"
             )
             return
 
@@ -3649,7 +3491,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
-                "No embed data found in message."
+                "No embed data found in message.",
             )
             return
 
@@ -3660,27 +3502,34 @@ class EmsudoCommand(OldBaseCommand):
                 if key not in reduced_embed_attr_keys:
                     del embed_dict[key]
 
-            if "fields" in reduced_embed_attr_keys and "fields" in embed_dict and filtered_field_indices:
-                embed_dict["fields"] = [embed_dict["fields"][idx]
-                                        for idx in sorted(filtered_field_indices)]
+            if (
+                "fields" in reduced_embed_attr_keys
+                and "fields" in embed_dict
+                and filtered_field_indices
+            ):
+                embed_dict["fields"] = [
+                    embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)
+                ]
 
-        embed_dict_code = repr({k: embed_dict[k]
-                               for k in reversed(embed_dict.keys())})
+        embed_dict_code = repr({k: embed_dict[k] for k in reversed(embed_dict.keys())})
 
         with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
-            embed_txt.write(black.format_str(
-                embed_dict_code, mode=black.FileMode()))
+            embed_txt.write(black.format_str(embed_dict_code, mode=black.FileMode()))
 
         await self.response_msg.channel.send(
             embed=await embed_utils.send_2(
                 None,
                 author_name="Embed Data",
-                title=embed_dict.get(
-                    "title", "(add a title by editing this embed)"),
+                title=embed_dict.get("title", "(add a title by editing this embed)"),
                 fields=(
-                    ("\u2800", f"**[View Original Message](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**", True),)
+                    (
+                        "\u2800",
+                        f"**[View Original Message](https://discord.com/channels/{src_msg.author.guild.id}/{src_channel.id}/{src_msg.id})**",
+                        True,
+                    ),
+                ),
             ),
-            file=discord.File("embeddata.txt")
+            file=discord.File("embeddata.txt"),
         )
         await self.response_msg.delete()
 
@@ -3713,17 +3562,14 @@ class EmsudoCommand(OldBaseCommand):
                 await embed_utils.replace(
                     self.response_msg,
                     "Cannot execute command:",
-                    "Invalid message and/or channel id(s)!"
+                    "Invalid message and/or channel id(s)!",
                 )
                 return
 
-            src_channel = self.invoke_msg.author.guild.get_channel(
-                src_channel_id)
+            src_channel = self.invoke_msg.author.guild.get_channel(src_channel_id)
             if src_channel is None:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid channel id!"
+                    self.response_msg, "Cannot execute command:", "Invalid channel id!"
                 )
                 return
         else:
@@ -3731,9 +3577,7 @@ class EmsudoCommand(OldBaseCommand):
                 src_msg_id = int(self.args[0])
             except ValueError:
                 await embed_utils.replace(
-                    self.response_msg,
-                    "Cannot execute command:",
-                    "Invalid message id!"
+                    self.response_msg, "Cannot execute command:", "Invalid message id!"
                 )
                 return
 
@@ -3741,9 +3585,7 @@ class EmsudoCommand(OldBaseCommand):
             src_msg = await src_channel.fetch_message(src_msg_id)
         except discord.NotFound:
             await embed_utils.replace(
-                self.response_msg,
-                "Cannot execute command:",
-                "Invalid message id!"
+                self.response_msg, "Cannot execute command:", "Invalid message id!"
             )
             return
 
@@ -3751,7 +3593,7 @@ class EmsudoCommand(OldBaseCommand):
             await embed_utils.replace(
                 self.response_msg,
                 "Cannot execute command:",
-                "No embed data found in message."
+                "No embed data found in message.",
             )
             return
 
