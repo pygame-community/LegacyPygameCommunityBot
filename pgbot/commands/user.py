@@ -712,12 +712,12 @@ class UserCommand(BaseCommand):
         # NOTE: It is hardcoded in the bot to remove some messages in resource-entries, if you want to remove more, add the ID to the
         #       list below
         msgs_to_filter = [817137523905527889, 810942002114986045]
-        
+
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
                 tag = tag.replace(to_replace, "")
             return tag.title()
-        
+
         def filter_func(x):
             return x.id != msg_to_filter
 

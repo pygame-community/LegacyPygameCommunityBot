@@ -66,7 +66,7 @@ CMD_FUNC_PREFIX = "cmd_"
 GUILD_LEVEL = 1
 GUILD_MAX_FILE_SIZE = 8000000
 
-# PGC Admin, PGC Moderator, PGC Wizards
+# Admin, Moderator, Senior Mage, Wizards
 ADMIN_ROLES = {
     772521884373614603,
     772508687256125440,
@@ -219,3 +219,10 @@ Learn more about Discord code formatting **[HERE](https://discord.com/channels/7
 If you want to know about a specifc command run {PREFIX}help [command], for example {PREFIX}help exec.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 }
+
+BYDARIO_QUOTE = """
+> Yea, if is dead bring it back to life or let it rest in peace
+> When you are death ppl dont go to your tomb and say: dead person
+> I know because I am dead and noone comes to visit me
+<@!691691416799150152>
+"""

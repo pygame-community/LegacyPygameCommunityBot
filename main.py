@@ -110,6 +110,22 @@ async def on_message(msg: discord.Message):
     else:
         await emotion.check_bonk(msg)
 
+        if common.TEST_MODE:
+            return
+
+        # Check for these specific messages, do not try to generalise, because we do not
+        # want the bot spamming the dario quote
+        if msg.content.lower() in [
+            "chat dead",
+            "chat ded",
+            "chatded",
+            "dead chat",
+            "ded chat",
+        ]:
+            await msg.channel.send(
+                common.BYDARIO_QUOTE, allowed_mentions=discord.AllowedMentions.none()
+            )
+
     if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
         if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
             entry_type = "showcase"
