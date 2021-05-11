@@ -45,7 +45,7 @@ class UserCommand(BaseCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Pingy Pongy",
+            random.choice(("Pingy Pongy", "Pong!")),
             f"The bots ping is `{utils.format_time(sec, 0)}`\n"
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
@@ -89,8 +89,8 @@ class UserCommand(BaseCommand):
         if len(rules) == 1:
             await embed_utils.replace_2(
                 self.response_msg,
-                author_name="Pygame Community Discord",
-                author_icon_url=common.PYGAME_SNEK,
+                author_name="Pygame Community",
+                author_icon_url=common.GUILD_ICON,
                 title=fields[0]["name"],
                 description=fields[0]["value"][:2048],
                 color=0x228B22,
@@ -102,7 +102,7 @@ class UserCommand(BaseCommand):
             await embed_utils.replace_2(
                 self.response_msg,
                 author_name="Pygame Community Discord",
-                author_icon_url=common.PYGAME_SNEK,
+                author_icon_url=common.GUILD_LOGO,
                 title="Rules",
                 fields=fields,
                 color=0x228B22,

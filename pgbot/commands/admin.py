@@ -259,6 +259,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         attach: bool = True,
         spoiler: bool = False,
         info: bool = False,
+        author: bool = True
     ):
         """
         ->type More admin commands
@@ -308,7 +309,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if info:
             await self.response_msg.channel.send(
-                embed=embed_utils.get_msg_info_embed(msg),
+                embed=embed_utils.get_msg_info_embed(msg, author=author),
                 reference=cloned_msg,
             )
         await self.response_msg.delete()
@@ -393,13 +394,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         show_author: bool = True,
         divider_str: String = String("-" * 56),
         group_by_author: bool = True,
+        oldest_first: bool = True,
         same_channel: bool = False
     ):
         """
         ->type Admin commands
         ->signature pg!archive [origin channel] [quantity] [destination channel]
         [before=""] [after=""] [around=""] [raw=False] [show_header=True] [show_author=True]
-[divider_str=("-"*56)] [group_by_author=True] [same_channel=False]
+[divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -412,22 +414,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        if quantity <= 0:
-            raise BotException(
-                "Invalid quantity argument",
-                "Quantity has to be a positive integer",
-            )
-
-        datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
+        tz_utc = datetime.timezone.utc
+        datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
         blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
 
-        before = before.string
-        after = after.string
-        around = around.string
+        divider_str = divider_str.string
+        before = before.string.strip()
+        after = after.string.strip()
+        around = around.string.strip()
 
         parsed_before = None
         parsed_after = None
         parsed_around = None
+
         if before:
             try:
                 if before.endswith("Z"):
@@ -436,7 +435,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             except ValueError:
                 raise BotException(
                 "Invalid `before` argument",
-                "`before` has to be a datetime",
+                "`before` has to be a timestamp in the ISO format.",
             )
 
         if after:
@@ -447,7 +446,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             except ValueError:
                 raise BotException(
                 "Invalid `after` argument",
-                "`after` has to be a datetime",
+                "`after` has to be a timestamp in the ISO format.",
             )
 
         if around:
@@ -458,7 +457,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             except ValueError:
                 raise BotException(
                 "Invalid `around` argument",
-                "`around` has to be a datetime",
+                "`around has to be a timestamp in the ISO format.",
             )
 
             if quantity > 101:
@@ -468,10 +467,22 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
 
+        if quantity == -1 and not parsed_after:
+            raise BotException(
+            "Invalid `quantity` argument",
+            "`quantity` must be above -1 when `after=` is not specified.",
+            )
+        
+        elif quantity <= 0:
+            raise BotException(
+                "Invalid `quantity` argument",
+                "Quantity has to be a positive integer",
+            )
+
 
         await destination.trigger_typing()
         messages = await origin.history(
-            limit=quantity,
+            limit=quantity if quantity > -1 else None,
             before=parsed_before,
             after=parsed_after,
             around=parsed_around
@@ -483,76 +494,76 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "No messages were found for the specified timestamps.",
             )
 
-        if not after or not before:
+        if (not after or not before) and oldest_first:
             messages.reverse()
         
+        with open(blank_filename, "w") as toolarge_txt:
+            toolarge_txt.write("This file is too large to be archived.")
 
+        if show_header and not raw:
+            start_date = messages[0].created_at.replace(tzinfo=tz_utc)
+            end_date = messages[-1].created_at.replace(tzinfo=tz_utc)
+            start_date_str = start_date.strftime(datetime_format_str)
+            end_date_str = end_date.strftime(datetime_format_str)
+
+            if start_date_str == end_date_str:
+                msg = f"On `{start_date_str} | {start_date.isoformat()}`"
+            else:
+                msg = f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
+                f"to\n> `{end_date_str} | {end_date.isoformat()}`"
+
+            await destination.send(
+                embed=embed_utils.create(
+                    title=f"__Archive of `#{origin.name}`__",
+                    description=f"\nAn Archive of **{origin.mention}**\n\n" + msg,
+                    color=0xFFFFFF,
+                )
+            )
+
+        no_mentions = discord.AllowedMentions.none()
         try:
-            with open(blank_filename, "w") as toolarge_txt:
-                toolarge_txt.write("This file is too large to be archived.")
-
-            if messages and show_header and not raw:
-                start_date_str = (
-                    messages[0]
-                    .created_at.replace(tzinfo=datetime.timezone.utc)
-                    .strftime(datetime_format_str)
-                )
-                end_date_str = (
-                    messages[-1]
-                    .created_at.replace(tzinfo=datetime.timezone.utc)
-                    .strftime(datetime_format_str)
-                )
-
-                if start_date_str == end_date_str:
-                    msg = f"On `{start_date_str}` (UTC)"
-                else:
-                    msg = f"From `{start_date_str}` to `{end_date_str}` (UTC)"
-
-                await destination.send(
-                    embed=embed_utils.create(
-                        title=f"Archive of `#{origin.name}`",
-                        description=msg,
-                        color=0xFFFFFF,
-                    )
-                )
-
-            for i, msg in enumerate(messages):
+            for i, msg in enumerate(reversed(messages) if not oldest_first else messages):
                 author = msg.author
                 await destination.trigger_typing()
 
-                with open(blank_filename) as toolarge:
-                    attached_files = [
-                        (
-                            await a.to_file(spoiler=a.is_spoiler())
-                            if a.size <= common.GUILD_MAX_FILE_SIZE
-                            else discord.File(toolarge)
-                        )
-                        for a in msg.attachments
-                    ]
+                attached_files = [
+                    (
+                        await a.to_file(spoiler=a.is_spoiler())
+                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        else discord.File(blank_filename)
+                    )
+                    for a in msg.attachments
+                ]
 
                 if not raw:
                     author_embed = None
-                    current_divider_str = divider_str.string
-                    if show_author:
+                    current_divider_str = divider_str
+                    if show_author or divider_str:
                         if group_by_author and i > 0 and messages[i - 1].author == author:
                             # no author info or divider for mesmages next to each other sharing an author
                             current_divider_str = None
                         else:
                             author_embed = embed_utils.create(
-                                description=f"{author.mention} (`{author.name}#{author.discriminator}`)\n"
+                                description=f"{author.mention}"
+                                f" (`{author.name}#{author.discriminator}`)\n"
                                 f"**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
-                                footer_text=f"\nID: {author.id}",
+                                footer_text="\nISO Time: "
+                                f"{msg.created_at.replace(tzinfo=None).isoformat()}"
+                                f"\nID: {author.id}",
+                                
+
                                 timestamp=msg.created_at.replace(
-                                    tzinfo=datetime.timezone.utc
+                                    tzinfo=tz_utc
                                 ),
                                 footer_icon_url=str(author.avatar_url),
                             )
+                        
                         if author_embed or current_divider_str:
                             await destination.send(
                                 content=current_divider_str,
                                 embed=author_embed,
-                                allowed_mentions=discord.AllowedMentions.none(),
+                                allowed_mentions=no_mentions,
                             )
 
                 await destination.trigger_typing()
@@ -561,7 +572,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     content=msg.content,
                     embed=msg.embeds[0] if msg.embeds else None,
                     files=attached_files if attached_files else None,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    allowed_mentions=no_mentions,
                 )
 
                 for i in range(1, len(msg.embeds)):
@@ -574,8 +585,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if os.path.exists(blank_filename):
                 os.remove(blank_filename)
 
-        if show_author and divider_str.string and not raw:
-            await destination.send(content=divider_str.string)
+
+        if divider_str and not raw:
+            await destination.send(content=divider_str)
 
         await embed_utils.replace(
             self.response_msg, f"Successfully archived {len(messages)} message(s)!", ""
