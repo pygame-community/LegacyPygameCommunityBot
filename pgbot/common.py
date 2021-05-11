@@ -116,7 +116,7 @@ DB_BLACKLIST_MSG_IDS = (840523987901087765, 840525722292584458)
 DOC_EMBED_LIMIT = 3
 
 # Link to pygame snake logo
-PYGAME_SNEK = "https://media.discordapp.net/attachments/793272780987826197/836600713672523826/Discord_Server_Animated_Logo_V5_512x512.gif"
+GUILD_ICON = "https://media.discordapp.net/attachments/793272780987826197/836600713672523826/Discord_Server_Animated_Logo_V5_512x512.gif"
 
 ROLE_PROMPT = {
     "title": [
