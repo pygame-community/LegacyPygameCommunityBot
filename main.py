@@ -115,13 +115,13 @@ async def on_message(msg: discord.Message):
 
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
-        if msg.content.lower() in [
+        if msg.content.lower() in (
             "chat dead",
             "chat ded",
             "chatded",
             "dead chat",
             "ded chat",
-        ]:
+        ):
             await msg.channel.send(
                 common.BYDARIO_QUOTE, allowed_mentions=discord.AllowedMentions.none()
             )

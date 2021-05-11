@@ -200,7 +200,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.invoke_msg.delete()
 
     async def cmd_sudo_get(
-        self, msg: discord.Message, attach: bool = False, stats: bool = False
+        self, msg: discord.Message, attach: bool = False, info: bool = False
     ):
         """
         ->type More admin commands
@@ -231,12 +231,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 if os.path.exists("messagedata.txt"):
                     os.remove("messagedata.txt")
 
-        elif stats:
-            stats_embed = embed_utils.get_msg_info_embed(msg)
-            stats_embed.set_author(name="Message data & stats")
-            stats_embed.title = ""
-            stats_embed.description = f"```\n{msg.content}```\n\u2800"
-            await self.response_msg.channel.send(embed=stats_embed)
+        elif info:
+            info_embed = embed_utils.get_msg_info_embed(msg)
+            info_embed.set_author(name="Message data & info")
+            info_embed.title = ""
+            info_embed.description = f"```\n{msg.content}```\n\u2800"
+            await self.response_msg.channel.send(embed=info_embed)
 
         else:
             await embed_utils.send_2(
@@ -258,7 +258,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         embeds: bool = True,
         attach: bool = True,
         spoiler: bool = False,
-        stats: bool = False,
+        info: bool = False,
     ):
         """
         ->type More admin commands
@@ -306,22 +306,22 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 files=msg_files,
             )
 
-        if stats:
+        if info:
             await self.response_msg.channel.send(
                 embed=embed_utils.get_msg_info_embed(msg),
                 reference=cloned_msg,
             )
         await self.response_msg.delete()
 
-    async def cmd_sudo_stats(self, msg: discord.Message, author: bool = True):
+    async def cmd_sudo_info(self, msg: discord.Message, author: bool = True):
         """
         ->type More admin commands
-        ->signature pg!sudo_stats [message] [author_bool]
+        ->signature pg!sudo_info [message] [author_bool]
         ->description Get information about a message and its author
 
         Get information about a message and its author in an embed and send it to the channel where this command was invoked.
         -----
-        Implement pg!sudo_stats, to get information about a message and its author.
+        Implement pg!sudo_info, to get information about a message and its author.
         """
 
         await self.response_msg.channel.send(
@@ -385,15 +385,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
         origin: discord.TextChannel,
         quantity: int,
         destination: Optional[discord.TextChannel] = None,
+        before: String = String(""),
+        after: String = String(""),
+        around: String = String(""),
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
         divider_str: String = String("-" * 56),
+        group_by_author: bool = True,
+        same_channel: bool = False
     ):
         """
         ->type Admin commands
         ->signature pg!archive [origin channel] [quantity] [destination channel]
-        [raw=False] [show_header=True] [show_author=True] [raw=False] [divider_str=None]
+        [before=""] [after=""] [around=""] [raw=False] [show_header=True] [show_author=True]
+[divider_str=("-"*56)] [group_by_author=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -401,7 +407,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if destination is None:
             destination = self.channel
 
-        if origin == destination:
+        if origin == destination and not same_channel:
             raise BotException(
                 "Cannot execute command:", "Origin and destination channels are same"
             )
@@ -415,9 +421,71 @@ class AdminCommand(UserCommand, EmsudoCommand):
         datetime_format_str = f"%a, %d %b %y - %I:%M:%S %p"
         blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
 
+        before = before.string
+        after = after.string
+        around = around.string
+
+        parsed_before = None
+        parsed_after = None
+        parsed_around = None
+        if before:
+            try:
+                if before.endswith("Z"):
+                    before = before[:-1]
+                parsed_before = datetime.datetime.fromisoformat(before)
+            except ValueError:
+                raise BotException(
+                "Invalid `before` argument",
+                "`before` has to be a datetime",
+            )
+
+        if after:
+            try:
+                if after.endswith("Z"):
+                    after = after[:-1]
+                parsed_after = datetime.datetime.fromisoformat(after)
+            except ValueError:
+                raise BotException(
+                "Invalid `after` argument",
+                "`after` has to be a datetime",
+            )
+
+        if around:
+            try:
+                if around.endswith("Z"):
+                    around = around[:-1]
+                parsed_around = datetime.datetime.fromisoformat(around)
+            except ValueError:
+                raise BotException(
+                "Invalid `around` argument",
+                "`around` has to be a datetime",
+            )
+
+            if quantity > 101:
+                raise BotException(
+                "Invalid `quantity` argument",
+                "`quantity` must be an integer below 102 when `around` is specified.",
+            )
+
+
+
         await destination.trigger_typing()
-        messages = await origin.history(limit=quantity).flatten()
-        messages.reverse()
+        messages = await origin.history(
+            limit=quantity,
+            before=parsed_before,
+            after=parsed_after,
+            around=parsed_around
+        ).flatten()
+        
+        if not messages:
+            raise BotException(
+                "Invalid time range",
+                "No messages were found for the specified timestamps.",
+            )
+
+        if not after or not before:
+            messages.reverse()
+        
 
         try:
             with open(blank_filename, "w") as toolarge_txt:
@@ -466,7 +534,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     author_embed = None
                     current_divider_str = divider_str.string
                     if show_author:
-                        if i > 0 and messages[i - 1].author == author:
+                        if group_by_author and i > 0 and messages[i - 1].author == author:
                             # no author info or divider for mesmages next to each other sharing an author
                             current_divider_str = None
                         else:

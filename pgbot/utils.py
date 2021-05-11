@@ -10,6 +10,16 @@ from . import common, embed_utils
 def color_to_rgb_int(col: pygame.Color):
     return (((col.r << 8) + col.g) << 8) + col.b
 
+def discordify(message):
+    """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
+    # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
+    message = (
+        message.replace("\\", r"\\")
+        .replace("*", r"\*")
+        .replace("`", r"\`")
+        .replace("_", r"\_")
+    )
+    return message
 
 async def get_mention_from_id(idstr: str, msg: discord.Message):
     """
