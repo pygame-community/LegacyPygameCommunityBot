@@ -672,20 +672,22 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     msg_link = msg.jump_url
 
     member = msg.author
-    datetime_format_str = f"`%a. %b %d, %Y`\n> `%H:%M:%S (UTC)   `"
+    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
     msg_created_at_fdtime = msg.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
 
-    msg_created_at_info = f"*Created On*: \n> {msg_created_at_fdtime} \n>"+\
-                            f" `{msg.created_at.isoformat()}`\n\n"
+    msg_created_at_info = f"\u200b\n*Created On:*\n`{msg.created_at.isoformat()}`\n"+\
+                        f"> {msg_created_at_fdtime}\n\n"
+                            
 
     if msg.edited_at:
         msg_edited_at_fdtime = msg.edited_at.replace(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
-        msg_edited_at_info = f"*Last Edited On*: \n> {msg_edited_at_fdtime} \n>"+\
-                            f" `{msg.edited_at.isoformat()}`\n\n"
+        msg_edited_at_info = f"*Last Edited On*:\n`{msg.edited_at.isoformat()}`\n"+\
+                            f"> {msg_edited_at_fdtime}\n\n"
+                            
     else:
         msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
 
@@ -699,24 +701,26 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             .replace("`", r"\`")
             .replace("_", r"\_")
         )
-        member_name_info = "*Name*: \n> " +\
+        member_name_info = "\u200b\n*Author Name*: \n> " +\
             f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
     else:
-        member_name_info = f"*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
+        member_name_info = f"\u200b\n*Author Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
 
     if author:
         member_created_at_fdtime = member.created_at.astimezone(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
-        member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime} \n>"+\
-                            f" `{member.created_at.isoformat()}`\n\n"
+        member_created_at_info = f"*Created On*:\n`{member.created_at.isoformat()}`\n"+\
+                                f"> {member_created_at_fdtime}\n\n"
+                            
 
         if member.joined_at:
             member_joined_at_fdtime = member.joined_at.astimezone(
                 tz=datetime.timezone.utc
             ).strftime(datetime_format_str)
-            member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime} \n>"+\
-                                f" `{member.joined_at.isoformat()}`\n\n"
+            member_joined_at_info = f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"+\
+                                    f"> {member_joined_at_fdtime}\n\n"
+                                
         else:
             member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
 
@@ -780,7 +784,11 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                 else EmptyEmbed
             ),
             fields=[
-                ("__Message Info__", msg_info, True),
+                (
+                    "__"+ ("Message " if author else "") + "Info__",
+                    msg_info,
+                    True
+                ),
                 ("\u2800", f"**[View Original Message]({msg_link})**", False),
             ],
         )
@@ -789,7 +797,7 @@ def get_user_info_embed(member: discord.Member):
     """
     Generate an embed containing info about a server member.
     """
-    datetime_format_str = f"`%a. %b %d, %Y`\n> `%H:%M:%S (UTC)   `"
+    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
     
     if member.nick:
         member_nick = (
@@ -798,24 +806,26 @@ def get_user_info_embed(member: discord.Member):
             .replace("`", r"\`")
             .replace("_", r"\_")
         )
-        member_name_info = "*Name*: \n> " +\
+        member_name_info = "\u200b\n*Name*: \n> " +\
             f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
     else:
-        member_name_info = f"*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
+        member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
     
 
     member_created_at_fdtime = member.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
-    member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime} \n>"+\
-                        f" `{member.created_at.isoformat()}`\n\n"
+    member_created_at_info = f"*Created On*:\n`{member.created_at.isoformat()}`\n"+\
+                            f"> {member_created_at_fdtime}\n\n"
+                        
 
     if member.joined_at:
         member_joined_at_fdtime = member.joined_at.astimezone(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
-        member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime} \n>"+\
-                            f" `{member.joined_at.isoformat()}`\n\n"
+        member_joined_at_info = f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"+\
+                                f"> {member_joined_at_fdtime}\n\n"
+                            
     else:
         member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
                         
