@@ -10,25 +10,15 @@ from discord.embeds import EmptyEmbed
 from . import common
 
 
-def discordify(message):
-    """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
-    # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
-    message = (
-        message.replace("\\", r"\\")
-        .replace("*", r"\*")
-        .replace("`", r"\`")
-        .replace("_", r"\_")
-    )
-    return message
-
-
 def recursive_update(old_dict, update_dict):
     """
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
     based on the answers in
-    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-    """
+    """+\
+    "https://stackoverflow.com/questions/3232943/"+\
+    "update-value-of-a-nested-dictionary-of-varying-depth"
+
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
             old_dict[k] = recursive_update(old_dict.get(k, {}), v)
@@ -80,7 +70,8 @@ class PagedEmbed:
         have at least one embed.
 
         Args:
-            message (discord.Message): The message to overwrite. For commands, it would be self.response_msg
+            message (discord.Message): The message to overwrite. For commands,
+            it would be self.response_msg
 
             pages (list[discord.Embed]): The list of embeds to change
             pages between
@@ -681,106 +672,153 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     msg_link = msg.jump_url
 
     member = msg.author
-    datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
-    msg_created_at_fdtime = msg.created_at.replace(
-        tzinfo=datetime.timezone.utc
+    datetime_format_str = f"`%a. %b %d, %Y`\n> `%H:%M:%S (UTC)   `"
+    msg_created_at_fdtime = msg.created_at.astimezone(
+        tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
 
-    msg_created_at_info = f"*Created On*: \n> {msg_created_at_fdtime}\n\n"
+    msg_created_at_info = f"*Created On*: \n> {msg_created_at_fdtime} \n>"+\
+                            f" `{msg.created_at.isoformat()}`\n\n"
 
     if msg.edited_at:
         msg_edited_at_fdtime = msg.edited_at.replace(
-            tzinfo=datetime.timezone.utc
+            tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
-        msg_edited_at_info = f"*Last Edited On*: \n> {msg_edited_at_fdtime}\n\n"
+        msg_edited_at_info = f"*Last Edited On*: \n> {msg_edited_at_fdtime} \n>"+\
+                            f" `{msg.edited_at.isoformat()}`\n\n"
     else:
         msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
 
     msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
-    member_name_info = "*Name*: \n> " + (
-        f"**{member.nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-        if member.nick
-        else f"**{member.name}**#{member.discriminator}\n\n"
-    )
 
-    member_created_at_fdtime = member.created_at.replace(
-        tzinfo=datetime.timezone.utc
-    ).strftime(datetime_format_str)
-    member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime}\n\n"
-
-    member_joined_at_fdtime = member.joined_at.replace(
-        tzinfo=datetime.timezone.utc
-    ).strftime(datetime_format_str)
-    member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
-
-    member_func_role_count = max(
-        len(
-            tuple(
-                member.roles[i]
-                for i in range(1, len(member.roles))
-                if member.roles[i].id not in common.DIVIDER_ROLES
-            )
-        ),
-        0,
-    )
-
-    if member_func_role_count:
-        member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
-        if member_func_role_count != len(member.roles) - 1:
-            member_role_count_info = f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles) - 1})`\n\n"
-        else:
-            member_role_count_info = f"*Role Count*: \n> `{member_func_role_count}`\n\n"
+    if member.nick:
+        member_nick = (
+            member.nick.replace("\\", r"\\")
+            .replace("*", r"\*")
+            .replace("`", r"\`")
+            .replace("_", r"\_")
+        )
+        member_name_info = "*Name*: \n> " +\
+            f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
     else:
-        member_top_role_info = member_role_count_info = ""
+        member_name_info = f"*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
 
-    member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
+    if author:
+        member_created_at_fdtime = member.created_at.astimezone(
+            tz=datetime.timezone.utc
+        ).strftime(datetime_format_str)
+        member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime} \n>"+\
+                            f" `{member.created_at.isoformat()}`\n\n"
 
-    msg_info = (
-        f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
-    )
-    member_info = (
+        if member.joined_at:
+            member_joined_at_fdtime = member.joined_at.astimezone(
+                tz=datetime.timezone.utc
+            ).strftime(datetime_format_str)
+            member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime} \n>"+\
+                                f" `{member.joined_at.isoformat()}`\n\n"
+        else:
+            member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
+
+        member_func_role_count = max(
+            len(
+                tuple(
+                    member.roles[i]
+                    for i in range(1, len(member.roles))
+                    if member.roles[i].id not in common.DIVIDER_ROLES
+                )
+            ),
+            0,
+        )
+
+        if member_func_role_count:
+            member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
+            if member_func_role_count != len(member.roles) - 1:
+                member_role_count_info = f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles) - 1})`\n\n"
+            else:
+                member_role_count_info = f"*Role Count*: \n> `{member_func_role_count}`\n\n"
+        else:
+            member_top_role_info = member_role_count_info = ""
+
+        member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
+        
+        member_info = (
         f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"
         + f"{member_role_count_info}{member_id_info}"
-    )
+        )
+        
+        msg_info = (
+            f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
+        )
 
-    return create(
-        title="__Message & Author Stats__",
-        thumbnail_url=str(member.avatar_url),
-        description=(
-            f"__Text__:\n\n {msg.content}\n\u2800"
-            if msg.content
-            else discord.embeds.EmptyEmbed
-        ),
-        fields=[
-            ("__Message Info__", msg_info, True),
-            ("__Message Author Info__", member_info, True),
-            ("\u2800", f"**[View Original Message]({msg_link})**", False),
-        ],
-    )
+        return create(
+            title="__Message & Author Info__",
+            thumbnail_url=str(member.avatar_url),
+            description=(
+                f"__Text__:\n\n {msg.content}\n\u2800"
+                if msg.content
+                else EmptyEmbed
+            ),
+            fields=[
+                ("__Message Info__", msg_info, True),
+                ("__Message Author Info__", member_info, True),
+                ("\u2800", f"**[View Original Message]({msg_link})**", False),
+            ],
+        )
+    else:
+        msg_info = (
+            f"{member_name_info}{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
+        )
 
-
+        return create(
+            title="__Message Info__",
+            author_name=f"{member.name}#{member.discriminator}",
+            author_icon_url=str(member.avatar_url),
+            description=(
+                f"__Text__:\n\n {msg.content}\n\u2800"
+                if msg.content
+                else EmptyEmbed
+            ),
+            fields=[
+                ("__Message Info__", msg_info, True),
+                ("\u2800", f"**[View Original Message]({msg_link})**", False),
+            ],
+        )
+    
 def get_user_info_embed(member: discord.Member):
     """
     Generate an embed containing info about a server member.
     """
-    datetime_format_str = f"`%a. %b %d, %Y`\n> `%I:%M:%S %p (UTC)`"
+    datetime_format_str = f"`%a. %b %d, %Y`\n> `%H:%M:%S (UTC)   `"
+    
+    if member.nick:
+        member_nick = (
+            member.nick.replace("\\", r"\\")
+            .replace("*", r"\*")
+            .replace("`", r"\`")
+            .replace("_", r"\_")
+        )
+        member_name_info = "*Name*: \n> " +\
+            f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+    else:
+        member_name_info = f"*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
+    
 
-    member_name_info = "*Name*: \n> " + (
-        f"**{discordify(member.nick)}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-        if member.nick
-        else f"**{member.name}**#{member.discriminator}\n\n"
-    )
-
-    member_created_at_fdtime = member.created_at.replace(
-        tzinfo=datetime.timezone.utc
+    member_created_at_fdtime = member.created_at.astimezone(
+        tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
-    member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime}\n\n"
+    member_created_at_info = f"*Created On*: \n> {member_created_at_fdtime} \n>"+\
+                        f" `{member.created_at.isoformat()}`\n\n"
 
-    member_joined_at_fdtime = member.joined_at.replace(
-        tzinfo=datetime.timezone.utc
-    ).strftime(datetime_format_str)
-    member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime}\n\n"
+    if member.joined_at:
+        member_joined_at_fdtime = member.joined_at.astimezone(
+            tz=datetime.timezone.utc
+        ).strftime(datetime_format_str)
+        member_joined_at_info = f"*Joined On*: \n> {member_joined_at_fdtime} \n>"+\
+                            f" `{member.joined_at.isoformat()}`\n\n"
+    else:
+        member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
+                        
 
     member_func_role_count = max(
         len(

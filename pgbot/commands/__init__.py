@@ -11,10 +11,11 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
     """
     Handle a pg! command posted by a user
     """
-    await embed_utils.send(
+    await embed_utils.send_2(
         common.log_channel,
-        f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-        invoke_msg.content,
+        title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+        description=invoke_msg.content,
+        fields=( ("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False) ,)
     )
 
     is_priv = False
