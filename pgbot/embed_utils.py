@@ -15,9 +15,8 @@ def recursive_update(old_dict, update_dict):
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
     based on the answers in
-    """+\
-    "https://stackoverflow.com/questions/3232943/"+\
-    "update-value-of-a-nested-dictionary-of-varying-depth"
+    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    """
 
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
@@ -415,7 +414,8 @@ async def edit_2(
     timestamp=EmptyEmbed,
 ):
     """
-    Updates the changed attributes of the embed of a message with a much more tight function
+    Updates the changed attributes of the embed of a message with a
+    much more tight function
     """
     update_embed = create(
         embed_type=embed_type,
@@ -451,15 +451,16 @@ async def send_from_dict(channel, data):
 
 async def replace_from_dict(message, data):
     """
-    Replaces the embed of a message from a dictionary with a much more tight
-    function
+    Replaces the embed of a message from a dictionary with a much more
+    tight function
     """
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
 async def edit_from_dict(message, embed, update_embed_dict):
     """
-    Edits the changed attributes of the embed of a message from a dictionary with a much more tight function
+    Edits the changed attributes of the embed of a message from a
+    dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
     recursive_update(old_embed_dict, update_embed_dict)
@@ -468,7 +469,8 @@ async def edit_from_dict(message, embed, update_embed_dict):
 
 async def replace_field_from_dict(message, embed, field_dict, index):
     """
-    Replaces an embed field of the embed of a message from a dictionary with a much more tight function
+    Replaces an embed field of the embed of a message from a dictionary
+    with a much more tight function
     """
 
     embed.set_field_at(
@@ -483,7 +485,8 @@ async def replace_field_from_dict(message, embed, field_dict, index):
 
 async def edit_field_from_dict(message, embed, field_dict, index):
     """
-    Edits parts of an embed field of the embed of a message from a dictionary with a much more tight function
+    Edits parts of an embed field of the embed of a message from a
+    dictionary with a much more tight function
     """
 
     embed_dict = embed.to_dict()
@@ -506,7 +509,8 @@ async def edit_field_from_dict(message, embed, field_dict, index):
 
 async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
     """
-    Edits embed fields in the embed of a message from dictionaries with a much more tight function
+    Edits embed fields in the embed of a message from dictionaries
+    with a much more tight function
     """
 
     embed_dict = embed.to_dict()
@@ -538,7 +542,8 @@ async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
 
 async def add_field_from_dict(message, embed, field_dict):
     """
-    Adds an embed field to the embed of a message from a dictionary with a much more tight function
+    Adds an embed field to the embed of a message from a dictionary
+    with a much more tight function
     """
 
     embed.add_field(
@@ -552,7 +557,8 @@ async def add_field_from_dict(message, embed, field_dict):
 
 async def add_fields_from_dicts(message, embed: discord.Embed, field_dicts):
     """
-    Adds embed fields to the embed of a message from dictionaries with a much more tight function
+    Adds embed fields to the embed of a message from dictionaries
+    with a much more tight function
     """
 
     for field_dict in field_dicts:
@@ -567,7 +573,8 @@ async def add_fields_from_dicts(message, embed: discord.Embed, field_dicts):
 
 async def insert_field_from_dict(message, embed, field_dict, index):
     """
-    Inserts an embed field of the embed of a message from a dictionary with a much more tight function
+    Inserts an embed field of the embed of a message from a
+    dictionary with a much more tight function
     """
 
     embed.insert_field_at(
@@ -582,7 +589,8 @@ async def insert_field_from_dict(message, embed, field_dict, index):
 
 async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, index):
     """
-    Inserts embed fields to the embed of a message from dictionaries at a specified index with a much more tight function
+    Inserts embed fields to the embed of a message from dictionaries
+    at a specified index with a much more tight function
     """
 
     for field_dict in field_dicts:
@@ -598,7 +606,8 @@ async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, i
 
 async def remove_field(message, embed, index):
     """
-    Removes an embed field of the embed of a message from a dictionary with a much more tight function
+    Removes an embed field of the embed of a message from a dictionary
+    with a much more tight function
     """
     embed.remove_field(index)
     return await message.edit(embed=embed)
@@ -606,7 +615,8 @@ async def remove_field(message, embed, index):
 
 async def remove_fields(message, embed, field_indices):
     """
-    Removes multiple embed fields of the embed of a message from a dictionary with a much more tight function
+    Removes multiple embed fields of the embed of a message from a
+    dictionary with a much more tight function
     """
     for index in sorted(field_indices, reverse=True):
         embed.remove_field(index)
@@ -615,7 +625,8 @@ async def remove_fields(message, embed, field_indices):
 
 async def swap_fields(message, embed, index_a, index_b):
     """
-    Swaps two embed fields of the embed of a message from a dictionary with a much more tight function
+    Swaps two embed fields of the embed of a message from a
+    dictionary with a much more tight function
     """
     embed_dict = embed.to_dict()
     fields_list = embed_dict["fields"]
@@ -628,7 +639,8 @@ async def swap_fields(message, embed, index_a, index_b):
 
 async def clone_field(message, embed, index):
     """
-    Duplicates an embed field of the embed of a message from a dictionary with a much more tight function
+    Duplicates an embed field of the embed of a message from a
+    dictionary with a much more tight function
     """
     embed_dict = embed.to_dict()
     cloned_field = embed_dict["fields"][index].copy()
@@ -638,7 +650,8 @@ async def clone_field(message, embed, index):
 
 async def clone_fields(message, embed, field_indices, insertion_index=None):
     """
-    Duplicates multiple embed fields of the embed of a message from a dictionary with a much more tight function
+    Duplicates multiple embed fields of the embed of a message
+    from a dictionary with a much more tight function
     """
     embed_dict = embed.to_dict()
 
@@ -659,41 +672,20 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
 
 async def clear_fields(message, embed):
     """
-    Removes all embed fields of the embed of a message from a dictionary with a much more tight function
+    Removes all embed fields of the embed of a message from a
+    dictionary with a much more tight function
     """
     embed.clear_fields()
     return await message.edit(embed=embed)
 
 
-def get_msg_info_embed(msg: discord.Message, author: bool = True):
+def get_member_info_str(member: discord.Member):
     """
-    Generate an embed containing info about a message and its author.
+    Get member info in a string, utility function for the embed functions
     """
-    msg_link = msg.jump_url
-
-    member = msg.author
     datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
-    msg_created_at_fdtime = msg.created_at.astimezone(
-        tz=datetime.timezone.utc
-    ).strftime(datetime_format_str)
 
-    msg_created_at_info = f"\u200b\n*Created On:*\n`{msg.created_at.isoformat()}`\n"+\
-                        f"> {msg_created_at_fdtime}\n\n"
-                            
-
-    if msg.edited_at:
-        msg_edited_at_fdtime = msg.edited_at.replace(
-            tz=datetime.timezone.utc
-        ).strftime(datetime_format_str)
-        msg_edited_at_info = f"*Last Edited On*:\n`{msg.edited_at.isoformat()}`\n"+\
-                            f"> {msg_edited_at_fdtime}\n\n"
-                            
-    else:
-        msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
-
-    msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
-    msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
-
+    member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
     if member.nick:
         member_nick = (
             member.nick.replace("\\", r"\\")
@@ -701,134 +693,31 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             .replace("`", r"\`")
             .replace("_", r"\_")
         )
-        member_name_info = "\u200b\n*Author Name*: \n> " +\
-            f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-    else:
-        member_name_info = f"\u200b\n*Author Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
-
-    if author:
-        member_created_at_fdtime = member.created_at.astimezone(
-            tz=datetime.timezone.utc
-        ).strftime(datetime_format_str)
-        member_created_at_info = f"*Created On*:\n`{member.created_at.isoformat()}`\n"+\
-                                f"> {member_created_at_fdtime}\n\n"
-                            
-
-        if member.joined_at:
-            member_joined_at_fdtime = member.joined_at.astimezone(
-                tz=datetime.timezone.utc
-            ).strftime(datetime_format_str)
-            member_joined_at_info = f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"+\
-                                    f"> {member_joined_at_fdtime}\n\n"
-                                
-        else:
-            member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
-
-        member_func_role_count = max(
-            len(
-                tuple(
-                    member.roles[i]
-                    for i in range(1, len(member.roles))
-                    if member.roles[i].id not in common.DIVIDER_ROLES
-                )
-            ),
-            0,
-        )
-
-        if member_func_role_count:
-            member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
-            if member_func_role_count != len(member.roles) - 1:
-                member_role_count_info = f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles) - 1})`\n\n"
-            else:
-                member_role_count_info = f"*Role Count*: \n> `{member_func_role_count}`\n\n"
-        else:
-            member_top_role_info = member_role_count_info = ""
-
-        member_id_info = f"*Author ID*: \n> <@!`{member.id}`>\n\n"
-        
-        member_info = (
-        f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"
-        + f"{member_role_count_info}{member_id_info}"
-        )
-        
-        msg_info = (
-            f"{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
-        )
-
-        return create(
-            title="__Message & Author Info__",
-            thumbnail_url=str(member.avatar_url),
-            description=(
-                f"__Text__:\n\n {msg.content}\n\u2800"
-                if msg.content
-                else EmptyEmbed
-            ),
-            fields=[
-                ("__Message Info__", msg_info, True),
-                ("__Message Author Info__", member_info, True),
-                ("\u2800", f"**[View Original Message]({msg_link})**", False),
-            ],
+        member_name_info += (
+            f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
         )
     else:
-        msg_info = (
-            f"{member_name_info}{msg_created_at_info}{msg_edited_at_info}{msg_char_count_info}{msg_id_info}"
-        )
-
-        return create(
-            title="__Message Info__",
-            author_name=f"{member.name}#{member.discriminator}",
-            author_icon_url=str(member.avatar_url),
-            description=(
-                f"__Text__:\n\n {msg.content}\n\u2800"
-                if msg.content
-                else EmptyEmbed
-            ),
-            fields=[
-                (
-                    "__"+ ("Message " if author else "") + "Info__",
-                    msg_info,
-                    True
-                ),
-                ("\u2800", f"**[View Original Message]({msg_link})**", False),
-            ],
-        )
-    
-def get_user_info_embed(member: discord.Member):
-    """
-    Generate an embed containing info about a server member.
-    """
-    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
-    
-    if member.nick:
-        member_nick = (
-            member.nick.replace("\\", r"\\")
-            .replace("*", r"\*")
-            .replace("`", r"\`")
-            .replace("_", r"\_")
-        )
-        member_name_info = "\u200b\n*Name*: \n> " +\
-            f"{member.mention} \n> **{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
-    else:
-        member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> **{member.name}**#{member.discriminator}\n\n"
-    
+        member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
 
     member_created_at_fdtime = member.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
-    member_created_at_info = f"*Created On*:\n`{member.created_at.isoformat()}`\n"+\
-                            f"> {member_created_at_fdtime}\n\n"
-                        
+    member_created_at_info = (
+        f"*Created On*:\n`{member.created_at.isoformat()}`\n"
+        + f"> {member_created_at_fdtime}\n\n"
+    )
 
     if member.joined_at:
         member_joined_at_fdtime = member.joined_at.astimezone(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
-        member_joined_at_info = f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"+\
-                                f"> {member_joined_at_fdtime}\n\n"
-                            
+        member_joined_at_info = (
+            f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"
+            + f"> {member_joined_at_fdtime}\n\n"
+        )
+
     else:
         member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
-                        
 
     member_func_role_count = max(
         len(
@@ -852,13 +741,121 @@ def get_user_info_embed(member: discord.Member):
 
     member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
 
-    member_info = (
-        f"{member_name_info}{member_created_at_info}{member_joined_at_info}{member_top_role_info}"
-        + f"{member_role_count_info}{member_id_info}"
+    member_stats = (
+        f"*Is Pending Screening*: \n> `{member.pending}`\n\n"
+        f"*Is Bot Account*: \n> `{member.bot}`\n\n"
+        f"*Is System User (Discord Official)*: \n> `{member.system}`\n\n"
     )
+
+    return (
+        member_name_info
+        + member_created_at_info
+        + member_joined_at_info
+        + member_top_role_info
+        + member_role_count_info
+        + member_id_info
+        + member_stats
+    )
+
+
+def get_msg_info_embed(msg: discord.Message, author: bool = True):
+    """
+    Generate an embed containing info about a message and its author.
+    """
+    member = msg.author
+    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    msg_created_at_fdtime = msg.created_at.astimezone(
+        tz=datetime.timezone.utc
+    ).strftime(datetime_format_str)
+
+    msg_created_at_info = (
+        f"\u200b\n*Created On:*\n`{msg.created_at.isoformat()}`\n"
+        + f"> {msg_created_at_fdtime}\n\n"
+    )
+
+    if msg.edited_at:
+        msg_edited_at_fdtime = msg.edited_at.replace(tz=datetime.timezone.utc).strftime(
+            datetime_format_str
+        )
+        msg_edited_at_info = (
+            f"*Last Edited On*:\n`{msg.edited_at.isoformat()}`\n"
+            + f"> {msg_edited_at_fdtime}\n\n"
+        )
+
+    else:
+        msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
+
+    msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
+    msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
+    msg_attachment_info = (
+        f"*Number Of Attachments*: \n> `{len(msg.attachments)} attachment(s)`\n\n"
+    )
+    msg_embed_info = f"*Number Of Embeds*: \n> `{len(msg.embeds)} embed(s)`\n\n"
+    msg_is_pinned = f"*Is Pinned*: \n> `{msg.pinned}`\n\n"
+
+    msg_info = (
+        msg_created_at_info
+        + msg_edited_at_info
+        + msg_char_count_info
+        + msg_id_info
+        + msg_embed_info
+        + msg_attachment_info
+        + msg_is_pinned
+    )
+
+    if author:
+        return create(
+            title="__Message & Author Info__",
+            thumbnail_url=str(member.avatar_url),
+            description=(
+                f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
+            ),
+            fields=[
+                ("__Message Info__", msg_info, True),
+                ("__Message Author Info__", get_member_info_str(member), True),
+                ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
+            ],
+        )
+
+    member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
+    if member.nick:
+        member_nick = (
+            member.nick.replace("\\", r"\\")
+            .replace("*", r"\*")
+            .replace("`", r"\`")
+            .replace("_", r"\_")
+        )
+        member_name_info += (
+            f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        )
+    else:
+        member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
+
+    return create(
+        title="__Message Info__",
+        author_name=f"{member.name}#{member.discriminator}",
+        author_icon_url=str(member.avatar_url),
+        description=(
+            f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
+        ),
+        fields=[
+            (
+                "__" + ("Message " if author else "") + "Info__",
+                member_name_info + msg_info,
+                True,
+            ),
+            ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
+        ],
+    )
+
+
+def get_user_info_embed(member: discord.Member):
+    """
+    Generate an embed containing info about a server member.
+    """
 
     return create(
         title="__Member Info__",
-        description=member_info,
+        description=get_member_info_str(member),
         thumbnail_url=str(member.avatar_url),
     )
