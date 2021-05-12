@@ -461,17 +461,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "`quantity` must be an integer below 102 when `around` is specified.",
                 )
 
-        if quantity == -1 and not parsed_after:
-            raise BotException(
-                "Invalid `quantity` argument",
-                "`quantity` must be above -1 when `after=` is not specified.",
-            )
-
-        elif quantity <= 0:
-            raise BotException(
-                "Invalid `quantity` argument",
-                "Quantity has to be a positive integer",
-            )
+        if quantity <= 0:
+            if quantity == -1 and not parsed_after:
+                raise BotException(
+                    "Invalid `quantity` argument",
+                    "`quantity` must be above -1 when `after=` is not specified.",
+                )
+            else:
+                raise BotException(
+                    "Invalid `quantity` argument",
+                    "Quantity has to be a positive integer, or `-1`",
+                )
 
         await destination.trigger_typing()
         messages = await origin.history(
