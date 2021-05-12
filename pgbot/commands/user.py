@@ -554,7 +554,7 @@ class UserCommand(BaseCommand):
                     "Please add at least 2 emojis with 2 descriptions."
                     " Each emoji should have their own description."
                     " Make sure each argument is a different string. For more"
-                    " information see `pg!help poll`",
+                    " information, see `pg!help poll`",
                 )
 
             base_embed["fields"] = []
@@ -618,7 +618,7 @@ class UserCommand(BaseCommand):
         if not msg.embeds:
             raise BotException(
                 "Invalid message",
-                "The message specified is not an ongiong vote."
+                "The message specified is not an ongoing vote."
                 " Please double-check the id.",
             )
 
@@ -735,6 +735,7 @@ class UserCommand(BaseCommand):
             oldest_first=oldest_first
         ).flatten()
 
+        # Filters any messages that have the same ID as the ones provided in msgs_to_filter
         for msg_to_filter in msgs_to_filter:
             msgs = list(filter(filter_func, msgs))
 
@@ -755,7 +756,8 @@ class UserCommand(BaseCommand):
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
         if limit is not None:
-            # Uses list slicing instead of TextChannel.history's limit param to include all param specified messages
+            # Uses list slicing instead of TextChannel.history's limit param
+            # to include all param specified messages
             msgs = msgs[:limit]
 
         tags = {}
@@ -766,7 +768,7 @@ class UserCommand(BaseCommand):
             # And links inside separate dicts with regex
             links[msg.id] = [
                 match.group()
-                for match in re.finditer(r"http[s]?://(www.)?.+", msg.content)
+                for match in re.finditer("http[s]?://(www.)?[^ \n]+", msg.content)
             ]
             tags[msg.id] = [
                 f"`{process_tag(match.group())}` "
@@ -783,9 +785,14 @@ class UserCommand(BaseCommand):
         while msgs:
             # Constructs embeds based on messages, and store them in pages to be used in the paginator
             top_msg = msgs[:6]
+            if len(copy_msgs) > 1:
+                title = f"Retrieved {len(copy_msgs)} entries in " \
+                        f"#{resource_entries_channel.name}"
+            else:
+                title = f"Retrieved {len(copy_msgs)} entry in " \
+                        f"#{resource_entries_channel.name}"
             current_embed = discord.Embed(
-                title=f"Retrieved {len(copy_msgs)} {'entries' if len(copy_msgs) > 1 or len(copy_msgs) == 0 else 'entry'} "
-                f"in #{resource_entries_channel.name}"
+                title=title
             )
 
             for msg in top_msg:
@@ -794,13 +801,13 @@ class UserCommand(BaseCommand):
                     if not name:
                         continue
 
-                    if len(name) > 40:
-                        field_name = f"{name[:40]}..."
                     field_name = f"{i}. {name}, posted by {msg.author.display_name}"
+                    # If the field name is > 256 (discord limit), shorten it with list slicing
+                    field_name = f"{field_name[:253]}..."
 
                     value = msg.content.split(name)[1].removeprefix("**").strip()
-                    if len(value) > 80:
-                        value = f"{value[:80]}..."
+                    # If the preview of the resources > 80, shorten it with list slicing
+                    value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"
 
                     for j, link in enumerate(links[msg.id], 1):
@@ -809,10 +816,9 @@ class UserCommand(BaseCommand):
                     value += "\nTags: "
                     if tags[msg.id]:
                         value += "".join(tags[msg.id]).removesuffix(",")
-                    else:
+                    elif old_tags[msg.id]:
                         value += "".join(old_tags[msg.id]).removesuffix(",")
-
-                    if not (tags[msg.id] or old_tags[msg.id]):
+                    else:
                         value += "None"
 
                     current_embed.add_field(

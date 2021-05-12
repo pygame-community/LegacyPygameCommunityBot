@@ -49,6 +49,8 @@ TEST_USER_IDS = (
 if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)
 
+# NOTE: For developers wanting to test out pgbot on your bot, replace this with your own token.
+#       Just be sure to remove it when creating a PR
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 PREFIX = "pd!" if TEST_MODE else "pg!"
 
@@ -57,14 +59,16 @@ ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
-ENTRY_CHANNEL_IDS = {"showcase": 772507247540437032, "resource": 810516093273768016}
+ENTRY_CHANNEL_IDS = {
+    "showcase": 772507247540437032,
+    "resource": 810516093273768016
+}
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
-RESOURCE_ENTRIES_CHANNEL_ID = 810516093273768016
 
 CMD_FUNC_PREFIX = "cmd_"
 
 GUILD_LEVEL = 1
-GUILD_MAX_FILE_SIZE = 8000000
+GUILD_MAX_FILE_SIZE = 8_000_000  # 8 MB
 
 # Admin, Moderator, Senior Mage, Wizards
 ADMIN_ROLES = {
@@ -224,5 +228,5 @@ BYDARIO_QUOTE = """
 > Yea, if is dead bring it back to life or let it rest in peace
 > When you are death ppl dont go to your tomb and say: dead person
 > I know because I am dead and noone comes to visit me
-<@!691691416799150152>
+bydariogamer#7949
 """
