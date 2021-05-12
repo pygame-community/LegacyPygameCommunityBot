@@ -9,7 +9,6 @@ from typing import Optional
 
 import discord
 import pygame
-
 from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import BaseCommand, BotException, CodeBlock, HiddenArg, String
 
@@ -101,7 +100,7 @@ class UserCommand(BaseCommand):
 
             await embed_utils.replace_2(
                 self.response_msg,
-                author_name="Pygame Community Discord",
+                author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
                 title="Rules",
                 fields=fields,
@@ -315,11 +314,18 @@ class UserCommand(BaseCommand):
                     )
                 os.remove(f"temp{tstamp}.png")
 
-            await embed_utils.replace(
-                self.response_msg,
-                f"Returned text (code executed in {utils.format_time(dur)}):",
-                utils.code_block(returned.text),
-            )
+            if returned.text:
+                await embed_utils.replace(
+                    self.response_msg,
+                    f"Returned text (Code executed in {utils.format_time(dur)}):",
+                    utils.code_block(returned.text),
+                )
+            else:
+                await embed_utils.replace(
+                    self.response_msg,
+                    f"Code executed in {utils.format_time(dur)}",
+                    "",
+                )
 
         else:
             await embed_utils.replace(

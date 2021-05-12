@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import asyncio
+import datetime
 import os
-import random
 import sys
 import time
 from typing import Optional
@@ -10,10 +9,8 @@ from typing import Optional
 import discord
 import psutil
 import pygame
-
 from pgbot import common, embed_utils, utils
-import datetime
-from pgbot.commands.base import CodeBlock, String, BotException
+from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
 
@@ -246,7 +243,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     msg.content.replace("```", "\\`\\`\\`")
                 ),
                 fields=(
-                    ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
+                    ("\u2800",
+                     f"**[View Original Message]({msg.jump_url})**", False),
                 ),
             )
 
@@ -259,7 +257,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         attach: bool = True,
         spoiler: bool = False,
         info: bool = False,
-        author: bool = True
+        author: bool = True,
     ):
         """
         ->type More admin commands
@@ -340,15 +338,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!member_info, to get information about a member.
         """
-        if member is not None:
-            await self.response_msg.channel.send(
-                embed=embed_utils.get_user_info_embed(member)
-            )
-        else:
-            await self.response_msg.channel.send(
-                embed=embed_utils.get_user_info_embed(self.invoke_msg.author)
-            )
+        if member is None:
+            member = self.author
 
+        await self.response_msg.channel.send(
+            embed=embed_utils.get_user_info_embed(member)
+        )
         await self.response_msg.delete()
 
     async def cmd_heap(self):
@@ -395,7 +390,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         divider_str: String = String("-" * 56),
         group_by_author: bool = True,
         oldest_first: bool = True,
-        same_channel: bool = False
+        same_channel: bool = False,
     ):
         """
         ->type Admin commands
@@ -434,9 +429,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 parsed_before = datetime.datetime.fromisoformat(before)
             except ValueError:
                 raise BotException(
-                "Invalid `before` argument",
-                "`before` has to be a timestamp in the ISO format.",
-            )
+                    "Invalid `before` argument",
+                    "`before` has to be a timestamp in the ISO format.",
+                )
 
         if after:
             try:
@@ -445,9 +440,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 parsed_after = datetime.datetime.fromisoformat(after)
             except ValueError:
                 raise BotException(
-                "Invalid `after` argument",
-                "`after` has to be a timestamp in the ISO format.",
-            )
+                    "Invalid `after` argument",
+                    "`after` has to be a timestamp in the ISO format.",
+                )
 
         if around:
             try:
@@ -456,38 +451,36 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 parsed_around = datetime.datetime.fromisoformat(around)
             except ValueError:
                 raise BotException(
-                "Invalid `around` argument",
-                "`around has to be a timestamp in the ISO format.",
-            )
+                    "Invalid `around` argument",
+                    "`around has to be a timestamp in the ISO format.",
+                )
 
             if quantity > 101:
                 raise BotException(
-                "Invalid `quantity` argument",
-                "`quantity` must be an integer below 102 when `around` is specified.",
-            )
-
+                    "Invalid `quantity` argument",
+                    "`quantity` must be an integer below 102 when `around` is specified.",
+                )
 
         if quantity == -1 and not parsed_after:
             raise BotException(
-            "Invalid `quantity` argument",
-            "`quantity` must be above -1 when `after=` is not specified.",
+                "Invalid `quantity` argument",
+                "`quantity` must be above -1 when `after=` is not specified.",
             )
-        
+
         elif quantity <= 0:
             raise BotException(
                 "Invalid `quantity` argument",
                 "Quantity has to be a positive integer",
             )
 
-
         await destination.trigger_typing()
         messages = await origin.history(
             limit=quantity if quantity > -1 else None,
             before=parsed_before,
             after=parsed_after,
-            around=parsed_around
+            around=parsed_around,
         ).flatten()
-        
+
         if not messages:
             raise BotException(
                 "Invalid time range",
@@ -496,7 +489,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if (not after or not before) and oldest_first:
             messages.reverse()
-        
+
         with open(blank_filename, "w") as toolarge_txt:
             toolarge_txt.write("This file is too large to be archived.")
 
@@ -522,7 +515,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         no_mentions = discord.AllowedMentions.none()
         try:
-            for i, msg in enumerate(reversed(messages) if not oldest_first else messages):
+            for i, msg in enumerate(
+                reversed(messages) if not oldest_first else messages
+            ):
                 author = msg.author
                 await destination.trigger_typing()
 
@@ -539,7 +534,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     author_embed = None
                     current_divider_str = divider_str
                     if show_author or divider_str:
-                        if group_by_author and i > 0 and messages[i - 1].author == author:
+                        if (
+                            group_by_author
+                            and i > 0
+                            and messages[i - 1].author == author
+                        ):
                             # no author info or divider for mesmages next to each other sharing an author
                             current_divider_str = None
                         else:
@@ -551,14 +550,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
                                 footer_text="\nISO Time: "
                                 f"{msg.created_at.replace(tzinfo=None).isoformat()}"
                                 f"\nID: {author.id}",
-                                
-
-                                timestamp=msg.created_at.replace(
-                                    tzinfo=tz_utc
-                                ),
+                                timestamp=msg.created_at.replace(tzinfo=tz_utc),
                                 footer_icon_url=str(author.avatar_url),
                             )
-                        
+
                         if author_embed or current_divider_str:
                             await destination.send(
                                 content=current_divider_str,
@@ -584,7 +579,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         finally:
             if os.path.exists(blank_filename):
                 os.remove(blank_filename)
-
 
         if divider_str and not raw:
             await destination.send(content=divider_str)
