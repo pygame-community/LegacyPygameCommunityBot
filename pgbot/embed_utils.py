@@ -774,7 +774,9 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     )
 
     if msg.edited_at:
-        msg_edited_at_fdtime = msg.edited_at.replace(tz=datetime.timezone.utc).strftime(
+        msg_edited_at_fdtime = msg.edited_at.astimezone(
+            tz=datetime.timezone.utc
+        ).strftime(
             datetime_format_str
         )
         msg_edited_at_info = (

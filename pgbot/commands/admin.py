@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import os
 import sys
@@ -382,8 +383,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         quantity: int,
         destination: Optional[discord.TextChannel] = None,
         before: String = String(""),
+        before_msg: int = 0,
         after: String = String(""),
+        after_msg: int = 0,
         around: String = String(""),
+        around_msg: int = 0,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
@@ -395,12 +399,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         ->type Admin commands
         ->signature pg!archive [origin channel] [quantity] [destination channel]
-        [before=""] [after=""] [around=""] [raw=False] [show_header=True] [show_author=True]
-[divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
+[before=""] [before_msg=0] [after=""] [after_msg=0] [around=""] [around_msg=0]
+[raw=False] [show_header=True] [show_author=True] [divider_str=("-"*56)]
+[group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
         """
+        
+        archive_header_msg = None
+        archive_header_msg_embed = None
+
         if destination is None:
             destination = self.channel
 
@@ -432,6 +441,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "Invalid `before` argument",
                     "`before` has to be a timestamp in the ISO format.",
                 )
+        elif before_msg:
+            try:
+                parsed_before = await origin.fetch_message(before_msg)
+            except discord.NotFound:
+                raise BotException(
+                    "Invalid `before_msg` argument",
+                    "`before_msg` has to be an ID to a message from the origin channel",
+                )
 
         if after:
             try:
@@ -443,6 +460,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "Invalid `after` argument",
                     "`after` has to be a timestamp in the ISO format.",
                 )
+        elif after_msg:
+            try:
+                parsed_after = await origin.fetch_message(after_msg)
+            except discord.NotFound:
+                raise BotException(
+                    "Invalid `after_msg` argument",
+                    "`after_msg` has to be an ID to a message from the origin channel",
+                )
 
         if around:
             try:
@@ -453,6 +478,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 raise BotException(
                     "Invalid `around` argument",
                     "`around has to be a timestamp in the ISO format.",
+                )
+        elif around_msg:
+            try:
+                parsed_around = await origin.fetch_message(around_msg)
+            except discord.NotFound:
+                raise BotException(
+                    "Invalid `around_msg` argument",
+                    "`around_msg` has to be an ID to a message from the origin channel",
                 )
 
             if quantity > 101:
@@ -475,7 +508,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await destination.trigger_typing()
         messages = await origin.history(
-            limit=quantity if quantity > -1 else None,
+            limit=quantity if quantity != -1 else None,
             before=parsed_before,
             after=parsed_after,
             around=parsed_around,
@@ -487,30 +520,34 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "No messages were found for the specified timestamps.",
             )
 
-        if (not after or not before) and oldest_first:
+        if (not after and not after_msg) and oldest_first:
             messages.reverse()
 
         with open(blank_filename, "w") as toolarge_txt:
             toolarge_txt.write("This file is too large to be archived.")
 
         if show_header and not raw:
-            start_date = messages[0].created_at.replace(tzinfo=tz_utc)
-            end_date = messages[-1].created_at.replace(tzinfo=tz_utc)
+            start_date = messages[0].created_at.replace(tzinfo=None)
+            end_date = messages[-1].created_at.replace(tzinfo=None)
             start_date_str = start_date.strftime(datetime_format_str)
             end_date_str = end_date.strftime(datetime_format_str)
 
-            if start_date_str == end_date_str:
+            if start_date == end_date:
                 msg = f"On `{start_date_str} | {start_date.isoformat()}`"
             else:
-                msg = f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
+                msg = f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"+\
                 f"to\n> `{end_date_str} | {end_date.isoformat()}`"
 
-            await destination.send(
-                embed=embed_utils.create(
-                    title=f"__Archive of `#{origin.name}`__",
-                    description=f"\nAn Archive of **{origin.mention}**\n\n" + msg,
-                    color=0xFFFFFF,
-                )
+            archive_header_msg_embed = embed_utils.create(
+                title=f"__Archive of `#{origin.name}`__",
+                description=f"\nAn Archive of **{origin.mention}**"
+                            f" ( {len(messages)} message(s))\n\n" + msg,
+                color=0xFFFFFF,
+                footer_text="Status: Pending"
+            )
+
+            archive_header_msg = await destination.send(
+                embed=archive_header_msg_embed
             )
 
         no_mentions = discord.AllowedMentions.none()
@@ -586,6 +623,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await embed_utils.replace(
             self.response_msg, f"Successfully archived {len(messages)} message(s)!", ""
         )
+
+        if show_header:
+            archive_header_msg_embed.set_footer(text="Status: Completed")
+            await embed_utils.replace_from_dict(
+                archive_header_msg,
+                archive_header_msg_embed.to_dict()
+            )
+        await self.response_msg.delete(delay=5.0)
 
     async def cmd_poll(
         self,
