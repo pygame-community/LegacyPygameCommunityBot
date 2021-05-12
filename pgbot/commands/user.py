@@ -119,7 +119,7 @@ class UserCommand(BaseCommand):
         `message string`: String that includes your message
         (E.g "!d bump the server")
         Note that the maximum time for the reminder is 6 hours
-        ->example command pg!remind 1h3m51s !d bump the server
+        ->example command pg!remind 1h3m51s "!d bump the server"
         -----
         Implement pg!remind, for users to set reminders for themselves
         """
