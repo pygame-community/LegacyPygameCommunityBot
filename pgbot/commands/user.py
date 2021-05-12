@@ -168,9 +168,14 @@ class UserCommand(BaseCommand):
             "remind you in case I am sleeping.",
         )
         await asyncio.sleep(sec)
-        await self.invoke_msg.reply(
-            f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
-        )
+        try:
+            await self.invoke_msg.reply(
+                f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+            )
+        except discord.errors.HTTPException:
+            await self.invoke_msg.channel.send(
+                f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+            )
 
     async def cmd_clock(
         self,
@@ -717,7 +722,7 @@ class UserCommand(BaseCommand):
         """
         # NOTE: It is hardcoded in the bot to remove some messages in resource-entries, if you want to remove more, add the ID to the
         #       list below
-        msgs_to_filter = [817137523905527889, 810942002114986045]
+        msgs_to_filter = [817137523905527889, 810942002114986045, 810942043488256060]
 
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
