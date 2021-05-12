@@ -108,7 +108,7 @@ class UserCommand(BaseCommand):
                 color=0x228B22,
             )
 
-    async def cmd_remind(self, time: str, *msg: str):
+    async def cmd_remind(self, time: str, msg: String):
         """
         ->type Other commands
         ->signature pg!remind [time] [message string]
@@ -170,7 +170,7 @@ class UserCommand(BaseCommand):
         )
         await asyncio.sleep(sec)
         await self.invoke_msg.reply(
-            f"__**Reminder for {self.author.mention}:**__\n>>> {' '.join(msg)}"
+            f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
         )
 
     async def cmd_clock(
