@@ -15,7 +15,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
         common.log_channel,
         title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
         description=invoke_msg.content,
-        fields=( ("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False) ,)
+        fields=(("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),),
     )
 
     is_priv = False

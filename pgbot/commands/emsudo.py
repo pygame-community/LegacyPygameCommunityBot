@@ -2967,9 +2967,7 @@ class EmsudoCommand(OldBaseCommand):
 
         if break_1:
             try:
-                args = eval(
-                    CodeBlock(self.string).code
-                )
+                args = eval(CodeBlock(self.string).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's
@@ -3204,9 +3202,7 @@ class EmsudoCommand(OldBaseCommand):
 
         else:
             try:
-                args = eval(
-                    CodeBlock(self.string).code
-                )
+                args = eval(CodeBlock(self.string).code)
             except Exception as e:
                 tbs = traceback.format_exception(type(e), e, e.__traceback__)
                 # Pop out the first entry in the traceback, because that's

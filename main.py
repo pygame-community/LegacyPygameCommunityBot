@@ -107,11 +107,8 @@ async def on_message(msg: discord.Message):
             except discord.HTTPException:
                 pass
 
-    else:
+    elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
-
-        if common.TEST_MODE:
-            return
 
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
@@ -126,18 +123,18 @@ async def on_message(msg: discord.Message):
                 common.BYDARIO_QUOTE, allowed_mentions=discord.AllowedMentions.none()
             )
 
-    if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
-        if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
-            entry_type = "showcase"
-            color = 0xFF8800
-        else:
-            entry_type = "resource"
-            color = 0x0000AA
+        if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
+            if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
+                entry_type = "showcase"
+                color = 0xFF8800
+            else:
+                entry_type = "resource"
+                color = 0x0000AA
 
-        title, fields = utils.format_entries_message(msg, entry_type)
-        await embed_utils.send(
-            common.entries_discussion_channel, title, "", color, fields=fields
-        )
+            title, fields = utils.format_entries_message(msg, entry_type)
+            await embed_utils.send(
+                common.entries_discussion_channel, title, "", color, fields=fields
+            )
 
 
 @common.bot.event
@@ -169,8 +166,6 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
-    else:
-        await emotion.check_bonk(new)
 
 
 if __name__ == "__main__":
