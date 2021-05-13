@@ -9,7 +9,7 @@ from typing import Optional
 
 import discord
 import pygame
-from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils
+from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils, db
 from pgbot.commands.base import BaseCommand, BotException, CodeBlock, HiddenArg, String
 
 
@@ -199,17 +199,14 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
-        db_msg = await self.guild.get_channel(common.DB_CHANNEL_ID).fetch_message(
-            msg_id
-        )
+        db_obj = db.DiscordDB("clock")
 
-        timezones = await clock.decode_from_msg(db_msg)
+        timezones = await db_obj.get([])
         if action:
             if member is None:
                 member = self.author
-                for mem, _, _ in timezones:
-                    if mem.id == member.id:
+                for mem_id, _, _ in timezones:
+                    if mem_id == member.id:
                         break
                 else:
                     raise BotException(
@@ -224,11 +221,11 @@ class UserCommand(BaseCommand):
                         "Failed to update clock!", "Timezone offset out of range"
                     )
 
-                for cnt, (mem, _, _) in enumerate(timezones):
-                    if mem.id == member.id:
+                for cnt, (mem_id, _, _) in enumerate(timezones):
+                    if mem_id == member.id:
                         timezones[cnt][1] = timezone
                         if color is not None:
-                            timezones[cnt][2] = color
+                            timezones[cnt][2] = int(color)
                         break
                 else:
                     if color is None:
@@ -236,12 +233,12 @@ class UserCommand(BaseCommand):
                             "Failed to update clock!",
                             "Color argument is required when adding new people",
                         )
-                    timezones.append([member, timezone, color])
+                    timezones.append([member.id, timezone, int(color)])
                     timezones.sort(key=lambda x: x[1])
 
             elif action == "remove":
-                for cnt, (mem, _, _) in enumerate(timezones):
-                    if mem.id == member.id:
+                for cnt, (mem_id, _, _) in enumerate(timezones):
+                    if mem_id == member.id:
                         timezones.pop(cnt)
                         break
                 else:
@@ -255,10 +252,12 @@ class UserCommand(BaseCommand):
                     "Failed to update clock!", f"Invalid action specifier {action}"
                 )
 
-            await db_msg.edit(content=clock.encode_to_msg(timezones))
+            await db_obj.write(timezones)
 
         t = time.time()
-        pygame.image.save(clock.user_clock(t, timezones), f"temp{t}.png")
+        pygame.image.save(
+            await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
+        )
         common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
             file=discord.File(f"temp{t}.png")
         )
@@ -791,14 +790,16 @@ class UserCommand(BaseCommand):
             # Constructs embeds based on messages, and store them in pages to be used in the paginator
             top_msg = msgs[:6]
             if len(copy_msgs) > 1:
-                title = f"Retrieved {len(copy_msgs)} entries in " \
-                        f"#{resource_entries_channel.name}"
+                title = (
+                    f"Retrieved {len(copy_msgs)} entries in "
+                    f"#{resource_entries_channel.name}"
+                )
             else:
-                title = f"Retrieved {len(copy_msgs)} entry in " \
-                        f"#{resource_entries_channel.name}"
-            current_embed = discord.Embed(
-                title=title
-            )
+                title = (
+                    f"Retrieved {len(copy_msgs)} entry in "
+                    f"#{resource_entries_channel.name}"
+                )
+            current_embed = discord.Embed(title=title)
 
             for msg in top_msg:
                 try:

@@ -3,31 +3,6 @@ import os
 
 import pygame
 
-from pgbot import utils
-
-
-def encode_to_msg(timezones):
-    """
-    Encode clock timezone data to string
-    """
-    msg = ""
-    for mem, tz, col in sorted(timezones, key=lambda x: x[1]):
-        msg += " ".join([mem.mention, str(tz), str(int(col))]) + "\n"
-    return msg
-
-
-async def decode_from_msg(msg):
-    """
-    Decode clock timezone data from string
-    """
-    ret = []
-    for line in msg.content.splitlines():
-        a, b, c = line.split(" ")
-        ret.append(
-            [await utils.get_mention_from_id(a, msg), float(b), pygame.Color(int(c))]
-        )
-    return ret
-
 
 def generate_arrow_points(
     position,
@@ -104,7 +79,7 @@ def generate_arrow_points(
     )
 
 
-def user_clock(t, clock_timezones):
+async def user_clock(t, clock_timezones, guild):
     """
     Generate a 24 hour clock for special server roles
     """
@@ -142,6 +117,7 @@ def user_clock(t, clock_timezones):
     tx = ty = 0
     tz_and_col = {}
     for mem, offset, color in clock_timezones:
+        mem = await guild.fetch_member(mem)
         # try to use nickname, if it is too long, fallback to name
         # 14 happens to be the sweet spot, any longer and the name overflows
         if mem.nick and len(mem.nick) <= 14:
@@ -149,6 +125,7 @@ def user_clock(t, clock_timezones):
         else:
             name = mem.name[:14]
 
+        color = pygame.Color(color)
         if offset in tz_and_col:
             color = tz_and_col[offset]
         else:
