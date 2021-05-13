@@ -26,7 +26,7 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
         else:
             if v != skip_value:
                 old_dict[k] = v
-    
+
     return old_dict
 
 

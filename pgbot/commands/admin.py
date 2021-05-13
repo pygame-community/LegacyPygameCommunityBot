@@ -216,8 +216,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     msg.content.replace("```", "\\`\\`\\`")
                 ),
                 fields=(
-                    ("\u2800",
-                     f"**[View Original Message]({msg.jump_url})**", False),
+                    ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
                 ),
             )
 
@@ -369,14 +368,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         same_channel: bool = False,
     ):
         """
-        ->type Admin commands
-        ->signature pg!archive [origin channel] [quantity] [destination channel]
-[before=""] [before_msg=0] [after=""] [after_msg=0] [around=""] [around_msg=0]
-[raw=False] [show_header=True] [show_author=True] [divider_str=("-"*56)]
-[group_by_author=True] [oldest_first=True] [same_channel=False]
-        ->description Archive messages to another channel
-        -----
-        Implement pg!archive, for admins to archive messages
+                ->type Admin commands
+                ->signature pg!archive [origin channel] [quantity] [destination channel]
+        [before=""] [before_msg=0] [after=""] [after_msg=0] [around=""] [around_msg=0]
+        [raw=False] [show_header=True] [show_author=True] [divider_str=("-"*56)]
+        [group_by_author=True] [oldest_first=True] [same_channel=False]
+                ->description Archive messages to another channel
+                -----
+                Implement pg!archive, for admins to archive messages
         """
 
         archive_header_msg = None
@@ -517,7 +516,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 description=f"\nAn Archive of **{origin.mention}**"
                 f" ( {len(messages)} message(s))\n\n" + msg,
                 color=0xFFFFFF,
-                footer_text="Status: Incomplete"
+                footer_text="Status: Incomplete",
             )
 
             archive_header_msg = await destination.send(embed=archive_header_msg_embed)

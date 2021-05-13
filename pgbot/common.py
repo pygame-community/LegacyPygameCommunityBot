@@ -38,8 +38,7 @@ BONCC_THRESHOLD = 10
 # Constants
 VERSION = "1.5.0"
 TEST_MODE = "TEST_TOKEN" in os.environ
-TEST_USER_ID = int(os.environ["TEST_USER_ID"]
-                   ) if "TEST_USER_ID" in os.environ else None
+TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
 
 TEST_USER_IDS = (
     set(int(user_id) for user_id in os.environ["TEST_USER_IDS"].split())
@@ -60,8 +59,7 @@ ROLES_CHANNEL_ID = 772535163195228200
 GUIDE_CHANNEL_ID = 772528306615615500
 ARRIVALS_CHANNEL_ID = 774916117881159681
 LOG_CHANNEL_ID = 793250875471822930
-ENTRY_CHANNEL_IDS = {"showcase": 772507247540437032,
-                     "resource": 810516093273768016}
+ENTRY_CHANNEL_IDS = {"showcase": 772507247540437032, "resource": 810516093273768016}
 ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
 CMD_FUNC_PREFIX = "cmd_"
@@ -208,21 +206,21 @@ ILLEGAL_ATTRIBUTES = (
 )
 
 DEAD_CHAT_TRIGGERS = set(
-        (
-            "the chat is dead",
-            "the chat is ded",
-            "this chat is dead",
-            "this is a ded chat",
-            "this is a dead chat",
-            "chat dead",
-            "chat ded",
-            "chatded",
-            "chatdead",
-            "dead chat",
-            "ded chat",
-            "dedchat",            
-            "this chat ded",
-            "this chat dead"
+    (
+        "the chat is dead",
+        "the chat is ded",
+        "this chat is dead",
+        "this is a ded chat",
+        "this is a dead chat",
+        "chat dead",
+        "chat ded",
+        "chatded",
+        "chatdead",
+        "dead chat",
+        "ded chat",
+        "dedchat",
+        "this chat ded",
+        "this chat dead",
     )
 )
 
