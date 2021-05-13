@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 import discord
 import pygame
 
-from pgbot import common, embed_utils, utils
+from pgbot import common, embed_utils, utils, db
 
 ESCAPES = {
     "0": "\0",
@@ -433,15 +433,8 @@ class BaseCommand:
                 + "do `pg!help`",
             )
 
-        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
-        db_message = await db_channel.fetch_message(
-            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
-        )
-        splits = db_message.content.split(":")
-        cmds = splits[1].strip().split(" ") if len(splits) == 2 else []
-
         # command has been blacklisted from running
-        if cmd in cmds:
+        if cmd in await db.DiscordDB("blacklist").get([]):
             raise BotException(
                 "Cannot execute comamand!",
                 f"The command '{cmd}' has been temporarily been blocked from "

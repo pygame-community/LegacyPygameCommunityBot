@@ -747,15 +747,17 @@ def get_member_info_str(member: discord.Member):
         f"*Is System User (Discord Official)*: \n> `{member.system}`\n\n"
     )
 
-    return "".join((
-        member_name_info,
-        member_created_at_info,
-        member_joined_at_info,
-        member_top_role_info,
-        member_role_count_info,
-        member_id_info,
-        member_stats,
-    ))
+    return "".join(
+        (
+            member_name_info,
+            member_created_at_info,
+            member_joined_at_info,
+            member_top_role_info,
+            member_role_count_info,
+            member_id_info,
+            member_stats,
+        )
+    )
 
 
 def get_msg_info_embed(msg: discord.Message, author: bool = True):
@@ -776,9 +778,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     if msg.edited_at:
         msg_edited_at_fdtime = msg.edited_at.astimezone(
             tz=datetime.timezone.utc
-        ).strftime(
-            datetime_format_str
-        )
+        ).strftime(datetime_format_str)
         msg_edited_at_info = (
             f"*Last Edited On*:\n`{msg.edited_at.isoformat()}`\n"
             + f"> {msg_edited_at_fdtime}\n\n"
@@ -795,15 +795,17 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     msg_embed_info = f"*Number Of Embeds*: \n> `{len(msg.embeds)} embed(s)`\n\n"
     msg_is_pinned = f"*Is Pinned*: \n> `{msg.pinned}`\n\n"
 
-    msg_info = "".join((
-        msg_created_at_info,
-        msg_edited_at_info,
-        msg_char_count_info,
-        msg_id_info,
-        msg_embed_info,
-        msg_attachment_info,
-        msg_is_pinned,
-    ))
+    msg_info = "".join(
+        (
+            msg_created_at_info,
+            msg_edited_at_info,
+            msg_char_count_info,
+            msg_id_info,
+            msg_embed_info,
+            msg_attachment_info,
+            msg_is_pinned,
+        )
+    )
 
     if author:
         return create(

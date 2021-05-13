@@ -10,7 +10,7 @@ from typing import Optional
 import discord
 import psutil
 import pygame
-from pgbot import common, embed_utils, utils
+from pgbot import common, embed_utils, utils, db
 from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
@@ -33,39 +33,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         else:
             await UserCommand.handle_cmd(self)
 
-    async def cmd_sync_db(self, name: str):
-        """
-        ->type Admin commands
-        ->signature pg!sync_db [name]
-        ->description sync 'db' messages between testbot and real bot
-        ->extended description
-        `pg!sync_db clock`
-        `pg!sync_db command_blacklist`
-        Are the available commands now
-        -----
-        Implement pg!sync_clocks, sync 'db' messages between testbot and real bot
-        """
-        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
-
-        if name == "clock":
-            dest_msg_id = common.DB_CLOCK_MSG_IDS[common.TEST_MODE]
-            src_msg_id = common.DB_CLOCK_MSG_IDS[not common.TEST_MODE]
-        elif name == "command_blacklist":
-            dest_msg_id = common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
-            src_msg_id = common.DB_BLACKLIST_MSG_IDS[not common.TEST_MODE]
-        else:
-            raise BotException("Invalid Name!", "")
-
-        dest_msg = await db_channel.fetch_message(dest_msg_id)
-        src_msg = await db_channel.fetch_message(src_msg_id)
-
-        await dest_msg.edit(content=src_msg.content)
-        await embed_utils.replace(
-            self.response_msg,
-            "DB messages synced!",
-            "DB messages have been synced between both the bots",
-        )
-
     async def cmd_whitelist_cmd(self, *cmds: str):
         """
         ->type Admin commands
@@ -74,20 +41,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!whitelist_cmd, to whitelist commands
         """
-        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
-        db_message = await db_channel.fetch_message(
-            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
-        )
-        splits = db_message.content.split(":")
-        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
-
+        db_obj = db.DiscordDB("blacklist")
+        commands = await db_obj.get([])
         cnt = 0
         for cmd in cmds:
             if cmd in commands:
                 cnt += 1
                 commands.remove(cmd)
 
-        await db_message.edit(content="Blacklisted Commands: " + " ".join(commands))
+        await db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -103,13 +65,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!blacklist_cmd, to blacklist commands
         """
-        db_channel = self.guild.get_channel(common.DB_CHANNEL_ID)
-        db_message = await db_channel.fetch_message(
-            common.DB_BLACKLIST_MSG_IDS[common.TEST_MODE]
-        )
-
-        splits = db_message.content.split(":")
-        commands = splits[1].strip().split(" ") if len(splits) == 2 else []
+        db_obj = db.DiscordDB("blacklist")
+        commands = await db_obj.get([])
 
         cnt = 0
         for cmd in cmds:
@@ -117,7 +74,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 cnt += 1
                 commands.append(cmd)
 
-        await db_message.edit(content="Blacklisted Commands: " + " ".join(commands))
+        await db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -406,7 +363,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!archive, for admins to archive messages
         """
-        
+
         archive_header_msg = None
         archive_header_msg_embed = None
 
@@ -535,20 +492,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if start_date == end_date:
                 msg = f"On `{start_date_str} | {start_date.isoformat()}`"
             else:
-                msg = f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"+\
-                f"to\n> `{end_date_str} | {end_date.isoformat()}`"
+                msg = (
+                    f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
+                    + f"to\n> `{end_date_str} | {end_date.isoformat()}`"
+                )
 
             archive_header_msg_embed = embed_utils.create(
                 title=f"__Archive of `#{origin.name}`__",
                 description=f"\nAn Archive of **{origin.mention}**"
-                            f" ( {len(messages)} message(s))\n\n" + msg,
+                f" ( {len(messages)} message(s))\n\n" + msg,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete"
             )
 
-            archive_header_msg = await destination.send(
-                embed=archive_header_msg_embed
-            )
+            archive_header_msg = await destination.send(embed=archive_header_msg_embed)
 
         no_mentions = discord.AllowedMentions.none()
         try:
@@ -627,8 +584,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if show_header and not raw:
             archive_header_msg_embed.set_footer(text="Status: Completed")
             await embed_utils.replace_from_dict(
-                archive_header_msg,
-                archive_header_msg_embed.to_dict()
+                archive_header_msg, archive_header_msg_embed.to_dict()
             )
         await self.response_msg.delete(delay=5.0)
 

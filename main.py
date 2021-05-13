@@ -5,7 +5,7 @@ import random
 import discord
 import pygame
 
-from pgbot import commands, common, emotion, utils, embed_utils
+from pgbot import commands, common, emotion, utils, embed_utils, db
 
 
 @common.bot.event
@@ -19,6 +19,8 @@ async def on_ready():
         print("-", server.name)
         for channel in server.channels:
             print(" +", channel.name)
+            if channel.id == common.DB_CHANNEL_ID:
+                await db.init(channel)
             if channel.id == common.LOG_CHANNEL_ID:
                 common.log_channel = channel
             if channel.id == common.ARRIVALS_CHANNEL_ID:
