@@ -207,6 +207,25 @@ ILLEGAL_ATTRIBUTES = (
     "__dict__",
 )
 
+DEAD_CHAT_TRIGGERS = set(
+        (
+            "the chat is dead",
+            "the chat is ded",
+            "this chat is dead",
+            "this is a ded chat",
+            "this is a dead chat",
+            "chat dead",
+            "chat ded",
+            "chatded",
+            "chatdead",
+            "dead chat",
+            "ded chat",
+            "dedchat",            
+            "this chat ded",
+            "this chat dead"
+    )
+)
+
 BOT_HELP_PROMPT = {
     "title": "Help",
     "color": 0xFFFF00,
@@ -223,5 +242,5 @@ BYDARIO_QUOTE = """
 > Yea, if is dead bring it back to life or let it rest in peace
 > When you are death ppl dont go to your tomb and say: dead person
 > I know because I am dead and noone comes to visit me
-bydariogamer#7949
+<@!691691416799150152>
 """
