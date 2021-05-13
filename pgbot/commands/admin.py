@@ -543,7 +543,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 description=f"\nAn Archive of **{origin.mention}**"
                             f" ( {len(messages)} message(s))\n\n" + msg,
                 color=0xFFFFFF,
-                footer_text="Status: Pending"
+                footer_text="Status: Incomplete"
             )
 
             archive_header_msg = await destination.send(
@@ -624,7 +624,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             self.response_msg, f"Successfully archived {len(messages)} message(s)!", ""
         )
 
-        if show_header:
+        if show_header and not raw:
             archive_header_msg_embed.set_footer(text="Status: Completed")
             await embed_utils.replace_from_dict(
                 archive_header_msg,
