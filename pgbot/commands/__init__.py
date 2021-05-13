@@ -11,14 +11,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message):
     """
     Handle a pg! command posted by a user
     """
-    # NOTE: for developers wanting to test out pgbot on your bot, comment lines 15-20 out
-    #       Just remember to put them back in when creating a PR
-    await embed_utils.send_2(
-        common.log_channel,
-        title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-        description=invoke_msg.content,
-        fields=(("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),),
-    )
+    if not common.TEST_MODE:
+        await embed_utils.send_2(
+            common.log_channel,
+            title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+            description=invoke_msg.content,
+            fields=(
+                ("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),),
+        )
 
     is_priv = False
     cmd = user.UserCommand(invoke_msg, response_msg)

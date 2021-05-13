@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import datetime
 import os
+import pprint
 import sys
 import time
 from typing import Optional
@@ -10,7 +10,8 @@ from typing import Optional
 import discord
 import psutil
 import pygame
-from pgbot import common, embed_utils, utils, db
+
+from pgbot import common, db, embed_utils, utils
 from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
@@ -32,6 +33,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await EmsudoCommand.handle_cmd(self)
         else:
             await UserCommand.handle_cmd(self)
+
+    async def cmd_see_db(self, name: str):
+        """
+        ->type Admin commands
+        ->signature pg!see_db [name]
+        ->description Visualize DB
+        -----
+        Implement pg!see_db, to visualise DB messages
+        """
+        await embed_utils.replace(
+            self.response_msg,
+            f"Here are the contents of the table {name}:",
+            utils.code_block(pprint.pformat(await db.DiscordDB(name).get())),
+        )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
         """
