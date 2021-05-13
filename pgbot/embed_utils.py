@@ -10,7 +10,7 @@ from discord.embeds import EmptyEmbed
 from . import common
 
 
-def recursive_update(old_dict, update_dict):
+def recursive_update(old_dict, update_dict, skip_value="\0"):
     """
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
@@ -20,9 +20,13 @@ def recursive_update(old_dict, update_dict):
 
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
-            old_dict[k] = recursive_update(old_dict.get(k, {}), v)
+            new_value = recursive_update(old_dict.get(k, {}), v)
+            if new_value != skip_value:
+                old_dict[k] = new_value
         else:
-            old_dict[k] = v
+            if v != skip_value:
+                old_dict[k] = v
+    
     return old_dict
 
 
@@ -437,7 +441,7 @@ async def edit_2(
     old_embed_dict = embed.to_dict()
     update_embed_dict = update_embed.to_dict()
 
-    recursive_update(old_embed_dict, update_embed_dict)
+    recursive_update(old_embed_dict, update_embed_dict, skip_value="")
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
