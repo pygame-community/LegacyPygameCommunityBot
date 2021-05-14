@@ -131,6 +131,17 @@ async def on_message(msg: discord.Message):
             await embed_utils.send(
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
+        else:
+            lowered = msg.content.lower()
+            if "i am" in lowered and len(lowered) < 100:
+                # Probablity for triggering dad joke is 1/5 for others.
+                # snek is a special case, he loves dad jokes so he will get em
+                # everytime
+                if msg.author.id != 683852333293109269 and random.randint(0, 5):
+                    return
+
+                name = msg.content[lowered.index("i am") + 4:].strip()
+                await msg.channel.send(f"Hi {name}! I am <@!{common.BOT_ID}>")
 
 
 @common.bot.event

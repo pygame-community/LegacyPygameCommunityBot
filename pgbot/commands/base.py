@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import inspect
 import os
 import platform
@@ -304,10 +305,12 @@ class BaseCommand:
         elif isinstance(arg, String):
             if anno == "String":
                 return arg
+            elif anno in ["datetime.datetime", "datetime"]:
+                return datetime.datetime.fromisoformat(arg.string.strip())
             raise ValueError()
 
         elif isinstance(arg, str):
-            if anno in ["CodeBlock", "String"]:
+            if anno in ["CodeBlock", "String", "datetime.datetime", "datetime"]:
                 raise ValueError()
 
             elif anno == "HiddenArg":
@@ -380,10 +383,19 @@ class BaseCommand:
             # no checking/converting, do a direct return
             return arg
 
-        if anno.startswith("Optional["):
+        if anno.startswith("Optional[") and anno.endswith("]"):
             anno = anno[9:-1].strip()
 
         try:
+            if anno.startswith("Union[") and anno.endswith("]"):
+                annos = [i.strip() for i in anno[6:-1].split(",")]
+                for cnt, anno in enumerate(annos):
+                    try:
+                        return await self._cast_arg(anno, arg, cmd)
+                    except ValueError:
+                        if cnt == len(annos) - 1:
+                            raise
+
             return await self._cast_arg(anno, arg, cmd)
 
         except ValueError:
@@ -392,6 +404,9 @@ class BaseCommand:
 
             elif anno == "String":
                 typ = 'a string, please surround it in quotes (`""`)'
+
+            elif anno in ["datetime.datetime", "datetime"]:
+                typ = "a string, that denotes datetime in iso format"
 
             elif anno == "discord.Member":
                 typ = "an id of a person or a mention to them"

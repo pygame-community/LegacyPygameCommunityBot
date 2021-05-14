@@ -5,7 +5,7 @@ import os
 import pprint
 import sys
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import discord
 import psutil
@@ -353,12 +353,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         origin: discord.TextChannel,
         quantity: int,
         destination: Optional[discord.TextChannel] = None,
-        before: String = String(""),
-        before_msg: int = 0,
-        after: String = String(""),
-        after_msg: int = 0,
-        around: String = String(""),
-        around_msg: int = 0,
+        before: Optional[Union[int, datetime.datetime]] = None,
+        after: Optional[Union[int, datetime.datetime]] = None,
+        around: Optional[Union[int, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
@@ -368,14 +365,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
         same_channel: bool = False,
     ):
         """
-                ->type Admin commands
-                ->signature pg!archive [origin channel] [quantity] [destination channel]
-        [before=""] [before_msg=0] [after=""] [after_msg=0] [around=""] [around_msg=0]
-        [raw=False] [show_header=True] [show_author=True] [divider_str=("-"*56)]
-        [group_by_author=True] [oldest_first=True] [same_channel=False]
-                ->description Archive messages to another channel
-                -----
-                Implement pg!archive, for admins to archive messages
+        ->type Admin commands
+        ->signature pg!archive [origin channel] [quantity] [destination channel]
+        [before] [after] [around] [raw=False] [show_header=True] [show_author=True]
+        [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
+        ->description Archive messages to another channel
+        -----
+        Implement pg!archive, for admins to archive messages
         """
 
         archive_header_msg = None
@@ -394,79 +390,36 @@ class AdminCommand(UserCommand, EmsudoCommand):
         blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
 
         divider_str = divider_str.string
-        before = before.string.strip()
-        after = after.string.strip()
-        around = around.string.strip()
 
-        parsed_before = None
-        parsed_after = None
-        parsed_around = None
-
-        if before:
+        if isinstance(before, int):
             try:
-                if before.endswith("Z"):
-                    before = before[:-1]
-                parsed_before = datetime.datetime.fromisoformat(before)
-            except ValueError:
+                before = await origin.fetch_message(before)
+            except discord.NotFound:
                 raise BotException(
                     "Invalid `before` argument",
-                    "`before` has to be a timestamp in the ISO format.",
-                )
-        elif before_msg:
-            try:
-                parsed_before = await origin.fetch_message(before_msg)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `before_msg` argument",
-                    "`before_msg` has to be an ID to a message from the origin channel",
+                    "`before` has to be an ID to a message from the origin channel",
                 )
 
-        if after:
+        if isinstance(after, int):
             try:
-                if after.endswith("Z"):
-                    after = after[:-1]
-                parsed_after = datetime.datetime.fromisoformat(after)
-            except ValueError:
+                after = await origin.fetch_message(after)
+            except discord.NotFound:
                 raise BotException(
                     "Invalid `after` argument",
-                    "`after` has to be a timestamp in the ISO format.",
-                )
-        elif after_msg:
-            try:
-                parsed_after = await origin.fetch_message(after_msg)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `after_msg` argument",
-                    "`after_msg` has to be an ID to a message from the origin channel",
+                    "`after` has to be an ID to a message from the origin channel",
                 )
 
-        if around:
+        if isinstance(around, int):
             try:
-                if around.endswith("Z"):
-                    around = around[:-1]
-                parsed_around = datetime.datetime.fromisoformat(around)
-            except ValueError:
+                around = await origin.fetch_message(around)
+            except discord.NotFound:
                 raise BotException(
                     "Invalid `around` argument",
-                    "`around has to be a timestamp in the ISO format.",
-                )
-        elif around_msg:
-            try:
-                parsed_around = await origin.fetch_message(around_msg)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `around_msg` argument",
-                    "`around_msg` has to be an ID to a message from the origin channel",
-                )
-
-            if quantity > 101:
-                raise BotException(
-                    "Invalid `quantity` argument",
-                    "`quantity` must be an integer below 102 when `around` is specified.",
+                    "`around` has to be an ID to a message from the origin channel",
                 )
 
         if quantity <= 0:
-            if quantity == -1 and not parsed_after:
+            if quantity == -1 and not after:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "`quantity` must be above -1 when `after=` is not specified.",
@@ -480,9 +433,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await destination.trigger_typing()
         messages = await origin.history(
             limit=quantity if quantity != -1 else None,
-            before=parsed_before,
-            after=parsed_after,
-            around=parsed_around,
+            before=before,
+            after=after,
+            around=around,
         ).flatten()
 
         if not messages:
@@ -491,7 +444,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "No messages were found for the specified timestamps.",
             )
 
-        if (not after and not after_msg) and oldest_first:
+        if not after and oldest_first:
             messages.reverse()
 
         with open(blank_filename, "w") as toolarge_txt:
@@ -508,13 +461,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
             else:
                 msg = (
                     f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
-                    + f"to\n> `{end_date_str} | {end_date.isoformat()}`"
+                    + f"To\n> `{end_date_str} | {end_date.isoformat()}`"
                 )
 
             archive_header_msg_embed = embed_utils.create(
                 title=f"__Archive of `#{origin.name}`__",
-                description=f"\nAn Archive of **{origin.mention}**"
-                f" ( {len(messages)} message(s))\n\n" + msg,
+                description=f"\nAn archive of **{origin.mention}** "
+                f"({len(messages)} message(s))\n\n" + msg,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete",
             )
