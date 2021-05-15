@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import os
 import pprint
-import sys
 import time
 from typing import Optional, Union
 
@@ -336,17 +335,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_stop(self):
         """
         ->type Admin commands
-        ->signature pg!stop
+        ->signature pg!stop [*ids]
         ->description Stop the bot
+        ->extended description
+        Any additional arguments are IDs of members running test bots, to stop
+        the test bots of particular wizards
         -----
-        Implement pg!stop, for admins to stop the bot
+        The actual pg!stop function is implemented elsewhere, this is just
+        a stub for the docs
         """
-        await embed_utils.replace(
-            self.response_msg,
-            "Stopping bot...",
-            "Change da world,\nMy final message,\nGoodbye.",
-        )
-        sys.exit(0)
 
     async def cmd_archive(
         self,

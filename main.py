@@ -90,24 +90,12 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        if (
-            not common.TEST_MODE
-            or not common.TEST_USER_IDS
-            or msg.author.id in common.TEST_USER_IDS
-        ):
-
-            try:
-                response = await embed_utils.send(
-                    msg.channel, "Your command is being processed!", ""
-                )
-
-                await commands.handle(msg, response)
-
-                common.cmd_logs[msg.id] = response
-                if len(common.cmd_logs) > 100:
-                    del common.cmd_logs[common.cmd_logs.keys()[0]]
-            except discord.HTTPException:
-                pass
+        try:
+            common.cmd_logs[msg.id] = await commands.handle(msg)
+            if len(common.cmd_logs) > 100:
+                del common.cmd_logs[common.cmd_logs.keys()[0]]
+        except discord.HTTPException:
+            pass
 
     elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
@@ -133,14 +121,14 @@ async def on_message(msg: discord.Message):
             )
         else:
             lowered = msg.content.lower()
-            if "i am" in lowered and len(lowered) < 100:
+            if "i am" in lowered and len(lowered) < 60:
                 # Probablity for triggering dad joke is 1/5 for others.
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
                 if msg.author.id != 683852333293109269 and random.randint(0, 5):
                     return
 
-                name = msg.content[lowered.index("i am") + 4:].strip()
+                name = msg.content[lowered.index("i am") + 4 :].strip()
                 await msg.channel.send(f"Hi {name}! I am <@!{common.BOT_ID}>")
 
 
