@@ -3354,22 +3354,20 @@ class EmsudoCommand(OldBaseCommand):
         src_msg = None
         src_channel_id = self.invoke_msg.channel.id
         src_channel = self.invoke_msg.channel
-        embed_attr_keys = set(
-            (
-                "author",
-                "provider",
-                "title",
-                "url",
-                "description",
-                "type",
-                "color",
-                "fields",
-                "thumbnail",
-                "image",
-                "footer",
-                "timestamp",
-            )
-        )
+        embed_attr_keys = {
+            "author",
+            "provider",
+            "title",
+            "url",
+            "description",
+            "type",
+            "color",
+            "fields",
+            "thumbnail",
+            "image",
+            "footer",
+            "timestamp",
+        }
         reduced_embed_attr_keys = set()
         filtered_field_indices = []
         offset_idx_2 = None

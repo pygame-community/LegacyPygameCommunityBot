@@ -122,7 +122,7 @@ async def on_message(msg: discord.Message):
         else:
             lowered = msg.content.lower()
             if "i am" in lowered and len(lowered) < 60:
-                # Probablity for triggering dad joke is 1/5 for others.
+                # Probablity for triggering dad joke is 1/6 for others.
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
                 if msg.author.id != 683852333293109269 and random.randint(0, 5):

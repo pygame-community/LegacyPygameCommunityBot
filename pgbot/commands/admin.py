@@ -36,7 +36,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_see_db(self, name: str):
         """
         ->type Admin commands
-        ->signature pg!see_db [name]
+        ->signature pg!see_db <name>
         ->description Visualize DB
         -----
         Implement pg!see_db, to visualise DB messages
@@ -119,7 +119,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_eval(self, code: CodeBlock):
         """
         ->type Admin commands
-        ->signature pg!eval [command]
+        ->signature pg!eval <command>
         ->description Execute a line of command without restrictions
         -----
         Implement pg!eval, for admins to run arbitrary code on the bot
@@ -147,7 +147,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo(self, msg: String):
         """
         ->type More admin commands
-        ->signature pg!sudo [message]
+        ->signature pg!sudo <msg>
         ->description Send a message trough the bot
         -----
         Implement pg!sudo, for admins to send messages via the bot
@@ -159,7 +159,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_edit(self, edit_msg: discord.Message, msg: String):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit [edit_message] [message string]
+        ->signature pg!sudo_edit <edit_msg> <msg>
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
@@ -173,7 +173,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [message] [attach] [stats]
+        ->signature pg!sudo_get <message> [attach] [stats]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -232,7 +232,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone [message] [embeds] [attach] [spoiler] [stats]
+        ->signature pg!sudo_clone <msg> [embeds] [attach] [spoiler] [info] [author]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -286,7 +286,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_info(self, msg: discord.Message, author: bool = True):
         """
         ->type More admin commands
-        ->signature pg!sudo_info [message] [author_bool]
+        ->signature pg!sudo_info <message> [author_bool]
         ->description Get information about a message and its author
 
         Get information about a message and its author in an embed and send it to the channel where this command was invoked.
@@ -363,7 +363,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!archive [origin channel] [quantity] [destination channel]
+        ->signature pg!archive <origin channel> <quantity> [destination channel]
         [before] [after] [around] [raw=False] [show_header=True] [show_author=True]
         [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
@@ -564,7 +564,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!poll [description] [*args] [author] [color] [url] [image_url] [thumbnail]
+        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
         The args must be strings with one emoji and one description of said emoji (see example command). \
@@ -597,7 +597,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!close_poll [message] [color]
+        ->signature pg!close_poll <msg> [color]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.

@@ -91,7 +91,7 @@ PRIV_ROLES = {
     787473199088533504,
 }
 
-DIVIDER_ROLES = {836645525372665887, 836645368744771654}
+DIVIDER_ROLES = {836645525372665887, 836645368744771654, 842754237774692392}
 
 # IDs of rules messages, in the order from rule 1 to rule 7
 RULES = (
@@ -205,24 +205,22 @@ ILLEGAL_ATTRIBUTES = (
     "__dict__",
 )
 
-DEAD_CHAT_TRIGGERS = set(
-    (
-        "the chat is dead",
-        "the chat is ded",
-        "this chat is dead",
-        "this is a ded chat",
-        "this is a dead chat",
-        "chat dead",
-        "chat ded",
-        "chatded",
-        "chatdead",
-        "dead chat",
-        "ded chat",
-        "dedchat",
-        "this chat ded",
-        "this chat dead",
-    )
-)
+DEAD_CHAT_TRIGGERS = {
+    "the chat is dead",
+    "the chat is ded",
+    "this chat is dead",
+    "this is a ded chat",
+    "this is a dead chat",
+    "chat dead",
+    "chat ded",
+    "chatded",
+    "chatdead",
+    "dead chat",
+    "ded chat",
+    "dedchat",
+    "this chat ded",
+    "this chat dead",
+}
 
 BOT_HELP_PROMPT = {
     "title": "Help",

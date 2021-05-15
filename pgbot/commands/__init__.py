@@ -47,13 +47,16 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                     invoke_msg.channel,
                     "Invalid arguments!",
                     "All arguments must be integer IDs or member mentions",
+                    0xFF0000,
                 )
             else:
                 await embed_utils.replace(
                     response_msg,
                     "Invalid arguments!",
                     "All arguments must be integer IDs or member mentions",
+                    0xFF0000,
                 )
+            return
 
         if response_msg is None:
             await embed_utils.send(

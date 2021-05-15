@@ -110,7 +110,7 @@ class UserCommand(BaseCommand):
     async def cmd_remind(self, time: str, msg: String):
         """
         ->type Other commands
-        ->signature pg!remind [time] [message string]
+        ->signature pg!remind <time> <message string>
         ->description Set a reminder to yourself
         ->extended description
         Allows you to set a reminder to yourself
@@ -267,7 +267,7 @@ class UserCommand(BaseCommand):
     async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
-        ->signature pg!doc [module.Class.method]
+        ->signature pg!doc <object name>
         ->description Look up the docstring of a Python/Pygame object, e.g str or pygame.Rect
         -----
         Implement pg!doc, to view documentation
@@ -280,7 +280,7 @@ class UserCommand(BaseCommand):
     async def cmd_exec(self, code: CodeBlock):
         """
         ->type Run code
-        ->signature pg!exec [python code block]
+        ->signature pg!exec <python code block>
         ->description Run python code in an isolated environment.
         ->extended description
         Import is not available. Various methods of builtin objects have been disabled for security reasons.
@@ -464,7 +464,7 @@ class UserCommand(BaseCommand):
     async def cmd_refresh(self, msg: discord.Message):
         """
         ->type Other commands
-        ->signature pg!refresh [message]
+        ->signature pg!refresh <message>
         ->description Refresh a message which support pages.
         -----
         Implement pg!refresh, to refresh a message which supports pages
@@ -508,7 +508,7 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!poll [description] [*args]
+        ->signature pg!poll <description> [*args]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
@@ -606,7 +606,7 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!close_poll [message]
+        ->signature pg!close_poll <message>
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
@@ -709,7 +709,7 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!resources [*args]
+        ->signature pg!resources [limit] [filter_tag] [filter_member] [oldest_first]
         ->description Browse through resources.
         ->extended description
         pg!resources takes in additional arguments, though they are optional.
@@ -719,9 +719,13 @@ class UserCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
-        # NOTE: It is hardcoded in the bot to remove some messages in resource-entries, if you want to remove more, add the ID to the
-        #       list below
-        msgs_to_filter = [817137523905527889, 810942002114986045, 810942043488256060]
+        # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
+        #       if you want to remove more, add the ID to the list below
+        msgs_to_filter = {
+            817137523905527889,
+            810942002114986045,
+            810942043488256060,
+        }
 
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
@@ -759,6 +763,7 @@ class UserCommand(BaseCommand):
 
         if filter_member:
             msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
+
         if limit is not None:
             # Uses list slicing instead of TextChannel.history's limit param
             # to include all param specified messages
