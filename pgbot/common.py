@@ -219,7 +219,7 @@ DEAD_CHAT_TRIGGERS = {
     "ded chat",
     "dedchat",
     "this chat ded",
-    "this chat dead",
+    "this chat dead"
 }
 
 BOT_HELP_PROMPT = {

@@ -94,6 +94,29 @@ async def on_message(msg: discord.Message):
             common.cmd_logs[msg.id] = await commands.handle(msg)
             if len(common.cmd_logs) > 100:
                 del common.cmd_logs[common.cmd_logs.keys()[0]]
+
+            # Advanced emotion system
+            db_obj = db.DiscordDB("emotion")
+
+            emotion_stuff = await db_obj.get([])
+            await db_obj.write(
+                {
+                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"] + 1,
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"]
+                }
+            )
+            # Wait 24 hours, then remove one command
+            # NOTE: Heroku would restart the bot erratically, so
+            #       there may be "ghost" commands that would never reset.
+            #       To reset them, just reset all the values to 0 in the DB
+            await asyncio.sleep(24 * 60 * 60)
+            emotion_stuff = await db_obj.get([])
+            await db_obj.write(
+                {
+                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"] - 1,
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"]
+                }
+            )
         except discord.HTTPException:
             pass
 
@@ -128,7 +151,7 @@ async def on_message(msg: discord.Message):
                 if msg.author.id != 683852333293109269 and random.randint(0, 5):
                     return
 
-                name = msg.content[lowered.index("i am") + 4 :].strip()
+                name = msg.content[lowered.index("i am") + 4:].strip()
                 await msg.channel.send(f"Hi {name}! I am <@!{common.BOT_ID}>")
 
 
