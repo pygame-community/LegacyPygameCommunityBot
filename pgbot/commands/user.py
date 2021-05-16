@@ -370,6 +370,7 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!pet, to pet the bot
         """
+        db_obj = db.DiscordDB("emotion")
         emotion.pet_anger -= (time.time() - emotion.last_pet - common.PET_INTERVAL) * (
             emotion.pet_anger / common.JUMPSCARE_THRESHOLD
         ) - common.PET_COST
@@ -389,6 +390,27 @@ class UserCommand(BaseCommand):
             "https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
+        if emotion.pet_anger > common.JUMPSCARE_THRESHOLD:
+            emotion_stuff = await db_obj.get([])
+            await db_obj.write(
+                {
+                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] + 1
+                }
+            )
+
+            await asyncio.sleep(24*60*60)
+            # NOTE: Heroku would restart the bot erratically, so
+            #       there may be "ghost" commands that would never reset.
+            #       To reset them, just reset all the values to 0 in the DB
+
+            emotion_stuff = await db_obj.get([])
+            await db_obj.write(
+                {
+                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] - 1
+                }
+            )
 
     async def cmd_vibecheck(self):
         """
@@ -857,3 +879,40 @@ class UserCommand(BaseCommand):
         )
 
         await page_embed.mainloop()
+
+    async def cmd_emotion(self):
+        db_obj = db.DiscordDB("emotion")
+        all_emotion_info = await db_obj.get([])
+        num_commands_past_day = all_emotion_info['cmd_in_past_day'] + 1
+        bonk_past_day = all_emotion_info['bonk_in_past_day']
+        bot_emotion = None
+        description = None
+        emoji_link = None
+        if num_commands_past_day < 170:
+            bot_emotion = "sad"
+            description = f"The snek is sad, not enough people have been interacting with me!\n" \
+                          f"I need {170-num_commands_past_day} more command(s) to be happi!"
+            emoji_link = 'https://cdn.discordapp.com/emojis/824721451735056394.png?v=1'
+        elif 170 < num_commands_past_day < 300:
+            bot_emotion = "happy"
+            description = f"The snek is happi, a lot of people have been interacting with me!\n" \
+                          f"Don't overwork me too hard tho, {300-num_commands_past_day} more command(s) " \
+                          f"and I will become exhausted!"
+            emoji_link = 'https://cdn.discordapp.com/emojis/772643407326740531.png?v=1'
+        elif num_commands_past_day > 300:
+            bot_emotion = "exhausted"
+            description = f"The snek is tired, too many people have been interacting with me!\n" \
+                          f"I have ran {num_commands_past_day-300} more command(s) than my limit, " \
+                          f"I'ma take a rest real quick."
+
+        if bonk_past_day > 20:
+            bot_emotion = "angry"
+            description = f"The snek is angry, too many people bonked me!\n" \
+                          f"I have been bonked {bonk_past_day-20} more time(s) than my limit of 20!"
+            emoji_link = 'https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1'
+        await embed_utils.replace_2(
+            self.response_msg,
+            title=f"Snek is {bot_emotion} right now",
+            description=description,
+            thumbnail_url=emoji_link
+        )
