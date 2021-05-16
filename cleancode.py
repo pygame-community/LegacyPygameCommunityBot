@@ -1,9 +1,9 @@
 """
 A simple script to automate code cleanups.
 """
+import glob
 import os
 import pathlib
-import glob
 
 try:
     import black

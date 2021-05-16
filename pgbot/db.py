@@ -1,10 +1,19 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some important utility Classes/functions for Discord Database
+"""
+
+
 import asyncio
-import discord
-import pickle
 import io
+import pickle
+
+import discord
 
 from pgbot import common
-
 
 db_channel = None
 
