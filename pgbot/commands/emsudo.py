@@ -1065,7 +1065,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args[1]):
+            for i, data in enumerate(args):
                 if isinstance(data, dict):
                     field_dicts_list.append(data)
 
@@ -1106,16 +1106,6 @@ class EmsudoCommand(BaseCommand):
                         f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
                         "",
                     )
-
-            else:
-                raise BotException(
-                    "Invalid arguments!",
-                    'Argument `data` must be omitted or be an empty string `""`,'
-                    " a message `[channel_id/]message_id` or a code block containing"
-                    ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         else:
             raise BotException(
                 "Invalid arguments!",
@@ -1328,7 +1318,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args[1]):
+            for i, data in enumerate(args):
                 if isinstance(data, dict):
                     field_dicts_list.append(data)
 
@@ -1368,15 +1358,6 @@ class EmsudoCommand(BaseCommand):
                         f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
                         "",
                     )
-            else:
-                raise BotException(
-                    "Invalid arguments!",
-                    'Argument `data` must be omitted or be an empty string `""`,'
-                    " a message `[channel_id/]message_id` or a code block containing"
-                    ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         else:
             raise BotException(
                 "Invalid arguments!",
@@ -1592,7 +1573,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args[1]):
+            for i, data in enumerate(args):
                 if isinstance(data, dict):
                     field_dicts_list.append(data)
 
@@ -1633,16 +1614,6 @@ class EmsudoCommand(BaseCommand):
                         f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
                         "",
                     )
-
-            else:
-                raise BotException(
-                    "Invalid arguments!",
-                    'Argument `data` must be omitted or be an empty string `""`,'
-                    " a message `[channel_id/]message_id` or a code block containing"
-                    ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         else:
             raise BotException(
                 "Invalid arguments!",
