@@ -1,6 +1,6 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
-This project has been licenced under the MIT license.
+This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
 This file defines the command handler class for the user commands of the bot
@@ -264,19 +264,21 @@ class UserCommand(BaseCommand):
         ->signature pg!reminders_remove [*datetimes]
         ->description Remove reminders
         ->extended description
-        Remove variable number reminder, corresponding to each datetime argument
-        The datetime argument must be in ISO format, UTC time (see example command)
+        Remove variable number of reminders, corresponding to each datetime argument
+        The date-time argument must be in ISO format, UTC time (see example command)
         If no arguments are passed, the command clears all reminders
         ->example command pg!reminders_remove "2021-8-12 11:19:36"
         -----
-        Implement pg!reminders, for users to view their reminders
+        Implement pg!reminders_remove, for users to remove their reminders
         """
         db_obj = db.DiscordDB("reminders")
         db_data = await db_obj.get({})
+        cnt = 0
         if datetimes:
             for dt in datetimes:
                 if self.author.id in db_data:
                     if dt in db_data[self.author.id]:
+                        cnt += 1
                         db_data[self.author.id].pop(dt)
                     else:
                         raise BotException(
@@ -288,13 +290,13 @@ class UserCommand(BaseCommand):
                 db_data.pop(self.author.id)
 
         elif self.author.id in db_data:
-            db_data.pop(self.author.id)
+            cnt = len(db_data.pop(self.author.id))
 
         await db_obj.write(db_data)
         await embed_utils.replace(
             self.response_msg,
             "Reminders removed!",
-            "Successfully removed reminders (if they existed)",
+            f"Successfully removed {cnt} reminder(s)",
         )
 
     async def cmd_clock(
@@ -714,8 +716,7 @@ class UserCommand(BaseCommand):
                         }
                     )
                 else:
-                    base_embed["fields"][i
-                                         // 2]["value"] = substr.string.strip()
+                    base_embed["fields"][i // 2]["value"] = substr.string.strip()
 
         await embed_utils.replace_from_dict(self.response_msg, base_embed)
 
@@ -773,8 +774,7 @@ class UserCommand(BaseCommand):
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):
             poll_owner = int(
-                embed.footer.text.split("\n")[1].replace(
-                    "(", "").replace(")", "")
+                embed.footer.text.split("\n")[1].replace("(", "").replace(")", "")
             )
         else:
             raise BotException(
@@ -821,8 +821,7 @@ class UserCommand(BaseCommand):
                 # Someone is abusing their mod powers if this happens probably.
                 continue
 
-            fields.append(
-                [field.name, f"{field.value} ({r_count} votes)", True])
+            fields.append([field.name, f"{field.value} ({r_count} votes)", True])
 
             if utils.filter_emoji_id(field.name) == top[0][1]:
                 title += (
@@ -961,8 +960,7 @@ class UserCommand(BaseCommand):
                     # If the field name is > 256 (discord limit), shorten it with list slicing
                     field_name = f"{field_name[:253]}..."
 
-                    value = msg.content.split(
-                        name)[1].removeprefix("**").strip()
+                    value = msg.content.split(name)[1].removeprefix("**").strip()
                     # If the preview of the resources > 80, shorten it with list slicing
                     value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"

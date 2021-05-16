@@ -1,6 +1,6 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
-This project has been licenced under the MIT license.
+This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
 This file is the main file of the PygameCommunityBot source. Running this
