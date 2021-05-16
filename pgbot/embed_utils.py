@@ -26,7 +26,7 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
         else:
             if v != skip_value:
                 old_dict[k] = v
-
+    
     return old_dict
 
 
@@ -42,8 +42,9 @@ def get_fields(messages):
         List[List[str, str, bool]]: The list of fields
     """
     # syntax: <Title|desc.[|inline=False]>
-    field_regex = r"(<.*\|.*(\|True|\|False|)>)"
+    field_regex = r"(<.*\|.*(\|True|\|False|\|1|\|0|)>)"
     field_datas = []
+    true_bool_strings = ("True", "1")
 
     for message in messages:
         field_list = re.split(field_regex, message)
@@ -57,7 +58,7 @@ def get_fields(messages):
                 elif len(field_data) == 2:
                     field_data.append("")
 
-                field_data[2] = True if field_data[2] == "True" else False
+                field_data[2] = True if field_data[2] in true_bool_strings else False
 
                 field_datas.append(field_data)
 

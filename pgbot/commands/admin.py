@@ -4,12 +4,15 @@ import datetime
 import os
 import pprint
 import time
+import traceback
 from typing import Optional, Union
 
+import black
 import discord
 import psutil
 import pygame
 
+from discord.embeds import EmptyEmbed
 from pgbot import common, db, embed_utils, utils
 from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
@@ -604,3 +607,832 @@ class AdminCommand(UserCommand, EmsudoCommand):
         The color is the color of the closed poll embed
         """
         return await super().cmd_close_poll(msg, color)
+
+    
+    async def cmd_msudo(
+        self,
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+        
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo [*args]
+        ->description Send an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo {embed_tuple}
+        pg!emsudo {embed_dict}
+        pg!emsudo {message_id}
+        pg!emsudo {channel_id} {message_id}
+        pg!emsudo {empty_str}
+        ```
+        Generate an embed from the given arguments and send it with a message to the channel where this command was invoked.
+        -----
+        Implement pg!emsudo, for admins to send embeds via the bot
+        """
+
+        util_send_embed_args = dict(
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
+        )
+
+        attachment_msg: discord.Message = None
+        only_description = False
+
+        if data is None:
+            attachment_msg = self.invoke_msg
+        
+        elif isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                only_description = True
+                util_send_embed_args.update(description=data.string)
+        
+        elif isinstance(data, discord.Message):
+            attachment_msg = data
+            
+
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+                return
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text")
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                await embed_utils.replace(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+                return
+
+            txt_dict = await attachment_obj.read()
+            embed_dict = eval(txt_dict.decode())
+            await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+            await self.response_msg.delete()
+            await self.invoke_msg.delete()
+            return
+            
+        if not only_description:    
+            try:
+                args = eval(data.code)
+            except Exception as e:
+               
+                raise BotException(
+                    self.response_msg, "Invalid arguments!",
+                    f"```\n{''.join(utils.format_code_exception(e))}```"
+                )
+
+            if isinstance(args, dict):
+                await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            arg_count = len(args)
+
+            if arg_count > 0:
+                if isinstance(args[0], (tuple, list)):
+                    if len(args[0]) == 3:
+                        util_send_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                            author_icon_url=args[0][2],
+                        )
+                    elif len(args[0]) == 2:
+                        util_send_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                        )
+                    elif len(args[0]) == 1:
+                        util_send_embed_args.update(
+                            author_name=args[0][0],
+                        )
+
+                else:
+                    util_send_embed_args.update(
+                        author_name=args[0],
+                    )
+            else:
+                raise BotException("Invalid arguments!", "")
+
+            if arg_count > 1:
+                if isinstance(args[1], (tuple, list)):
+                    if len(args[1]) == 3:
+                        util_send_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                            thumbnail_url=args[1][2],
+                        )
+
+                    elif len(args[1]) == 2:
+                        util_send_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                        )
+
+                    elif len(args[1]) == 1:
+                        util_send_embed_args.update(
+                            title=args[1][0],
+                        )
+
+                else:
+                    util_send_embed_args.update(
+                        title=args[1],
+                    )
+
+            if arg_count > 2:
+                if isinstance(args[2], (tuple, list)):
+                    if len(args[2]) == 2:
+                        util_send_embed_args.update(
+                            description=args[2][0],
+                            image_url=args[2][1],
+                        )
+
+                    elif len(args[2]) == 1:
+                        util_send_embed_args.update(
+                            description=args[2][0],
+                        )
+
+                else:
+                    util_send_embed_args.update(
+                        description=args[2],
+                    )
+
+            if arg_count > 3:
+                if args[3] > -1:
+                    util_send_embed_args.update(
+                        color=args[3],
+                    )
+
+            if arg_count > 4:
+                try:
+                    util_send_embed_args.update(fields=embed_utils.get_fields(args[4]))
+                except TypeError:
+                    raise BotException(
+                        self.response_msg, "Invalid format for field string(s)!",
+                        " The format should be `<name|value|inline>`"
+                    )
+
+            if arg_count > 5:
+                if isinstance(args[5], (tuple, list)):
+                    if len(args[5]) == 2:
+                        util_send_embed_args.update(
+                            footer_text=args[5][0],
+                            footer_icon_url=args[5][1],
+                        )
+
+                    elif len(args[5]) == 1:
+                        util_send_embed_args.update(
+                            footer_text=args[5][0],
+                        )
+
+                else:
+                    util_send_embed_args.update(
+                        footer_text=args[5],
+                    )
+
+            if arg_count > 6:
+                util_send_embed_args.update(timestamp=args[6])
+
+        await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+
+    async def cmd_msudo_add(
+        self,
+        msg: discord.Message,
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+        overwrite: bool = False
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_add [*args]
+        ->description Add an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_add ({target_message_id}, *{embed_tuple})
+        pg!emsudo_add ({target_message_id}, {embed_dict})
+        pg!emsudo_add {target_message_id} {message_id}
+        pg!emsudo_add {target_message_id} {channel_id} {message_id}
+        pg!emsudo_add ({target_message_id}, {empty_str})
+        ```
+        Add an embed to a message (even if it has one, it will be replaced) in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_add, for admins to add embeds to messages via the bot
+        """
+
+        if not msg.embeds or overwrite:
+            await self.cmd_msudo_replace(msg=msg, data=data)
+        else:
+            raise BotException(
+                "Cannot overwrite embed!",
+                "The given message's embed cannot be overwritten when"
+                " `overwrite=` is set to `False`"
+            )
+
+
+    async def cmd_msudo_replace(
+        self,
+        msg: discord.Message,
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_replace [*args]
+        ->description Replace an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_replace ({target_message_id}, *{embed_tuple})
+        pg!emsudo_replace ({target_message_id}, {embed_dict})
+        pg!emsudo_replace {target_message_id} {message_id}
+        pg!emsudo_replace {target_message_id} {channel_id} {message_id}
+        pg!emsudo_replace ({target_message_id}, {empty_str})
+        ```
+        Replace the embed of a message in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_replace, for admins to replace embeds via the bot
+        """
+
+        util_replace_embed_args = dict(
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
+        )
+
+        attachment_msg: discord.Message = None
+        only_description = False
+
+        if data is None:
+            attachment_msg = self.invoke_msg
+        
+        elif isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                only_description = True
+                util_replace_embed_args.update(description=data.string)
+        
+        elif isinstance(data, discord.Message):
+            attachment_msg = data
+    
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                raise BotException(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text")
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+
+            txt_dict = await attachment_obj.read()
+            embed_dict = eval(txt_dict.decode())
+            await embed_utils.replace_from_dict(msg, embed_dict)
+            await self.response_msg.delete()
+            await self.invoke_msg.delete()
+            return
+            
+        if not only_description:    
+            try:
+                args = eval(data.code)
+            except Exception as e:
+                raise BotException(
+                    self.response_msg,
+                    "Invalid arguments!",
+                    f"```\n{''.join(utils.format_code_exception(e))}```"
+                )
+
+            if isinstance(args, dict):
+                await embed_utils.replace_from_dict(msg, args)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            arg_count = len(args)
+
+            if arg_count > 0:
+                if isinstance(args[0], (tuple, list)):
+                    if len(args[0]) == 3:
+                        util_replace_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                            author_icon_url=args[0][2],
+                        )
+                    elif len(args[0]) == 2:
+                        util_replace_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                        )
+                    elif len(args[0]) == 1:
+                        util_replace_embed_args.update(
+                            author_name=args[0][0],
+                        )
+
+                else:
+                    util_replace_embed_args.update(
+                        author_name=args[0],
+                    )
+            else:
+                raise BotException("Invalid arguments!", "")
+
+            if arg_count > 1:
+                if isinstance(args[1], (tuple, list)):
+                    if len(args[1]) == 3:
+                        util_replace_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                            thumbnail_url=args[1][2],
+                        )
+
+                    elif len(args[1]) == 2:
+                        util_replace_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                        )
+
+                    elif len(args[1]) == 1:
+                        util_replace_embed_args.update(
+                            title=args[1][0],
+                        )
+
+                else:
+                    util_replace_embed_args.update(
+                        title=args[1],
+                    )
+
+            if arg_count > 2:
+                if isinstance(args[2], (tuple, list)):
+                    if len(args[2]) == 2:
+                        util_replace_embed_args.update(
+                            description=args[2][0],
+                            image_url=args[2][1],
+                        )
+
+                    elif len(args[2]) == 1:
+                        util_replace_embed_args.update(
+                            description=args[2][0],
+                        )
+
+                else:
+                    util_replace_embed_args.update(
+                        description=args[2],
+                    )
+
+            if arg_count > 3:
+                if args[3] > -1:
+                    util_replace_embed_args.update(
+                        color=args[3],
+                    )
+
+            if arg_count > 4:
+                try:
+                    util_replace_embed_args.update(fields=embed_utils.get_fields(args[4]))
+                except TypeError:
+                    raise BotException(
+                        self.response_msg, "Invalid format for field string(s)!",
+                        " The format should be `<name|value|inline>`"
+                    )
+
+            if arg_count > 5:
+                if isinstance(args[5], (tuple, list)):
+                    if len(args[5]) == 2:
+                        util_replace_embed_args.update(
+                            footer_text=args[5][0],
+                            footer_icon_url=args[5][1],
+                        )
+
+                    elif len(args[5]) == 1:
+                        util_replace_embed_args.update(
+                            footer_text=args[5][0],
+                        )
+
+                else:
+                    util_replace_embed_args.update(
+                        footer_text=args[5],
+                    )
+
+            if arg_count > 6:
+                util_replace_embed_args.update(timestamp=args[6])
+
+        await embed_utils.replace_2(msg, **util_replace_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+    async def cmd_msudo_edit(
+        self,
+        msg: discord.Message,
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_edit [*args]
+        ->description Edit an embed through the bot
+        ->extended description
+        ```
+        pg!emsudo_edit ({target_message_id}, *{embed_tuple})
+        pg!emsudo_edit ({target_message_id}, {embed_dict})
+        pg!emsudo_edit {target_message_id} {message_id}
+        pg!emsudo_edit {target_message_id} {channel_id} {message_id}
+        pg!emsudo_edit ({target_message_id}, {empty_str})
+        ```
+        Update the given attributes of an embed of a message in the channel where this command was invoked using the given arguments.
+        -----
+        Implement pg!emsudo_edit, for admins to replace embeds via the bot
+        """
+
+        util_edit_embed_args = dict(
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
+        )
+
+        attachment_msg: discord.Message = None
+        only_description = False
+
+        if not msg.embeds:
+            raise BotException(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message.",
+            )
+
+        if data is None:
+            attachment_msg = self.invoke_msg
+        
+        elif isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                only_description = True
+                util_edit_embed_args.update(description=data.string)
+        
+        elif isinstance(data, discord.Message):
+            attachment_msg = data
+    
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                raise BotException(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith("text")
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    self.response_msg,
+                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
+                    "",
+                )
+
+            txt_dict = await attachment_obj.read()
+            embed_dict = eval(txt_dict.decode())
+            await embed_utils.edit_from_dict(msg, embed_dict)
+            await self.response_msg.delete()
+            await self.invoke_msg.delete()
+            return
+            
+        if not only_description:    
+            try:
+                args = eval(data.code)
+            except Exception as e:
+                raise BotException(
+                    self.response_msg,
+                    "Invalid arguments!",
+                    f"```\n{''.join(utils.format_code_exception(e))}```"
+                )
+
+            if isinstance(args, dict):
+                await embed_utils.edit_from_dict(msg, args)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            arg_count = len(args)
+
+            if arg_count > 0:
+                if isinstance(args[0], (tuple, list)):
+                    if len(args[0]) == 3:
+                        util_edit_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                            author_icon_url=args[0][2],
+                        )
+                    elif len(args[0]) == 2:
+                        util_edit_embed_args.update(
+                            author_name=args[0][0],
+                            author_url=args[0][1],
+                        )
+                    elif len(args[0]) == 1:
+                        util_edit_embed_args.update(
+                            author_name=args[0][0],
+                        )
+
+                else:
+                    util_edit_embed_args.update(
+                        author_name=args[0],
+                    )
+            else:
+                raise BotException("Invalid arguments!", "")
+
+            if arg_count > 1:
+                if isinstance(args[1], (tuple, list)):
+                    if len(args[1]) == 3:
+                        util_edit_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                            thumbnail_url=args[1][2],
+                        )
+
+                    elif len(args[1]) == 2:
+                        util_edit_embed_args.update(
+                            title=args[1][0],
+                            url=args[1][1],
+                        )
+
+                    elif len(args[1]) == 1:
+                        util_edit_embed_args.update(
+                            title=args[1][0],
+                        )
+
+                else:
+                    util_edit_embed_args.update(
+                        title=args[1],
+                    )
+
+            if arg_count > 2:
+                if isinstance(args[2], (tuple, list)):
+                    if len(args[2]) == 2:
+                        util_edit_embed_args.update(
+                            description=args[2][0],
+                            image_url=args[2][1],
+                        )
+
+                    elif len(args[2]) == 1:
+                        util_edit_embed_args.update(
+                            description=args[2][0],
+                        )
+
+                else:
+                    util_edit_embed_args.update(
+                        description=args[2],
+                    )
+
+            if arg_count > 3:
+                util_edit_embed_args.update(
+                    color=args[3],
+                )
+            else:
+                util_edit_embed_args.update(
+                    color=-1,
+                )
+
+            if arg_count > 4:
+                try:
+                    util_edit_embed_args.update(fields=embed_utils.get_fields(args[4]))
+                except TypeError:
+                    raise BotException(
+                        self.response_msg, "Invalid format for field string(s)!",
+                        " The format should be `<name|value|inline>`"
+                    )
+
+            if arg_count > 5:
+                if isinstance(args[5], (tuple, list)):
+                    if len(args[5]) == 2:
+                        util_edit_embed_args.update(
+                            footer_text=args[5][0],
+                            footer_icon_url=args[5][1],
+                        )
+
+                    elif len(args[5]) == 1:
+                        util_edit_embed_args.update(
+                            footer_text=args[5][0],
+                        )
+
+                else:
+                    util_edit_embed_args.update(
+                        footer_text=args[5],
+                    )
+
+            if arg_count > 6:
+                util_edit_embed_args.update(timestamp=args[6])
+
+        await embed_utils.edit_2(msg, **util_edit_embed_args)
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
+
+    async def cmd_msudo_clone(self, msg: discord.Message):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_clone [*args]
+        ->description Clone all embeds.
+        ->extended description
+        ```
+        pg!emsudo_clone {message_id}
+        pg!emsudo_clone {channel_id} {message_id}
+        ```
+        Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
+        -----
+        Implement pg!_emsudo_clone, to get the embed of a message and send it.
+        """
+
+        if not msg.embeds:
+            raise BotException(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message.",
+            )
+
+        for embed in msg.embeds:
+            await self.response_msg.channel.send(embed=embed)
+
+        await self.response_msg.delete()
+
+    async def cmd_msudo_get(
+        self,
+        msg: discord.Message,
+        attrib_string: Optional[String] = String("")
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo_get [*args]
+        ->description Get the embed data of a message
+        ->extended description
+        ```
+        pg!emsudo_get {message_id} {optional_embed_attr} {optional_embed_attr}...
+        pg!emsudo_get {channel_id} {message_id} {optional_embed_attr} {optional_embed_attr}...
+        ```
+        Get the contents of the embed of a message from the given arguments and send it as another message (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
+        If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
+        ->example command pg!emsudo_get 123456789123456789 title
+        pg!emsudo_get 123456789123456789 98765432198765444321 description fields
+        pg!emsudo_get 123456789123456789 98765432198765444321
+        -----
+        Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
+        """
+
+        embed_attr_keys = {
+            "author",
+            "provider",
+            "title",
+            "url",
+            "description",
+            "type",
+            "color",
+            "fields",
+            "thumbnail",
+            "image",
+            "footer",
+            "timestamp",
+        }
+
+        reduced_embed_attr_keys = set()
+        filtered_field_indices = []
+        offset_idx = None
+
+        attrib_string = attrib_string.string
+        attrib_tuple = attrib_string.split()
+        
+        for i in range(len(attrib_tuple)):
+            if attrib_tuple[i] == "fields":
+                reduced_embed_attr_keys.add("fields")
+                for j in range(i + 1, len(attrib_tuple)):
+                    if self.args[j].isnumeric():
+                        filtered_field_indices.append(int(attrib_tuple[j]))
+                    else:
+                        offset_idx = j
+                        break
+                else:
+                    break
+
+                if offset_idx:
+                    break
+
+            elif attrib_tuple[i] in attrib_tuple:
+                reduced_embed_attr_keys.add(attrib_tuple[i])
+            else:
+                raise BotException(
+                    "Cannot execute command:",
+                    "Invalid embed attribute names!",
+                )
+
+        if offset_idx:
+            for i in range(offset_idx, len(attrib_tuple)):
+                if attrib_tuple[i] in embed_attr_keys:
+                    reduced_embed_attr_keys.add(attrib_tuple[i])
+                else:
+                    raise BotException(
+                        "Cannot execute command:",
+                        "Invalid embed attribute names!",
+                    )
+
+        if not msg.embeds:
+            await embed_utils.replace(
+                self.response_msg,
+                "Cannot execute command:",
+                "No embed data found in message.",
+            )
+            return
+
+        embed_dict = msg.embeds[0].to_dict()
+
+        if reduced_embed_attr_keys:
+            for key in tuple(embed_dict.keys()):
+                if key not in reduced_embed_attr_keys:
+                    del embed_dict[key]
+
+            if (
+                "fields" in reduced_embed_attr_keys
+                and "fields" in embed_dict
+                and filtered_field_indices
+            ):
+                embed_dict["fields"] = [
+                    embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)
+                ]
+
+        embed_dict_code = repr({k: embed_dict[k] for k in reversed(embed_dict.keys())})
+
+        with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
+            embed_txt.write(black.format_str(embed_dict_code, mode=black.FileMode()))
+
+        await self.response_msg.channel.send(
+            embed=await embed_utils.send_2(
+                None,
+                author_name="Embed Data",
+                title=embed_dict.get("title", "(add a title by editing this embed)"),
+                fields=(
+                    (
+                        "\u2800",
+                        f"**[View Original Message]({msg.jump_url})**",
+                        True,
+                    ),
+                ),
+            ),
+            file=discord.File("embeddata.txt"),
+        )
+        await self.response_msg.delete()

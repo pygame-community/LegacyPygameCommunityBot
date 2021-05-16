@@ -306,7 +306,11 @@ class BaseCommand:
             if anno == "String":
                 return arg
             elif anno in ["datetime.datetime", "datetime"]:
-                return datetime.datetime.fromisoformat(arg.string.strip())
+                arg2 = arg.string.strip()
+                arg2 = (
+                    arg2[:-1] if arg2.endswith("Z") else arg2
+                )
+                return datetime.datetime.fromisoformat(arg2)
             raise ValueError()
 
         elif isinstance(arg, str):
