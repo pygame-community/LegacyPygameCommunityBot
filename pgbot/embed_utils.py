@@ -26,20 +26,20 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
         else:
             if v != skip_value:
                 old_dict[k] = v
-    
+
     return old_dict
 
 
-def get_fields(messages):
+def get_fields(*messages):
     """
     Get a list of fields from messages.
-    Syntax of embeds: <title|desc|[inline]>
+    Syntax of an embed field string: <name|value[|inline]>
 
     Args:
-        messages (List[str]): The messages to get the fields from
+        *messages (Union[str, List[str]]): The messages to get the fields from
 
     Returns:
-        List[List[str, str, bool]]: The list of fields
+        List[List[str, str, bool]]: The list of fields. if only one message is given as input, then only one field is returned.
     """
     # syntax: <Title|desc.[|inline=False]>
     field_regex = r"(<.*\|.*(\|True|\|False|\|1|\|0|)>)"
@@ -62,7 +62,7 @@ def get_fields(messages):
 
                 field_datas.append(field_data)
 
-    return field_datas
+    return field_datas[0] if len(field_datas) < 2 else field_datas
 
 
 class PagedEmbed:
@@ -468,7 +468,7 @@ async def edit_from_dict(message, embed, update_embed_dict):
     dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
-    recursive_update(old_embed_dict, update_embed_dict)
+    recursive_update(old_embed_dict, update_embed_dict, skip_value="")
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -477,6 +477,9 @@ async def replace_field_from_dict(message, embed, field_dict, index):
     Replaces an embed field of the embed of a message from a dictionary
     with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
 
     embed.set_field_at(
         index,
@@ -494,6 +497,8 @@ async def edit_field_from_dict(message, embed, field_dict, index):
     dictionary with a much more tight function
     """
 
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed_dict = embed.to_dict()
 
     old_field_dict = embed_dict["fields"][index]
@@ -582,6 +587,8 @@ async def insert_field_from_dict(message, embed, field_dict, index):
     dictionary with a much more tight function
     """
 
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed.insert_field_at(
         index,
         name=field_dict.get("name", ""),
@@ -597,7 +604,8 @@ async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, i
     Inserts embed fields to the embed of a message from dictionaries
     at a specified index with a much more tight function
     """
-
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     for field_dict in field_dicts:
         embed.insert_field_at(
             index,
@@ -614,6 +622,9 @@ async def remove_field(message, embed, index):
     Removes an embed field of the embed of a message from a dictionary
     with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed.remove_field(index)
     return await message.edit(embed=embed)
 
@@ -623,7 +634,16 @@ async def remove_fields(message, embed, field_indices):
     Removes multiple embed fields of the embed of a message from a
     dictionary with a much more tight function
     """
-    for index in sorted(field_indices, reverse=True):
+
+    fields_count = len(embed.fields)
+
+    parsed_field_indices = [
+        fields_count + idx if idx < 0 else idx for idx in field_indices
+    ]
+
+    field_indices.sort(reverse=True)
+
+    for index in parsed_field_indices:
         embed.remove_field(index)
     return await message.edit(embed=embed)
 
@@ -633,6 +653,11 @@ async def swap_fields(message, embed, index_a, index_b):
     Swaps two embed fields of the embed of a message from a
     dictionary with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index_a = fields_count + index_a if index_a < 0 else index_a
+    index_b = fields_count + index_b if index_b < 0 else index_b
+
     embed_dict = embed.to_dict()
     fields_list = embed_dict["fields"]
     fields_list[index_a], fields_list[index_b] = (
@@ -647,6 +672,9 @@ async def clone_field(message, embed, index):
     Duplicates an embed field of the embed of a message from a
     dictionary with a much more tight function
     """
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
+
     embed_dict = embed.to_dict()
     cloned_field = embed_dict["fields"][index].copy()
     embed_dict["fields"].insert(index, cloned_field)
@@ -658,6 +686,18 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
     Duplicates multiple embed fields of the embed of a message
     from a dictionary with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+
+    parsed_field_indices = [
+        fields_count + idx if idx < 0 else idx for idx in field_indices
+    ]
+
+    field_indices.sort(reverse=True)
+
+    insertion_index = (
+        fields_count + insertion_index if insertion_index < 0 else insertion_index
+    )
     embed_dict = embed.to_dict()
 
     if isinstance(insertion_index, int):
@@ -668,7 +708,7 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
         for cloned_field in cloned_fields:
             embed_dict["fields"].insert(insertion_index, cloned_field)
     else:
-        for index in sorted(field_indices, reverse=True):
+        for index in parsed_field_indices:
             cloned_field = embed_dict["fields"][index].copy()
             embed_dict["fields"].insert(index, cloned_field)
 

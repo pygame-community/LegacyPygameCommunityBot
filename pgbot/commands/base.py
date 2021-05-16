@@ -307,9 +307,7 @@ class BaseCommand:
                 return arg
             elif anno in ["datetime.datetime", "datetime"]:
                 arg2 = arg.string.strip()
-                arg2 = (
-                    arg2[:-1] if arg2.endswith("Z") else arg2
-                )
+                arg2 = arg2[:-1] if arg2.endswith("Z") else arg2
                 return datetime.datetime.fromisoformat(arg2)
             raise ValueError()
 

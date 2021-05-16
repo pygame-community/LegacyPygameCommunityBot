@@ -114,6 +114,17 @@ def split_long_message(message: str):
     return split_output
 
 
+def format_code_exception(e):
+    """
+    Provide a formatted exception for code snippets
+    """
+    tbs = traceback.format_exception(type(e), e, e.__traceback__)
+    # Pop out the first entry in the traceback, because that's
+    # this function call itself
+    tbs.pop(1)
+    return tbs
+
+
 def filter_id(mention: str):
     """
     Filters mention to get ID "<@!6969>" to "6969"
@@ -394,14 +405,3 @@ def code_block(string: str, max_characters=2048):
         return f"```\n{string[:max_characters - 7]} ...```"
     else:
         return f"```\n{string[:max_characters]}```"
-
-
-def format_code_exception(e):
-    """
-    Provide a formatted exception for code snippets 
-    """
-    tbs = traceback.format_exception(type(e), e, e.__traceback__)
-    # Pop out the first entry in the traceback, because that's
-    # this function call itself
-    tbs.pop(1)
-    return tbs
