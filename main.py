@@ -120,7 +120,7 @@ async def on_message(msg: discord.Message):
         except discord.HTTPException:
             pass
 
-    elif True:  # not common.TEST_MODE:
+    elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not

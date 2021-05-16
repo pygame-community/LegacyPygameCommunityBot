@@ -881,6 +881,18 @@ class UserCommand(BaseCommand):
         await page_embed.mainloop()
 
     async def cmd_emotion(self):
+        """
+        ->type Other commands
+        ->signature pg!emotion
+        ->description Checks the snek's emotion
+        ->extended description
+        The snek would be:
+        Happy, if he recieves more than 170 commands and less than 300
+        Sad, if he recieves less than 170 commands
+        Exhausted, if he recieves mare than 300 commands
+        Angry, if he is bonked 20 times
+        The number of commands is resetted every 24 hours
+        """
         db_obj = db.DiscordDB("emotion")
         all_emotion_info = await db_obj.get([])
         num_commands_past_day = all_emotion_info['cmd_in_past_day'] + 1
