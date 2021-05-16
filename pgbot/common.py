@@ -1,7 +1,17 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some constants and variables used across the whole codebase
+"""
+
+
 import os
+
 import discord
-from dotenv import load_dotenv
 import pygame
+from dotenv import load_dotenv
 
 if os.path.isfile(".env"):
     load_dotenv()  # take environment variables from .env
@@ -219,7 +229,7 @@ DEAD_CHAT_TRIGGERS = {
     "ded chat",
     "dedchat",
     "this chat ded",
-    "this chat dead"
+    "this chat dead",
 }
 
 BOT_HELP_PROMPT = {

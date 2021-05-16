@@ -1,6 +1,15 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the command handler class for the user commands of the bot
+"""
+
 from __future__ import annotations
 
 import asyncio
+import datetime
 import os
 import random
 import re
@@ -107,75 +116,186 @@ class UserCommand(BaseCommand):
                 color=0x228B22,
             )
 
-    async def cmd_remind(self, time: str, msg: String):
+    async def cmd_reminder_on(
+        self,
+        msg: String,
+        on: datetime.datetime,
+        delta: HiddenArg = None,
+    ):
         """
-        ->type Other commands
-        ->signature pg!remind <time> <message string>
+        ->type Reminders
+        ->signature pg!reminder_on <message> <datetime in iso format>
         ->description Set a reminder to yourself
         ->extended description
         Allows you to set a reminder to yourself
-        `time`: Parameter that specifies the time to remind
-        (E.g 1h42m13s = 1 hour, 42 minutes, and 13 seconds)
-        `message string`: String that includes your message
-        (E.g "!d bump the server")
-        Note that the maximum time for the reminder is 6 hours
-        ->example command pg!remind 1h3m51s "!d bump the server"
+        The date-time must be ISO time formatted string, in UTC time
+        string
+        ->example command pg!reminder_set "do the thing" "2034-10-26 11:19:36"
         -----
-        Implement pg!remind, for users to set reminders for themselves
+        Implement pg!reminder_on, for users to set reminders for themselves
         """
-        previous = ""
-        time_formats = {"h": 60 * 60, "m": 60, "s": 1}
-        sec = 0
-        for time_format, dt in time_formats.items():
-            if time_format in time:
-                format_split = time[: time.index(time_format) + 1]
-                parsed_time = format_split.replace(previous, "")
-                previous = format_split
-                try:
-                    sec += int(parsed_time.replace(time_format, "")) * dt
-                except ValueError:
-                    raise BotException(
-                        "Failed to set reminder!",
-                        "There is something wrong with your time parameter.\n"
-                        "Please check that it is correct and try again",
-                    )
+        now = datetime.datetime.utcnow()
 
-        if sec < 0:
+        if delta is None:
+            delta = on - now
+        else:
+            on = now + delta
+
+        if on < now:
             raise BotException(
                 "Failed to set reminder!",
                 "Time cannot go backwards, negative time does not make sense..."
                 "\n Or does it? \\*vsauce music plays in the background\\*",
             )
-        elif sec == 0:
+
+        elif delta <= datetime.timedelta(seconds=10):
             raise BotException(
                 "Failed to set reminder!",
-                "Time cannot be 0, what would even happen if time is 0?",
+                "Why do you want me to set a reminder for such a small duration?\n"
+                "Pretty sure you can remember that one yourself :wink:",
             )
-        elif sec > 360 * 60:
-            raise BotException(
-                "Failed to set reminder!",
-                "The maximum time for which you can set reminder is 6 hours",
-            )
+
+        # remove microsecond precision of the 'on' variable
+        on -= datetime.timedelta(microseconds=on.microsecond)
+
+        db_obj = db.DiscordDB("reminders")
+        db_data = await db_obj.get({})
+        if self.author.id not in db_data:
+            db_data[self.author.id] = {}
+
+        db_data[self.author.id][on] = (
+            msg.string.strip(),
+            self.channel.id,
+            self.invoke_msg.id,
+        )
+        await db_obj.write(db_data)
 
         await embed_utils.replace(
             self.response_msg,
             "Reminder set!",
-            f"Gonna remind {self.author.name} in "
-            f"{f'{sec // 60} minute(s)' if sec // 60 else ''}"
-            f"{f' and' if sec // 60 and sec % 60 else ''} "
-            f"{f'{sec % 60} second(s)' if sec % 60 else '.'}\n"
-            "But do not solely rely on me though, cause I might forget to "
-            "remind you in case I am sleeping.",
+            f"Gonna remind {self.author.name} in {utils.format_timedelta(delta)}\n"
+            f"And that is on {on} UTC",
         )
-        await asyncio.sleep(sec)
-        try:
-            await self.invoke_msg.reply(
-                f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
+
+    async def cmd_reminder_set(
+        self,
+        msg: String,
+        timestr: String = String(""),
+        weeks: int = 0,
+        days: int = 0,
+        hours: int = 0,
+        minutes: int = 0,
+        seconds: int = 0,
+    ):
+        """
+        ->type Reminders
+        ->signature pg!reminder_set <message> [time string] [weeks] [days] [hours] [minutes] [seconds]
+        ->description Set a reminder to yourself
+        ->extended description
+        There are two ways you can pass the time duration, one is via a "time string"
+        and the other is via keyword arguments
+        `weeks`, `days`, `hours`, `minutes` and `seconds` are optional arguments you can
+        specify to describe the time duration you want to set the reminder for
+        ->example command pg!reminder_set "Become pygame expert" weeks=9 days=12 hours=23 minutes=16 seconds=35
+        -----
+        Implement pg!reminder_set, for users to set reminders for themselves
+        """
+        timestr = timestr.string.strip()
+        if timestr:
+            previous = ""
+            time_formats = {
+                "w": 7 * 24 * 60 * 60,
+                "d": 24 * 60 * 60,
+                "h": 60 * 60,
+                "m": 60,
+                "s": 1,
+            }
+            sec = 0
+
+            for time_format, dt in time_formats.items():
+                if time_format in timestr:
+                    format_split = timestr[: timestr.index(time_format) + 1]
+                    parsed_time = format_split.replace(previous, "")
+                    previous = format_split
+                    try:
+                        sec += int(parsed_time.replace(time_format, "")) * dt
+                    except ValueError:
+                        raise BotException(
+                            "Failed to set reminder!",
+                            "There is something wrong with your time parameter.\n"
+                            "Please check that it is correct and try again",
+                        )
+
+            delta = datetime.timedelta(seconds=sec)
+        else:
+            delta = datetime.timedelta(
+                weeks=weeks,
+                days=days,
+                hours=hours,
+                minutes=minutes,
+                seconds=seconds,
             )
-        except discord.errors.HTTPException:
-            await self.invoke_msg.channel.send(
-                f"__**Reminder for {self.author.mention}:**__\n>>> {msg.string}"
-            )
+
+        await self.cmd_reminder_on(msg, None, delta=delta)
+
+    async def cmd_reminders(self):
+        """
+        ->type Reminders
+        ->signature pg!reminders
+        ->description View all the reminders you have set
+        -----
+        Implement pg!reminders, for users to view their reminders
+        """
+        db_data = await db.DiscordDB("reminders").get({})
+
+        msg = "You have no reminders set"
+        if self.author.id in db_data:
+            msg = ""
+            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
+                channel = self.guild.get_channel(chan_id)
+                cin = f" in {channel.mention}" if channel is not None else ""
+                msg += f"**On `{on}`{cin}:**\n> {reminder}\n\n"
+
+        await embed_utils.replace(self.response_msg, "Reminders", msg)
+
+    async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
+        """
+        ->type Reminders
+        ->signature pg!reminders_remove [*datetimes]
+        ->description Remove reminders
+        ->extended description
+        Remove variable number reminder, corresponding to each datetime argument
+        The datetime argument must be in ISO format, UTC time (see example command)
+        If no arguments are passed, the command clears all reminders
+        ->example command pg!reminders_remove "2021-8-12 11:19:36"
+        -----
+        Implement pg!reminders, for users to view their reminders
+        """
+        db_obj = db.DiscordDB("reminders")
+        db_data = await db_obj.get({})
+        if datetimes:
+            for dt in datetimes:
+                if self.author.id in db_data:
+                    if dt in db_data[self.author.id]:
+                        db_data[self.author.id].pop(dt)
+                    else:
+                        raise BotException(
+                            "Invalid datetime argument!",
+                            "Datetime argument was not a previously set reminder",
+                        )
+
+            if self.author.id in db_data and not db_data[self.author.id]:
+                db_data.pop(self.author.id)
+
+        elif self.author.id in db_data:
+            db_data.pop(self.author.id)
+
+        await db_obj.write(db_data)
+        await embed_utils.replace(
+            self.response_msg,
+            "Reminders removed!",
+            "Successfully removed reminders (if they existed)",
+        )
 
     async def cmd_clock(
         self,
@@ -395,11 +515,11 @@ class UserCommand(BaseCommand):
             await db_obj.write(
                 {
                     "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
-                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] + 1
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] + 1,
                 }
             )
 
-            await asyncio.sleep(24*60*60)
+            await asyncio.sleep(24 * 60 * 60)
             # NOTE: Heroku would restart the bot erratically, so
             #       there may be "ghost" commands that would never reset.
             #       To reset them, just reset all the values to 0 in the DB
@@ -408,7 +528,7 @@ class UserCommand(BaseCommand):
             await db_obj.write(
                 {
                     "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
-                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] - 1
+                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] - 1,
                 }
             )
 
@@ -594,7 +714,8 @@ class UserCommand(BaseCommand):
                         }
                     )
                 else:
-                    base_embed["fields"][i // 2]["value"] = substr.string.strip()
+                    base_embed["fields"][i
+                                         // 2]["value"] = substr.string.strip()
 
         await embed_utils.replace_from_dict(self.response_msg, base_embed)
 
@@ -652,7 +773,8 @@ class UserCommand(BaseCommand):
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):
             poll_owner = int(
-                embed.footer.text.split("\n")[1].replace("(", "").replace(")", "")
+                embed.footer.text.split("\n")[1].replace(
+                    "(", "").replace(")", "")
             )
         else:
             raise BotException(
@@ -699,7 +821,8 @@ class UserCommand(BaseCommand):
                 # Someone is abusing their mod powers if this happens probably.
                 continue
 
-            fields.append([field.name, f"{field.value} ({r_count} votes)", True])
+            fields.append(
+                [field.name, f"{field.value} ({r_count} votes)", True])
 
             if utils.filter_emoji_id(field.name) == top[0][1]:
                 title += (
@@ -730,7 +853,7 @@ class UserCommand(BaseCommand):
         oldest_first: bool = False,
     ):
         """
-        ->type Other commands
+        ->type Get help
         ->signature pg!resources [limit] [filter_tag] [filter_member] [oldest_first]
         ->description Browse through resources.
         ->extended description
@@ -838,7 +961,8 @@ class UserCommand(BaseCommand):
                     # If the field name is > 256 (discord limit), shorten it with list slicing
                     field_name = f"{field_name[:253]}..."
 
-                    value = msg.content.split(name)[1].removeprefix("**").strip()
+                    value = msg.content.split(
+                        name)[1].removeprefix("**").strip()
                     # If the preview of the resources > 80, shorten it with list slicing
                     value = f"{value[:80]}..."
                     value += f"\n\nLinks: **[Message]({msg.jump_url})**"
@@ -882,7 +1006,7 @@ class UserCommand(BaseCommand):
 
     async def cmd_emotion(self):
         """
-        ->type Other commands
+        ->type Play With Me :snake:
         ->signature pg!emotion
         ->description Checks the snek's emotion
         ->extended description
@@ -895,36 +1019,46 @@ class UserCommand(BaseCommand):
         """
         db_obj = db.DiscordDB("emotion")
         all_emotion_info = await db_obj.get([])
-        num_commands_past_day = all_emotion_info['cmd_in_past_day'] + 1
-        bonk_past_day = all_emotion_info['bonk_in_past_day']
+        num_commands_past_day = all_emotion_info["cmd_in_past_day"] + 1
+        bonk_past_day = all_emotion_info["bonk_in_past_day"]
         bot_emotion = None
         description = None
         emoji_link = None
+
         if num_commands_past_day < 170:
             bot_emotion = "sad"
-            description = f"The snek is sad, not enough people have been interacting with me!\n" \
-                          f"I need {170-num_commands_past_day} more command(s) to be happi!"
-            emoji_link = 'https://cdn.discordapp.com/emojis/824721451735056394.png?v=1'
+            description = (
+                f"The snek is sad, not enough people have been interacting with me!\n"
+                f"I need {170-num_commands_past_day} more command(s) to be happi!"
+            )
+            emoji_link = "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1"
         elif 170 < num_commands_past_day < 300:
             bot_emotion = "happy"
-            description = f"The snek is happi, a lot of people have been interacting with me!\n" \
-                          f"Don't overwork me too hard tho, {300-num_commands_past_day} more command(s) " \
-                          f"and I will become exhausted!"
-            emoji_link = 'https://cdn.discordapp.com/emojis/772643407326740531.png?v=1'
+            description = (
+                f"The snek is happi, a lot of people have been interacting with me!\n"
+                f"Don't overwork me too hard tho, {300-num_commands_past_day} more command(s) "
+                f"and I will become exhausted!"
+            )
+            emoji_link = "https://cdn.discordapp.com/emojis/772643407326740531.png?v=1"
         elif num_commands_past_day > 300:
             bot_emotion = "exhausted"
-            description = f"The snek is tired, too many people have been interacting with me!\n" \
-                          f"I have ran {num_commands_past_day-300} more command(s) than my limit, " \
-                          f"I'ma take a rest real quick."
+            description = (
+                f"The snek is tired, too many people have been interacting with me!\n"
+                f"I have ran {num_commands_past_day-300} more command(s) than my limit, "
+                f"I'ma take a rest real quick."
+            )
 
         if bonk_past_day > 20:
             bot_emotion = "angry"
-            description = f"The snek is angry, too many people bonked me!\n" \
-                          f"I have been bonked {bonk_past_day-20} more time(s) than my limit of 20!"
-            emoji_link = 'https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1'
+            description = (
+                f"The snek is angry, too many people bonked me!\n"
+                f"I have been bonked {bonk_past_day-20} more time(s) than my limit of 20!"
+            )
+            emoji_link = "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1"
+
         await embed_utils.replace_2(
             self.response_msg,
             title=f"Snek is {bot_emotion} right now",
             description=description,
-            thumbnail_url=emoji_link
+            thumbnail_url=emoji_link,
         )

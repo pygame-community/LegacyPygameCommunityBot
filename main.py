@@ -1,3 +1,12 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file is the main file of the PygameCommunityBot source. Running this
+starts the bot
+"""
+
 import asyncio
 import os
 import random
@@ -5,7 +14,7 @@ import random
 import discord
 import pygame
 
-from pgbot import commands, common, emotion, utils, embed_utils, db
+from pgbot import commands, common, db, embed_utils, emotion, utils, routine
 
 
 @common.bot.event
@@ -17,6 +26,9 @@ async def on_ready():
     print("The bot is present in these server(s):")
     for server in common.bot.guilds:
         print("-", server.name)
+        if server.id == common.SERVER_ID:
+            guild = server
+
         for channel in server.channels:
             print(" +", channel.name)
             if channel.id == common.DB_CHANNEL_ID:
@@ -36,6 +48,7 @@ async def on_ready():
                     common.entry_channels[key] = channel
 
     while True:
+        await routine.routine(guild)
         await common.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="discord.io/pygame_community"
@@ -98,25 +111,21 @@ async def on_message(msg: discord.Message):
             # Advanced emotion system
             db_obj = db.DiscordDB("emotion")
 
-            emotion_stuff = await db_obj.get([])
-            await db_obj.write(
-                {
-                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"] + 1,
-                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"]
-                }
-            )
+            emotion_stuff = await db_obj.get({})
+            try:
+                emotion_stuff["cmd_in_past_day"] += 1
+            except KeyError:
+                emotion_stuff["cmd_in_past_day"] = 1
+
+            await db_obj.write(emotion_stuff)
+
             # Wait 24 hours, then remove one command
-            # NOTE: Heroku would restart the bot erratically, so
-            #       there may be "ghost" commands that would never reset.
-            #       To reset them, just reset all the values to 0 in the DB
+            # TODO: refactor this system, because 24 hour sleeps are not reliable at all
             await asyncio.sleep(24 * 60 * 60)
-            emotion_stuff = await db_obj.get([])
-            await db_obj.write(
-                {
-                    "cmd_in_past_day": emotion_stuff["cmd_in_past_day"] - 1,
-                    "bonk_in_past_day": emotion_stuff["bonk_in_past_day"]
-                }
-            )
+
+            emotion_stuff = await db_obj.get({})
+            emotion_stuff["cmd_in_past_day"] -= 1
+            await db_obj.write(emotion_stuff)
         except discord.HTTPException:
             pass
 
@@ -148,10 +157,10 @@ async def on_message(msg: discord.Message):
                 # Probablity for triggering dad joke is 1/6 for others.
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
-                if msg.author.id != 683852333293109269 and random.randint(0, 5):
+                if msg.author.id != 683852333293109269 and random.randint(0, 9):
                     return
 
-                name = msg.content[lowered.index("i am") + 4:].strip()
+                name = msg.content[lowered.index("i am") + 4 :].strip()
                 await msg.channel.send(f"Hi {name}! I am <@!{common.BOT_ID}>")
 
 

@@ -1,10 +1,15 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the command handler class for the emsudo commands of the bot
+"""
+
 from __future__ import annotations
 
 import os
-import sys
-import time
 import traceback
-from datetime import datetime
 
 import black
 import discord

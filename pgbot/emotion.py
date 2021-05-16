@@ -1,6 +1,16 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some utitities and functions for the bots emotion system
+"""
+
+
 import asyncio
 import time
-from . import common, embed_utils, utils, db
+
+from . import common, db, embed_utils
 
 last_pet = time.time() - 3600
 pet_anger = 0.1
@@ -28,23 +38,18 @@ async def check_bonk(msg):
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
 
-        emotion_stuff = await db_obj.get([])
-        await db_obj.write(
-            {
-                "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
-                "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] + 1
-            }
-        )
+        emotion_stuff = await db_obj.get({})
+        try:
+            emotion_stuff["bonk_in_past_day"] += 1
+        except KeyError:
+            emotion_stuff["bonk_in_past_day"] = 1
 
-        await asyncio.sleep(24*60*60)
-        # NOTE: Heroku would restart the bot erratically, so
-        #       there may be "ghost" commands that would never reset.
-        #       To reset them, just reset all the values to 0 in the DB
+        await db_obj.write(emotion_stuff)
 
-        emotion_stuff = await db_obj.get([])
-        await db_obj.write(
-            {
-                "cmd_in_past_day": emotion_stuff["cmd_in_past_day"],
-                "bonk_in_past_day": emotion_stuff["bonk_in_past_day"] - 1
-            }
-        )
+        # Wait 24 hours, then remove one command
+        # TODO: refactor this system, because 24 hour sleeps are not reliable at all
+        await asyncio.sleep(24 * 60 * 60)
+
+        emotion_stuff = await db_obj.get({})
+        emotion_stuff["bonk_in_past_day"] -= 1
+        await db_obj.write(emotion_stuff)

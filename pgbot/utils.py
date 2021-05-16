@@ -1,4 +1,14 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some important utility functions.
+"""
+
+
 import asyncio
+import datetime
 import re
 
 import discord
@@ -21,19 +31,6 @@ def discordify(message):
         .replace("_", r"\_")
     )
     return message
-
-
-async def get_mention_from_id(idstr: str, msg: discord.Message):
-    """
-    Get discord.Member object from a message, using the mentions attribute
-    """
-    uid = filter_id(idstr)
-    for mem in msg.mentions:
-        if mem.id == uid:
-            return mem
-
-    # The ID was passed as an integer and not a mention, try to decode it
-    return await msg.guild.fetch_member(uid)
 
 
 def format_time(seconds: float, decimal_places: int = 4):
@@ -70,12 +67,23 @@ def format_long_time(seconds: int):
         ("seconds", 1),
     ):
         value = seconds // count
-        if value:
+        if value or (not result and count == 1):
             seconds -= value * count
             if value == 1:
                 name = name[:-1]
-            result.append("{} {}".format(value, name))
-    return ", ".join(result)
+            result.append(f"{value} {name}")
+
+    preset = ", ".join(result[:-1])
+    if preset:
+        return f"{preset} and {result[-1]}"
+    return result[-1]
+
+
+def format_timedelta(tdelta: datetime.timedelta):
+    """
+    Formats timedelta object into human readable time
+    """
+    return format_long_time(int(tdelta.total_seconds()))
 
 
 def format_byte(size: int, decimal_places=3):

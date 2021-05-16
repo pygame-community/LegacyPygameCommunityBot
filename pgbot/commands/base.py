@@ -1,3 +1,13 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the base classes for the command handler classes, defines
+argument parsing and casting utilities
+"""
+
+
 from __future__ import annotations
 
 import datetime
@@ -6,12 +16,11 @@ import os
 import platform
 import sys
 import traceback
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import discord
 import pygame
-
-from pgbot import common, embed_utils, utils, db
+from pgbot import common, db, embed_utils, utils
 
 ESCAPES = {
     "0": "\0",
@@ -130,6 +139,7 @@ SPLIT_FLAGS = [
     ("```", CodeBlock, (True,)),
     ("`", CodeBlock, (True,)),
     ('"', String, ()),
+    ("'", String, ()),
 ]
 
 
@@ -330,18 +340,14 @@ class BaseCommand:
 
             elif anno == "discord.Member":
                 try:
-                    return await utils.get_mention_from_id(arg, self.invoke_msg)
+                    return await self.guild.fetch_member(utils.filter_id(arg))
                 except discord.errors.NotFound:
-                    raise BotException(
-                        f"Member does not exist!",
-                        f'The member "{arg}" does not exist, please try again.',
-                    )
+                    raise ValueError()
 
             elif anno == "discord.TextChannel":
-                chan_id = utils.filter_id(arg)
-                chan = self.guild.get_channel(chan_id)
+                chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
-                    raise ArgError("Got invalid channel ID", cmd)
+                    raise ValueError()
 
                 return chan
 
@@ -349,11 +355,10 @@ class BaseCommand:
                 a, b, c = arg.partition("/")
                 if b:
                     msg = int(c)
-                    chan_id = utils.filter_id(a)
-                    chan = self.guild.get_channel(chan_id)
+                    chan = self.guild.get_channel(utils.filter_id(a))
 
                     if chan is None:
-                        raise ArgError("Got invalid channel ID", cmd)
+                        raise ValueError()
                 else:
                     msg = int(a)
                     chan = self.channel
@@ -361,7 +366,7 @@ class BaseCommand:
                 try:
                     return await chan.fetch_message(msg)
                 except discord.NotFound:
-                    raise ArgError("Got invalid message ID", cmd)
+                    raise ValueError()
 
             elif anno == "str":
                 return arg
@@ -409,13 +414,22 @@ class BaseCommand:
                 typ = "a string, that denotes datetime in iso format"
 
             elif anno == "discord.Member":
-                typ = "an id of a person or a mention to them"
+                typ = (
+                    "an id of a person or a mention to them \nPlease make sure"
+                    "that the ID is a valid ID of a member in the server"
+                )
 
             elif anno == "discord.TextChannel":
-                typ = "an id or mention to a text channel"
+                typ = (
+                    "an id or mention to a text channel\nPlease make sure"
+                    "that the ID is a valid ID of a channel in the server"
+                )
 
             elif anno == "discord.Message":
-                typ = "a message id, or a 'channel/message' combo"
+                typ = (
+                    "a message id, or a 'channel/message' combo\nPlease make"
+                    "sure that the ID(s) is(are) valid ones"
+                )
 
             elif anno == "pygame.Color":
                 typ = "a color, represented by the color name or hex rgb"

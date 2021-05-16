@@ -1,3 +1,12 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the command handler class for the admin commands of the bot
+"""
+
+
 from __future__ import annotations
 
 import datetime
@@ -244,7 +253,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
-            blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
+            blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
             try:
                 with open(blank_filename, "w", encoding="utf-8") as toolarge:
                     toolarge.write("This file is too large to be archived.")
@@ -283,39 +292,27 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
         await self.response_msg.delete()
 
-    async def cmd_sudo_info(self, msg: discord.Message, author: bool = True):
+    async def cmd_info(
+        self,
+        obj: Optional[Union[discord.Message, discord.Member]] = None,
+        author: bool = True,
+    ):
         """
         ->type More admin commands
-        ->signature pg!sudo_info <message> [author_bool]
-        ->description Get information about a message and its author
+        ->signature pg!info <message or member> [author_bool]
+        ->description Get information about a message/member
 
-        Get information about a message and its author in an embed and send it to the channel where this command was invoked.
         -----
-        Implement pg!sudo_info, to get information about a message and its author.
+        Implement pg!info, to get information about a message/member
         """
+        if isinstance(obj, discord.Message):
+            embed = embed_utils.get_msg_info_embed(obj, author=author)
+        else:
+            if obj is None:
+                obj = self.author
+            embed = embed_utils.get_user_info_embed(obj)
 
-        await self.response_msg.channel.send(
-            embed=embed_utils.get_msg_info_embed(msg, author=author)
-        )
-        await self.response_msg.delete()
-
-    async def cmd_member_info(self, member: Optional[discord.Member] = None):
-        """
-        ->type More admin commands
-        ->signature pg!member_info [member]
-        ->description Get information about a message and its author
-
-        Get information about a member in an embed and send it to the channel where this command was invoked.
-        -----
-        Implement pg!member_info, to get information about a member.
-        """
-        if member is None:
-            member = self.author
-
-        await self.response_msg.channel.send(
-            embed=embed_utils.get_user_info_embed(member)
-        )
-        await self.response_msg.delete()
+        await self.response_msg.edit(embed=embed)
 
     async def cmd_heap(self):
         """
@@ -384,7 +381,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         tz_utc = datetime.timezone.utc
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
-        blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
+        blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
 
         divider_str = divider_str.string
 

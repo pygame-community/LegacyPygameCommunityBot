@@ -1,11 +1,19 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licenced under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some important embed related utility functions.
+"""
+
+
 import asyncio
-import re
 import datetime
+import re
 from collections.abc import Mapping
 
 import discord
 from discord.embeds import EmptyEmbed
-
 
 from . import common
 
