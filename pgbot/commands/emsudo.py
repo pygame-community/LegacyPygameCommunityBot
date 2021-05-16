@@ -11,16 +11,12 @@ from __future__ import annotations
 
 import datetime
 import os
-<<<<<<< HEAD
 import pprint
 import time
 import traceback
 
 from ast import literal_eval
 from typing import Optional, Union
-=======
-import traceback
->>>>>>> 510068b4ce5dd6bf0f03d5452a9d0f5d12335cbb
 
 import black
 import discord
