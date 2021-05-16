@@ -13,12 +13,15 @@ import datetime
 import os
 import pprint
 import time
+import traceback
 from typing import Optional, Union
 
+import black
 import discord
 import psutil
 import pygame
 
+from discord.embeds import EmptyEmbed
 from pgbot import common, db, embed_utils, utils
 from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
@@ -31,16 +34,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
     """
     Base class for all admin commands
     """
-
-    async def handle_cmd(self):
-        """
-        Temporary function, to divert paths for emsudo commands and other
-        commands
-        """
-        if self.cmd_str.startswith("emsudo"):
-            await EmsudoCommand.handle_cmd(self)
-        else:
-            await UserCommand.handle_cmd(self)
 
     async def cmd_see_db(self, name: str):
         """

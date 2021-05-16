@@ -10,6 +10,7 @@ This file defines some important utility functions.
 import asyncio
 import datetime
 import re
+import traceback
 
 import discord
 import pygame
@@ -119,6 +120,17 @@ def split_long_message(message: str):
         split_output.append(temp)
 
     return split_output
+
+
+def format_code_exception(e):
+    """
+    Provide a formatted exception for code snippets
+    """
+    tbs = traceback.format_exception(type(e), e, e.__traceback__)
+    # Pop out the first entry in the traceback, because that's
+    # this function call itself
+    tbs.pop(1)
+    return tbs
 
 
 def filter_id(mention: str):
