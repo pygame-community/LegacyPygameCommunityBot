@@ -174,9 +174,10 @@ async def on_message_delete(msg: discord.Message):
 
     elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
-            if common.cmd_logs[log].id == msg.id:
-                del common.cmd_logs[log]
-                return
+            if msg.id is not None and common.cmd_logs[log].id is not None:
+                if common.cmd_logs[log].id == msg.id:
+                    del common.cmd_logs[log]
+                    return
 
 
 @common.bot.event

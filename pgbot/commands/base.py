@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 import inspect
+import io
 import os
 import platform
 import sys
@@ -606,7 +607,16 @@ class BaseCommand:
             if platform.system() == "Windows":
                 # Hide path to python on windows
                 elog = elog.replace(os.path.dirname(sys.executable), "Python")
-
+            
             msg = utils.code_block(elog)
+
+            if len(title) > 2048 or len(elog) > 2048:
+                with io.StringIO() as fobj:
+                    fobj.write(f"{title}\n{elog}")
+                    print(fobj.getvalue())
+
+                    await self.response_msg.channel.send(
+                        file=discord.File(fobj, filename="exception.txt")
+                    )
 
         await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
