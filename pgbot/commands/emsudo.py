@@ -8,6 +8,7 @@ This file defines the command handler class for the emsudo commands of the bot
 
 from __future__ import annotations
 
+import io
 from ast import literal_eval
 from typing import Optional, Union
 
@@ -80,30 +81,34 @@ class EmsudoCommand(BaseCommand):
 
         if attachment_msg:
             if not attachment_msg.attachments:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    "",
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-                return
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    "No valid attachment found in message. It must be a .txt or .py file containing a Python dictionary",
-                    "",
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-                return
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+
             await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
@@ -293,24 +298,32 @@ class EmsudoCommand(BaseCommand):
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
                 raise BotException(
                     "No valid attachment found in message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+
             await embed_utils.replace_from_dict(msg, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
@@ -557,24 +570,32 @@ class EmsudoCommand(BaseCommand):
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
                 raise BotException(
                     "No valid attachment found in message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+
             await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
@@ -739,6 +760,8 @@ class EmsudoCommand(BaseCommand):
         msg: discord.Message,
         attrib_string: String = String(""),
         name: String = String("(add a title by editing this embed)"),
+        json: bool = False,
+        py: bool = False
     ):
         """
         ->type emsudo commands
@@ -836,26 +859,30 @@ class EmsudoCommand(BaseCommand):
                     embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)
                 ]
 
-        embed_dict_code = repr({k: embed_dict[k] for k in reversed(embed_dict.keys())})
-
-        with open("embeddata.txt", "w", encoding="utf-8") as embed_txt:
-            embed_txt.write(black.format_str(embed_dict_code, mode=black.FileMode()))
-
-        await self.response_msg.channel.send(
-            embed=await embed_utils.send_2(
-                None,
-                author_name="Embed Data",
-                title=embed_dict.get("title", "(add a title by editing this embed)"),
-                fields=(
-                    (
-                        "\u2800",
-                        f"**[View Original Message]({msg.jump_url})**",
-                        True,
+        with io.StringIO() as fobj:
+            embed_utils.export_embed_data(embed_dict, fp=fobj, indent=4, as_json=json)
+            fobj.seek(0)
+            await self.response_msg.channel.send(
+                embed=await embed_utils.send_2(
+                    None,
+                    author_name="Embed Data",
+                    title=embed_dict.get(
+                        "title", "(add a title by editing this embed)"
+                    ),
+                    fields=(
+                        (
+                            "\u2800",
+                            f"**[View Original Message]({msg.jump_url})**",
+                            True,
+                        ),
                     ),
                 ),
-            ),
-            file=discord.File("embeddata.txt"),
-        )
+                file=discord.File(fobj, filename=(
+                    "embeddata.py" if py else "embeddata.json" if json
+                    else "embeddata.txt"
+                )),
+            )
+
         await self.response_msg.delete()
 
     async def cmd_emsudo_add_field(
@@ -1011,25 +1038,32 @@ class EmsudoCommand(BaseCommand):
         if attachment_msg:
             if not attachment_msg.attachments:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             if "fields" not in embed_dict or not embed_dict["fields"]:
                 raise BotException("No embed field data found in attachment message.")
@@ -1262,25 +1296,32 @@ class EmsudoCommand(BaseCommand):
         if attachment_msg:
             if not attachment_msg.attachments:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             if "fields" not in embed_dict or not embed_dict["fields"]:
                 raise BotException("No embed field data found in attachment message.")
@@ -1513,25 +1554,32 @@ class EmsudoCommand(BaseCommand):
         if attachment_msg:
             if not attachment_msg.attachments:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
-
+                
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
+                    and attachment.content_type.startswith(("text", "application/json"))
                 ):
                     attachment_obj = attachment
                     break
             else:
                 raise BotException(
-                    "No valid attachment found in command message.",
-                    "It must be a .txt or .py file containing a Python dictionary",
+                    "No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
                 )
 
-            txt_dict = await attachment_obj.read()
-            embed_dict = literal_eval(txt_dict.decode())
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             if "fields" not in embed_dict or not embed_dict["fields"]:
                 raise BotException("No embed field data found in attachment message.")
@@ -1771,7 +1819,7 @@ class EmsudoCommand(BaseCommand):
         field_indices = []
 
         for idx in indices:
-            if isinstance(idx, range):        
+            if isinstance(idx, range):
                 range_obj = idx
                 if len(range_obj) > 25:
                     raise BotException(
@@ -1780,10 +1828,10 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 field_indices.extend(range_obj)
-            
+
             else:
                 field_indices.append(idx)
-    
+
         try:
             await embed_utils.clone_fields(
                 msg, msg_embed, field_indices, insertion_index=clone_to
@@ -1824,7 +1872,7 @@ class EmsudoCommand(BaseCommand):
         field_indices = []
 
         for idx in indices:
-            if isinstance(idx, range):        
+            if isinstance(idx, range):
                 range_obj = idx
                 if len(range_obj) > 25:
                     raise BotException(
@@ -1833,7 +1881,7 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 field_indices.extend(range_obj)
-            
+
             else:
                 field_indices.append(idx)
 

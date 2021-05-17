@@ -9,11 +9,17 @@ This file defines some important embed related utility functions.
 
 import asyncio
 import datetime
+import io
+import json
 import re
+
+from ast import literal_eval
 from collections.abc import Mapping
 
+import black
 import discord
 from discord.embeds import EmptyEmbed
+from pgbot.commands.base import BotException
 
 from . import common
 
@@ -730,6 +736,141 @@ async def clear_fields(message, embed):
     """
     embed.clear_fields()
     return await message.edit(embed=embed)
+
+
+def import_embed_data(source, from_string=False, from_json=False, from_json_string=False, as_string=False):
+    """
+    Import embed data from a file or a string containing JSON or a Python dictionary and return it as a Python dictionary or string.
+    """
+
+    if from_json or from_json_string:
+
+        if from_json_string:
+            json_data = json.loads(source)
+
+            if not isinstance(json_data, dict):
+                raise TypeError(
+                    f"the file at '{source}' must contain a JSON object that"
+                    f" can be converted into a dictionary"
+                )
+            elif as_string:
+                json_data = json.dumps(json_data)
+
+            return json_data
+
+        else:
+            json_data = json.load(source)
+
+            if not isinstance(json_data, dict):
+                raise TypeError(
+                    f"the file at '{source}' must contain a JSON object that"
+                    f" can be converted into a dictionary"
+                )
+            elif as_string:
+                json_data = json.dumps(json_data)
+
+            return json_data
+
+    elif from_string:
+        try:
+            dict_data = dict(literal_eval(source))
+        except Exception:
+            raise BotException(
+                f"the file at '{source}' must be of type dict"
+                f", not '{type(dict_data)}'"
+            )
+
+        if as_string:
+            return repr(dict_data)
+
+        return dict_data
+
+    else:
+        dict_data = None
+        if isinstance(source, io.StringIO):
+            if as_string:
+                dict_data = source.getvalue()
+            else:
+                dict_data = literal_eval(source.getvalue())
+                if not isinstance(dict_data, dict):
+                    raise TypeError(
+                        f"the file/data at '{source}' must be of type dict"
+                        f", not '{type(dict_data)}'"
+                    )
+        else:
+            with open(source, "r", encoding="utf-8") as d:
+                if as_string:
+                    dict_data = d.read()
+                else:
+                    dict_data = dict(literal_eval(d.read()))
+                    if not isinstance(dict_data, dict):
+                        raise TypeError(
+                            f"the file at '{source}' must be of type dict"
+                            f", not '{type(dict_data)}'"
+                        )
+        return dict_data
+
+
+def export_embed_data(
+    data_dict, fp=None, indent=None, as_json=True, always_return=False
+):
+    """
+    Export embed data to serialized JSON or a Python dictionary and store it in a file or a string.
+    """
+
+    if as_json:
+        return_data = None
+        if isinstance(fp, str):
+            with open(fp, "w", encoding="utf-8") as fobj:
+                json.dump(data_dict, fobj, indent=indent)
+            if always_return:
+                return_data = json.dumps(data_dict, indent=indent)
+
+        elif isinstance(fp, io.StringIO):
+            json.dump(data_dict, fp, indent=indent)
+            if always_return:
+                return_data = fp.getvalue()
+        else:
+            return_data = json.dumps(data_dict, indent=indent)
+
+        return return_data
+
+    else:
+        return_data = None
+        if isinstance(fp, str):
+            with open(fp, "w", encoding="utf-8") as fobj:
+                if always_return:
+                    return_data = black.format_str(
+                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        mode=black.FileMode(),
+                    )
+                    fobj.write(return_data)
+                else:
+                    fobj.write(
+                        black.format_str(
+                            repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                            mode=black.FileMode(),
+                        )
+                    )
+
+        elif isinstance(fp, io.StringIO):
+            if always_return:
+                return_data = black.format_str(
+                    repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                    mode=black.FileMode(),
+                )
+                fp.write(return_data)
+            else:
+                fp.write(
+                    black.format_str(
+                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        mode=black.FileMode(),
+                    )
+                )
+        else:
+            return_data = repr({k: data_dict[k] for k in reversed(data_dict.keys())})
+
+        return return_data
 
 
 def get_member_info_str(member: discord.Member):
