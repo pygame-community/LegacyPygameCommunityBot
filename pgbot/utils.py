@@ -19,11 +19,18 @@ from . import common, embed_utils
 
 
 def color_to_rgb_int(col: pygame.Color):
+    """
+    Get integer RGB representation of pygame color object. This does not include
+    the alpha component of the color, which int(col) would give you
+    """
     return (((col.r << 8) + col.g) << 8) + col.b
 
 
 def discordify(message):
-    """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
+    """
+    Converts normal string into "discord" string that includes backspaces to
+    cancel out unwanted changes
+    """
     # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
     message = (
         message.replace("\\", r"\\")

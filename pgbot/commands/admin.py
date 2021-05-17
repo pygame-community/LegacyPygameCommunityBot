@@ -10,18 +10,16 @@ This file defines the command handler class for the admin commands of the bot
 from __future__ import annotations
 
 import datetime
+import io
 import os
 import pprint
 import time
-import traceback
 from typing import Optional, Union
 
-import black
 import discord
 import psutil
 import pygame
 
-from discord.embeds import EmptyEmbed
 from pgbot import common, db, embed_utils, utils
 from pgbot.commands.base import BotException, CodeBlock, String
 from pgbot.commands.emsudo import EmsudoCommand
@@ -43,11 +41,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!see_db, to visualise DB messages
         """
-        await embed_utils.replace(
-            self.response_msg,
-            f"Here are the contents of the table {name}:",
-            utils.code_block(pprint.pformat(await db.DiscordDB(name).get())),
-        )
+
+        with io.StringIO() as fobj:
+            fobj.write(pprint.pformat(await db.DiscordDB(name).get()))
+            fobj.seek(0)
+
+            await self.response_msg.delete()
+            await self.channel.send(
+                f"Here are the contents of the table `{name}`:",
+                file=discord.File(fobj, filename=f"{name}_db.py"),
+            )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
         """
@@ -175,7 +178,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <message> [attach] [stats]
+        ->signature pg!sudo_get <message> [attach] [info]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -185,12 +188,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
         if attach:
-            try:
-                with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
-                    msg_txt.write(msg.content)
+            with io.StringIO() as fobj:
+                fobj.write(msg.content)
+                fobj.seek(0)
 
-                await self.response_msg.channel.send(
-                    file=discord.File("messagedata.txt"),
+                await self.channel.send(
+                    file=discord.File(fobj, "get.txt"),
                     embed=await embed_utils.send_2(
                         None,
                         author_name="Message data",
@@ -198,9 +201,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         color=0xFFFFAA,
                     ),
                 )
-            finally:
-                if os.path.exists("messagedata.txt"):
-                    os.remove("messagedata.txt")
 
         elif info:
             info_embed = embed_utils.get_msg_info_embed(msg)
@@ -246,21 +246,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
-            blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
-            try:
-                with open(blank_filename, "w", encoding="utf-8") as toolarge:
-                    toolarge.write("This file is too large to be archived.")
+            with io.StringIO() as fobj:
+                fobj.write("This file was too large to be archived.")
+                fobj.seek(0)
 
-                    msg_files = [
-                        await a.to_file(spoiler=spoiler or a.is_spoiler())
-                        if a.size <= common.GUILD_MAX_FILE_SIZE
-                        else discord.File(toolarge)
-                        for a in msg.attachments
-                    ]
-
-            finally:
-                if os.path.exists(blank_filename):
-                    os.remove(blank_filename)
+                msg_files = [
+                    await a.to_file(spoiler=spoiler or a.is_spoiler())
+                    if a.size <= common.GUILD_MAX_FILE_SIZE
+                    else discord.File(fobj, "filetoolarge.txt")
+                    for a in msg.attachments
+                ]
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
@@ -434,9 +429,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if not after and oldest_first:
             messages.reverse()
 
-        with open(blank_filename, "w") as toolarge_txt:
-            toolarge_txt.write("This file is too large to be archived.")
-
         if show_header and not raw:
             start_date = messages[0].created_at.replace(tzinfo=None)
             end_date = messages[-1].created_at.replace(tzinfo=None)
@@ -462,18 +454,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
             archive_header_msg = await destination.send(embed=archive_header_msg_embed)
 
         no_mentions = discord.AllowedMentions.none()
-        try:
+        with io.StringIO() as fobj:
+            fobj.write("This file was too large to be archived.")
+
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
                 author = msg.author
                 await destination.trigger_typing()
 
+                fobj.seek(0)
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
                         if a.size <= common.GUILD_MAX_FILE_SIZE
-                        else discord.File(blank_filename)
+                        else discord.File(fobj, "filetoolarge.txt")
                     )
                     for a in msg.attachments
                 ]
@@ -523,10 +518,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     await destination.send(embed=msg.embeds[i])
 
                 await destination.trigger_typing()
-
-        finally:
-            if os.path.exists(blank_filename):
-                os.remove(blank_filename)
 
         if divider_str and not raw:
             await destination.send(content=divider_str)

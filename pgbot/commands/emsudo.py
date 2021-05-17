@@ -8,25 +8,15 @@ This file defines the command handler class for the emsudo commands of the bot
 
 from __future__ import annotations
 
-
-import datetime
-import os
-import pprint
-import time
-import traceback
-
 from ast import literal_eval
 from typing import Optional, Union
 
 import black
 import discord
-import psutil
-import pygame
-
 from discord.embeds import EmptyEmbed
-from pgbot import common, db, embed_utils, utils
+
+from pgbot import embed_utils, utils
 from pgbot.commands.base import BaseCommand, BotException, CodeBlock, String
-from pgbot.commands.user import UserCommand
 
 
 class EmsudoCommand(BaseCommand):
@@ -40,17 +30,17 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo [*args]
+        ->signature pg!emsudo data
         ->description Send an embed through the bot
         ->extended description
         ```
         pg!emsudo {embed_tuple}
         pg!emsudo {embed_dict}
-        pg!emsudo {message_id}
-        pg!emsudo {channel_id} {message_id}
-        pg!emsudo {empty_str}
+        pg!emsudo {message}
+        pg!emsudo
         ```
-        Generate an embed from the given arguments and send it with a message to the channel where this command was invoked.
+        Generate an embed from the given arguments and send it with a message
+        to the channel where this command was invoked.
         -----
         Implement pg!emsudo, for admins to send embeds via the bot
         """
@@ -123,7 +113,6 @@ class EmsudoCommand(BaseCommand):
             try:
                 args = literal_eval(data.code)
             except Exception as e:
-
                 raise BotException(
                     "Invalid arguments!",
                     f"```\n{''.join(utils.format_code_exception(e))}```",
@@ -748,26 +737,26 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_get(
         self,
         msg: discord.Message,
-        attrib_string: Optional[String] = String(""),
-        name: Optional[String] = String("(add a title by editing this embed)"),
+        attrib_string: String = String(""),
+        name: String = String("(add a title by editing this embed)"),
     ):
         """
-                ->type emsudo commands
-                ->signature pg!emsudo_get [*args]
-                ->description Get the embed data of a message
-                ->extended description
-                ```
-                pg!emsudo_get {message_id} {optional_embed_attr} {optional_embed_attr}...
-                pg!emsudo_get {channel_id} {message_id} {optional_embed_attr} {optional_embed_attr}...
-                ```
-                Get the contents of the embed of a message from the given arguments and send it as another message
+        ->type emsudo commands
+        ->signature pg!emsudo_get [*args]
+        ->description Get the embed data of a message
+        ->extended description
+        ```
+        pg!emsudo_get {message_id} {optional_embed_attr} {optional_embed_attr}...
+        pg!emsudo_get {channel_id} {message_id} {optional_embed_attr} {optional_embed_attr}...
+        ```
+        Get the contents of the embed of a message from the given arguments and send it as another message
         (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
-                If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
-                ->example command pg!emsudo_get 123456789123456789 title
-                pg!emsudo_get 123456789123456789/98765432198765444321 "description fields"
-                pg!emsudo_get 123456789123456789/98765432198765444321
-                -----
-                Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
+        If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
+        ->example command pg!emsudo_get 123456789123456789 title
+        pg!emsudo_get 123456789123456789/98765432198765444321 "description fields"
+        pg!emsudo_get 123456789123456789/98765432198765444321
+        -----
+        Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
 
         embed_attr_keys = {
@@ -872,7 +861,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_add_field(
         self,
         msg: discord.Message,
-        data: Union[CodeBlock, String],  # pylint: disable=unsubscriptable-object
+        data: Union[CodeBlock, String],
     ):
         """
         ->type emsudo commands
@@ -974,11 +963,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_add_fields(
         self,
         msg: discord.Message,
-        data: Optional[  # pylint: disable=unsubscriptable-object
-            Union[
-                discord.Message, CodeBlock, String
-            ]  # pylint: disable=unsubscriptable-object
-        ] = None,  # pylint: disable=unsubscriptable-object
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
         ->type emsudo commands
@@ -1124,7 +1109,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         index: int,
-        data: Union[CodeBlock, String],  # pylint: disable=unsubscriptable-object
+        data: Union[CodeBlock, String],
     ):
         """
         ->type emsudo commands
@@ -1227,9 +1212,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         index: int,
-        data: Optional[
-            Union[discord.Message, CodeBlock, String]
-        ] = None,  # pylint: disable=unsubscriptable-object
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
         ->type emsudo commands
@@ -1378,7 +1361,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         index: int,
-        data: Union[CodeBlock, String],  # pylint: disable=unsubscriptable-object
+        data: Union[CodeBlock, String],
     ):
         """
         ->type More admin commands
@@ -1480,11 +1463,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_edit_fields(
         self,
         msg: discord.Message,
-        data: Optional[  # pylint: disable=unsubscriptable-object
-            Union[
-                discord.Message, CodeBlock, String
-            ]  # pylint: disable=unsubscriptable-object
-        ] = None,  # pylint: disable=unsubscriptable-object
+        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
         ->type emsudo commands
@@ -1632,7 +1611,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         index: int,
-        data: Union[CodeBlock, String],  # pylint: disable=unsubscriptable-object
+        data: Union[CodeBlock, String],
     ):
         """
         ->type emsudo commands

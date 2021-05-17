@@ -315,10 +315,12 @@ class BaseCommand:
         elif isinstance(arg, String):
             if anno == "String":
                 return arg
+
             elif anno in ["datetime.datetime", "datetime"]:
                 arg2 = arg.string.strip()
                 arg2 = arg2[:-1] if arg2.endswith("Z") else arg2
                 return datetime.datetime.fromisoformat(arg2)
+
             raise ValueError()
 
         elif isinstance(arg, str):
@@ -339,6 +341,15 @@ class BaseCommand:
 
             elif anno == "float":
                 return float(arg)
+
+            elif anno == "range":
+                if not arg.startswith("(") or not arg.endswith(")"):
+                    raise ValueError()
+
+                splits = [int(i) for i in arg[1:-1].split("-")]
+                if splits and len(splits) <= 3:
+                    return range(*splits)
+                raise ValueError()
 
             elif anno == "discord.Member":
                 try:
@@ -414,6 +425,12 @@ class BaseCommand:
 
             elif anno in ["datetime.datetime", "datetime"]:
                 typ = "a string, that denotes datetime in iso format"
+
+            elif anno == "range":
+                typ = (
+                    "a range specifier, formatted with hyphens, enclosed in "
+                    "parenthesis"
+                )
 
             elif anno == "discord.Member":
                 typ = (
@@ -593,89 +610,3 @@ class BaseCommand:
             msg = utils.code_block(elog)
 
         await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
-
-
-class OldBaseCommand:
-    """
-    Base class to handle commands. This is the older version of BaseCommand,
-    kept temporarily while we are switching to the new command handler and new
-    command argument system. Right now, this is only useful for the emsudo
-    commands
-    """
-
-    def __init__(self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv):
-        """
-        Initialise OldBaseCommand class
-        """
-        self.invoke_msg = invoke_msg
-        self.response_msg = resp_msg
-        self.is_priv = is_priv
-        self.cmd_str = self.invoke_msg.content[len(common.PREFIX) :].lstrip()
-        self.string = ""
-        self.args = []
-
-        # Create a dictionary of command names and respective handler functions
-        self.cmds_and_funcs = {}
-        for i in dir(self):
-            if i.startswith("cmd_"):
-                self.cmds_and_funcs[i[len("cmd_") :]] = self.__getattribute__(i)
-
-    async def handle_cmd(self):
-        """
-        Calls the appropriate sub function to handle commands.
-        Must return True on successful command execution, False otherwise
-        """
-        self.args = self.cmd_str.split()
-        cmd = self.args.pop(0) if self.args else ""
-        self.string = self.cmd_str[len(cmd) :].strip()
-
-        title = "Unrecognized command!"
-        msg = (
-            f"Make sure that the command '{cmd}' exists, and you have "
-            + "the permission to use it. \nFor help on bot commands, do `pg!help`"
-        )
-        try:
-            if cmd in self.cmds_and_funcs:
-                await self.cmds_and_funcs[cmd]()
-                return
-
-        except ArgError as exc:
-            title = "Incorrect amount of arguments!"
-            msg = exc.args[0]
-            msg += f" \nFor help on this bot command, do `pg!help {cmd}`"
-
-        except Exception as exc:
-            title = "An exception occured while handling the command!"
-
-            error_tuple = (type(exc), exc, exc.__traceback__)
-            tbs = traceback.format_exception(*error_tuple)
-            # Pop out the first entry in the traceback, because that's
-            # this function call itself
-            tbs.pop(1)
-
-            elog = (
-                "This error is most likely caused due to a bug in "
-                + "the bot itself. Here is the traceback:\n"
-            )
-            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
-            if platform.system() == "Windows":
-                elog = elog.replace(os.path.dirname(sys.executable), "Python")
-
-            msg = utils.code_block(elog)
-
-        await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
-
-    def check_args(self, minarg, maxarg=None):
-        """
-        A utility for a function to check that the correct number of args were
-        passed
-        """
-        exp = f"between {minarg} and {maxarg}"
-        if maxarg is None:
-            exp = maxarg = minarg
-
-        got = len(self.args)
-        if not minarg <= got <= maxarg:
-            raise ArgError(
-                f"The number of arguments must be {exp} but {got} were given"
-            )
