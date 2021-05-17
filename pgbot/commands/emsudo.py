@@ -1780,10 +1780,10 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 field_indices.extend(range_obj)
-                break
-        else:
-            field_indices = indices
-
+            
+            else:
+                field_indices.append(idx)
+    
         try:
             await embed_utils.clone_fields(
                 msg, msg_embed, field_indices, insertion_index=clone_to
@@ -1821,20 +1821,21 @@ class EmsudoCommand(BaseCommand):
 
         msg_embed = msg.embeds[0]
 
-        field_indices = ()
+        field_indices = []
 
         for idx in indices:
-            if isinstance(idx, range):
-                if len(idx) > 25:
+            if isinstance(idx, range):        
+                range_obj = idx
+                if len(range_obj) > 25:
                     raise BotException(
                         "Invalid range object passed as an argument!",
                         "",
                     )
 
-                field_indices = tuple(idx)
-                break
-        else:
-            field_indices = indices
+                field_indices.extend(range_obj)
+            
+            else:
+                field_indices.append(idx)
 
         try:
             await embed_utils.remove_fields(msg, msg_embed, field_indices)
