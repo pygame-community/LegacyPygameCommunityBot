@@ -655,7 +655,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                     if attached_files:
                         await destination.send(
-                            content=f"Message attachments ({len(attached_files)}):",
+                            content=f"**Message attachments** ({len(attached_files)}):",
                             files=attached_files,
                         )
 
@@ -673,7 +673,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                             embed_data_fobjs.append(embed_data_fobj)
 
                         await destination.send(
-                            content=f"Message embeds ({len(embed_data_fobjs)}):",
+                            content=f"**Message embeds** ({len(embed_data_fobjs)}):",
                             files=[
                                 discord.File(fobj3, filename="embeddata.json")
                                 for fobj3 in embed_data_fobjs

@@ -101,6 +101,8 @@ class FilteredPygame:
     pygame module in a sandbox
     """
 
+    time = pygame.time
+    sprite = pygame.sprite
     Surface = pygame.Surface
     Rect = pygame.Rect
     Color = pygame.Color
