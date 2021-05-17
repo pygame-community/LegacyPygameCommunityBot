@@ -12,10 +12,10 @@ from __future__ import annotations
 import datetime
 import io
 import os
-import pprint
 import time
 from typing import Optional, Union
 
+import black
 import discord
 import psutil
 import pygame
@@ -43,7 +43,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         with io.StringIO() as fobj:
-            fobj.write(pprint.pformat(await db.DiscordDB(name).get()))
+            fobj.write(
+                black.format_str(
+                    repr(await db.DiscordDB(name).get()),
+                    mode=black.FileMode(),
+                )
+            )
             fobj.seek(0)
 
             await self.response_msg.delete()
