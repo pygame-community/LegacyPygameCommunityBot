@@ -1,9 +1,16 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some functions to access docs of any module/class/function
+"""
+
 import asyncio
 import builtins
 import cmath
 import collections
 import gc
-import importlib
 import itertools
 import json
 import math

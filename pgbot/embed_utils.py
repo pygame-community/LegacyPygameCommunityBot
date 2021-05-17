@@ -1,11 +1,25 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some important embed related utility functions.
+"""
+
+
 import asyncio
-import re
 import datetime
+import io
+import json
+import re
+
+from ast import literal_eval
 from collections.abc import Mapping
 
+import black
 import discord
 from discord.embeds import EmptyEmbed
-
+from pgbot.commands.base import BotException
 
 from . import common
 
@@ -30,20 +44,21 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
     return old_dict
 
 
-def get_fields(messages):
+def get_fields(*messages):
     """
     Get a list of fields from messages.
-    Syntax of embeds: <title|desc|[inline]>
+    Syntax of an embed field string: <name|value[|inline]>
 
     Args:
-        messages (List[str]): The messages to get the fields from
+        *messages (Union[str, List[str]]): The messages to get the fields from
 
     Returns:
-        List[List[str, str, bool]]: The list of fields
+        List[List[str, str, bool]]: The list of fields. if only one message is given as input, then only one field is returned.
     """
     # syntax: <Title|desc.[|inline=False]>
-    field_regex = r"(<.*\|.*(\|True|\|False|)>)"
+    field_regex = r"(<.*\|.*(\|True|\|False|\|1|\|0|)>)"
     field_datas = []
+    true_bool_strings = ("True", "1")
 
     for message in messages:
         field_list = re.split(field_regex, message)
@@ -57,11 +72,11 @@ def get_fields(messages):
                 elif len(field_data) == 2:
                     field_data.append("")
 
-                field_data[2] = True if field_data[2] == "True" else False
+                field_data[2] = True if field_data[2] in true_bool_strings else False
 
                 field_datas.append(field_data)
 
-    return field_datas
+    return field_datas[0] if len(field_datas) < 2 else field_datas
 
 
 class PagedEmbed:
@@ -467,7 +482,7 @@ async def edit_from_dict(message, embed, update_embed_dict):
     dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
-    recursive_update(old_embed_dict, update_embed_dict)
+    recursive_update(old_embed_dict, update_embed_dict, skip_value="")
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -476,6 +491,9 @@ async def replace_field_from_dict(message, embed, field_dict, index):
     Replaces an embed field of the embed of a message from a dictionary
     with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
 
     embed.set_field_at(
         index,
@@ -493,6 +511,8 @@ async def edit_field_from_dict(message, embed, field_dict, index):
     dictionary with a much more tight function
     """
 
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed_dict = embed.to_dict()
 
     old_field_dict = embed_dict["fields"][index]
@@ -581,6 +601,8 @@ async def insert_field_from_dict(message, embed, field_dict, index):
     dictionary with a much more tight function
     """
 
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed.insert_field_at(
         index,
         name=field_dict.get("name", ""),
@@ -596,7 +618,8 @@ async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, i
     Inserts embed fields to the embed of a message from dictionaries
     at a specified index with a much more tight function
     """
-
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     for field_dict in field_dicts:
         embed.insert_field_at(
             index,
@@ -613,6 +636,9 @@ async def remove_field(message, embed, index):
     Removes an embed field of the embed of a message from a dictionary
     with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
     embed.remove_field(index)
     return await message.edit(embed=embed)
 
@@ -622,7 +648,16 @@ async def remove_fields(message, embed, field_indices):
     Removes multiple embed fields of the embed of a message from a
     dictionary with a much more tight function
     """
-    for index in sorted(field_indices, reverse=True):
+
+    fields_count = len(embed.fields)
+
+    parsed_field_indices = [
+        fields_count + idx if idx < 0 else idx for idx in field_indices
+    ]
+
+    parsed_field_indices.sort(reverse=True)
+
+    for index in parsed_field_indices:
         embed.remove_field(index)
     return await message.edit(embed=embed)
 
@@ -632,6 +667,11 @@ async def swap_fields(message, embed, index_a, index_b):
     Swaps two embed fields of the embed of a message from a
     dictionary with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+    index_a = fields_count + index_a if index_a < 0 else index_a
+    index_b = fields_count + index_b if index_b < 0 else index_b
+
     embed_dict = embed.to_dict()
     fields_list = embed_dict["fields"]
     fields_list[index_a], fields_list[index_b] = (
@@ -646,6 +686,9 @@ async def clone_field(message, embed, index):
     Duplicates an embed field of the embed of a message from a
     dictionary with a much more tight function
     """
+    fields_count = len(embed.fields)
+    index = fields_count + index if index < 0 else index
+
     embed_dict = embed.to_dict()
     cloned_field = embed_dict["fields"][index].copy()
     embed_dict["fields"].insert(index, cloned_field)
@@ -657,6 +700,18 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
     Duplicates multiple embed fields of the embed of a message
     from a dictionary with a much more tight function
     """
+
+    fields_count = len(embed.fields)
+
+    parsed_field_indices = [
+        fields_count + idx if idx < 0 else idx for idx in field_indices
+    ]
+
+    parsed_field_indices.sort(reverse=True)
+
+    insertion_index = (
+        fields_count + insertion_index if insertion_index < 0 else insertion_index
+    )
     embed_dict = embed.to_dict()
 
     if isinstance(insertion_index, int):
@@ -667,7 +722,7 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
         for cloned_field in cloned_fields:
             embed_dict["fields"].insert(insertion_index, cloned_field)
     else:
-        for index in sorted(field_indices, reverse=True):
+        for index in parsed_field_indices:
             cloned_field = embed_dict["fields"][index].copy()
             embed_dict["fields"].insert(index, cloned_field)
 
@@ -681,6 +736,145 @@ async def clear_fields(message, embed):
     """
     embed.clear_fields()
     return await message.edit(embed=embed)
+
+
+def import_embed_data(
+    source, from_string=False, from_json=False, from_json_string=False, as_string=False
+):
+    """
+    Import embed data from a file or a string containing JSON or a Python dictionary and return it as a Python dictionary or string.
+    """
+
+    if from_json or from_json_string:
+
+        if from_json_string:
+            json_data = json.loads(source)
+
+            if not isinstance(json_data, dict):
+                raise TypeError(
+                    f"the file at '{source}' must contain a JSON object that"
+                    f" can be converted into a dictionary"
+                )
+            elif as_string:
+                json_data = json.dumps(json_data)
+
+            return json_data
+
+        else:
+            json_data = json.load(source)
+
+            if not isinstance(json_data, dict):
+                raise TypeError(
+                    f"the file at '{source}' must contain a JSON object that"
+                    f" can be converted into a dictionary"
+                )
+            elif as_string:
+                json_data = json.dumps(json_data)
+
+            return json_data
+
+    elif from_string:
+        try:
+            dict_data = dict(literal_eval(source))
+        except Exception:
+            raise BotException(
+                f"the file at '{source}' must be of type dict"
+                f", not '{type(dict_data)}'"
+            )
+
+        if as_string:
+            return repr(dict_data)
+
+        return dict_data
+
+    else:
+        dict_data = None
+        if isinstance(source, io.StringIO):
+            if as_string:
+                dict_data = source.getvalue()
+            else:
+                dict_data = literal_eval(source.getvalue())
+                if not isinstance(dict_data, dict):
+                    raise TypeError(
+                        f"the file/data at '{source}' must be of type dict"
+                        f", not '{type(dict_data)}'"
+                    )
+        else:
+            with open(source, "r", encoding="utf-8") as d:
+                if as_string:
+                    dict_data = d.read()
+                else:
+                    dict_data = dict(literal_eval(d.read()))
+                    if not isinstance(dict_data, dict):
+                        raise TypeError(
+                            f"the file at '{source}' must be of type dict"
+                            f", not '{type(dict_data)}'"
+                        )
+        return dict_data
+
+
+def export_embed_data(
+    data_dict, fp=None, indent=None, as_json=True, always_return=False
+):
+    """
+    Export embed data to serialized JSON or a Python dictionary and store it in a file or a string.
+    """
+
+    if as_json:
+        return_data = None
+        if isinstance(fp, str):
+            with open(fp, "w", encoding="utf-8") as fobj:
+                json.dump(data_dict, fobj, indent=indent)
+            if always_return:
+                return_data = json.dumps(data_dict, indent=indent)
+
+        elif isinstance(fp, io.StringIO):
+            json.dump(data_dict, fp, indent=indent)
+            if always_return:
+                return_data = fp.getvalue()
+        else:
+            return_data = json.dumps(data_dict, indent=indent)
+
+        return return_data
+
+    else:
+        return_data = None
+        if isinstance(fp, str):
+            with open(fp, "w", encoding="utf-8") as fobj:
+                if always_return:
+                    return_data = black.format_str(
+                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        mode=black.FileMode(),
+                    )
+                    fobj.write(return_data)
+                else:
+                    fobj.write(
+                        black.format_str(
+                            repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                            mode=black.FileMode(),
+                        )
+                    )
+
+        elif isinstance(fp, io.StringIO):
+            if always_return:
+                return_data = black.format_str(
+                    repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                    mode=black.FileMode(),
+                )
+                fp.write(return_data)
+                fp.seek(0)
+            else:
+                fp.write(
+                    black.format_str(
+                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        mode=black.FileMode(),
+                    )
+                )
+                fp.seek(0)
+        else:
+            return_data = repr({k: data_dict[k] for k in reversed(data_dict.keys())})
+
+        return return_data
 
 
 def get_member_info_str(member: discord.Member):

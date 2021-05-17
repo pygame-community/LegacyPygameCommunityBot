@@ -1,3 +1,12 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file exports a handle function, to handle commands posted by the users
+"""
+
+
 from __future__ import annotations
 
 import sys
@@ -47,13 +56,16 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                     invoke_msg.channel,
                     "Invalid arguments!",
                     "All arguments must be integer IDs or member mentions",
+                    0xFF0000,
                 )
             else:
                 await embed_utils.replace(
                     response_msg,
                     "Invalid arguments!",
                     "All arguments must be integer IDs or member mentions",
+                    0xFF0000,
                 )
+            return
 
         if response_msg is None:
             await embed_utils.send(

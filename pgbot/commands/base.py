@@ -1,17 +1,27 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the base classes for the command handler classes, defines
+argument parsing and casting utilities
+"""
+
+
 from __future__ import annotations
 
 import datetime
 import inspect
+import io
 import os
 import platform
 import sys
 import traceback
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import discord
 import pygame
-
-from pgbot import common, embed_utils, utils, db
+from pgbot import common, db, embed_utils, utils
 
 ESCAPES = {
     "0": "\0",
@@ -131,6 +141,7 @@ SPLIT_FLAGS = [
     ("```", CodeBlock, (True,)),
     ("`", CodeBlock, (True,)),
     ('"', String, ()),
+    ("'", String, ()),
 ]
 
 
@@ -306,8 +317,12 @@ class BaseCommand:
         elif isinstance(arg, String):
             if anno == "String":
                 return arg
+
             elif anno in ["datetime.datetime", "datetime"]:
-                return datetime.datetime.fromisoformat(arg.string.strip())
+                arg2 = arg.string.strip()
+                arg2 = arg2[:-1] if arg2.endswith("Z") else arg2
+                return datetime.datetime.fromisoformat(arg2)
+
             raise ValueError()
 
         elif isinstance(arg, str):
@@ -329,20 +344,25 @@ class BaseCommand:
             elif anno == "float":
                 return float(arg)
 
+            elif anno == "range":
+                if not arg.startswith("(") or not arg.endswith(")"):
+                    raise ValueError()
+
+                splits = [int(i) for i in arg[1:-1].split("-")]
+                if splits and len(splits) <= 3:
+                    return range(*splits)
+                raise ValueError()
+
             elif anno == "discord.Member":
                 try:
-                    return await utils.get_mention_from_id(arg, self.invoke_msg)
+                    return await self.guild.fetch_member(utils.filter_id(arg))
                 except discord.errors.NotFound:
-                    raise BotException(
-                        f"Member does not exist!",
-                        f'The member "{arg}" does not exist, please try again.',
-                    )
+                    raise ValueError()
 
             elif anno == "discord.TextChannel":
-                chan_id = utils.filter_id(arg)
-                chan = self.guild.get_channel(chan_id)
+                chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
-                    raise ArgError("Got invalid channel ID", cmd)
+                    raise ValueError()
 
                 return chan
 
@@ -350,11 +370,10 @@ class BaseCommand:
                 a, b, c = arg.partition("/")
                 if b:
                     msg = int(c)
-                    chan_id = utils.filter_id(a)
-                    chan = self.guild.get_channel(chan_id)
+                    chan = self.guild.get_channel(utils.filter_id(a))
 
                     if chan is None:
-                        raise ArgError("Got invalid channel ID", cmd)
+                        raise ValueError()
                 else:
                     msg = int(a)
                     chan = self.channel
@@ -362,7 +381,7 @@ class BaseCommand:
                 try:
                     return await chan.fetch_message(msg)
                 except discord.NotFound:
-                    raise ArgError("Got invalid message ID", cmd)
+                    raise ValueError()
 
             elif anno == "str":
                 return arg
@@ -409,14 +428,29 @@ class BaseCommand:
             elif anno in ["datetime.datetime", "datetime"]:
                 typ = "a string, that denotes datetime in iso format"
 
+            elif anno == "range":
+                typ = (
+                    "a range specifier, formatted with hyphens, enclosed in "
+                    "parenthesis"
+                )
+
             elif anno == "discord.Member":
-                typ = "an id of a person or a mention to them"
+                typ = (
+                    "an id of a person or a mention to them \nPlease make sure"
+                    "that the ID is a valid ID of a member in the server"
+                )
 
             elif anno == "discord.TextChannel":
-                typ = "an id or mention to a text channel"
+                typ = (
+                    "an id or mention to a text channel\nPlease make sure"
+                    "that the ID is a valid ID of a channel in the server"
+                )
 
             elif anno == "discord.Message":
-                typ = "a message id, or a 'channel/message' combo"
+                typ = (
+                    "a message id, or a 'channel/message' combo\nPlease make"
+                    "sure that the ID(s) is(are) valid ones"
+                )
 
             elif anno == "pygame.Color":
                 typ = "a color, represented by the color name or hex rgb"
@@ -577,90 +611,13 @@ class BaseCommand:
 
             msg = utils.code_block(elog)
 
-        await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
+            if len(title) > 2048 or len(elog) > 2048:
+                with io.StringIO() as fobj:
+                    fobj.write(f"{title}\n{elog}")
+                    print(fobj.getvalue())
 
-
-class OldBaseCommand:
-    """
-    Base class to handle commands. This is the older version of BaseCommand,
-    kept temporarily while we are switching to the new command handler and new
-    command argument system. Right now, this is only useful for the emsudo
-    commands
-    """
-
-    def __init__(self, invoke_msg: discord.Message, resp_msg: discord.Message, is_priv):
-        """
-        Initialise OldBaseCommand class
-        """
-        self.invoke_msg = invoke_msg
-        self.response_msg = resp_msg
-        self.is_priv = is_priv
-        self.cmd_str = self.invoke_msg.content[len(common.PREFIX) :].lstrip()
-        self.string = ""
-        self.args = []
-
-        # Create a dictionary of command names and respective handler functions
-        self.cmds_and_funcs = {}
-        for i in dir(self):
-            if i.startswith("cmd_"):
-                self.cmds_and_funcs[i[len("cmd_") :]] = self.__getattribute__(i)
-
-    async def handle_cmd(self):
-        """
-        Calls the appropriate sub function to handle commands.
-        Must return True on successful command execution, False otherwise
-        """
-        self.args = self.cmd_str.split()
-        cmd = self.args.pop(0) if self.args else ""
-        self.string = self.cmd_str[len(cmd) :].strip()
-
-        title = "Unrecognized command!"
-        msg = (
-            f"Make sure that the command '{cmd}' exists, and you have "
-            + "the permission to use it. \nFor help on bot commands, do `pg!help`"
-        )
-        try:
-            if cmd in self.cmds_and_funcs:
-                await self.cmds_and_funcs[cmd]()
-                return
-
-        except ArgError as exc:
-            title = "Incorrect amount of arguments!"
-            msg = exc.args[0]
-            msg += f" \nFor help on this bot command, do `pg!help {cmd}`"
-
-        except Exception as exc:
-            title = "An exception occured while handling the command!"
-
-            error_tuple = (type(exc), exc, exc.__traceback__)
-            tbs = traceback.format_exception(*error_tuple)
-            # Pop out the first entry in the traceback, because that's
-            # this function call itself
-            tbs.pop(1)
-
-            elog = (
-                "This error is most likely caused due to a bug in "
-                + "the bot itself. Here is the traceback:\n"
-            )
-            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
-            if platform.system() == "Windows":
-                elog = elog.replace(os.path.dirname(sys.executable), "Python")
-
-            msg = utils.code_block(elog)
+                    await self.response_msg.channel.send(
+                        file=discord.File(fobj, filename="exception.txt")
+                    )
 
         await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
-
-    def check_args(self, minarg, maxarg=None):
-        """
-        A utility for a function to check that the correct number of args were
-        passed
-        """
-        exp = f"between {minarg} and {maxarg}"
-        if maxarg is None:
-            exp = maxarg = minarg
-
-        got = len(self.args)
-        if not minarg <= got <= maxarg:
-            raise ArgError(
-                f"The number of arguments must be {exp} but {got} were given"
-            )

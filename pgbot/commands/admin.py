@@ -1,11 +1,21 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines the command handler class for the admin commands of the bot
+"""
+
+
 from __future__ import annotations
 
 import datetime
+import io
 import os
-import pprint
 import time
 from typing import Optional, Union
 
+import black
 import discord
 import psutil
 import pygame
@@ -23,29 +33,29 @@ class AdminCommand(UserCommand, EmsudoCommand):
     Base class for all admin commands
     """
 
-    async def handle_cmd(self):
-        """
-        Temporary function, to divert paths for emsudo commands and other
-        commands
-        """
-        if self.cmd_str.startswith("emsudo"):
-            await EmsudoCommand.handle_cmd(self)
-        else:
-            await UserCommand.handle_cmd(self)
-
     async def cmd_see_db(self, name: str):
         """
         ->type Admin commands
-        ->signature pg!see_db [name]
+        ->signature pg!see_db <name>
         ->description Visualize DB
         -----
         Implement pg!see_db, to visualise DB messages
         """
-        await embed_utils.replace(
-            self.response_msg,
-            f"Here are the contents of the table {name}:",
-            utils.code_block(pprint.pformat(await db.DiscordDB(name).get())),
-        )
+
+        with io.StringIO() as fobj:
+            fobj.write(
+                black.format_str(
+                    repr(await db.DiscordDB(name).get()),
+                    mode=black.FileMode(),
+                )
+            )
+            fobj.seek(0)
+
+            await self.response_msg.delete()
+            await self.channel.send(
+                f"Here are the contents of the table `{name}`:",
+                file=discord.File(fobj, filename=f"{name}_db.py"),
+            )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
         """
@@ -119,7 +129,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_eval(self, code: CodeBlock):
         """
         ->type Admin commands
-        ->signature pg!eval [command]
+        ->signature pg!eval <command>
         ->description Execute a line of command without restrictions
         -----
         Implement pg!eval, for admins to run arbitrary code on the bot
@@ -144,22 +154,82 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 ),
             )
 
-    async def cmd_sudo(self, msg: String):
+    async def cmd_sudo(
+        self, data: Union[discord.Message, String], from_msg: bool = False
+    ):
         """
         ->type More admin commands
-        ->signature pg!sudo [message]
+        ->signature pg!sudo <msg>
         ->description Send a message trough the bot
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
-        await self.channel.send(msg.string)
-        await self.response_msg.delete()
-        await self.invoke_msg.delete()
+
+        attachment_msg: discord.Message = None
+
+        if isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                msg_text = data.string
+                await self.channel.send(msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif isinstance(data, discord.Message):
+            if from_msg:
+                src_msg_txt = data.content
+                if src_msg_txt:
+                    await self.channel.send(src_msg_txt)
+                    await self.response_msg.delete()
+                    await self.invoke_msg.delete()
+                    return
+                raise BotException(
+                    "No message text found!",
+                    "The message given as input does not have any text content.",
+                )
+
+            attachment_msg = data
+
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith(("text"))
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            msg_text = await attachment_obj.read()
+            msg_text = msg_text.decode()
+
+            if len(msg_text) < 2001:
+                await self.channel.send(msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            raise BotException(
+                "Too many characters!",
+                "a Discord message cannot contain more than 2000 characters.",
+            )
 
     async def cmd_sudo_edit(self, edit_msg: discord.Message, msg: String):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit [edit_message] [message string]
+        ->signature pg!sudo_edit <edit_msg> <msg>
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
@@ -173,7 +243,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get [message] [attach] [stats]
+        ->signature pg!sudo_get <message> [attach] [info]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -183,12 +253,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
         if attach:
-            try:
-                with open("messagedata.txt", "w", encoding="utf-8") as msg_txt:
-                    msg_txt.write(msg.content)
+            with io.StringIO() as fobj:
+                fobj.write(msg.content)
+                fobj.seek(0)
 
-                await self.response_msg.channel.send(
-                    file=discord.File("messagedata.txt"),
+                await self.channel.send(
+                    file=discord.File(fobj, "get.txt"),
                     embed=await embed_utils.send_2(
                         None,
                         author_name="Message data",
@@ -196,9 +266,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         color=0xFFFFAA,
                     ),
                 )
-            finally:
-                if os.path.exists("messagedata.txt"):
-                    os.remove("messagedata.txt")
 
         elif info:
             info_embed = embed_utils.get_msg_info_embed(msg)
@@ -232,7 +299,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone [message] [embeds] [attach] [spoiler] [stats]
+        ->signature pg!sudo_clone <msg> [embeds] [attach] [spoiler] [info] [author]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -244,21 +311,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
         cloned_msg = None
 
         if msg.attachments and attach:
-            blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
-            try:
-                with open(blank_filename, "w", encoding="utf-8") as toolarge:
-                    toolarge.write("This file is too large to be archived.")
+            with io.StringIO() as fobj:
+                fobj.write("This file was too large to be archived.")
+                fobj.seek(0)
 
-                    msg_files = [
-                        await a.to_file(spoiler=spoiler or a.is_spoiler())
-                        if a.size <= common.GUILD_MAX_FILE_SIZE
-                        else discord.File(toolarge)
-                        for a in msg.attachments
-                    ]
-
-            finally:
-                if os.path.exists(blank_filename):
-                    os.remove(blank_filename)
+                msg_files = [
+                    await a.to_file(spoiler=spoiler or a.is_spoiler())
+                    if a.size <= common.GUILD_MAX_FILE_SIZE
+                    else discord.File(fobj, "filetoolarge.txt")
+                    for a in msg.attachments
+                ]
 
         if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
@@ -283,39 +345,27 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
         await self.response_msg.delete()
 
-    async def cmd_sudo_info(self, msg: discord.Message, author: bool = True):
+    async def cmd_info(
+        self,
+        obj: Optional[Union[discord.Message, discord.Member]] = None,
+        author: bool = True,
+    ):
         """
         ->type More admin commands
-        ->signature pg!sudo_info [message] [author_bool]
-        ->description Get information about a message and its author
+        ->signature pg!info <message or member> [author_bool]
+        ->description Get information about a message/member
 
-        Get information about a message and its author in an embed and send it to the channel where this command was invoked.
         -----
-        Implement pg!sudo_info, to get information about a message and its author.
+        Implement pg!info, to get information about a message/member
         """
+        if isinstance(obj, discord.Message):
+            embed = embed_utils.get_msg_info_embed(obj, author=author)
+        else:
+            if obj is None:
+                obj = self.author
+            embed = embed_utils.get_user_info_embed(obj)
 
-        await self.response_msg.channel.send(
-            embed=embed_utils.get_msg_info_embed(msg, author=author)
-        )
-        await self.response_msg.delete()
-
-    async def cmd_member_info(self, member: Optional[discord.Member] = None):
-        """
-        ->type More admin commands
-        ->signature pg!member_info [member]
-        ->description Get information about a message and its author
-
-        Get information about a member in an embed and send it to the channel where this command was invoked.
-        -----
-        Implement pg!member_info, to get information about a member.
-        """
-        if member is None:
-            member = self.author
-
-        await self.response_msg.channel.send(
-            embed=embed_utils.get_user_info_embed(member)
-        )
-        await self.response_msg.delete()
+        await self.response_msg.edit(embed=embed)
 
     async def cmd_heap(self):
         """
@@ -349,6 +399,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
+        mode: Optional[int] = 0,
         destination: Optional[discord.TextChannel] = None,
         before: Optional[Union[int, datetime.datetime]] = None,
         after: Optional[Union[int, datetime.datetime]] = None,
@@ -363,7 +414,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!archive [origin channel] [quantity] [destination channel]
+        ->signature pg!archive <origin channel> <quantity> [destination channel]
         [before] [after] [around] [raw=False] [show_header=True] [show_author=True]
         [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
@@ -384,8 +435,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         tz_utc = datetime.timezone.utc
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
-        blank_filename = f"filetoolarge {int(time.perf_counter_ns())}.txt"
-
         divider_str = divider_str.string
 
         if isinstance(before, int):
@@ -444,9 +493,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if not after and oldest_first:
             messages.reverse()
 
-        with open(blank_filename, "w") as toolarge_txt:
-            toolarge_txt.write("This file is too large to be archived.")
-
         if show_header and not raw:
             start_date = messages[0].created_at.replace(tzinfo=None)
             end_date = messages[-1].created_at.replace(tzinfo=None)
@@ -472,18 +518,21 @@ class AdminCommand(UserCommand, EmsudoCommand):
             archive_header_msg = await destination.send(embed=archive_header_msg_embed)
 
         no_mentions = discord.AllowedMentions.none()
-        try:
+        with io.StringIO() as fobj:
+            fobj.write("This file was too large to be archived.")
+
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
                 author = msg.author
                 await destination.trigger_typing()
 
+                fobj.seek(0)
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
                         if a.size <= common.GUILD_MAX_FILE_SIZE
-                        else discord.File(blank_filename)
+                        else discord.File(fobj, "filetoolarge.txt")
                     )
                     for a in msg.attachments
                 ]
@@ -519,24 +568,97 @@ class AdminCommand(UserCommand, EmsudoCommand):
                                 allowed_mentions=no_mentions,
                             )
 
-                await destination.trigger_typing()
+                if mode == 0:
+                    await destination.send(
+                        content=msg.content,
+                        embed=msg.embeds[0] if msg.embeds else None,
+                        files=attached_files if attached_files else None,
+                        allowed_mentions=no_mentions,
+                    )
+                    for i in range(1, len(msg.embeds)):
+                        if not i % 3:
+                            await destination.trigger_typing()
+                        await destination.send(embed=msg.embeds[i])
 
-                await destination.send(
-                    content=msg.content,
-                    embed=msg.embeds[0] if msg.embeds else None,
-                    files=attached_files if attached_files else None,
-                    allowed_mentions=no_mentions,
-                )
+                elif mode == 1:
+                    if msg.content:
+                        await destination.send(
+                            embed=embed_utils.create(
+                                author_name="Message data",
+                                description=f"```\n{msg.content}\n```",
+                            ),
+                            allowed_mentions=no_mentions,
+                        )
 
-                for i in range(1, len(msg.embeds)):
-                    await destination.trigger_typing()
-                    await destination.send(embed=msg.embeds[i])
+                    if attached_files:
+                        await destination.send(
+                            content=f"Message attachments ({len(attached_files)}):",
+                            files=attached_files,
+                        )
 
-                await destination.trigger_typing()
+                    if msg.embeds:
+                        embed_data_fobjs = []
+                        for embed in msg.embeds:
+                            embed_data_fobj = io.StringIO()
+                            embed_utils.export_embed_data(
+                                embed.to_dict(),
+                                fp=embed_data_fobj,
+                                indent=4,
+                                as_json=True,
+                            )
+                            embed_data_fobj.seek(0)
+                            embed_data_fobjs.append(embed_data_fobj)
 
-        finally:
-            if os.path.exists(blank_filename):
-                os.remove(blank_filename)
+                        await destination.send(
+                            content=f"Message embeds ({len(embed_data_fobjs)}):",
+                            files=[
+                                discord.File(fobj3, filename="embeddata.json")
+                                for fobj3 in embed_data_fobjs
+                            ],
+                        )
+
+                        for embed_data_fobj in embed_data_fobjs:
+                            embed_data_fobj.close()
+
+                elif mode == 2:
+                    if msg.content:
+                        with io.StringIO() as fobj2:
+                            fobj2.write(msg.content)
+                            fobj2.seek(0)
+                            await destination.send(
+                                file=discord.File(fobj2, filename="messagedata.txt"),
+                                allowed_mentions=no_mentions,
+                            )
+
+                    if attached_files:
+                        await destination.send(
+                            content=f"**Message attachments** ({len(attached_files)}):",
+                            files=attached_files,
+                        )
+
+                    if msg.embeds:
+                        embed_data_fobjs = []
+                        for embed in msg.embeds:
+                            embed_data_fobj = io.StringIO()
+                            embed_utils.export_embed_data(
+                                embed.to_dict(),
+                                fp=embed_data_fobj,
+                                indent=4,
+                                as_json=True,
+                            )
+                            embed_data_fobj.seek(0)
+                            embed_data_fobjs.append(embed_data_fobj)
+
+                        await destination.send(
+                            content=f"**Message embeds** ({len(embed_data_fobjs)}):",
+                            files=[
+                                discord.File(fobj3, filename="embeddata.json")
+                                for fobj3 in embed_data_fobjs
+                            ],
+                        )
+
+                        for embed_data_fobj in embed_data_fobjs:
+                            embed_data_fobj.close()
 
         if divider_str and not raw:
             await destination.send(content=divider_str)
@@ -564,7 +686,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!poll [description] [*args] [author] [color] [url] [image_url] [thumbnail]
+        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
         The args must be strings with one emoji and one description of said emoji (see example command). \
@@ -597,7 +719,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!close_poll [message] [color]
+        ->signature pg!close_poll <msg> [color]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.

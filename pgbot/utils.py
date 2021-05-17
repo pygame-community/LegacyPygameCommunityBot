@@ -1,5 +1,16 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some important utility functions.
+"""
+
+
 import asyncio
+import datetime
 import re
+import traceback
 
 import discord
 import pygame
@@ -8,11 +19,18 @@ from . import common, embed_utils
 
 
 def color_to_rgb_int(col: pygame.Color):
+    """
+    Get integer RGB representation of pygame color object. This does not include
+    the alpha component of the color, which int(col) would give you
+    """
     return (((col.r << 8) + col.g) << 8) + col.b
 
 
 def discordify(message):
-    """Converts normal string into "discord" string that includes backspaces to cancel out unwanted changes"""
+    """
+    Converts normal string into "discord" string that includes backspaces to
+    cancel out unwanted changes
+    """
     # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
     message = (
         message.replace("\\", r"\\")
@@ -21,19 +39,6 @@ def discordify(message):
         .replace("_", r"\_")
     )
     return message
-
-
-async def get_mention_from_id(idstr: str, msg: discord.Message):
-    """
-    Get discord.Member object from a message, using the mentions attribute
-    """
-    uid = filter_id(idstr)
-    for mem in msg.mentions:
-        if mem.id == uid:
-            return mem
-
-    # The ID was passed as an integer and not a mention, try to decode it
-    return await msg.guild.fetch_member(uid)
 
 
 def format_time(seconds: float, decimal_places: int = 4):
@@ -70,12 +75,23 @@ def format_long_time(seconds: int):
         ("seconds", 1),
     ):
         value = seconds // count
-        if value:
+        if value or (not result and count == 1):
             seconds -= value * count
             if value == 1:
                 name = name[:-1]
-            result.append("{} {}".format(value, name))
-    return ", ".join(result)
+            result.append(f"{value} {name}")
+
+    preset = ", ".join(result[:-1])
+    if preset:
+        return f"{preset} and {result[-1]}"
+    return result[-1]
+
+
+def format_timedelta(tdelta: datetime.timedelta):
+    """
+    Formats timedelta object into human readable time
+    """
+    return format_long_time(int(tdelta.total_seconds()))
 
 
 def format_byte(size: int, decimal_places=3):
@@ -111,6 +127,17 @@ def split_long_message(message: str):
         split_output.append(temp)
 
     return split_output
+
+
+def format_code_exception(e):
+    """
+    Provide a formatted exception for code snippets
+    """
+    tbs = traceback.format_exception(type(e), e, e.__traceback__)
+    # Pop out the first entry in the traceback, because that's
+    # this function call itself
+    tbs.pop(1)
+    return tbs
 
 
 def filter_id(mention: str):
@@ -240,7 +267,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
         for field_name in fields:
             value = fields[field_name]
-            value[1] = f"```{value[0]}```{newline * 2}{value[1]}"
+            value[1] = f"```\n{value[0]}\n```{newline * 2}{value[1]}"
             value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy
