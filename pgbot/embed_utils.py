@@ -738,7 +738,9 @@ async def clear_fields(message, embed):
     return await message.edit(embed=embed)
 
 
-def import_embed_data(source, from_string=False, from_json=False, from_json_string=False, as_string=False):
+def import_embed_data(
+    source, from_string=False, from_json=False, from_json_string=False, as_string=False
+):
     """
     Import embed data from a file or a string containing JSON or a Python dictionary and return it as a Python dictionary or string.
     """
@@ -860,6 +862,7 @@ def export_embed_data(
                     mode=black.FileMode(),
                 )
                 fp.write(return_data)
+                fp.seek(0)
             else:
                 fp.write(
                     black.format_str(
@@ -867,6 +870,7 @@ def export_embed_data(
                         mode=black.FileMode(),
                     )
                 )
+                fp.seek(0)
         else:
             return_data = repr({k: data_dict[k] for k in reversed(data_dict.keys())})
 

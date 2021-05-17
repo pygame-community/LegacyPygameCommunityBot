@@ -607,7 +607,7 @@ class BaseCommand:
             if platform.system() == "Windows":
                 # Hide path to python on windows
                 elog = elog.replace(os.path.dirname(sys.executable), "Python")
-            
+
             msg = utils.code_block(elog)
 
             if len(title) > 2048 or len(elog) > 2048:
