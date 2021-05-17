@@ -86,7 +86,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -105,7 +105,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
@@ -301,7 +303,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -320,7 +322,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
@@ -573,7 +577,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -592,7 +596,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
@@ -761,7 +767,7 @@ class EmsudoCommand(BaseCommand):
         attrib_string: String = String(""),
         name: String = String("(add a title by editing this embed)"),
         json: bool = False,
-        py: bool = False
+        py: bool = False,
     ):
         """
         ->type emsudo commands
@@ -877,10 +883,16 @@ class EmsudoCommand(BaseCommand):
                         ),
                     ),
                 ),
-                file=discord.File(fobj, filename=(
-                    "embeddata.py" if py else "embeddata.json" if json
-                    else "embeddata.txt"
-                )),
+                file=discord.File(
+                    fobj,
+                    filename=(
+                        "embeddata.py"
+                        if py
+                        else "embeddata.json"
+                        if json
+                        else "embeddata.txt"
+                    ),
+                ),
             )
 
         await self.response_msg.delete()
@@ -1042,7 +1054,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -1061,7 +1073,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
@@ -1300,7 +1314,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -1319,7 +1333,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
@@ -1558,7 +1574,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-                
+
             for attachment in attachment_msg.attachments:
                 if (
                     attachment.content_type is not None
@@ -1577,7 +1593,9 @@ class EmsudoCommand(BaseCommand):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = embed_utils.import_embed_data(embed_data, from_json_string=True)
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 

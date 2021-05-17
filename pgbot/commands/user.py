@@ -163,6 +163,13 @@ class UserCommand(BaseCommand):
         if self.author.id not in db_data:
             db_data[self.author.id] = {}
 
+        limit = 25 if self.is_priv else 10
+        if len(db_data[self.author.id]) >= limit:
+            raise BotException(
+                "Failed to set reminder!",
+                f"I cannot set more than {limit} reminders for you",
+            )
+
         db_data[self.author.id][on] = (
             msg.string.strip(),
             self.channel.id,
