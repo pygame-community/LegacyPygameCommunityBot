@@ -297,49 +297,78 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!exec, for execution of python code
         """
-        tstamp = time.perf_counter_ns()
-        await self.channel.trigger_typing()
+        async with self.channel.typing():
+            tstamp = time.perf_counter_ns()
 
-        returned = await sandbox.exec_sandbox(
-            code.code, tstamp, 10 if self.is_priv else 5
-        )
-        dur = returned.duration  # the execution time of the script alone
-
-        if returned.exc is None:
-            if returned.img:
-                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                    await self.channel.send(file=discord.File(f"temp{tstamp}.png"))
-                else:
-                    await embed_utils.send(
-                        self.channel,
-                        "Image could not be sent:",
-                        "The image file size is above 4MiB",
-                        0xFF0000,
-                    )
-                os.remove(f"temp{tstamp}.png")
-
-            if returned.text:
-                await embed_utils.replace(
-                    self.response_msg,
-                    f"Returned text (Code executed in {utils.format_time(dur)}):",
-                    utils.code_block(returned.text),
-                )
-            else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    f"Code executed in {utils.format_time(dur)}",
-                    "",
-                )
-
-        else:
-            await embed_utils.replace(
-                self.response_msg,
-                "An exception occured:",
-                utils.code_block(", ".join(map(str, returned.exc.args))),
+            returned = await sandbox.exec_sandbox(
+                code.code, tstamp, 10 if self.is_priv else 5
             )
+            dur = returned.duration  # the execution time of the script alone
 
-        # To reset the trigger_typing counter
-        await (await self.channel.send("\u200b")).delete()
+            embed_dict = {
+                "description": "",
+                "author_name": f"Code executed in {utils.format_time(dur)}",
+                "author_url": self.invoke_msg.jump_url,
+            }
+            file = None
+            exc = None
+
+            if returned.exc is None:
+                if returned.text:
+                    embed_dict["description"] += "**Text output:**\n"
+                    embed_dict["description"] += utils.code_block(returned.text, 2000)
+
+                if returned.img:
+                    if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
+                        embed_dict["description"] += "\n**Image output:**"
+                        embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
+                        file = discord.File(f"temp{tstamp}.png")
+                    else:
+                        exc = (
+                            "Image could not be sent",
+                            "The image file size is above 4MiB",
+                        )
+
+                elif returned.imgs:
+                    if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
+                        embed_dict["description"] += "\n**GIF output:**"
+                        embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
+                        file = discord.File(f"temp{tstamp}.gif")
+                    else:
+                        exc = ("Unable to send gif", "Gif size is above 4mib")
+            else:
+                exc = (
+                    "An exception occured:",
+                    utils.code_block(", ".join(map(str, returned.exc.args))),
+                )
+
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            # Message already deleted
+            pass
+
+        if exc is not None:
+            embed = await embed_utils.send(
+                self.channel,
+                exc[0],
+                exc[1],
+                color=0xFF0000,
+                do_return=True,
+            )
+        else:
+            embed = await embed_utils.send_2(None, **embed_dict)
+
+        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+
+        if file:
+            file.close()
+
+        if os.path.isfile(f"temp{tstamp}.gif"):
+            os.remove(f"temp{tstamp}.gif")
+
+        if os.path.isfile(f"temp{tstamp}.png"):
+            os.remove(f"temp{tstamp}.png")
 
     async def cmd_help(
         self, name: Optional[str] = None, page: HiddenArg = 0, msg: HiddenArg = None
