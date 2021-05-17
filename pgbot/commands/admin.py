@@ -154,7 +154,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 ),
             )
 
-    async def cmd_sudo(self, msg: String):
+    async def cmd_sudo(
+        self, data: Union[discord.Message, String], from_msg: bool = False
+    ):
         """
         ->type More admin commands
         ->signature pg!sudo <msg>
@@ -162,9 +164,67 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
-        await self.channel.send(msg.string)
-        await self.response_msg.delete()
-        await self.invoke_msg.delete()
+
+        attachment_msg: discord.Message = None
+
+        if isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                msg_text = data.string
+                await self.channel.send(msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif isinstance(data, discord.Message):
+            if from_msg:
+                src_msg_txt = data.content
+                if src_msg_txt:
+                    await self.channel.send(src_msg_txt)
+                    await self.response_msg.delete()
+                    await self.invoke_msg.delete()
+                    return
+                raise BotException(
+                    "No message text found!",
+                    "The message given as input does not have any text content.",
+                )
+
+            attachment_msg = data
+
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith(("text"))
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            msg_text = await attachment_obj.read()
+            msg_text = msg_text.decode()
+
+            if len(msg_text) < 2001:
+                await self.channel.send(msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            raise BotException(
+                "Too many characters!",
+                "a Discord message cannot contain more than 2000 characters.",
+            )
 
     async def cmd_sudo_edit(self, edit_msg: discord.Message, msg: String):
         """
@@ -339,6 +399,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
+        mode: Optional[int] = 0,
         destination: Optional[discord.TextChannel] = None,
         before: Optional[Union[int, datetime.datetime]] = None,
         after: Optional[Union[int, datetime.datetime]] = None,
@@ -374,8 +435,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         tz_utc = datetime.timezone.utc
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
-        blank_filename = f"filetoolarge{time.perf_counter_ns()}.txt"
-
         divider_str = divider_str.string
 
         if isinstance(before, int):
@@ -509,20 +568,97 @@ class AdminCommand(UserCommand, EmsudoCommand):
                                 allowed_mentions=no_mentions,
                             )
 
-                await destination.trigger_typing()
+                if mode == 0:
+                    await destination.send(
+                        content=msg.content,
+                        embed=msg.embeds[0] if msg.embeds else None,
+                        files=attached_files if attached_files else None,
+                        allowed_mentions=no_mentions,
+                    )
+                    for i in range(1, len(msg.embeds)):
+                        if not i % 3:
+                            await destination.trigger_typing()
+                        await destination.send(embed=msg.embeds[i])
 
-                await destination.send(
-                    content=msg.content,
-                    embed=msg.embeds[0] if msg.embeds else None,
-                    files=attached_files if attached_files else None,
-                    allowed_mentions=no_mentions,
-                )
+                elif mode == 1:
+                    if msg.content:
+                        await destination.send(
+                            embed=embed_utils.create(
+                                author_name="Message data",
+                                description=f"```\n{msg.content}\n```",
+                            ),
+                            allowed_mentions=no_mentions,
+                        )
 
-                for i in range(1, len(msg.embeds)):
-                    await destination.trigger_typing()
-                    await destination.send(embed=msg.embeds[i])
+                    if attached_files:
+                        await destination.send(
+                            content=f"Message attachments ({len(attached_files)}):",
+                            files=attached_files,
+                        )
 
-                await destination.trigger_typing()
+                    if msg.embeds:
+                        embed_data_fobjs = []
+                        for embed in msg.embeds:
+                            embed_data_fobj = io.StringIO()
+                            embed_utils.export_embed_data(
+                                embed.to_dict(),
+                                fp=embed_data_fobj,
+                                indent=4,
+                                as_json=True,
+                            )
+                            embed_data_fobj.seek(0)
+                            embed_data_fobjs.append(embed_data_fobj)
+
+                        await destination.send(
+                            content=f"Message embeds ({len(embed_data_fobjs)}):",
+                            files=[
+                                discord.File(fobj3, filename="embeddata.json")
+                                for fobj3 in embed_data_fobjs
+                            ],
+                        )
+
+                        for embed_data_fobj in embed_data_fobjs:
+                            embed_data_fobj.close()
+
+                elif mode == 2:
+                    if msg.content:
+                        with io.StringIO() as fobj2:
+                            fobj2.write(msg.content)
+                            fobj2.seek(0)
+                            await destination.send(
+                                file=discord.File(fobj2, filename="messagedata.txt"),
+                                allowed_mentions=no_mentions,
+                            )
+
+                    if attached_files:
+                        await destination.send(
+                            content=f"**Message attachments** ({len(attached_files)}):",
+                            files=attached_files,
+                        )
+
+                    if msg.embeds:
+                        embed_data_fobjs = []
+                        for embed in msg.embeds:
+                            embed_data_fobj = io.StringIO()
+                            embed_utils.export_embed_data(
+                                embed.to_dict(),
+                                fp=embed_data_fobj,
+                                indent=4,
+                                as_json=True,
+                            )
+                            embed_data_fobj.seek(0)
+                            embed_data_fobjs.append(embed_data_fobj)
+
+                        await destination.send(
+                            content=f"**Message embeds** ({len(embed_data_fobjs)}):",
+                            files=[
+                                discord.File(fobj3, filename="embeddata.json")
+                                for fobj3 in embed_data_fobjs
+                            ],
+                        )
+
+                        for embed_data_fobj in embed_data_fobjs:
+                            embed_data_fobj.close()
 
         if divider_str and not raw:
             await destination.send(content=divider_str)

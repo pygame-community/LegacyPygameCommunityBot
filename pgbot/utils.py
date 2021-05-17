@@ -267,7 +267,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
         for field_name in fields:
             value = fields[field_name]
-            value[1] = f"```{value[0]}```{newline * 2}{value[1]}"
+            value[1] = f"```\n{value[0]}\n```{newline * 2}{value[1]}"
             value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy

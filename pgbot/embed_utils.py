@@ -862,6 +862,7 @@ def export_embed_data(
                     mode=black.FileMode(),
                 )
                 fp.write(return_data)
+                fp.seek(0)
             else:
                 fp.write(
                     black.format_str(
@@ -869,6 +870,7 @@ def export_embed_data(
                         mode=black.FileMode(),
                     )
                 )
+                fp.seek(0)
         else:
             return_data = repr({k: data_dict[k] for k in reversed(data_dict.keys())})
 

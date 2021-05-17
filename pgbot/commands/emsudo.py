@@ -766,7 +766,7 @@ class EmsudoCommand(BaseCommand):
         msg: discord.Message,
         attrib_string: String = String(""),
         name: String = String("(add a title by editing this embed)"),
-        json: bool = False,
+        json: bool = True,
         py: bool = False,
     ):
         """
