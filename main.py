@@ -130,14 +130,13 @@ async def on_message(msg: discord.Message):
             pass
 
     elif not common.TEST_MODE:
+        no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
         if msg.content.lower() in common.DEAD_CHAT_TRIGGERS:
-            await msg.channel.send(
-                common.BYDARIO_QUOTE, allowed_mentions=discord.AllowedMentions.none()
-            )
+            await msg.channel.send(common.BYDARIO_QUOTE, allowed_mentions=no_mentions)
 
         if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
             if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
@@ -161,7 +160,9 @@ async def on_message(msg: discord.Message):
                     return
 
                 name = msg.content[lowered.index("i am") + 4 :].strip()
-                await msg.channel.send(f"Hi {name}! I am <@!{common.BOT_ID}>")
+                await msg.channel.send(
+                    f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
+                )
 
 
 @common.bot.event

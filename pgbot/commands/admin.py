@@ -155,7 +155,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo(
-        self, data: Union[discord.Message, String], from_msg: bool = False
+        self, data: Union[discord.Message, String], from_attachment: bool = True
     ):
         """
         ->type More admin commands
@@ -178,7 +178,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 return
 
         elif isinstance(data, discord.Message):
-            if from_msg:
+            if from_attachment:
+                attachment_msg = data
+            else:
                 src_msg_txt = data.content
                 if src_msg_txt:
                     await self.channel.send(src_msg_txt)
@@ -189,8 +191,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "No message text found!",
                     "The message given as input does not have any text content.",
                 )
-
-            attachment_msg = data
 
         if attachment_msg:
             if not attachment_msg.attachments:
@@ -226,24 +226,88 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "a Discord message cannot contain more than 2000 characters.",
             )
 
-    async def cmd_sudo_edit(self, edit_msg: discord.Message, msg: String):
+    async def cmd_sudo_edit(
+        self,
+        edit_msg: discord.Message,
+        data: Union[discord.Message, String],
+        from_attachment: bool = True,
+    ):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit <edit_msg> <msg>
+        ->signature pg!sudo_edit <edit_msg> <string>
         ->description Edit a message that the bot sent.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
-        await edit_msg.edit(content=msg.string)
-        await self.response_msg.delete()
-        await self.invoke_msg.delete()
+        attachment_msg: discord.Message = None
+
+        attachment_msg: discord.Message = None
+
+        if isinstance(data, String):
+            if not data.string:
+                attachment_msg = self.invoke_msg
+            else:
+                msg_text = data.string
+                await edit_msg.edit(content=msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+        elif isinstance(data, discord.Message):
+            if from_attachment:
+                attachment_msg = data
+            else:
+                src_msg_txt = data.content
+                if src_msg_txt:
+                    await edit_msg.edit(content=msg_text)
+                    await self.response_msg.delete()
+                    await self.invoke_msg.delete()
+                    return
+                raise BotException(
+                    "No message text found!",
+                    "The message given as input does not have any text content.",
+                )
+
+        if attachment_msg:
+            if not attachment_msg.attachments:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith(("text"))
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    "No valid attachment found in message.",
+                    "It must be a `.txt` file containing text data.",
+                )
+
+            msg_text = await attachment_obj.read()
+            msg_text = msg_text.decode()
+
+            if len(msg_text) < 2001:
+                await edit_msg.edit(content=msg_text)
+                await self.response_msg.delete()
+                await self.invoke_msg.delete()
+                return
+
+            raise BotException(
+                "Too many characters!",
+                "a Discord message cannot contain more than 2000 characters.",
+            )
 
     async def cmd_sudo_get(
-        self, msg: discord.Message, attach: bool = False, info: bool = False
+        self, msg: discord.Message, as_attachment: bool = False, info: bool = False
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <message> [attach] [info]
+        ->signature pg!sudo_get <message> [as_attachment] [info]
         ->description Get the text of a message through the bot
 
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -252,15 +316,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
-        if attach:
+        if as_attachment:
             with io.StringIO() as fobj:
                 fobj.write(msg.content)
                 fobj.seek(0)
 
                 await self.channel.send(
                     file=discord.File(fobj, "get.txt"),
-                    embed=await embed_utils.send_2(
-                        None,
+                    embed=await embed_utils.create(
                         author_name="Message data",
                         description=f"**[View Original Message]({msg.jump_url})**",
                         color=0xFFFFAA,
@@ -292,14 +355,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         msg: discord.Message,
         embeds: bool = True,
-        attach: bool = True,
+        attachments: bool = True,
         spoiler: bool = False,
         info: bool = False,
         author: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone <msg> [embeds] [attach] [spoiler] [info] [author]
+        ->signature pg!sudo_clone <msg> [embeds] [attachments] [spoiler] [info] [author]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -310,7 +373,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         msg_files = None
         cloned_msg = None
 
-        if msg.attachments and attach:
+        if msg.attachments and attachments:
             with io.StringIO() as fobj:
                 fobj.write("This file was too large to be archived.")
                 fobj.seek(0)
@@ -414,7 +477,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!archive <origin channel> <quantity> [destination channel]
+        ->signature pg!archive <origin channel> <quantity> [mode] [destination channel]
         [before] [after] [around] [raw=False] [show_header=True] [show_author=True]
         [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
