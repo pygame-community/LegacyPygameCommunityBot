@@ -649,7 +649,7 @@ async def remove_fields(message, embed, field_indices):
         fields_count + idx if idx < 0 else idx for idx in field_indices
     ]
 
-    field_indices.sort(reverse=True)
+    parsed_field_indices.sort(reverse=True)
 
     for index in parsed_field_indices:
         embed.remove_field(index)
@@ -701,7 +701,7 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
         fields_count + idx if idx < 0 else idx for idx in field_indices
     ]
 
-    field_indices.sort(reverse=True)
+    parsed_field_indices.sort(reverse=True)
 
     insertion_index = (
         fields_count + insertion_index if insertion_index < 0 else insertion_index
