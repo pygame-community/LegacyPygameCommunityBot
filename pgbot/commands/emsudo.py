@@ -1768,17 +1768,18 @@ class EmsudoCommand(BaseCommand):
 
         msg_embed = msg.embeds[0]
 
-        field_indices = ()
+        field_indices = []
 
         for idx in indices:
-            if isinstance(idx, range):
-                if len(idx) > 25:
+            if isinstance(idx, range):        
+                range_obj = idx
+                if len(range_obj) > 25:
                     raise BotException(
                         "Invalid range object passed as an argument!",
                         "",
                     )
 
-                field_indices = tuple(idx)
+                field_indices.extend(range_obj)
                 break
         else:
             field_indices = indices
