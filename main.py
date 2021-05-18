@@ -1,3 +1,12 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file is the main file of the PygameCommunityBot source. Running this
+starts the bot
+"""
+
 import asyncio
 import os
 import random
@@ -5,7 +14,7 @@ import random
 import discord
 import pygame
 
-from pgbot import commands, common, emotion, util
+from pgbot import commands, common, db, embed_utils, emotion, utils, routine
 
 
 @common.bot.event
@@ -17,8 +26,13 @@ async def on_ready():
     print("The bot is present in these server(s):")
     for server in common.bot.guilds:
         print("-", server.name)
+        if server.id == common.SERVER_ID:
+            guild = server
+
         for channel in server.channels:
             print(" +", channel.name)
+            if channel.id == common.DB_CHANNEL_ID:
+                await db.init(channel)
             if channel.id == common.LOG_CHANNEL_ID:
                 common.log_channel = channel
             if channel.id == common.ARRIVALS_CHANNEL_ID:
@@ -34,17 +48,16 @@ async def on_ready():
                     common.entry_channels[key] = channel
 
     while True:
+        await routine.routine(guild)
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.watching,
-                name="discord.io/pygame_community"
+                type=discord.ActivityType.watching, name="discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
         await common.bot.change_presence(
             activity=discord.Activity(
-                type=discord.ActivityType.playing,
-                name="in discord.io/pygame_community"
+                type=discord.ActivityType.playing, name="in discord.io/pygame_community"
             )
         )
         await asyncio.sleep(2.5)
@@ -55,8 +68,8 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
-    if common.TEST_MODE:
-        # Do not greet people in test mode
+    if common.TEST_MODE or member.bot:
+        # Do not greet people in test mode, or if a bot joins
         return
 
     greet = random.choice(common.BOT_WELCOME_MSG["greet"])
@@ -67,24 +80,21 @@ async def on_member_join(member: discord.Member):
 
     # This function is called right when a member joins, even before the member
     # finishes the join screening. So we wait for that to happen and then send
-    # the message. Wait for a maximum of one hour.
-    if not member.bot:
-        for _ in range(3600):
-            await asyncio.sleep(1)
+    # the message. Wait for a maximum of six hours.
+    for _ in range(10800):
+        await asyncio.sleep(2)
 
-            if not member.pending:
-                # Don't use embed here, because pings would not work
-                await common.arrivals_channel.send(
-                    f"{greet} {member.mention}! {check} "
-                    + f"{common.guide_channel.mention}{grab} "
-                    + f"{common.roles_channel.mention}{end}"
-                )
-                return
+        if not member.pending:
+            # Don't use embed here, because pings would not work
+            await common.arrivals_channel.send(
+                f"{greet} {member.mention}! {check} "
+                + f"{common.guide_channel.mention}{grab} "
+                + f"{common.roles_channel.mention}{end}"
+            )
+            # new member joined, yaayyy, snek is happi
+            await emotion.update("happy", 3)
+            return
 
-    # Member did not complete screen within an hour of joining. This is sus,
-    # so give sus bot role
-    bot_sus = discord.utils.get(member.guild.roles, id=common.BOT_SUS_ROLE)
-    await member.add_roles(bot_sus)
 
 @common.bot.event
 async def on_message(msg: discord.Message):
@@ -95,47 +105,58 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        run_command = True
-        
-        if common.TEST_MODE and common.TEST_USER_ID:
-            if common.TEST_USER_ID != msg.author.id:
-                run_command = False
-            
-        if run_command:   
-            try:
-                response = await util.send_embed(
-                    msg.channel,
-                    "Your command is being processed!",
-                    ""
-                )
+        common.cmd_logs[msg.id] = await commands.handle(msg)
+        if len(common.cmd_logs) > 100:
+            del common.cmd_logs[common.cmd_logs.keys()[0]]
 
-                await commands.handle(msg, response)
+        await emotion.update("bored", -15)
 
-                common.cmd_logs[msg.id] = response
-                if len(common.cmd_logs) > 100:
-                    del common.cmd_logs[common.cmd_logs.keys()[0]]
-            except discord.HTTPException:
-                pass
-        
-    else:
+    elif not common.TEST_MODE:
+        no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
-    if not common.TEST_MODE and msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
-        if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
-            entry_type = "showcase"
-            color = 0xFF8800
-        else:
-            entry_type = "resource"
-            color = 0x0000AA
+        # Check for these specific messages, do not try to generalise, because we do not
+        # want the bot spamming the dario quote
+        if msg.content.lower() in common.DEAD_CHAT_TRIGGERS:
+            # ded chat makes snek sad
+            await msg.channel.send(
+                "good." if (await emotion.get("anger")) >= 60 else common.BYDARIO_QUOTE,
+                allowed_mentions=no_mentions,
+            )
+            await emotion.update("happy", -4)
 
-        title, fields = util.format_entries_message(msg, entry_type)
-        await util.send_embed(
-            common.entries_discussion_channel,
-            title,
-            "",
-            color,
-            fields=fields
-        )
+        if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
+            if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
+                entry_type = "showcase"
+                color = 0xFF8800
+            else:
+                entry_type = "resource"
+                color = 0x0000AA
+
+            title, fields = utils.format_entries_message(msg, entry_type)
+            await embed_utils.send(
+                common.entries_discussion_channel, title, "", color, fields=fields
+            )
+        else:
+            happy = await emotion.get("happy")
+            if happy < -60:
+                # snek sad, no dad jokes
+                return
+
+            prob = 8 if happy <= 20 else (100 - happy) // 10
+            prob += 1
+
+            lowered = msg.content.lower()
+            if "i am" in lowered and len(lowered) < 60:
+                # snek is a special case, he loves dad jokes so he will get em
+                # everytime
+                if msg.author.id != 683852333293109269 and random.randint(0, prob):
+                    return
+
+                name = msg.content[lowered.index("i am") + 4 :].strip()
+                await msg.channel.send(
+                    f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
+                )
 
 
 @common.bot.event
@@ -148,9 +169,10 @@ async def on_message_delete(msg: discord.Message):
 
     elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
-            if common.cmd_logs[log].id == msg.id:
-                del common.cmd_logs[log]
-                return
+            if msg.id is not None and common.cmd_logs[log].id is not None:
+                if common.cmd_logs[log].id == msg.id:
+                    del common.cmd_logs[log]
+                    return
 
 
 @common.bot.event
@@ -167,8 +189,6 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
-    else:
-        await emotion.check_bonk(new)
 
 
 if __name__ == "__main__":

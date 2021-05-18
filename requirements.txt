@@ -1,4 +1,4 @@
-discord.py>=1.6
+discord.py>=1.7
 psutil>=5.7.3
 pygame>=2.0.0
 numpy>=1.20.0

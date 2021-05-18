@@ -1,9 +1,16 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines some functions to access docs of any module/class/function
+"""
+
 import asyncio
 import builtins
 import cmath
 import collections
 import gc
-import importlib
 import itertools
 import json
 import math
@@ -28,7 +35,7 @@ import pygame._sdl2
 import pygame.gfxdraw
 import pygame_gui
 
-from . import common, util
+from . import common, embed_utils, utils
 
 doc_module_tuple = (
     asyncio,
@@ -83,10 +90,8 @@ async def put_main_doc(name, original_msg):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        await util.replace_embed(
-            original_msg,
-            "Unknown module!",
-            "No such module was found."
+        await embed_utils.replace(
+            original_msg, "Unknown module!", "No such module was found."
         )
         return None, None, None
 
@@ -104,19 +109,19 @@ async def put_main_doc(name, original_msg):
             for i in dir(obj):
                 module_objs[i] = getattr(obj, i)
         except KeyError:
-            await util.replace_embed(
+            await embed_utils.replace(
                 original_msg,
                 "Class/function/sub-module not found!",
-                f"There's no such thing here named `{name}`"
+                f"There's no such thing here named `{name}`",
             )
             return None, None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        await util.replace_embed(
+        await embed_utils.replace(
             original_msg,
             f"Documentation for `{name}`",
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
-            " which does not have documentation."
+            " which does not have documentation.",
         )
         return None, None, None
 
@@ -139,7 +144,7 @@ async def put_main_doc(name, original_msg):
         if cnt >= common.DOC_EMBED_LIMIT:
             text = docs[lastchar:]
         else:
-            text = docs[lastchar: lastchar + 2040]
+            text = docs[lastchar : lastchar + 2040]
 
             # Try to split docs into paragraphs. If that does not work, split
             # based on sentences. If that too does not work, then just split
@@ -157,17 +162,17 @@ async def put_main_doc(name, original_msg):
                     lastchar += 2040
 
         if text:
-            embeds.append(await util.send_embed_2(
-                None,
-                title=f"Documentation for `{name}`",
-                description=header + util.code_block(text),
-                do_return=True
-            ))
+            embeds.append(
+                await embed_utils.send_2(
+                    None,
+                    title=f"Documentation for `{name}`",
+                    description=header + utils.code_block(text),
+                )
+            )
 
         header = ""
         if cnt >= common.DOC_EMBED_LIMIT:
             break
-
 
     return module_objs, name, embeds
 
@@ -216,14 +221,17 @@ async def put_doc(name, original_msg, msg_invoker, page=0):
         if not olist:
             continue
 
-        embeds.append(await util.send_embed_2(
-            None,
-            title=f"{otype} in `{name}`",
-            description=util.code_block('\n'.join(olist)),
-            do_return=True
-        ))
+        embeds.append(
+            await embed_utils.send_2(
+                None,
+                title=f"{otype} in `{name}`",
+                description=utils.code_block("\n".join(olist)),
+            )
+        )
 
     main_embeds.extend(embeds)
 
-    page_embed = util.PagedEmbed(original_msg, main_embeds, msg_invoker, f"doc {name}", page)
+    page_embed = embed_utils.PagedEmbed(
+        original_msg, main_embeds, msg_invoker, f"doc {name}", page
+    )
     await page_embed.mainloop()

@@ -1,3 +1,12 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file defines exec sandbox utitites, for sandboxing and running user code.
+"""
+
+
 import asyncio
 import builtins
 import cmath
@@ -34,9 +43,8 @@ class SandboxFunctionsObject:
     """
     Wrap custom functions for use in pg!exec
     """
-    public_functions = (
-        "print",
-    )
+
+    public_functions = ("print",)
 
     def __init__(self):
         self.output = Output()
@@ -50,6 +58,7 @@ class PgExecBot(Exception):
     """
     Base class for pg!exec exceptions
     """
+
     pass
 
 
@@ -91,6 +100,9 @@ class FilteredPygame:
     """
     pygame module in a sandbox
     """
+
+    time = pygame.time
+    sprite = pygame.sprite
     Surface = pygame.Surface
     Rect = pygame.Rect
     Color = pygame.Color
@@ -148,13 +160,12 @@ for const in pygame.constants.__all__:
     setattr(FilteredPygame.constants, const, pygame.constants.__dict__[const])
     setattr(FilteredPygame, const, pygame.constants.__dict__[const])
 
-def pg_exec(
-    code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue
-):
+
+def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Queue):
     """
     exec wrapper used for pg!exec, runs in a seperate process. Since this
     function runs in a seperate Process, keep that in mind if you want to make
-    any changes to this function (that is, do not touch this shit if you don't 
+    any changes to this function (that is, do not touch this shit if you don't
     know what you are doing)
     """
     sandbox_funcs = SandboxFunctionsObject()
@@ -202,8 +213,9 @@ def pg_exec(
 
         except SyntaxError as e:
             offsetarrow = " " * e.offset + "^\n"
-            output.exc = PgExecBot(f"SyntaxError at line {e.lineno}\n  "
-                                   + e.text + '\n' + offsetarrow + e.msg)
+            output.exc = PgExecBot(
+                f"SyntaxError at line {e.lineno}\n  " + e.text + offsetarrow + e.msg
+            )
 
         except Exception as err:
             ename = err.__class__.__name__
@@ -242,12 +254,13 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     proc = multiprocessing.Process(
         target=pg_exec,
         args=(code, tstamp, filtered_builtins, q),
-        daemon=True  # the process must die when the main process dies
+        daemon=True,  # the process must die when the main process dies
     )
     proc.start()
     psproc = psutil.Process(proc.pid)
 
-    start = time.perf_counter() # is system-wide and has the highest resolution. 
+    # is system-wide and has the highest resolution.
+    start = time.perf_counter()
     while proc.is_alive():
         if start + timeout < time.perf_counter():
             output = Output()
