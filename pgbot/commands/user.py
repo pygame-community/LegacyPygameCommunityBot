@@ -535,6 +535,7 @@ class UserCommand(BaseCommand):
             "We are working on an upgrade for this",
         )
 
+    @fun_command
     async def cmd_sorry(self):
         """
         ->type Play With Me :snake:
@@ -553,23 +554,22 @@ class UserCommand(BaseCommand):
             )
             return
 
-        num = random.randint(0, 5)
+        num = random.randint(0, 7)
         if num:
             await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "Your pythonic lord accepts your apology.\n"
-                + f"Now go to code again.\nThe boncc count is {anger - num}",
+                + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
             )
             await emotion.update("anger", -num)
-            await emotion.update("happy", num)
         else:
             await embed_utils.replace(
                 self.response_msg,
                 "Ask forgiveness from snek?",
                 "How did you dare to boncc a snake?\nBold of you to assume "
                 + "I would apologize to you, two-feet-standing being!\nThe "
-                + f"boncc count is {anger}",
+                + f"Anger level is {anger}",
             )
 
     async def cmd_refresh(self, msg: discord.Message):

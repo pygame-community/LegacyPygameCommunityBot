@@ -494,11 +494,17 @@ class BaseCommand:
 
         # command name entered does not exist
         if cmd not in self.cmds_and_funcs:
+            if cmd in common.admin_commands:
+                raise BotException(
+                    "Permissions Error!",
+                    f"The command '{cmd}' is an admin command, and you do not "
+                    "have access to that",
+                )
+
             raise BotException(
                 "Unrecognized command!",
-                f"Make sure that the command '{cmd}' exists, and you have "
-                + "the permission to use it. \nFor help on bot commands, "
-                + "do `pg!help`",
+                f"The command '{cmd}' does not exist.\nFor help on bot "
+                "commands, do `pg!help`",
             )
 
         # command has been blacklisted from running
