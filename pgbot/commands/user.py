@@ -217,7 +217,6 @@ class UserCommand(BaseCommand):
         """
         timestr = timestr.string.strip()
         if timestr:
-            previous = ""
             time_formats = {
                 "w": 7 * 24 * 60 * 60,
                 "d": 24 * 60 * 60,
@@ -227,19 +226,6 @@ class UserCommand(BaseCommand):
             }
             sec = 0
 
-            """for time_format, dt in time_formats.items():
-                if time_format in timestr:
-                    format_split = timestr[:timestr.index(time_format) + 1]
-                    parsed_time = format_split.replace(previous, "")
-                    previous = format_split
-                    try:
-                        sec += int(parsed_time.replace(time_format, "")) * dt
-                    except ValueError:
-                        raise BotException(
-                            "Failed to set reminder!",
-                            "There is something wrong with your time parameter.\n"
-                            "Please check that it is correct and try again",
-                        )"""
             for time_format, dt in time_formats.items():
                 try:
                     results = re.search(rf"\d+{time_format}", timestr).group()
