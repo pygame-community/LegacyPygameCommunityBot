@@ -23,6 +23,7 @@ import traceback
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
+from PIL import Image
 
 from . import common
 
@@ -35,6 +36,9 @@ class Output:
     def __init__(self):
         self.text = ""
         self.img = None
+        self.imgs = []
+        self.delay = 200
+        self.loops = 0
         self.exc = None
         self.duration = -1  # The script execution time
 
@@ -58,8 +62,6 @@ class PgExecBot(Exception):
     """
     Base class for pg!exec exceptions
     """
-
-    pass
 
 
 filtered_builtins = {}
@@ -219,7 +221,9 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
 
         except Exception as err:
             ename = err.__class__.__name__
-            details = err.args[0]
+            details = ""
+            if len(err.args):
+                details = err.args[0]
             # Don't try to replace this, otherwise we may get wrong line numbers
             lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
             output.exc = PgExecBot(f"{ename} at line {lineno}: {details}")
@@ -228,21 +232,85 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     # Any random data that gets put in the queue will likely crash the entire
     # bot
     sanitized_output = Output()
-    if isinstance(output.text, str):
+    if isinstance(getattr(output, "text", None), str):
         sanitized_output.text = output.text
 
-    if isinstance(output.duration, float):
+    if isinstance(getattr(output, "duration", None), float):
         sanitized_output.duration = output.duration
 
-    if isinstance(output.exc, PgExecBot):
+    if isinstance(getattr(output, "exc", None), PgExecBot):
         sanitized_output.exc = output.exc
 
-    if isinstance(output.img, pygame.Surface):
+    if isinstance(getattr(output, "img", None), pygame.Surface):
         # A surface is not picklable, so handle differently
         sanitized_output.img = True
         pygame.image.save(output.img, f"temp{tstamp}.png")
 
+    if getattr(output, "imgs", None):
+        i = 0
+        images = []
+        if isinstance(output.imgs, list):
+            for surf in output.imgs:
+                if isinstance(surf, pygame.Surface):
+                    if i == 0:
+                        pygame.image.save(surf, f"temp{tstamp}.png")
+
+                    image = Image.frombytes(
+                        "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
+                    )
+                    images.append(image)
+
+                    i += 1
+
+            if i > 0:
+                handle_gif(tstamp, output, sanitized_output, images)
+
     q.put(sanitized_output)
+
+
+def handle_gif(tstamp, output, sanitized_output, images):
+    try:
+        duration = int(getattr(output, "delay", 200))
+    except OverflowError:
+        duration = 65536
+    except (ValueError, TypeError):
+        sanitized_output.exc = PgExecBot("Please set the duration to an integer value.")
+        return
+
+    if 65535 < duration:
+        sanitized_output.exc = PgExecBot(
+            "That would take a lot of time. Please choose between 0 and 65535."
+        )
+        return
+    if 0 > duration:
+        sanitized_output.exc = PgExecBot(
+            "Negative time? That does not make sense..."
+            " Please choose between 0 and 65535."
+        )
+        return
+
+    try:
+        loops = int(getattr(output, "loops", 0))
+    except OverflowError:
+        loops = 0
+    except (ValueError, TypeError):
+        sanitized_output.exc = PgExecBot("Please set the loops to an integer value.")
+        return
+
+    kwargs = {
+        "fp": f"temp{tstamp}.gif",
+        "format": "GIF",
+        "append_images": images[1:],
+        "save_all": True,
+        "duration": duration,
+    }
+    if loops != 1:
+        kwargs["loop"] = max(min(loops - 1, 100), 0)
+
+    img = Image.open(f"temp{tstamp}.png")
+    img.save(**kwargs)
+
+    sanitized_output.imgs = True
 
 
 async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
@@ -268,13 +336,19 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
             proc.kill()
             return output
 
-        if psproc.memory_info().rss > max_memory:
-            output = Output()
-            output.exc = PgExecBot(
-                f"The bot's memory has taken up to {max_memory} bytes!"
-            )
-            proc.kill()
-            return output
+        try:
+            if psproc.memory_info().rss > max_memory:
+                output = Output()
+                output.exc = PgExecBot(
+                    f"The bot's memory has taken up to {max_memory} bytes!"
+                )
+                proc.kill()
+                return output
+        except psutil.NoSuchProcess:
+            # The process finished but it tried to check it's memory usage
+            # at the "wrong time". Get the output from the queue and return it
+            return q.get()
+
         await asyncio.sleep(0.05)  # Let the bot do other async things
 
     return q.get()
