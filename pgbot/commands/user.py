@@ -227,9 +227,9 @@ class UserCommand(BaseCommand):
             }
             sec = 0
 
-            for time_format, dt in time_formats.items():
+            """for time_format, dt in time_formats.items():
                 if time_format in timestr:
-                    format_split = timestr[: timestr.index(time_format) + 1]
+                    format_split = timestr[:timestr.index(time_format) + 1]
                     parsed_time = format_split.replace(previous, "")
                     previous = format_split
                     try:
@@ -239,7 +239,29 @@ class UserCommand(BaseCommand):
                             "Failed to set reminder!",
                             "There is something wrong with your time parameter.\n"
                             "Please check that it is correct and try again",
-                        )
+                        )"""
+            for time_format, dt in time_formats.items():
+                try:
+                    results = re.search(rf"\d+{time_format}", timestr).group()
+                    parsed_time = int(results.replace(time_format, ""))
+                    sec += parsed_time * dt
+                except AttributeError:
+                    pass
+            if "mo" in timestr:
+                month_results = re.search(rf"\d+mo", timestr).group()
+                parsed_month_time = int(month_results.replace("mo", ""))
+                sec += (
+                    self.invoke_msg.created_at.replace(
+                        month=self.invoke_msg.created_at.month + parsed_month_time
+                    )
+                    - self.invoke_msg.created_at
+                ).total_seconds()
+            if sec == 0:
+                raise BotException(
+                    "Failed to set reminder!",
+                    "There is something wrong with your time parameter.\n"
+                    "Please check that it is correct and try again",
+                )
 
             delta = datetime.timedelta(seconds=sec)
         else:
@@ -271,7 +293,11 @@ class UserCommand(BaseCommand):
                 cin = f" in {channel.mention}" if channel is not None else ""
                 msg += f"**On `{on}`{cin}:**\n> {reminder}\n\n"
 
-        await embed_utils.replace(self.response_msg, "Reminders", msg)
+        await embed_utils.replace(
+            self.response_msg,
+            f"Reminders for {self.invoke_msg.author.display_name}:",
+            msg,
+        )
 
     async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
         """

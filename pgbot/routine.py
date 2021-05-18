@@ -11,7 +11,7 @@ import random
 
 import discord
 
-from pgbot import db, emotion
+from pgbot import db, emotion, common
 
 reminder_obj = db.DiscordDB("reminders")
 
@@ -33,14 +33,19 @@ async def handle_reminders(guild):
                     continue
 
                 content = f"__**Reminder for <@!{mem_id}>:**__\n>>> {msg}"
-                none = discord.AllowedMentions.none()
+                message = await channel.fetch_message(msg_id)
+                allowed_mentions = discord.AllowedMentions()
+                allowed_mentions.users = [message.author]
                 try:
-                    message = await channel.fetch_message(msg_id)
-                    await message.reply(content=content, allowed_mentions=none)
+                    await message.reply(
+                        content=content, allowed_mentions=allowed_mentions
+                    )
                 except discord.HTTPException:
                     # The message probably got deleted, try to resend in channel
                     try:
-                        await channel.send(content=content, allowed_mentions=none)
+                        await channel.send(
+                            content=content, allowed_mentions=allowed_mentions
+                        )
                     except discord.HTTPException:
                         pass
             else:
