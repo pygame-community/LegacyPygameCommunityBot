@@ -259,7 +259,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             else:
                 src_msg_txt = data.content
                 if src_msg_txt:
-                    await edit_msg.edit(content=msg_text)
+                    await edit_msg.edit(content=src_msg_txt)
                     await self.response_msg.delete()
                     await self.invoke_msg.delete()
                     return

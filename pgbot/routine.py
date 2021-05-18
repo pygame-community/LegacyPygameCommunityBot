@@ -6,12 +6,12 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines a "routine" function, that gets called on routine.
 It gets called every 5 seconds or so.
 """
-from copy import deepcopy
 import datetime
+import random
 
 import discord
 
-from pgbot import db
+from pgbot import db, emotion
 
 reminder_obj = db.DiscordDB("reminders")
 
@@ -33,13 +33,14 @@ async def handle_reminders(guild):
                     continue
 
                 content = f"__**Reminder for <@!{mem_id}>:**__\n>>> {msg}"
+                none = discord.AllowedMentions.none()
                 try:
                     message = await channel.fetch_message(msg_id)
-                    await message.reply(content=content)
+                    await message.reply(content=content, allowed_mentions=none)
                 except discord.HTTPException:
                     # The message probably got deleted, try to resend in channel
                     try:
-                        await channel.send(content=content)
+                        await channel.send(content=content, allowed_mentions=none)
                     except discord.HTTPException:
                         pass
             else:
@@ -52,18 +53,11 @@ async def handle_reminders(guild):
         await reminder_obj.write(new_reminders)
 
 
-async def handle_emotions(guild):
-    """
-    Handle emotion system routines
-    TODO: Mega (or someone else) please put routine emotion stuff in this
-    function
-    """
-
-
 async def routine(guild):
     """
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
     await handle_reminders(guild)
-    await handle_emotions(guild)
+    if not random.randint(0, 11):
+        await emotion.update("bored", 1)

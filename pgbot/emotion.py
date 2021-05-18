@@ -6,31 +6,54 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some utitities and functions for the bots emotion system
 """
 
-
-import asyncio
-import time
-
 from . import common, db, embed_utils
 
-last_pet = time.time() - 3600
-pet_anger = 0.1
-boncc_count = 0
-db_obj = db.DiscordDB("emotion")
+EMOTION_CAPS = {
+    "happy": (-100, 100),
+    "anger": (0, 100),
+    "bored": (-1000, 1000),
+}
+
+
+db_obj = db.DiscordDB("emotions")
+
+
+async def update(emotion_name: str, value: int):
+    """
+    Update emotion characteristic 'emotion_name' with value 'value' integer
+    """
+    emotions = await db_obj.get({})
+    try:
+        emotions[emotion_name] += value
+    except KeyError:
+        emotions[emotion_name] = value
+
+    if emotions[emotion_name] < EMOTION_CAPS[emotion_name][0]:
+        emotions[emotion_name] = EMOTION_CAPS[emotion_name][0]
+
+    if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
+        emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
+
+    await db_obj.write(emotions)
+
+
+async def get(emotion_name: str):
+    """
+    Get emotion characteristic 'emotion_name'
+    """
+    emotions = await db_obj.get({})
+    try:
+        return emotions[emotion_name]
+    except KeyError:
+        return 0
 
 
 async def check_bonk(msg):
-    global boncc_count
-    if boncc_count > 2 * common.BONCC_THRESHOLD:
-        boncc_count = 2 * common.BONCC_THRESHOLD
-
     if common.BONK not in msg.content:
         return
 
-    boncc_count += msg.content.count(common.BONK)
-    if (
-        msg.content.count(common.BONK) > common.BONCC_THRESHOLD / 2
-        or boncc_count > common.BONCC_THRESHOLD
-    ):
+    bonks = msg.content.count(common.BONK)
+    if (await get("anger")) + bonks > 30:
         await embed_utils.send_2(
             msg.channel,
             title="Did you hit the snek?",
@@ -38,18 +61,5 @@ async def check_bonk(msg):
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
 
-        emotion_stuff = await db_obj.get({})
-        try:
-            emotion_stuff["bonk_in_past_day"] += 1
-        except KeyError:
-            emotion_stuff["bonk_in_past_day"] = 1
-
-        await db_obj.write(emotion_stuff)
-
-        # Wait 24 hours, then remove one command
-        # TODO: refactor this system, because 24 hour sleeps are not reliable at all
-        await asyncio.sleep(24 * 60 * 60)
-
-        emotion_stuff = await db_obj.get({})
-        emotion_stuff["bonk_in_past_day"] -= 1
-        await db_obj.write(emotion_stuff)
+    await update("anger", bonks)
+    await update("happy", -bonks)

@@ -15,13 +15,14 @@ import inspect
 import io
 import os
 import platform
+import random
 import sys
 import traceback
 from typing import TypeVar
 
 import discord
 import pygame
-from pgbot import common, db, embed_utils, utils
+from pgbot import common, db, embed_utils, utils, emotion
 
 ESCAPES = {
     "0": "\0",
@@ -142,6 +143,24 @@ SPLIT_FLAGS = [
     ('"', String, ()),
     ("'", String, ()),
 ]
+
+
+def fun_command(func):
+    """
+    A decorator to indicate a "fun command", one that the bot skips when it is
+    'exhausted'
+    """
+
+    async def inner(*args, **kwargs):
+        if (await emotion.get("bored")) < -600 and random.randint(0, 1):
+            raise BotException(
+                "I am Exhausted!",
+                "I have been running a lot of commands lately, and now I am tired.\n"
+                "Give me a bit of a break, and I will be back to normal!",
+            )
+        return await func(*args, **kwargs)
+
+    return inner
 
 
 class BaseCommand:

@@ -34,16 +34,10 @@ cmd_logs = {}
 BOT_ID = 772788653326860288
 SERVER_ID = 772505616680878080
 
-# Misc
-# Pet command constants
-PET_COST = 0.1
-JUMPSCARE_THRESHOLD = 20.0
-PET_INTERVAL = 60.0
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
 PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
-BONCC_THRESHOLD = 10
 
 # Constants
 VERSION = "1.5.1"
