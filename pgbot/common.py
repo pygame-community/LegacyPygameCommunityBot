@@ -31,6 +31,9 @@ entry_channels = {}
 
 cmd_logs = {}
 
+# Tuple containing all admin commands, gets monkey-patched later
+admin_commands = ()
+
 BOT_ID = 772788653326860288
 SERVER_ID = 772505616680878080
 

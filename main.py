@@ -109,7 +109,7 @@ async def on_message(msg: discord.Message):
         if len(common.cmd_logs) > 100:
             del common.cmd_logs[common.cmd_logs.keys()[0]]
 
-        await emotion.update("bored", -20)
+        await emotion.update("bored", -15)
 
     elif not common.TEST_MODE:
         no_mentions = discord.AllowedMentions.none()

@@ -240,9 +240,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
         attachment_msg: discord.Message = None
-
-        attachment_msg: discord.Message = None
-
         if isinstance(data, String):
             if not data.string:
                 attachment_msg = self.invoke_msg
@@ -789,3 +786,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
         The color is the color of the closed poll embed
         """
         return await super().cmd_close_poll(msg, color)
+
+
+# monkey-patch admin command names into tuple
+common.admin_commands = tuple(
+    (
+        i[len(common.CMD_FUNC_PREFIX) :]
+        for i in dir(AdminCommand)
+        if i.startswith(common.CMD_FUNC_PREFIX)
+    )
+)
