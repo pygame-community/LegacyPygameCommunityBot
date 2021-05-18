@@ -91,6 +91,8 @@ async def on_member_join(member: discord.Member):
                 + f"{common.guide_channel.mention}{grab} "
                 + f"{common.roles_channel.mention}{end}"
             )
+            # new member joined, yaayyy, snek is happi
+            await emotion.update("happy", 3)
             return
 
 
@@ -103,31 +105,11 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        try:
-            common.cmd_logs[msg.id] = await commands.handle(msg)
-            if len(common.cmd_logs) > 100:
-                del common.cmd_logs[common.cmd_logs.keys()[0]]
+        common.cmd_logs[msg.id] = await commands.handle(msg)
+        if len(common.cmd_logs) > 100:
+            del common.cmd_logs[common.cmd_logs.keys()[0]]
 
-            # Advanced emotion system
-            db_obj = db.DiscordDB("emotion")
-
-            emotion_stuff = await db_obj.get({})
-            try:
-                emotion_stuff["cmd_in_past_day"] += 1
-            except KeyError:
-                emotion_stuff["cmd_in_past_day"] = 1
-
-            await db_obj.write(emotion_stuff)
-
-            # Wait 24 hours, then remove one command
-            # TODO: refactor this system, because 24 hour sleeps are not reliable at all
-            await asyncio.sleep(24 * 60 * 60)
-
-            emotion_stuff = await db_obj.get({})
-            emotion_stuff["cmd_in_past_day"] -= 1
-            await db_obj.write(emotion_stuff)
-        except discord.HTTPException:
-            pass
+        await emotion.update("bored", -20)
 
     elif not common.TEST_MODE:
         no_mentions = discord.AllowedMentions.none()
@@ -136,7 +118,12 @@ async def on_message(msg: discord.Message):
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
         if msg.content.lower() in common.DEAD_CHAT_TRIGGERS:
-            await msg.channel.send(common.BYDARIO_QUOTE, allowed_mentions=no_mentions)
+            # ded chat makes snek sad
+            await msg.channel.send(
+                "good." if (await emotion.get("anger")) >= 60 else common.BYDARIO_QUOTE,
+                allowed_mentions=no_mentions,
+            )
+            await emotion.update("happy", -4)
 
         if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
             if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
@@ -151,12 +138,19 @@ async def on_message(msg: discord.Message):
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
         else:
+            happy = await emotion.get("happy")
+            if happy < -60:
+                # snek sad, no dad jokes
+                return
+
+            prob = 8 if happy <= 20 else (100 - happy) // 10
+            prob += 1
+
             lowered = msg.content.lower()
             if "i am" in lowered and len(lowered) < 60:
-                # Probablity for triggering dad joke is 1/6 for others.
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
-                if msg.author.id != 683852333293109269 and random.randint(0, 9):
+                if msg.author.id != 683852333293109269 and random.randint(0, prob):
                     return
 
                 name = msg.content[lowered.index("i am") + 4 :].strip()
