@@ -628,17 +628,27 @@ class AdminCommand(UserCommand, EmsudoCommand):
                                 allowed_mentions=no_mentions,
                             )
 
-                if mode == 0:
+                if not mode:
                     await destination.send(
                         content=msg.content,
                         embed=msg.embeds[0] if msg.embeds else None,
-                        files=attached_files if attached_files else None,
+                        files=attached_files[0],
                         allowed_mentions=no_mentions,
                     )
+                    
+                    if len(attached_files) > 1:
+                        for i in range(1, len(attached_files)):
+                            await destination.send(
+                                content=f"**Message attachment** ({i+1}):",
+                                file=attached_files[i],
+                            )
+                    
                     for i in range(1, len(msg.embeds)):
                         if not i % 3:
                             await destination.trigger_typing()
                         await destination.send(embed=msg.embeds[i])
+
+                    
 
                 elif mode == 1:
                     if msg.content:
@@ -651,10 +661,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         )
 
                     if attached_files:
-                        await destination.send(
-                            content=f"**Message attachments** ({len(attached_files)}):",
-                            files=attached_files,
-                        )
+                        for i in range(len(attached_files)):
+                            await destination.send(
+                                content=f"**Message attachment** ({i+1}):",
+                                file=attached_files[i],
+                            )
 
                     if msg.embeds:
                         embed_data_fobjs = []
@@ -669,13 +680,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                             embed_data_fobj.seek(0)
                             embed_data_fobjs.append(embed_data_fobj)
 
-                        await destination.send(
-                            content=f"**Message embeds** ({len(embed_data_fobjs)}):",
-                            files=[
-                                discord.File(fobj3, filename="embeddata.json")
-                                for fobj3 in embed_data_fobjs
-                            ],
-                        )
+                        for i in range(len(embed_data_fobjs)):
+                            await destination.send(
+                                content=f"**Message embed** ({i+1}):",
+                                file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                            )
 
                         for embed_data_fobj in embed_data_fobjs:
                             embed_data_fobj.close()
@@ -691,10 +700,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                             )
 
                     if attached_files:
-                        await destination.send(
-                            content=f"**Message attachments** ({len(attached_files)}):",
-                            files=attached_files,
-                        )
+                        for i in range(len(attached_files)):
+                            await destination.send(
+                                content=f"**Message attachment** ({i+1}):",
+                                file=attached_files[i],
+                            )
 
                     if msg.embeds:
                         embed_data_fobjs = []
@@ -709,13 +719,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
                             embed_data_fobj.seek(0)
                             embed_data_fobjs.append(embed_data_fobj)
 
-                        await destination.send(
-                            content=f"**Message embeds** ({len(embed_data_fobjs)}):",
-                            files=[
-                                discord.File(fobj3, filename="embeddata.json")
-                                for fobj3 in embed_data_fobjs
-                            ],
-                        )
+                        for i in range(len(embed_data_fobjs)):
+                            await destination.send(
+                                content=f"**Message embed** ({i+1}):",
+                                file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                            )
+
+
 
                         for embed_data_fobj in embed_data_fobjs:
                             embed_data_fobj.close()
