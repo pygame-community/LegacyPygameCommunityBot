@@ -111,7 +111,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+            await embed_utils.send_from_dict(self.channel, embed_dict)
             await self.response_msg.delete()
             await self.invoke_msg.delete()
             return
@@ -126,7 +126,7 @@ class EmsudoCommand(BaseCommand):
                 )
 
             if isinstance(args, dict):
-                await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                await embed_utils.send_from_dict(self.channel, args)
                 await self.response_msg.delete()
                 await self.invoke_msg.delete()
                 return
@@ -237,7 +237,7 @@ class EmsudoCommand(BaseCommand):
             if arg_count > 6:
                 util_send_embed_args.update(timestamp=args[6])
 
-        await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+        await embed_utils.send_2(self.channel, **util_send_embed_args)
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 

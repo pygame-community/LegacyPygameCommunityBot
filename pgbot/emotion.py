@@ -6,6 +6,8 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some utitities and functions for the bots emotion system
 """
 
+import discord
+
 from . import common, db, embed_utils
 
 EMOTION_CAPS = {
@@ -48,7 +50,7 @@ async def get(emotion_name: str):
         return 0
 
 
-async def check_bonk(msg):
+async def check_bonk(msg: discord.Message):
     if common.BONK not in msg.content:
         return
 

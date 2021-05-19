@@ -217,7 +217,6 @@ class UserCommand(BaseCommand):
         """
         timestr = timestr.string.strip()
         if timestr:
-            previous = ""
             time_formats = {
                 "w": 7 * 24 * 60 * 60,
                 "d": 24 * 60 * 60,
@@ -228,18 +227,29 @@ class UserCommand(BaseCommand):
             sec = 0
 
             for time_format, dt in time_formats.items():
-                if time_format in timestr:
-                    format_split = timestr[: timestr.index(time_format) + 1]
-                    parsed_time = format_split.replace(previous, "")
-                    previous = format_split
-                    try:
-                        sec += int(parsed_time.replace(time_format, "")) * dt
-                    except ValueError:
-                        raise BotException(
-                            "Failed to set reminder!",
-                            "There is something wrong with your time parameter.\n"
-                            "Please check that it is correct and try again",
-                        )
+                try:
+                    results = re.search(rf"\d+{time_format}", timestr).group()
+                    parsed_time = int(results.replace(time_format, ""))
+                    sec += parsed_time * dt
+                except AttributeError:
+                    pass
+
+            if "mo" in timestr:
+                month_results = re.search(rf"\d+mo", timestr).group()
+                parsed_month_time = int(month_results.replace("mo", ""))
+                sec += (
+                    self.invoke_msg.created_at.replace(
+                        month=self.invoke_msg.created_at.month + parsed_month_time
+                    )
+                    - self.invoke_msg.created_at
+                ).total_seconds()
+
+            if sec == 0:
+                raise BotException(
+                    "Failed to set reminder!",
+                    "There is something wrong with your time parameter.\n"
+                    "Please check that it is correct and try again",
+                )
 
             delta = datetime.timedelta(seconds=sec)
         else:
@@ -268,10 +278,14 @@ class UserCommand(BaseCommand):
             msg = ""
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
-                cin = f" in {channel.mention}" if channel is not None else ""
-                msg += f"**On `{on}`{cin}:**\n> {reminder}\n\n"
+                cin = channel.mention if channel is not None else "DM"
+                msg += f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
 
-        await embed_utils.replace(self.response_msg, "Reminders", msg)
+        await embed_utils.replace(
+            self.response_msg,
+            f"Reminders for {self.author.display_name}:",
+            msg,
+        )
 
     async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
         """
@@ -875,7 +889,7 @@ class UserCommand(BaseCommand):
         def filter_func(x):
             return x.id != msg_to_filter
 
-        resource_entries_channel = self.invoke_msg.guild.get_channel(
+        resource_entries_channel = self.guild.get_channel(
             common.ENTRY_CHANNEL_IDS["resource"]
         )
 
@@ -993,7 +1007,101 @@ class UserCommand(BaseCommand):
 
         # Creates a paginator for the caller to use
         page_embed = embed_utils.PagedEmbed(
-            self.response_msg, pages, caller=self.invoke_msg.author
+            self.response_msg, pages, caller=self.author
         )
 
         await page_embed.mainloop()
+
+    async def cmd_stream(self):
+        """
+        ->type Other commands
+        ->signature pg!stream
+        ->description Show the ping-stream-list
+        Send an embed with all the users currently in the ping-stream-list
+        """
+        data = await db.DiscordDB("stream").get([])
+        if not data:
+            await embed_utils.replace(
+                self.response_msg,
+                "Memento ping list",
+                "Ping list is empty!",
+            )
+            return
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Memento ping list",
+            "Here is a list of people who want to be pinged when stream starts"
+            "\nUse pg!stream_ping to ping them if you start streaming\n"
+            + "\n".join((f"<@{user}>" for user in data)),
+        )
+
+    async def cmd_stream_add(self, members: HiddenArg = None):
+        """
+        ->type Other commands
+        ->signature pg!stream_add
+        ->description Add yourself to the stream-ping-list
+        ->extended description
+        Add yourself to the stream-ping-list. You can always delete \
+        you later with `pg!stream_del`
+        """
+        ping_db = db.DiscordDB("stream")
+        data: list = await ping_db.get([])
+
+        if members:
+            for mem in members:
+                if mem.id not in data:
+                    data.append(mem.id)
+        elif self.author.id not in data:
+            data.append(self.author.id)
+
+        await ping_db.write(data)
+        await self.cmd_stream()
+
+    async def cmd_stream_del(self, members: HiddenArg = None):
+        """
+        ->type Other commands
+        ->signature pg!stream_del
+        ->description Remove yourself from the stream-ping-list
+        ->extended description
+        Remove yourself from the stream-ping-list. You can always add \
+        you later with `pg!stream_add`
+        """
+        ping_db = db.DiscordDB("stream")
+        data: list = await ping_db.get([])
+
+        try:
+            if members:
+                for mem in members:
+                    data.remove(mem.id)
+            else:
+                data.remove(self.author.id)
+        except ValueError:
+            raise BotException(
+                "Could not remove member",
+                "Member was not previously added to the ping list",
+            )
+
+        await ping_db.write(data)
+        await self.cmd_stream()
+
+    async def cmd_stream_ping(self, message: Optional[String] = None):
+        """
+        ->type Other commands
+        ->signature pg!stream_ping [message]
+        ->description Ping users in stream-list with an optional message.
+        ->extended description
+        Ping all users in the ping list to announce a stream.
+        You can pass an optional stream message (like the stream topic).
+        The streamer name will be included and many people will be pinged so \
+        don't make pranks with this command.
+        """
+        data: list = await db.DiscordDB("stream").get([])
+        msg = message.string if message else "Enjoy with the stream!"
+        msg = (
+            f"<@!{self.author.id}> is gonna stream!\n{msg}\n"
+            + "Pinging everyone on ping list:\n"
+            + "\n".join((f"<@!{user}>" for user in data))
+        )
+        await self.response_msg.delete()
+        await self.channel.send(msg)

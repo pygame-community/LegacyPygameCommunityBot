@@ -97,6 +97,33 @@ async def on_member_join(member: discord.Member):
 
 
 @common.bot.event
+async def on_member_leave(member: discord.Member):
+    """
+    This function silently removes users from database messages
+    """
+    member = member.id
+
+    ping = db.DiscordDB("stream")
+    data: list = await ping.get([])
+    if member in data:
+        data.remove(member)
+        await ping.write(data)
+
+    reminders = db.DiscordDB("reminders")
+    data: dict = await reminders.get({})
+    if member in data:
+        data.pop(member)
+        await reminders.write(data)
+
+    clock = db.DiscordDB("clock")
+    data = await clock.get([])
+    for cnt, (mem, _, _) in enumerate(data):
+        if mem == member:
+            data.pop(cnt)
+            await clock.write(data)
+
+
+@common.bot.event
 async def on_message(msg: discord.Message):
     """
     This function is called for every message by user.

@@ -70,17 +70,16 @@ class DiscordDB:
 
         write_lock = True
         try:
-            async for msg in db_channel.history():
-                if msg.content == self.name:
-                    await msg.delete()
-
             with io.BytesIO() as fobj:
                 pickle.dump(obj, fobj)
+                fobj.seek(0)
+                db_obj_cache[self.name] = fobj.read()
+
+                async for msg in db_channel.history():
+                    if msg.content == self.name:
+                        await msg.delete()
 
                 fobj.seek(0)
                 await db_channel.send(self.name, file=discord.File(fobj))
-
-                fobj.seek(0)
-                db_obj_cache[self.name] = fobj.read()
         finally:
             write_lock = False

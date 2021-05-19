@@ -797,6 +797,32 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         return await super().cmd_close_poll(msg, color)
 
+    async def cmd_stream_add(self, *members: discord.Member):
+        """
+        ->type Admin commands
+        ->signature pg!stream_add [*members]
+        ->description Add user(s) to the ping list for stream
+        ->extended description
+        The command give mods the chance to add users to the ping list manually.
+        Without arguments, equivalent to the "user" version of this command
+        """
+        if not members:
+            members = None
+        await super().cmd_stream_add(members)
+
+    async def cmd_stream_del(self, *members: discord.Member):
+        """
+        ->type Admin commands
+        ->signature pg!stream_del [*members]
+        ->description Removes a user from the ping list for stream
+        ->extended description
+        The command give mods the chance to remove users from the ping list manually.
+        Without arguments, equivalent to the "user" version of this command
+        """
+        if not members:
+            members = None
+        await super().cmd_stream_del(members)
+
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
