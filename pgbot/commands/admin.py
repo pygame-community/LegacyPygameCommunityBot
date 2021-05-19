@@ -787,6 +787,68 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         return await super().cmd_close_poll(msg, color)
 
+    async def cmd_stream_add(
+            self,
+            user: Union[discord.Member, int]
+    ):
+        """
+        ->type Admin commands
+        ->signature pg!stream_add user
+        ->description Add a user to the ping list for stream
+        ->extended description
+        The command give mods the chance to add users to the ping list manually.
+        Normal users can always add themselves with `pg!stream_addme`
+        """
+        ping = db.DiscordDB("stream")
+        data = await ping.get([])
+        if user.__class__ == discord.Member:
+            user = user.id
+        if user not in ping:
+            data.append(user)
+        else:
+            raise BotException(
+                "User already in the list",
+                "How can I delete them from the list if"
+                "they are already there!?",
+            )
+        await ping.write(data)
+        await embed_utils.replace(
+            self.response_msg,
+            "Memento ping list",
+            "\n".join((f"<@{user}>" for user in data)),
+        )
+
+    async def cmd_stream_del(
+            self,
+            user: Union[discord.Member, int]
+    ):
+        """
+        ->type Admin commands
+        ->signature pg!stream_del user
+        ->description Removes a user from the ping list for stream
+        ->extended description
+        The command give mods the chance to remove users from the ping list manually.
+        Normal users can always remove themselves with `pg!stream_delme`
+        """
+        ping = db.DiscordDB("stream")
+        data = await ping.get([])
+        if user.__class__ == discord.Member:
+            user = user.id
+        if user not in ping:
+            data.append(user)
+        else:
+            raise BotException(
+                "User already in the list",
+                "How can I delete them from the list if"
+                "they are already there!?",
+            )
+        await ping.write(data)
+        await embed_utils.replace(
+            self.response_msg,
+            "Memento ping list",
+            "\n".join((f"<@{user}>" for user in data)),
+        )
+
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
