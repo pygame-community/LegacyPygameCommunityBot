@@ -1017,74 +1017,75 @@ class UserCommand(BaseCommand):
         ->type Other commands
         ->signature pg!stream
         ->description Show the ping-stream-list
-        Send an embed with all the users currently in the \
-        ping-stream-list
+        Send an embed with all the users currently in the ping-stream-list
         """
-        ping = db.DiscordDB("stream")
-        data = await ping.get([])
+        data = await db.DiscordDB("stream").get([])
+        if not data:
+            await embed_utils.replace(
+                self.response_msg,
+                "Memento ping list",
+                "Ping list is empty!",
+            )
+            return
+
         await embed_utils.replace(
             self.response_msg,
             "Memento ping list",
-            "\n".join((f"<@{user}>" for user in data)),
+            "Here is a list of people who want to be pinged when stream starts"
+            "\nUse pg!stream_ping to ping them if you start streaming\n"
+            + "\n".join((f"<@{user}>" for user in data)),
         )
 
-    async def cmd_stream_addme(self):
+    async def cmd_stream_add(self, members: HiddenArg = None):
         """
         ->type Other commands
-        ->signature pg!stream_addme
+        ->signature pg!stream_add
         ->description Add yourself to the stream-ping-list
         ->extended description
         Add yourself to the stream-ping-list. You can always delete \
-        you later with `pg!strem_delme`
+        you later with `pg!stream_del`
         """
-        ping = db.DiscordDB("stream")
-        data = await ping.get([])
-        user = self.author.id
-        if user not in ping:
-            data.append(user)
-        else:
-            raise BotException(
-                "You are already in the list",
-                "How can I add you to the list if you are already there!?",
-            )
-        await ping.write(data)
-        await embed_utils.replace(
-            self.response_msg,
-            "Memento ping list",
-            "\n".join((f"<@{user}>" for user in data)),
-        )
+        ping_db = db.DiscordDB("stream")
+        data: list = await ping_db.get([])
 
-    async def cmd_stream_delme(self):
+        if members:
+            for mem in members:
+                if mem.id not in data:
+                    data.append(mem.id)
+        elif self.author.id not in data:
+            data.append(self.author.id)
+
+        await ping_db.write(data)
+        await self.cmd_stream()
+
+    async def cmd_stream_del(self, members: HiddenArg = None):
         """
         ->type Other commands
-        ->signature pg!stream_delme
+        ->signature pg!stream_del
         ->description Remove yourself from the stream-ping-list
         ->extended description
         Remove yourself from the stream-ping-list. You can always add \
-        you later with `pg!strem_addme`
+        you later with `pg!stream_add`
         """
-        ping = db.DiscordDB("stream")
-        data: list = await ping.get([])
-        user = self.author.id
-        if user in ping:
-            data.remove(user)
-        else:
-            raise BotException(
-                "You are not in the list",
-                "How can I delete you from the list if"
-                "you are not there already!?",
-            )
-        await ping.write(data)
-        await embed_utils.replace(
-            self.response_msg,
-            "Memento ping list",
-            "\n".join((f"<@{user}>" for user in data)),
-        )
+        ping_db = db.DiscordDB("stream")
+        data: list = await ping_db.get([])
 
-    async def cmd_stream_ping(
-            self,
-            message: str = None
-    ):
+        try:
+            if members:
+                for mem in members:
+                    data.remove(mem.id)
+            else:
+                data.remove(self.author.id)
+        except ValueError:
+            raise BotException(
+                "Could not remove member",
+                "Member was not previously added to the ping list",
+            )
+
+        await ping_db.write(data)
+        await self.cmd_stream()
+
+    async def cmd_stream_ping(self, message: Optional[String] = None):
         """
         ->type Other commands
         ->signature pg!stream_ping [message]
@@ -1092,17 +1093,15 @@ class UserCommand(BaseCommand):
         ->extended description
         Ping all users in the ping list to announce a stream.
         You can pass an optional stream message (like the stream topic).
-        The streamer name will be included and many people will \
-        be pinged so don't make pranks with this command.
+        The streamer name will be included and many people will be pinged so \
+        don't make pranks with this command.
         """
-        ping = db.DiscordDB("stream")
-        data: list = await ping.get([])
-        streamer = self.invoke_msg.author.id
-
-        await embed_utils.replace(
-            self.response_msg,
-            "<@{streamer}> is gonna stream!",
-            message or "Enjoy with the stream!",
+        data: list = await db.DiscordDB("stream").get([])
+        msg = message.string if message else "Enjoy with the stream!"
+        msg = (
+            f"<@!{self.author.id}> is gonna stream!\n{msg}\n"
+            + "Pinging everyone on ping list:\n"
+            + "\n".join((f"<@!{user}>" for user in data))
         )
-        msg = "Hey " + ", ".join((f"<@{user}>" for user in data)) + f"!\n<@{streamer}> is gonna stream!"
-        self.invoke_msg.channel.send(msg)
+        await self.response_msg.delete()
+        await self.channel.send(msg)
