@@ -300,7 +300,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo_get(
-        self, msg: discord.Message, as_attachment: bool = False, info: bool = False
+        self, msg: discord.Message, content_attachment: bool = False, info: bool = False,
+        attachments: bool = True, embeds: bool = True
     ):
         """
         ->type More admin commands
@@ -313,7 +314,36 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
-        if as_attachment:
+        attached_files = None
+
+        if attachments:
+            with io.StringIO() as fobj:
+                fobj.write("This file was too large to be duplicated.")
+                attached_files = [
+                    (
+                        await a.to_file(spoiler=a.is_spoiler())
+                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
+                    )
+                    for a in msg.attachments
+                ]
+
+        if info:
+            info_embed = embed_utils.get_msg_info_embed(msg)
+            info_embed.set_author(name="Message data & info")
+            info_embed.title = ""
+            info_embed.description = f"```\n{msg.content}```\n\u2800"
+
+            content_file = None
+            if content_attachment and msg.content:
+                with io.StringIO() as fobj:
+                    fobj.write(msg.content)
+                    fobj.seek(0)
+                    content_file = discord.File(fobj, "get.txt")
+
+            await self.response_msg.channel.send(embed=info_embed, file=content_file)
+
+        elif content_attachment:
             with io.StringIO() as fobj:
                 fobj.write(msg.content)
                 fobj.seek(0)
@@ -327,13 +357,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ),
                 )
 
-        elif info:
-            info_embed = embed_utils.get_msg_info_embed(msg)
-            info_embed.set_author(name="Message data & info")
-            info_embed.title = ""
-            info_embed.description = f"```\n{msg.content}```\n\u2800"
-            await self.response_msg.channel.send(embed=info_embed)
-
         else:
             await embed_utils.send_2(
                 self.response_msg.channel,
@@ -345,6 +368,35 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
                 ),
             )
+        
+        if attached_files:
+            for i in range(len(attached_files)):
+                await self.response_msg.channel.send(
+                    content=f"**Message attachment** ({i+1}):",
+                    file=attached_files[i],
+                )
+            
+        if embeds and msg.embeds:
+            embed_data_fobjs = []
+            for embed in msg.embeds:
+                embed_data_fobj = io.StringIO()
+                embed_utils.export_embed_data(
+                    embed.to_dict(),
+                    fp=embed_data_fobj,
+                    indent=4,
+                    as_json=True,
+                )
+                embed_data_fobj.seek(0)
+                embed_data_fobjs.append(embed_data_fobj)
+
+            for i in range(len(embed_data_fobjs)):
+                await self.response_msg.channel.send(
+                    content=f"**Message embed** ({i+1}):",
+                    file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                )
+
+            for embed_data_fobj in embed_data_fobjs:
+                embed_data_fobj.close()
 
         await self.response_msg.delete()
 
