@@ -32,7 +32,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudos *datas
+        ->signature pg!emsudo *datas
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments and send them with a message
