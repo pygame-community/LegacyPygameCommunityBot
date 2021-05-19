@@ -97,6 +97,19 @@ async def on_member_join(member: discord.Member):
 
 
 @common.bot.event
+async def on_member_leave(member: discord.Member):
+    """
+    This function silently removes users from ping list when they leave
+    """
+    member = member.id
+    ping = db.DiscordDB("stream")
+    data: list = await ping.get([])
+    if member in data:
+        data.remove(member)
+        await ping.write(data)
+
+
+@common.bot.event
 async def on_message(msg: discord.Message):
     """
     This function is called for every message by user.
