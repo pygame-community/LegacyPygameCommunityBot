@@ -300,8 +300,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo_get(
-        self, msg: discord.Message, content_attachment: bool = False, info: bool = False,
-        attachments: bool = True, embeds: bool = True
+        self,
+        msg: discord.Message,
+        content_attachment: bool = False,
+        info: bool = False,
+        attachments: bool = True,
+        embeds: bool = True,
     ):
         """
         ->type More admin commands
@@ -319,10 +323,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if attachments:
             with io.StringIO() as fobj:
                 fobj.write("This file was too large to be duplicated.")
+                file_size_limit = (
+                    msg.guild.filesize_limit
+                    if msg.guild
+                    else common.GUILD_MAX_FILE_SIZE
+                )
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
-                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        if a.size <= file_size_limit
                         else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                     )
                     for a in msg.attachments
@@ -368,14 +377,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
                 ),
             )
-        
+
         if attached_files:
             for i in range(len(attached_files)):
                 await self.response_msg.channel.send(
                     content=f"**Message attachment** ({i+1}):",
                     file=attached_files[i],
                 )
-            
+
         if embeds and msg.embeds:
             embed_data_fobjs = []
             for embed in msg.embeds:
@@ -687,20 +696,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         files=attached_files[0],
                         allowed_mentions=no_mentions,
                     )
-                    
+
                     if len(attached_files) > 1:
                         for i in range(1, len(attached_files)):
                             await destination.send(
                                 content=f"**Message attachment** ({i+1}):",
                                 file=attached_files[i],
                             )
-                    
+
                     for i in range(1, len(msg.embeds)):
                         if not i % 3:
                             await destination.trigger_typing()
                         await destination.send(embed=msg.embeds[i])
-
-                    
 
                 elif mode == 1:
                     if msg.content:
@@ -735,7 +742,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
                                 content=f"**Message embed** ({i+1}):",
-                                file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                                file=discord.File(
+                                    embed_data_fobjs[i], filename="embeddata.json"
+                                ),
                             )
 
                         for embed_data_fobj in embed_data_fobjs:
@@ -774,10 +783,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
                                 content=f"**Message embed** ({i+1}):",
-                                file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                                file=discord.File(
+                                    embed_data_fobjs[i], filename="embeddata.json"
+                                ),
                             )
-
-
 
                         for embed_data_fobj in embed_data_fobjs:
                             embed_data_fobj.close()

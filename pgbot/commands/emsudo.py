@@ -90,7 +90,9 @@ class EmsudoCommand(BaseCommand):
                 for attachment in attachment_msg.attachments:
                     if (
                         attachment.content_type is not None
-                        and attachment.content_type.startswith(("text", "application/json"))
+                        and attachment.content_type.startswith(
+                            ("text", "application/json")
+                        )
                     ):
                         attachment_obj = attachment
                         break
@@ -111,7 +113,9 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_json_string=True
                     )
                 else:
-                    embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+                    embed_dict = embed_utils.import_embed_data(
+                        embed_data, from_string=True
+                    )
 
                 await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
                 continue
@@ -212,13 +216,14 @@ class EmsudoCommand(BaseCommand):
 
                 if arg_count > 4:
                     try:
-                        util_send_embed_args.update(fields=embed_utils.get_fields(*args[4]))
+                        util_send_embed_args.update(
+                            fields=embed_utils.get_fields(*args[4])
+                        )
                     except TypeError:
                         if skip_errors:
                             continue
                         raise BotException(
-                            f"Input {i}: "
-                            "Invalid format for field string(s)!",
+                            f"Input {i}: " "Invalid format for field string(s)!",
                             ' The format should be `"<name|value|inline>"`',
                         )
 
@@ -244,7 +249,7 @@ class EmsudoCommand(BaseCommand):
                     util_send_embed_args.update(timestamp=args[6])
 
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
-        
+
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
