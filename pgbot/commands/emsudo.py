@@ -249,13 +249,13 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudos data
-        ->description Send an embed through the bot
+        ->signature pg!emsudos *datas
+        ->description Send embeds through the bot
         ->extended description
-        Generate an embed from the given arguments and send it with a message
+        Generate embeds from the given arguments and send them with a message
         to the channel where this command was invoked.
         -----
-        Implement pg!emsudo, for admins to send embeds via the bot
+        Implement pg!emsudos, for admins to send multiple embeds via the bot
         """
 
         for i, data in enumerate(datas):
