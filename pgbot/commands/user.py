@@ -217,7 +217,6 @@ class UserCommand(BaseCommand):
         """
         timestr = timestr.string.strip()
         if timestr:
-            previous = ""
             time_formats = {
                 "w": 7 * 24 * 60 * 60,
                 "d": 24 * 60 * 60,
@@ -228,18 +227,29 @@ class UserCommand(BaseCommand):
             sec = 0
 
             for time_format, dt in time_formats.items():
-                if time_format in timestr:
-                    format_split = timestr[: timestr.index(time_format) + 1]
-                    parsed_time = format_split.replace(previous, "")
-                    previous = format_split
-                    try:
-                        sec += int(parsed_time.replace(time_format, "")) * dt
-                    except ValueError:
-                        raise BotException(
-                            "Failed to set reminder!",
-                            "There is something wrong with your time parameter.\n"
-                            "Please check that it is correct and try again",
-                        )
+                try:
+                    results = re.search(rf"\d+{time_format}", timestr).group()
+                    parsed_time = int(results.replace(time_format, ""))
+                    sec += parsed_time * dt
+                except AttributeError:
+                    pass
+
+            if "mo" in timestr:
+                month_results = re.search(rf"\d+mo", timestr).group()
+                parsed_month_time = int(month_results.replace("mo", ""))
+                sec += (
+                    self.invoke_msg.created_at.replace(
+                        month=self.invoke_msg.created_at.month + parsed_month_time
+                    )
+                    - self.invoke_msg.created_at
+                ).total_seconds()
+
+            if sec == 0:
+                raise BotException(
+                    "Failed to set reminder!",
+                    "There is something wrong with your time parameter.\n"
+                    "Please check that it is correct and try again",
+                )
 
             delta = datetime.timedelta(seconds=sec)
         else:
@@ -268,10 +278,14 @@ class UserCommand(BaseCommand):
             msg = ""
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
-                cin = f" in {channel.mention}" if channel is not None else ""
-                msg += f"**On `{on}`{cin}:**\n> {reminder}\n\n"
+                cin = channel.mention if channel is not None else "DM"
+                msg += f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
 
-        await embed_utils.replace(self.response_msg, "Reminders", msg)
+        await embed_utils.replace(
+            self.response_msg,
+            f"Reminders for {self.author.display_name}:",
+            msg,
+        )
 
     async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
         """
@@ -434,49 +448,78 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!exec, for execution of python code
         """
-        tstamp = time.perf_counter_ns()
-        await self.channel.trigger_typing()
+        async with self.channel.typing():
+            tstamp = time.perf_counter_ns()
 
-        returned = await sandbox.exec_sandbox(
-            code.code, tstamp, 10 if self.is_priv else 5
-        )
-        dur = returned.duration  # the execution time of the script alone
-
-        if returned.exc is None:
-            if returned.img:
-                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                    await self.channel.send(file=discord.File(f"temp{tstamp}.png"))
-                else:
-                    await embed_utils.send(
-                        self.channel,
-                        "Image could not be sent:",
-                        "The image file size is above 4MiB",
-                        0xFF0000,
-                    )
-                os.remove(f"temp{tstamp}.png")
-
-            if returned.text:
-                await embed_utils.replace(
-                    self.response_msg,
-                    f"Returned text (Code executed in {utils.format_time(dur)}):",
-                    utils.code_block(returned.text),
-                )
-            else:
-                await embed_utils.replace(
-                    self.response_msg,
-                    f"Code executed in {utils.format_time(dur)}",
-                    "",
-                )
-
-        else:
-            await embed_utils.replace(
-                self.response_msg,
-                "An exception occured:",
-                utils.code_block(", ".join(map(str, returned.exc.args))),
+            returned = await sandbox.exec_sandbox(
+                code.code, tstamp, 10 if self.is_priv else 5
             )
+            dur = returned.duration  # the execution time of the script alone
 
-        # To reset the trigger_typing counter
-        await (await self.channel.send("\u200b")).delete()
+            embed_dict = {
+                "description": "",
+                "author_name": f"Code executed in {utils.format_time(dur)}",
+                "author_url": self.invoke_msg.jump_url,
+            }
+            file = None
+            exc = None
+
+            if returned.exc is None:
+                if returned.text:
+                    embed_dict["description"] += "**Text output:**\n"
+                    embed_dict["description"] += utils.code_block(returned.text, 2000)
+
+                if returned.img:
+                    if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
+                        embed_dict["description"] += "\n**Image output:**"
+                        embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
+                        file = discord.File(f"temp{tstamp}.png")
+                    else:
+                        exc = (
+                            "Image could not be sent",
+                            "The image file size is above 4MiB",
+                        )
+
+                elif returned.imgs:
+                    if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
+                        embed_dict["description"] += "\n**GIF output:**"
+                        embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
+                        file = discord.File(f"temp{tstamp}.gif")
+                    else:
+                        exc = ("Unable to send gif", "Gif size is above 4mib")
+            else:
+                exc = (
+                    "An exception occured:",
+                    utils.code_block(", ".join(map(str, returned.exc.args))),
+                )
+
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            # Message already deleted
+            pass
+
+        if exc is not None:
+            embed = await embed_utils.send(
+                self.channel,
+                exc[0],
+                exc[1],
+                color=0xFF0000,
+                do_return=True,
+            )
+        else:
+            embed = await embed_utils.send_2(None, **embed_dict)
+
+        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+
+        if file:
+            file.close()
+
+        if os.path.isfile(f"temp{tstamp}.gif"):
+            os.remove(f"temp{tstamp}.gif")
+
+        if os.path.isfile(f"temp{tstamp}.png"):
+            os.remove(f"temp{tstamp}.png")
 
     async def cmd_help(
         self, name: Optional[str] = None, page: HiddenArg = 0, msg: HiddenArg = None
@@ -846,7 +889,7 @@ class UserCommand(BaseCommand):
         def filter_func(x):
             return x.id != msg_to_filter
 
-        resource_entries_channel = self.invoke_msg.guild.get_channel(
+        resource_entries_channel = self.guild.get_channel(
             common.ENTRY_CHANNEL_IDS["resource"]
         )
 
@@ -964,7 +1007,7 @@ class UserCommand(BaseCommand):
 
         # Creates a paginator for the caller to use
         page_embed = embed_utils.PagedEmbed(
-            self.response_msg, pages, caller=self.invoke_msg.author
+            self.response_msg, pages, caller=self.author
         )
 
         await page_embed.mainloop()

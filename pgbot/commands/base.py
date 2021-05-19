@@ -75,6 +75,7 @@ class CodeBlock:
             if code[0].isspace():
                 code = code[1:]
             elif code[0].isalnum():
+                i = 0
                 for i in range(len(code)):
                     if code[i].isspace():
                         break
