@@ -1039,7 +1039,7 @@ class UserCommand(BaseCommand):
         """
         ping = db.DiscordDB("stream")
         data = await ping.get([])
-        user = self.invoke_msg.author.id
+        user = self.author.id
         if user not in ping:
             data.append(user)
         else:
@@ -1065,7 +1065,7 @@ class UserCommand(BaseCommand):
         """
         ping = db.DiscordDB("stream")
         data: list = await ping.get([])
-        user = self.invoke_msg.author.id
+        user = self.author.id
         if user in ping:
             data.remove(user)
         else:
