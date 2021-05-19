@@ -233,6 +233,7 @@ class UserCommand(BaseCommand):
                     sec += parsed_time * dt
                 except AttributeError:
                     pass
+
             if "mo" in timestr:
                 month_results = re.search(rf"\d+mo", timestr).group()
                 parsed_month_time = int(month_results.replace("mo", ""))
@@ -242,6 +243,7 @@ class UserCommand(BaseCommand):
                     )
                     - self.invoke_msg.created_at
                 ).total_seconds()
+
             if sec == 0:
                 raise BotException(
                     "Failed to set reminder!",
@@ -276,12 +278,12 @@ class UserCommand(BaseCommand):
             msg = ""
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
-                cin = f" in {channel.mention}" if channel is not None else ""
-                msg += f"**On `{on}`{cin}:**\n> {reminder}\n\n"
+                cin = channel.mention if channel is not None else "DM"
+                msg += f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
 
         await embed_utils.replace(
             self.response_msg,
-            f"Reminders for {self.invoke_msg.author.display_name}:",
+            f"Reminders for {self.author.display_name}:",
             msg,
         )
 
@@ -887,7 +889,7 @@ class UserCommand(BaseCommand):
         def filter_func(x):
             return x.id != msg_to_filter
 
-        resource_entries_channel = self.invoke_msg.guild.get_channel(
+        resource_entries_channel = self.guild.get_channel(
             common.ENTRY_CHANNEL_IDS["resource"]
         )
 
@@ -1005,7 +1007,7 @@ class UserCommand(BaseCommand):
 
         # Creates a paginator for the caller to use
         page_embed = embed_utils.PagedEmbed(
-            self.response_msg, pages, caller=self.invoke_msg.author
+            self.response_msg, pages, caller=self.author
         )
 
         await page_embed.mainloop()
