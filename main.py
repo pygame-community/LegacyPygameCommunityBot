@@ -115,7 +115,7 @@ async def on_member_leave(member: discord.Member):
         data.pop(member)
         await reminders.write(data)
 
-    clock = db.DiscordDB("reminders")
+    clock = db.DiscordDB("clock")
     data = await clock.get([])
     for cnt, (mem, _, _) in enumerate(data):
         if mem == member:
