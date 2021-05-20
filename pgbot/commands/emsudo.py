@@ -32,11 +32,13 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo *datas
+        ->signature pg!emsudo [data] [data]...
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments and send them with a message
-        to the channel where this command was invoked.
+        to the channel where this command was invoked. If the optional arguments `[data]`
+        are omitted, attempt to read input data from an attachment in the message that invoked
+        this command.
         -----
         Implement pg!emsudos, for admins to send multiple embeds via the bot
         """
@@ -250,6 +252,41 @@ class EmsudoCommand(BaseCommand):
 
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
 
+        if not datas:
+            attachment_msg = self.invoke_msg
+            if not attachment_msg.attachments:
+                raise BotException(
+                    f"No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith(("text", "application/json"))
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    f"No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
+                )
+
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+
+            await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
@@ -260,17 +297,12 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_replace [*args]
+        ->signature pg!emsudo_replace <message> [data]
         ->description Replace an embed through the bot
         ->extended description
-        ```
-        pg!emsudo_replace ({target_message_id}, *{embed_tuple})
-        pg!emsudo_replace ({target_message_id}, {embed_dict})
-        pg!emsudo_replace {target_message_id} {message_id}
-        pg!emsudo_replace {target_message_id} {channel_id} {message_id}
-        pg!emsudo_replace ({target_message_id}, {empty_str})
-        ```
         Replace the embed of a message in the channel where this command was invoked using the given arguments.
+        If the optional argument `[data]` is omitted, attempt to read input data from an attachment in the message that invoked
+        this command.
         -----
         Implement pg!emsudo_replace, for admins to replace embeds via the bot
         """
@@ -480,17 +512,12 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_add [*args]
+        ->signature pg!emsudo_add <message> [data] [overwrite]
         ->description Add an embed through the bot
         ->extended description
-        ```
-        pg!emsudo_add ({target_message_id}, *{embed_tuple})
-        pg!emsudo_add ({target_message_id}, {embed_dict})
-        pg!emsudo_add {target_message_id} {message_id}
-        pg!emsudo_add {target_message_id} {channel_id} {message_id}
-        pg!emsudo_add ({target_message_id}, {empty_str})
-        ```
-        Add an embed to a message (even if it has one, it will be replaced) in the channel where this command was invoked using the given arguments.
+        Add an embed to a message in the channel where this command was invoked using the given arguments.
+        If the optional argument `[data]` is omitted, attempt to read input data from an attachment in the message that invoked
+        this command.
         -----
         Implement pg!emsudo_add, for admins to add embeds to messages via the bot
         """
@@ -504,14 +531,27 @@ class EmsudoCommand(BaseCommand):
                 " `overwrite=` is set to `False`",
             )
 
-    async def cmd_emsudo_remove(self, msg: discord.Message):
+    async def cmd_emsudo_remove(self, *msgs: discord.Message):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_remove [message]
+        ->signature pg!emsudo_remove <message> [<message>...]
         ->description Remove an embed through the bot
         -----
         Implement pg!emsudo_remove, for admins to remove embeds from messages via the bot
         """
+
+        if not msgs:
+            raise BotException(
+                f"Invalid arguments!",
+                "No message IDs given as input.",
+            )
+
+        for i, msg in enumerate(msgs):
+            if not msg.embeds:
+                raise BotException(
+                    f"Input {i}: Cannot execute command:",
+                    "No embed data found in message.",
+                )
 
         await msg.edit(embed=None)
         await self.response_msg.delete()
@@ -525,16 +565,9 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_edit [*args]
+        ->signature pg!emsudo_edit <message> [data] [data]...
         ->description Edit an embed through the bot
         ->extended description
-        ```
-        pg!emsudo_edit ({target_message_id}, *{embed_tuple})
-        pg!emsudo_edit ({target_message_id}, {embed_dict})
-        pg!emsudo_edit {target_message_id} {message_id}
-        pg!emsudo_edit {target_message_id} {channel_id} {message_id}
-        pg!emsudo_edit ({target_message_id}, {empty_str})
-        ```
         Update the given attributes of an embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_edit, for admins to replace embeds via the bot
@@ -760,46 +793,84 @@ class EmsudoCommand(BaseCommand):
 
             await embed_utils.edit_2(msg, msg_embed, **util_edit_embed_args)
 
+        if not datas:
+            attachment_msg = self.invoke_msg
+            if not attachment_msg.attachments:
+                raise BotException(
+                    f"No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
+                )
+
+            for attachment in attachment_msg.attachments:
+                if (
+                    attachment.content_type is not None
+                    and attachment.content_type.startswith(("text", "application/json"))
+                ):
+                    attachment_obj = attachment
+                    break
+            else:
+                raise BotException(
+                    f"No valid attachment found in message.",
+                    "It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    " or a `.json` file containing embed data.",
+                )
+
+            embed_data = await attachment_obj.read()
+            embed_data = embed_data.decode()
+
+            if attachment_obj.content_type.startswith("application/json"):
+                embed_dict = embed_utils.import_embed_data(
+                    embed_data, from_json_string=True
+                )
+            else:
+                embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
+
+            await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
+
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
-    async def cmd_emsudo_clone(self, msg: discord.Message):
+    async def cmd_emsudo_clone(self, *msgs: discord.Message, skip_errors: bool = False):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_clone [*args]
+        ->signature pg!emsudo_clone <message> [<message>...] [skip_errors]
         ->description Clone all embeds.
         ->extended description
-        ```
-        pg!emsudo_clone {message_id}
-        pg!emsudo_clone {channel_id} {message_id}
-        ```
         Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
         -----
         Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
 
-        if not msg.embeds:
+        if not msgs:
             raise BotException(
-                "Cannot execute command:",
-                "No embed data found in message.",
+                f"Invalid arguments!",
+                "No message IDs given as input.",
             )
 
-        for embed in msg.embeds:
-            await self.response_msg.channel.send(embed=embed)
+        for i, msg in enumerate(msgs):
+            if not msg.embeds:
+                raise BotException(
+                    f"Input {i}: Cannot execute command:",
+                    "No embed data found in message.",
+                )
+
+            for embed in msg.embeds:
+                await self.response_msg.channel.send(embed=embed)
 
         await self.response_msg.delete()
 
     async def cmd_emsudo_get(
         self,
-        msg: discord.Message,
-        attrib_string: String = String(""),
+        *msgs: discord.Message,
+        attributes: String = String(""),
         name: String = String("(add a title by editing this embed)"),
         json: bool = True,
         py: bool = False,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_get [*args]
+        ->signature pg!emsudo_get  <message> [<message>...] [attributes]
         ->description Get the embed data of a message
         ->extended description
         ```
@@ -815,6 +886,12 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
+
+        if not msgs:
+            raise BotException(
+                f"Invalid arguments!",
+                "No message IDs given as input.",
+            )
 
         embed_attr_keys = {
             "author",
@@ -835,8 +912,8 @@ class EmsudoCommand(BaseCommand):
         filtered_field_indices = []
         offset_idx = None
 
-        attrib_string = attrib_string.string
-        attrib_tuple = attrib_string.split()
+        attributes = attributes.string
+        attrib_tuple = attributes.split()
 
         for i in range(len(attrib_tuple)):
             if attrib_tuple[i] == "fields":
@@ -871,57 +948,65 @@ class EmsudoCommand(BaseCommand):
                         "Invalid embed attribute names!",
                     )
 
-        if not msg.embeds:
-            raise BotException(
-                "Cannot execute command:",
-                "No embed data found in message.",
-            )
+        for i, msg in enumerate(msgs):
+            if not msg.embeds:
+                raise BotException(
+                    f"Input {i}: Cannot execute command:",
+                    "No embed data found in message.",
+                )
 
-        embed_dict = msg.embeds[0].to_dict()
+            embed_dict = msg.embeds[0].to_dict()
 
-        if reduced_embed_attr_keys:
-            for key in tuple(embed_dict.keys()):
-                if key not in reduced_embed_attr_keys:
-                    del embed_dict[key]
+            if reduced_embed_attr_keys:
+                for key in tuple(embed_dict.keys()):
+                    if key not in reduced_embed_attr_keys:
+                        del embed_dict[key]
 
-            if (
-                "fields" in reduced_embed_attr_keys
-                and "fields" in embed_dict
-                and filtered_field_indices
-            ):
-                embed_dict["fields"] = [
-                    embed_dict["fields"][idx] for idx in sorted(filtered_field_indices)
-                ]
+                if (
+                    "fields" in reduced_embed_attr_keys
+                    and "fields" in embed_dict
+                    and filtered_field_indices
+                ):
+                    embed_dict["fields"] = [
+                        embed_dict["fields"][idx]
+                        for idx in sorted(filtered_field_indices)
+                    ]
 
-        with io.StringIO() as fobj:
-            embed_utils.export_embed_data(embed_dict, fp=fobj, indent=4, as_json=json)
-            fobj.seek(0)
-            await self.response_msg.channel.send(
-                embed=await embed_utils.send_2(
-                    None,
-                    author_name="Embed Data",
-                    title=embed_dict.get(
-                        "title", "(add a title by editing this embed)"
-                    ),
-                    fields=(
-                        (
-                            "\u2800",
-                            f"**[View Original Message]({msg.jump_url})**",
-                            True,
+            with io.StringIO() as fobj:
+                embed_utils.export_embed_data(
+                    embed_dict, fp=fobj, indent=4, as_json=json
+                )
+                fobj.seek(0)
+                await self.response_msg.channel.send(
+                    embed=await embed_utils.send_2(
+                        None,
+                        author_name="Embed Data",
+                        title=(
+                            embed_dict.get(
+                                "title", "(add a title by editing this embed)"
+                            )
+                        )
+                        if len(msgs) < 2
+                        else "(add a title by editing this embed)",
+                        fields=(
+                            (
+                                "\u2800",
+                                f"**[View Original Message]({msg.jump_url})**",
+                                True,
+                            ),
                         ),
                     ),
-                ),
-                file=discord.File(
-                    fobj,
-                    filename=(
-                        "embeddata.py"
-                        if py
-                        else "embeddata.json"
-                        if json
-                        else "embeddata.txt"
+                    file=discord.File(
+                        fobj,
+                        filename=(
+                            "embeddata.py"
+                            if py
+                            else "embeddata.json"
+                            if json
+                            else "embeddata.txt"
+                        ),
                     ),
-                ),
-            )
+                )
 
         await self.response_msg.delete()
 
@@ -1034,7 +1119,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_add_fields [*args]
+        ->signature pg!emsudo_add_fields <message> [data]
         ->description Add embed fields through the bot
         ->extended description
         ```
