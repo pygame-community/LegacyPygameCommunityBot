@@ -521,7 +521,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *datas: Optional[Union[discord.Message, CodeBlock, String]],
-        skip_errors: bool = False
+        skip_errors: bool = False,
     ):
         """
         ->type emsudo commands
@@ -545,7 +545,7 @@ class EmsudoCommand(BaseCommand):
                 "Cannot execute command:",
                 "No embed data found in message.",
             )
-        
+
         msg_embed = msg.embeds[0]
 
         for i, data in enumerate(datas):
