@@ -10,6 +10,7 @@ starts the bot
 import asyncio
 import os
 import random
+import unidecode
 
 import discord
 import pygame
@@ -144,7 +145,7 @@ async def on_message(msg: discord.Message):
 
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
-        if msg.content.lower() in common.DEAD_CHAT_TRIGGERS:
+        if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
             # ded chat makes snek sad
             await msg.channel.send(
                 "good." if (await emotion.get("anger")) >= 60 else common.BYDARIO_QUOTE,
