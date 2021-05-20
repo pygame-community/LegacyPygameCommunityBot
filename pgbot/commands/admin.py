@@ -9,6 +9,7 @@ This file defines the command handler class for the admin commands of the bot
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import io
 import os
@@ -155,7 +156,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo(
-        self, data: Union[discord.Message, String], from_attachment: bool = True
+        self, *datas: Union[discord.Message, String], from_attachment: bool = True
     ):
         """
         ->type More admin commands
@@ -165,34 +166,66 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo, for admins to send messages via the bot
         """
 
-        attachment_msg: discord.Message = None
+        for i, data in enumerate(datas):
+            attachment_msg: discord.Message = None
 
-        if isinstance(data, String):
-            if not data.string:
-                attachment_msg = self.invoke_msg
-            else:
-                msg_text = data.string
-                await self.channel.send(msg_text)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
+            if isinstance(data, String):
+                if not data.string:
+                    attachment_msg = self.invoke_msg
+                else:
+                    msg_text = data.string
+                    await self.channel.send(msg_text)
+                    continue
 
-        elif isinstance(data, discord.Message):
-            if from_attachment:
-                attachment_msg = data
-            else:
-                src_msg_txt = data.content
-                if src_msg_txt:
-                    await self.channel.send(src_msg_txt)
-                    await self.response_msg.delete()
-                    await self.invoke_msg.delete()
-                    return
+            elif isinstance(data, discord.Message):
+                if from_attachment:
+                    attachment_msg = data
+                else:
+                    src_msg_txt = data.content
+                    if src_msg_txt:
+                        await self.channel.send(src_msg_txt)
+                        continue
+                    raise BotException(
+                        f"Input {i}: No message text found!",
+                        "The message given as input does not have any text content.",
+                    )
+
+            if attachment_msg:
+                if not attachment_msg.attachments:
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt` file containing text data.",
+                    )
+
+                for attachment in attachment_msg.attachments:
+                    if (
+                        attachment.content_type is not None
+                        and attachment.content_type.startswith(("text"))
+                    ):
+                        attachment_obj = attachment
+                        break
+                else:
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt` file containing text data.",
+                    )
+
+                msg_text = await attachment_obj.read()
+                msg_text = msg_text.decode()
+
+                if len(msg_text) < 2001:
+                    await self.channel.send(msg_text)
+                    continue
+
                 raise BotException(
-                    "No message text found!",
-                    "The message given as input does not have any text content.",
+                    f"Input {i}: Too many characters!",
+                    "a Discord message cannot contain more than 2000 characters.",
                 )
+            
+            await asyncio.sleep(0)
 
-        if attachment_msg:
+        if not datas:
+            attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
@@ -217,14 +250,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if len(msg_text) < 2001:
                 await self.channel.send(msg_text)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
+            else:
+                raise BotException(
+                    "Too many characters!",
+                    "a Discord message cannot contain more than 2000 characters.",
+                )
 
-            raise BotException(
-                "Too many characters!",
-                "a Discord message cannot contain more than 2000 characters.",
-            )
+        await self.response_msg.delete()
+        await self.invoke_msg.delete()
 
     async def cmd_sudo_edit(
         self,
@@ -362,7 +395,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                     await self.channel.send(
                         file=discord.File(fobj, "get.txt"),
-                        embed=await embed_utils.create(
+                        embed=embed_utils.create(
                             author_name="Message data",
                             description=f"**[View Original Message]({msg.jump_url})**",
                             color=0xFFFFAA,
@@ -415,6 +448,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                 for embed_data_fobj in embed_data_fobjs:
                     embed_data_fobj.close()
+
+            await asyncio.sleep(0)
 
         await self.response_msg.delete()
 
@@ -482,6 +517,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     reference=cloned_msg,
                 )
 
+            await asyncio.sleep(0)
+
         await self.response_msg.delete()
 
     async def cmd_info(
@@ -501,11 +538,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if not objs:
             obj = self.author
             embed = embed_utils.get_user_info_embed(obj)
-            self.response_msg.channel.send(embed=embed)
+            await self.response_msg.channel.send(embed=embed)
 
         for obj in objs:
             await self.response_msg.channel.trigger_typing()
-
             embed = None
             if isinstance(obj, discord.Message):
                 embed = embed_utils.get_msg_info_embed(obj, author=author)
@@ -515,6 +551,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if embed is not None:
                 await self.response_msg.channel.send(embed=embed)
+
+            await asyncio.sleep(0)
 
         await self.response_msg.delete()
 
@@ -820,6 +858,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                         for embed_data_fobj in embed_data_fobjs:
                             embed_data_fobj.close()
+
+                await asyncio.sleep(0)
 
         if divider_str and not raw:
             await destination.send(content=divider_str)
