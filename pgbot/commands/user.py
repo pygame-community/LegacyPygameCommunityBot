@@ -264,7 +264,7 @@ class UserCommand(BaseCommand):
                 seconds=seconds,
             )
 
-        await self.cmd_reminder_on(msg, None, delta=delta)
+        await self.cmd_reminders_add(msg, None, delta=delta)
 
     @add_group("reminders")
     async def cmd_reminders(self):
@@ -1049,7 +1049,7 @@ class UserCommand(BaseCommand):
             self.response_msg,
             "Memento ping list",
             "Here is a list of people who want to be pinged when stream starts"
-            "\nUse pg!stream_ping to ping them if you start streaming\n"
+            "\nUse 'pg!stream ping' to ping them if you start streaming\n"
             + "\n".join((f"<@{user}>" for user in data)),
         )
 
@@ -1117,11 +1117,14 @@ class UserCommand(BaseCommand):
         don't make pranks with this command.
         """
         data: list = await db.DiscordDB("stream").get([])
+
         msg = message.string if message else "Enjoy the stream!"
-        msg = (
-            f"<@!{self.author.id}> is gonna stream!\n{msg}\n"
-            + "Pinging everyone on ping list:\n"
+        ping = (
+            "Pinging everyone on ping list:\n"
             + "\n".join((f"<@!{user}>" for user in data))
+            if data
+            else "No one is registered on the ping momento :/"
         )
+
         await self.response_msg.delete()
-        await self.channel.send(msg)
+        await self.channel.send(f"<@!{self.author.id}> is gonna stream!\n{msg}\n{ping}")
