@@ -301,7 +301,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
     async def cmd_sudo_get(
         self,
-        msg: discord.Message,
+        *msgs: discord.Message,
         content_attachment: bool = False,
         info: bool = False,
         attachments: bool = True,
@@ -309,109 +309,117 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <message> [as_attachment] [info]
-        ->description Get the text of a message through the bot
+        ->signature pg!sudo_get <message> <message>... [content_attachment] [info] [attachments] [embeds]
+        ->description Get the text of messages through the bot
 
-        Get the contents of the embed of a message from the given arguments and send it as another message
-        (as an embed code block or a message with a `.txt` file attachment containing the message data)
+        Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
         to the channel where this command was invoked.
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
-        attached_files = None
 
-        if attachments:
-            with io.StringIO() as fobj:
-                fobj.write("This file was too large to be duplicated.")
-                file_size_limit = (
-                    msg.guild.filesize_limit
-                    if msg.guild
-                    else common.GUILD_MAX_FILE_SIZE
-                )
-                attached_files = [
-                    (
-                        await a.to_file(spoiler=a.is_spoiler())
-                        if a.size <= file_size_limit
-                        else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
+        for msg in msgs:
+            attached_files = None
+            if attachments:
+                with io.StringIO() as fobj:
+                    fobj.write("This file was too large to be duplicated.")
+                    file_size_limit = (
+                        msg.guild.filesize_limit
+                        if msg.guild
+                        else common.GUILD_MAX_FILE_SIZE
                     )
-                    for a in msg.attachments
-                ]
+                    attached_files = [
+                        (
+                            await a.to_file(spoiler=a.is_spoiler())
+                            if a.size <= file_size_limit
+                            else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
+                        )
+                        for a in msg.attachments
+                    ]
 
-        if info:
-            info_embed = embed_utils.get_msg_info_embed(msg)
-            info_embed.set_author(name="Message data & info")
-            info_embed.title = ""
-            info_embed.description = f"```\n{msg.content}```\n\u2800"
+            if info:
+                info_embed = embed_utils.get_msg_info_embed(msg)
+                info_embed.set_author(name="Message data & info")
+                info_embed.title = ""
+                info_embed.description = f"```\n{msg.content}```\n\u2800"
 
-            content_file = None
-            if content_attachment and msg.content:
+                content_file = None
+                if content_attachment and msg.content:
+                    with io.StringIO() as fobj:
+                        fobj.write(msg.content)
+                        fobj.seek(0)
+                        content_file = discord.File(fobj, "get.txt")
+
+                await self.response_msg.channel.send(
+                    embed=info_embed, file=content_file
+                )
+
+            elif content_attachment:
                 with io.StringIO() as fobj:
                     fobj.write(msg.content)
                     fobj.seek(0)
-                    content_file = discord.File(fobj, "get.txt")
 
-            await self.response_msg.channel.send(embed=info_embed, file=content_file)
+                    await self.channel.send(
+                        file=discord.File(fobj, "get.txt"),
+                        embed=await embed_utils.create(
+                            author_name="Message data",
+                            description=f"**[View Original Message]({msg.jump_url})**",
+                            color=0xFFFFAA,
+                        ),
+                    )
 
-        elif content_attachment:
-            with io.StringIO() as fobj:
-                fobj.write(msg.content)
-                fobj.seek(0)
-
-                await self.channel.send(
-                    file=discord.File(fobj, "get.txt"),
-                    embed=await embed_utils.create(
-                        author_name="Message data",
-                        description=f"**[View Original Message]({msg.jump_url})**",
-                        color=0xFFFFAA,
+            else:
+                await embed_utils.send_2(
+                    self.response_msg.channel,
+                    author_name="Message data",
+                    description="```\n{0}```".format(
+                        msg.content.replace("```", "\\`\\`\\`")
+                    ),
+                    fields=(
+                        (
+                            "\u2800",
+                            f"**[View Original Message]({msg.jump_url})**",
+                            False,
+                        ),
                     ),
                 )
 
-        else:
-            await embed_utils.send_2(
-                self.response_msg.channel,
-                author_name="Message data",
-                description="```\n{0}```".format(
-                    msg.content.replace("```", "\\`\\`\\`")
-                ),
-                fields=(
-                    ("\u2800", f"**[View Original Message]({msg.jump_url})**", False),
-                ),
-            )
+            if attached_files:
+                for i in range(len(attached_files)):
+                    await self.response_msg.channel.send(
+                        content=f"**Message attachment** ({i+1}):",
+                        file=attached_files[i],
+                    )
 
-        if attached_files:
-            for i in range(len(attached_files)):
-                await self.response_msg.channel.send(
-                    content=f"**Message attachment** ({i+1}):",
-                    file=attached_files[i],
-                )
+            if embeds and msg.embeds:
+                embed_data_fobjs = []
+                for embed in msg.embeds:
+                    embed_data_fobj = io.StringIO()
+                    embed_utils.export_embed_data(
+                        embed.to_dict(),
+                        fp=embed_data_fobj,
+                        indent=4,
+                        as_json=True,
+                    )
+                    embed_data_fobj.seek(0)
+                    embed_data_fobjs.append(embed_data_fobj)
 
-        if embeds and msg.embeds:
-            embed_data_fobjs = []
-            for embed in msg.embeds:
-                embed_data_fobj = io.StringIO()
-                embed_utils.export_embed_data(
-                    embed.to_dict(),
-                    fp=embed_data_fobj,
-                    indent=4,
-                    as_json=True,
-                )
-                embed_data_fobj.seek(0)
-                embed_data_fobjs.append(embed_data_fobj)
+                for i in range(len(embed_data_fobjs)):
+                    await self.response_msg.channel.send(
+                        content=f"**Message embed** ({i+1}):",
+                        file=discord.File(
+                            embed_data_fobjs[i], filename="embeddata.json"
+                        ),
+                    )
 
-            for i in range(len(embed_data_fobjs)):
-                await self.response_msg.channel.send(
-                    content=f"**Message embed** ({i+1}):",
-                    file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
-                )
-
-            for embed_data_fobj in embed_data_fobjs:
-                embed_data_fobj.close()
+                for embed_data_fobj in embed_data_fobjs:
+                    embed_data_fobj.close()
 
         await self.response_msg.delete()
 
     async def cmd_sudo_clone(
         self,
-        msg: discord.Message,
+        *msgs: discord.Message,
         embeds: bool = True,
         attachments: bool = True,
         spoiler: bool = False,
@@ -420,7 +428,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone <msg> [embeds] [attachments] [spoiler] [info] [author]
+        ->signature pg!sudo_clone <msg> <msg>... [embeds] [attachments] [spoiler] [info] [author]
         ->description Clone a message through the bot
 
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -428,42 +436,50 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
 
-        msg_files = None
-        cloned_msg = None
+        for msg in msgs:
+            cloned_msg = None
+            attached_files = []
+            if msg.attachments and attachments:
+                with io.StringIO() as fobj:
+                    fobj.write("This file was too large to be archived.")
+                    fobj.seek(0)
 
-        if msg.attachments and attachments:
-            with io.StringIO() as fobj:
-                fobj.write("This file was too large to be archived.")
-                fobj.seek(0)
+                    file_size_limit = (
+                        msg.guild.filesize_limit
+                        if msg.guild
+                        else common.GUILD_MAX_FILE_SIZE
+                    )
+                    attached_files = [
+                        (
+                            await a.to_file(spoiler=a.is_spoiler())
+                            if a.size <= file_size_limit
+                            else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
+                        )
+                        for a in msg.attachments
+                    ]
 
-                msg_files = [
-                    await a.to_file(spoiler=spoiler or a.is_spoiler())
-                    if a.size <= common.GUILD_MAX_FILE_SIZE
-                    else discord.File(fobj, "filetoolarge.txt")
-                    for a in msg.attachments
-                ]
-
-        if msg.embeds and embeds:
             cloned_msg = await self.response_msg.channel.send(
-                content=msg.content, embed=msg.embeds[0], files=msg_files
+                content=msg.content,
+                embed=msg.embeds[0] if msg.embeds and embeds else None,
+                file=attached_files[0] if attached_files else None,
             )
+
+            for i in range(1, len(attached_files)):
+                await self.response_msg.channel.send(
+                    file=attached_files[i],
+                )
 
             for i in range(1, len(msg.embeds)):
                 await self.response_msg.channel.send(
                     embed=msg.embeds[i],
                 )
-        else:
-            cloned_msg = await self.response_msg.channel.send(
-                content=msg.content,
-                embed=msg.embeds[0] if msg.embeds and embeds else None,
-                files=msg_files,
-            )
 
-        if info:
-            await self.response_msg.channel.send(
-                embed=embed_utils.get_msg_info_embed(msg, author=author),
-                reference=cloned_msg,
-            )
+            if info:
+                await self.response_msg.channel.send(
+                    embed=embed_utils.get_msg_info_embed(msg, author=author),
+                    reference=cloned_msg,
+                )
+        
         await self.response_msg.delete()
 
     async def cmd_info(
@@ -653,7 +669,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     (
                         await a.to_file(spoiler=a.is_spoiler())
                         if a.size <= common.GUILD_MAX_FILE_SIZE
-                        else discord.File(fobj, "filetoolarge.txt")
+                        else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                     )
                     for a in msg.attachments
                 ]
