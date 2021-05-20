@@ -479,7 +479,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed=embed_utils.get_msg_info_embed(msg, author=author),
                     reference=cloned_msg,
                 )
-        
+
         await self.response_msg.delete()
 
     async def cmd_info(
