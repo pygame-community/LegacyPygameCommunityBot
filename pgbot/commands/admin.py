@@ -319,6 +319,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         for msg in msgs:
+            await self.response_msg.channel.trigger_typing()
             attached_files = None
             if attachments:
                 with io.StringIO() as fobj:
@@ -437,6 +438,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
 
         for msg in msgs:
+            await self.response_msg.channel.trigger_typing()
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:

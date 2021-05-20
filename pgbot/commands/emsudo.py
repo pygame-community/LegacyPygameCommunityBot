@@ -547,13 +547,14 @@ class EmsudoCommand(BaseCommand):
             )
 
         for i, msg in enumerate(msgs):
+            await self.response_msg.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
                     "No embed data found in message.",
                 )
-
-        await msg.edit(embed=None)
+            await msg.edit(embed=None)
+        
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
@@ -849,13 +850,17 @@ class EmsudoCommand(BaseCommand):
             )
 
         for i, msg in enumerate(msgs):
+            await self.response_msg.channel.trigger_typing()
+            
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
                     "No embed data found in message.",
                 )
 
-            for embed in msg.embeds:
+            for j, embed in enumerate(msg.embeds):
+                if not j % 3:
+                    await self.response_msg.channel.trigger_typing()
                 await self.response_msg.channel.send(embed=embed)
 
         await self.response_msg.delete()
@@ -949,6 +954,7 @@ class EmsudoCommand(BaseCommand):
                     )
 
         for i, msg in enumerate(msgs):
+            await self.response_msg.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
