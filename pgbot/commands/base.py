@@ -151,15 +151,21 @@ def fun_command(func):
     A decorator to indicate a "fun command", one that the bot skips when it is
     'exhausted'
     """
+    func.fun_cmd = True
+    return func
 
-    async def inner(*args, **kwargs):
-        if (await emotion.get("bored")) < -600 and random.randint(0, 1):
-            raise BotException(
-                "I am Exhausted!",
-                "I have been running a lot of commands lately, and now I am tired.\n"
-                "Give me a bit of a break, and I will be back to normal!",
-            )
-        return await func(*args, **kwargs)
+
+def add_group(groupname, *subcmds):
+    """
+    Utility to add a function name to a group command
+    """
+
+    def inner(func):
+        # patch in group name data and sub command data into the function itself
+        if subcmds:
+            func.groupname = groupname
+            func.subcmds = subcmds
+        return func
 
     return inner
 
@@ -179,25 +185,32 @@ class BaseCommand:
         Initialise UserCommand class
         """
         # Create a dictionary of command names and respective handler functions
-        self.invoke_msg = invoke_msg
-        self.response_msg = resp_msg
+        self.invoke_msg: discord.Message = invoke_msg
+        self.response_msg: discord.Message = resp_msg
         self.is_priv = True
-        self.cmd_str = self.invoke_msg.content[len(common.PREFIX) :]
+        self.cmd_str: str = self.invoke_msg.content[len(common.PREFIX) :]
 
         # Put a few attributes here for easy access
-        self.author = self.invoke_msg.author
-        self.channel = self.invoke_msg.channel
-        self.guild = self.invoke_msg.guild
+        self.author: discord.Member = self.invoke_msg.author
+        self.channel: discord.TextChannel = self.invoke_msg.channel
+        self.guild: discord.Guild = self.invoke_msg.guild
         self.is_dm = self.guild is None
         if self.is_dm:
             self.guild = common.bot.get_guild(common.SERVER_ID)
 
         self.cmds_and_funcs = {}
+        self.groups = {}
         for i in dir(self):
             if i.startswith(common.CMD_FUNC_PREFIX):
-                self.cmds_and_funcs[
-                    i[len(common.CMD_FUNC_PREFIX) :]
-                ] = self.__getattribute__(i)
+                func = self.__getattribute__(i)
+                name = i[len(common.CMD_FUNC_PREFIX) :]
+                self.cmds_and_funcs[name] = func
+
+                if hasattr(func, "groupname"):
+                    if func.groupname in self.groups:
+                        self.groups[func.groupname].append(func)
+                    else:
+                        self.groups[func.groupname] = [func]
 
     def split_args(self, split_str, split_flags):
         """
@@ -493,21 +506,6 @@ class BaseCommand:
         """
         cmd, args, kwargs = await self.parse_args()
 
-        # command name entered does not exist
-        if cmd not in self.cmds_and_funcs:
-            if cmd in common.admin_commands:
-                raise BotException(
-                    "Permissions Error!",
-                    f"The command '{cmd}' is an admin command, and you do not "
-                    "have access to that",
-                )
-
-            raise BotException(
-                "Unrecognized command!",
-                f"The command '{cmd}' does not exist.\nFor help on bot "
-                "commands, do `pg!help`",
-            )
-
         # command has been blacklisted from running
         if cmd in await db.DiscordDB("blacklist").get([]):
             raise BotException(
@@ -518,7 +516,42 @@ class BaseCommand:
                 + "has been finished",
             )
 
-        func = self.cmds_and_funcs[cmd]
+        is_group = False
+        if cmd in self.groups:
+            for func in self.groups[cmd]:
+                n = len(func.subcmds)
+                if func.subcmds == tuple(args[:n]):
+                    args = args[n:]
+                    is_group = True
+                    break
+
+        if not is_group:
+            if cmd not in self.cmds_and_funcs:
+                if cmd in common.admin_commands:
+                    raise BotException(
+                        "Permissions Error!",
+                        f"The command '{cmd}' is an admin command, and you do "
+                        "not have access to that",
+                    )
+
+                raise BotException(
+                    "Unrecognized command!",
+                    f"The command '{cmd}' does not exist.\nFor help on bot "
+                    "commands, do `pg!help`",
+                )
+            func = self.cmds_and_funcs[cmd]
+
+        if (
+            hasattr(func, "fun_cmd")
+            and random.randint(0, 1)
+            and (await emotion.get("bored")) < -600
+        ):
+            raise BotException(
+                "I am Exhausted!",
+                "I have been running a lot of commands lately, and now I am tired.\n"
+                "Give me a bit of a break, and I will be back to normal!",
+            )
+
         sig = inspect.signature(func)
 
         i = -1

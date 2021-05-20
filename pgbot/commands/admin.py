@@ -21,7 +21,7 @@ import psutil
 import pygame
 
 from pgbot import common, db, embed_utils, utils
-from pgbot.commands.base import BotException, CodeBlock, String
+from pgbot.commands.base import BotException, CodeBlock, String, add_group
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
 
@@ -821,6 +821,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
         await self.response_msg.delete(delay=5.0)
 
+    @add_group("poll")
     async def cmd_poll(
         self,
         desc: String,
@@ -859,25 +860,27 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
 
-    async def cmd_close_poll(
+    @add_group("poll", "close")
+    async def cmd_poll_close(
         self,
         msg: discord.Message,
         color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
         ->type Admin commands
-        ->signature pg!close_poll <msg> [color]
+        ->signature pg!poll close <msg> [color]
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
         The color is the color of the closed poll embed
         """
-        return await super().cmd_close_poll(msg, color)
+        return await super().cmd_poll_close(msg, color)
 
+    @add_group("stream", "add")
     async def cmd_stream_add(self, *members: discord.Member):
         """
         ->type Admin commands
-        ->signature pg!stream_add [*members]
+        ->signature pg!stream add [*members]
         ->description Add user(s) to the ping list for stream
         ->extended description
         The command give mods the chance to add users to the ping list manually.
@@ -887,11 +890,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             members = None
         await super().cmd_stream_add(members)
 
+    @add_group("stream", "del")
     async def cmd_stream_del(self, *members: discord.Member):
         """
         ->type Admin commands
-        ->signature pg!stream_del [*members]
-        ->description Removes a user from the ping list for stream
+        ->signature pg!stream del [*members]
+        ->description Remove user(s) to the ping list for stream
         ->extended description
         The command give mods the chance to remove users from the ping list manually.
         Without arguments, equivalent to the "user" version of this command

@@ -289,7 +289,6 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
         )
 
         await page_system.mainloop()
-
         return
 
     else:
