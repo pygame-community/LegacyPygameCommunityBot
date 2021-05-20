@@ -25,6 +25,7 @@ from pgbot.commands.base import (
     HiddenArg,
     String,
     fun_command,
+    add_group,
 )
 
 
@@ -124,7 +125,8 @@ class UserCommand(BaseCommand):
                 color=0x228B22,
             )
 
-    async def cmd_reminder_on(
+    @add_group("reminders", "add")
+    async def cmd_reminders_add(
         self,
         msg: String,
         on: datetime.datetime,
@@ -132,15 +134,15 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Reminders
-        ->signature pg!reminder_on <message> <datetime in iso format>
+        ->signature pg!reminders add <message> <datetime in iso format>
         ->description Set a reminder to yourself
         ->extended description
         Allows you to set a reminder to yourself
         The date-time must be ISO time formatted string, in UTC time
         string
-        ->example command pg!reminder_set "do the thing" "2034-10-26 11:19:36"
+        ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
         -----
-        Implement pg!reminder_on, for users to set reminders for themselves
+        Implement pg!reminders_add, for users to set reminders for themselves
         """
         now = datetime.datetime.utcnow()
 
@@ -192,7 +194,8 @@ class UserCommand(BaseCommand):
             f"And that is on {on} UTC",
         )
 
-    async def cmd_reminder_set(
+    @add_group("reminders", "set")
+    async def cmd_reminders_set(
         self,
         msg: String,
         timestr: String = String(""),
@@ -204,16 +207,16 @@ class UserCommand(BaseCommand):
     ):
         """
         ->type Reminders
-        ->signature pg!reminder_set <message> [time string] [weeks] [days] [hours] [minutes] [seconds]
+        ->signature pg!reminders set <message> [time string] [weeks] [days] [hours] [minutes] [seconds]
         ->description Set a reminder to yourself
         ->extended description
         There are two ways you can pass the time duration, one is via a "time string"
         and the other is via keyword arguments
         `weeks`, `days`, `hours`, `minutes` and `seconds` are optional arguments you can
         specify to describe the time duration you want to set the reminder for
-        ->example command pg!reminder_set "Become pygame expert" weeks=9 days=12 hours=23 minutes=16 seconds=35
+        ->example command pg!reminders set "Become pygame expert" weeks=9 days=12 hours=23 minutes=16 seconds=35
         -----
-        Implement pg!reminder_set, for users to set reminders for themselves
+        Implement pg!reminders_set, for users to set reminders for themselves
         """
         timestr = timestr.string.strip()
         if timestr:
@@ -263,6 +266,7 @@ class UserCommand(BaseCommand):
 
         await self.cmd_reminder_on(msg, None, delta=delta)
 
+    @add_group("reminders")
     async def cmd_reminders(self):
         """
         ->type Reminders
@@ -287,16 +291,17 @@ class UserCommand(BaseCommand):
             msg,
         )
 
+    @add_group("reminders", "remove")
     async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
         """
         ->type Reminders
-        ->signature pg!reminders_remove [*datetimes]
+        ->signature pg!reminders remove [*datetimes]
         ->description Remove reminders
         ->extended description
         Remove variable number of reminders, corresponding to each datetime argument
         The date-time argument must be in ISO format, UTC time (see example command)
         If no arguments are passed, the command clears all reminders
-        ->example command pg!reminders_remove "2021-8-12 11:19:36"
+        ->example command pg!reminder remove "2021-8-12 11:19:36"
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
@@ -521,9 +526,7 @@ class UserCommand(BaseCommand):
         if os.path.isfile(f"temp{tstamp}.png"):
             os.remove(f"temp{tstamp}.png")
 
-    async def cmd_help(
-        self, name: Optional[str] = None, page: HiddenArg = 0, msg: HiddenArg = None
-    ):
+    async def cmd_help(self, *names: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -535,12 +538,18 @@ class UserCommand(BaseCommand):
         if not msg:
             msg = self.response_msg
 
-        if name is None:
-            await utils.send_help_message(
-                msg, self.author, self.cmds_and_funcs, page=page
-            )
+        name = " ".join(names)
+        functions = {}
+        for key, func in self.cmds_and_funcs.items():
+            if hasattr(func, "groupname"):
+                functions[f"{func.groupname} {' '.join(func.subcmds)}"] = func
+            else:
+                functions[key] = func
+
+        if name:
+            await utils.send_help_message(msg, self.author, functions, name)
         else:
-            await utils.send_help_message(msg, self.author, self.cmds_and_funcs, name)
+            await utils.send_help_message(msg, self.author, functions, page=page)
 
     @fun_command
     async def cmd_pet(self):
@@ -644,16 +653,12 @@ class UserCommand(BaseCommand):
             )
 
         await self.response_msg.delete()
-        await self.invoke_msg.delete()
-
         if command[0] == "help":
-            if len(command) == 1:
-                command.append(None)
-
-            await self.cmd_help(command[1], page=int(page) - 1, msg=msg)
+            await self.cmd_help(*command[1:], page=int(page) - 1, msg=msg)
         elif command[0] == "doc":
             await self.cmd_doc(command[1], page=int(page) - 1, msg=msg)
 
+    @add_group("poll")
     async def cmd_poll(
         self,
         desc: String,
@@ -667,7 +672,7 @@ class UserCommand(BaseCommand):
         ->extended description
         `pg!poll description *args`
         The args must be strings with one emoji and one description of said emoji (see example command). \
-        The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
+        The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
         if self.is_dm:
@@ -753,14 +758,25 @@ class UserCommand(BaseCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-    async def cmd_close_poll(
+    async def cmd_close_poll(self, msg):
+        """
+        ->skip
+        Stub for old function
+        """
+        raise BotException(
+            "Command 'pg!close_poll' does not exist",
+            "Perhaps you meant, 'pg!poll close'",
+        )
+
+    @add_group("poll", "close")
+    async def cmd_poll_close(
         self,
         msg: discord.Message,
         color: HiddenArg = None,
     ):
         """
         ->type Other commands
-        ->signature pg!close_poll <message>
+        ->signature pg!poll close <message>
         ->description Close an ongoing poll.
         ->extended description
         The poll can only be closed by the person who started it or by mods.
@@ -1012,9 +1028,10 @@ class UserCommand(BaseCommand):
 
         await page_embed.mainloop()
 
+    @add_group("stream")
     async def cmd_stream(self):
         """
-        ->type Other commands
+        ->type Reminders
         ->signature pg!stream
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
@@ -1036,14 +1053,15 @@ class UserCommand(BaseCommand):
             + "\n".join((f"<@{user}>" for user in data)),
         )
 
+    @add_group("stream", "add")
     async def cmd_stream_add(self, members: HiddenArg = None):
         """
-        ->type Other commands
-        ->signature pg!stream_add
+        ->type Reminders
+        ->signature pg!stream add
         ->description Add yourself to the stream-ping-list
         ->extended description
         Add yourself to the stream-ping-list. You can always delete \
-        you later with `pg!stream_del`
+        you later with `pg!stream del`
         """
         ping_db = db.DiscordDB("stream")
         data: list = await ping_db.get([])
@@ -1058,14 +1076,15 @@ class UserCommand(BaseCommand):
         await ping_db.write(data)
         await self.cmd_stream()
 
+    @add_group("stream", "del")
     async def cmd_stream_del(self, members: HiddenArg = None):
         """
-        ->type Other commands
-        ->signature pg!stream_del
+        ->type Reminders
+        ->signature pg!stream del
         ->description Remove yourself from the stream-ping-list
         ->extended description
         Remove yourself from the stream-ping-list. You can always add \
-        you later with `pg!stream_add`
+        you later with `pg!stream add`
         """
         ping_db = db.DiscordDB("stream")
         data: list = await ping_db.get([])
@@ -1085,10 +1104,11 @@ class UserCommand(BaseCommand):
         await ping_db.write(data)
         await self.cmd_stream()
 
+    @add_group("stream", "ping")
     async def cmd_stream_ping(self, message: Optional[String] = None):
         """
-        ->type Other commands
-        ->signature pg!stream_ping [message]
+        ->type Reminders
+        ->signature pg!stream ping [message]
         ->description Ping users in stream-list with an optional message.
         ->extended description
         Ping all users in the ping list to announce a stream.
@@ -1097,7 +1117,7 @@ class UserCommand(BaseCommand):
         don't make pranks with this command.
         """
         data: list = await db.DiscordDB("stream").get([])
-        msg = message.string if message else "Enjoy with the stream!"
+        msg = message.string if message else "Enjoy the stream!"
         msg = (
             f"<@!{self.author.id}> is gonna stream!\n{msg}\n"
             + "Pinging everyone on ping list:\n"
