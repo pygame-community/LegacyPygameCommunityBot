@@ -6,6 +6,8 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some important utility functions.
 """
 
+from __future__ import annotations
+
 
 import asyncio
 import datetime
@@ -306,12 +308,15 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             body += f"`Category: {doc['type']}`{newline * 2}"
 
             desc = doc["description"]
-            if ext_desc := doc.get("extended description"):
+
+            ext_desc = doc.get("extended description")
+            if ext_desc:
                 desc += " " + ext_desc
 
             body += f"**Description:**{newline}{desc}"
 
-            if example_cmd := doc.get("example command"):
+            example_cmd = doc.get("example command")
+            if example_cmd:
                 body += f"{newline * 2}**Example command(s):**{newline}{example_cmd}"
 
             await embed_utils.replace(
