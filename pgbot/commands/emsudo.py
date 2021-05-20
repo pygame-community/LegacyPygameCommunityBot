@@ -850,7 +850,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_clone(self, *msgs: discord.Message):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_clone <message> [<message>...] [skip_errors]
+        ->signature pg!emsudo_clone <message> [<message>...]
         ->description Clone all embeds.
         ->extended description
         Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
