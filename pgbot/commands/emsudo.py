@@ -27,7 +27,7 @@ class EmsudoCommand(BaseCommand):
 
     async def cmd_emsudo(
         self,
-        *datas: Optional[Union[discord.Message, CodeBlock, String]],
+        *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
         skip_errors: bool = False,
     ):
         """
@@ -66,7 +66,7 @@ class EmsudoCommand(BaseCommand):
             attachment_msg: discord.Message = None
             only_description = False
 
-            if data is None:
+            if data is False:
                 attachment_msg = self.invoke_msg
 
             elif isinstance(data, String):
@@ -554,14 +554,14 @@ class EmsudoCommand(BaseCommand):
                     "No embed data found in message.",
                 )
             await msg.edit(embed=None)
-        
+
         await self.response_msg.delete()
         await self.invoke_msg.delete()
 
     async def cmd_emsudo_edit(
         self,
         msg: discord.Message,
-        *datas: Optional[Union[discord.Message, CodeBlock, String]],
+        *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
         skip_errors: bool = False,
     ):
         """
@@ -605,7 +605,7 @@ class EmsudoCommand(BaseCommand):
             attachment_msg: discord.Message = None
             only_description = False
 
-            if data is None:
+            if data is False:
                 attachment_msg = self.invoke_msg
 
             elif isinstance(data, String):
@@ -851,7 +851,7 @@ class EmsudoCommand(BaseCommand):
 
         for i, msg in enumerate(msgs):
             await self.response_msg.channel.trigger_typing()
-            
+
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
