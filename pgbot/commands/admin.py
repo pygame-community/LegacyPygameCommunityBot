@@ -486,7 +486,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
     async def cmd_info(
         self,
-        obj: Optional[Union[discord.Message, discord.Member]] = None,
+        *objs: Union[discord.Message, discord.Member],
         author: bool = True,
     ):
         """
@@ -497,14 +497,26 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!info, to get information about a message/member
         """
-        if isinstance(obj, discord.Message):
-            embed = embed_utils.get_msg_info_embed(obj, author=author)
-        else:
-            if obj is None:
-                obj = self.author
-            embed = embed_utils.get_user_info_embed(obj)
 
-        await self.response_msg.edit(embed=embed)
+        if not objs:
+            obj = self.author
+            embed = embed_utils.get_user_info_embed(obj)
+            self.response_msg.channel.send(embed=embed)
+
+        for obj in objs:
+            await self.response_msg.channel.trigger_typing()
+
+            embed = None
+            if isinstance(obj, discord.Message):
+                embed = embed_utils.get_msg_info_embed(obj, author=author)
+
+            elif isinstance(obj, discord.Member):
+                embed = embed_utils.get_user_info_embed(obj)
+
+            if embed is not None:
+                await self.response_msg.channel.send(embed=embed)
+
+        await self.response_msg.delete()
 
     async def cmd_heap(self):
         """
