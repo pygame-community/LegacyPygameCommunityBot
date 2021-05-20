@@ -8,6 +8,7 @@ This file defines the command handler class for the emsudo commands of the bot
 
 from __future__ import annotations
 
+import asyncio
 import io
 from ast import literal_eval
 from typing import Optional, Union
@@ -251,6 +252,7 @@ class EmsudoCommand(BaseCommand):
                     util_send_embed_args.update(timestamp=args[6])
 
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+            await asyncio.sleep(0)
 
         if not datas:
             attachment_msg = self.invoke_msg
@@ -554,6 +556,7 @@ class EmsudoCommand(BaseCommand):
                     "No embed data found in message.",
                 )
             await msg.edit(embed=None)
+            await asyncio.sleep(0)
 
         await self.response_msg.delete()
         await self.invoke_msg.delete()
@@ -793,6 +796,7 @@ class EmsudoCommand(BaseCommand):
                     util_edit_embed_args.update(timestamp=args[6])
 
             await embed_utils.edit_2(msg, msg_embed, **util_edit_embed_args)
+            await asyncio.sleep(0)
 
         if not datas:
             attachment_msg = self.invoke_msg
@@ -862,6 +866,8 @@ class EmsudoCommand(BaseCommand):
                 if not j % 3:
                     await self.response_msg.channel.trigger_typing()
                 await self.response_msg.channel.send(embed=embed)
+            
+            await asyncio.sleep(0)
 
         await self.response_msg.delete()
 
@@ -1013,6 +1019,7 @@ class EmsudoCommand(BaseCommand):
                         ),
                     ),
                 )
+            await asyncio.sleep(0)
 
         await self.response_msg.delete()
 
