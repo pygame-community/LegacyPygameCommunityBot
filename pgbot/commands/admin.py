@@ -221,7 +221,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     f"Input {i}: Too many characters!",
                     "a Discord message cannot contain more than 2000 characters.",
                 )
-            
+
             await asyncio.sleep(0)
 
         if not datas:
@@ -761,7 +761,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     await destination.send(
                         content=msg.content,
                         embed=msg.embeds[0] if msg.embeds else None,
-                        files=attached_files[0],
+                        files=attached_files[0] if attached_files else None,
                         allowed_mentions=no_mentions,
                     )
 

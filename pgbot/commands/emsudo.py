@@ -866,7 +866,7 @@ class EmsudoCommand(BaseCommand):
                 if not j % 3:
                     await self.response_msg.channel.trigger_typing()
                 await self.response_msg.channel.send(embed=embed)
-            
+
             await asyncio.sleep(0)
 
         await self.response_msg.delete()
