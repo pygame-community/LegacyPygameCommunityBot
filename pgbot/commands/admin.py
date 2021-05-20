@@ -221,7 +221,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     f"Input {i}: Too many characters!",
                     "a Discord message cannot contain more than 2000 characters.",
                 )
-            
+
             await asyncio.sleep(0)
 
         if not datas:
@@ -654,12 +654,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
         if quantity <= 0:
-            if quantity == -1 and not after:
+            if quantity == 0 and not after:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "`quantity` must be above -1 when `after=` is not specified.",
                 )
-            elif quantity != -1:
+            elif quantity != 0:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "Quantity has to be a positive integer (or `-1` when `after=` is specified).",
@@ -761,7 +761,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     await destination.send(
                         content=msg.content,
                         embed=msg.embeds[0] if msg.embeds else None,
-                        files=attached_files[0],
+                        files=attached_files[0] if attached_files else None,
                         allowed_mentions=no_mentions,
                     )
 
