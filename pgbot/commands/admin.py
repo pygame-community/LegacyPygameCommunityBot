@@ -657,12 +657,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if quantity == 0 and not after:
                 raise BotException(
                     "Invalid `quantity` argument",
-                    "`quantity` must be above -1 when `after=` is not specified.",
+                    "`quantity` must be above 0 when `after=` is not specified.",
                 )
             elif quantity != 0:
                 raise BotException(
                     "Invalid `quantity` argument",
-                    "Quantity has to be a positive integer (or `-1` when `after=` is specified).",
+                    "Quantity has to be a positive integer (or `0` when `after=` is specified).",
                 )
 
         await destination.trigger_typing()
