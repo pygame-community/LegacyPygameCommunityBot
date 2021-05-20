@@ -654,12 +654,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
         if quantity <= 0:
-            if quantity == -1 and not after:
+            if quantity == 0 and not after:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "`quantity` must be above -1 when `after=` is not specified.",
                 )
-            elif quantity != -1:
+            elif quantity != 0:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "Quantity has to be a positive integer (or `-1` when `after=` is specified).",
