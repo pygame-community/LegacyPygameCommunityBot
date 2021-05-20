@@ -667,7 +667,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await destination.trigger_typing()
         messages = await origin.history(
-            limit=quantity if quantity != -1 else None,
+            limit=quantity if quantity != 0 else None,
             before=before,
             after=after,
             around=around,
