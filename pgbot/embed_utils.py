@@ -12,6 +12,7 @@ import datetime
 import io
 import json
 import re
+from typing import Optional, Union, List, Iterable
 
 from ast import literal_eval
 from collections.abc import Mapping
@@ -877,14 +878,15 @@ def export_embed_data(
         return return_data
 
 
-def get_member_info_str(member: discord.Member):
+def get_member_info_str(member: Union[discord.Member, discord.User]):
     """
     Get member info in a string, utility function for the embed functions
     """
     datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    is_member_obj = isinstance(member, discord.Member)
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
-    if member.nick:
+    if hasattr(member, "nick") and member.nick:
         member_nick = (
             member.nick.replace("\\", r"\\")
             .replace("*", r"\*")
@@ -905,7 +907,7 @@ def get_member_info_str(member: discord.Member):
         + f"> {member_created_at_fdtime}\n\n"
     )
 
-    if member.joined_at:
+    if is_member_obj and member.joined_at:
         member_joined_at_fdtime = member.joined_at.astimezone(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
@@ -913,22 +915,25 @@ def get_member_info_str(member: discord.Member):
             f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"
             + f"> {member_joined_at_fdtime}\n\n"
         )
-
     else:
         member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
 
-    member_func_role_count = max(
-        len(
-            tuple(
-                member.roles[i]
-                for i in range(1, len(member.roles))
-                if member.roles[i].id not in common.DIVIDER_ROLES
-            )
-        ),
-        0,
+    member_func_role_count = (
+        max(
+            len(
+                tuple(
+                    member.roles[i]
+                    for i in range(1, len(member.roles))
+                    if member.roles[i].id not in common.DIVIDER_ROLES
+                )
+            ),
+            0,
+        )
+        if is_member_obj
+        else ""
     )
 
-    if member_func_role_count:
+    if is_member_obj and member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
         if member_func_role_count != len(member.roles) - 1:
             member_role_count_info = f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles) - 1})`\n\n"
@@ -939,11 +944,17 @@ def get_member_info_str(member: discord.Member):
 
     member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
 
-    member_stats = (
-        f"*Is Pending Screening*: \n> `{member.pending}`\n\n"
-        f"*Is Bot Account*: \n> `{member.bot}`\n\n"
-        f"*Is System User (Discord Official)*: \n> `{member.system}`\n\n"
-    )
+    if is_member_obj:
+        member_stats = (
+            f"*Is Pending Screening*: \n> `{member.pending}`\n\n"
+            f"*Is Bot Account*: \n> `{member.bot}`\n\n"
+            f"*Is System User (Discord Official)*: \n> `{member.system}`\n\n"
+        )
+    else:
+        member_stats = (
+            f"*Is Bot Account*: \n> `{member.bot}`\n\n"
+            f"*Is System User (Discord Official)*: \n> `{member.system}`\n\n"
+        )
 
     return "".join(
         (
@@ -962,14 +973,18 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     """
     Generate an embed containing info about a message and its author.
     """
-    member = msg.author
+    member: Union[discord.Member, discord.User] = msg.author
+
     datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
     msg_created_at_fdtime = msg.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
 
     msg_created_at_info = (
-        f"\u200b\n*Created On:*\n`{msg.created_at.isoformat()}`\n"
+        "\u200b\n"
+        if author
+        else ""
+        + f"*Created On:*\n`{msg.created_at.isoformat()}`\n"
         + f"> {msg_created_at_fdtime}\n\n"
     )
 
@@ -1020,7 +1035,8 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         )
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
-    if member.nick:
+
+    if hasattr(member, "nick") and member.nick:
         member_nick = (
             member.nick.replace("\\", r"\\")
             .replace("*", r"\*")
@@ -1051,13 +1067,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     )
 
 
-def get_user_info_embed(member: discord.Member):
+def get_member_info_embed(member: Union[discord.Member, discord.User]):
     """
     Generate an embed containing info about a server member.
     """
 
     return create(
-        title="__Member Info__",
+        title="__"+ ("Member" if isinstance(member, discord.Member) else "User") + " Info__",
         description=get_member_info_str(member),
         thumbnail_url=str(member.avatar_url),
     )

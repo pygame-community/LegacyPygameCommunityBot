@@ -85,7 +85,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         await embed_utils.send_2(
             common.log_channel,
             title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-            description=invoke_msg.content,
+            description=discord.utils.escape_markdown(invoke_msg.content, ignore_links=False),
             fields=(("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),),
         )
 
