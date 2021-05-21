@@ -325,7 +325,7 @@ class UserCommand(BaseCommand):
                             db_data[self.author.id].pop(dt)
                             cnt += 1
                             break
-                if reminder_id > len(db_data_copy[self.author.id]) or reminder_id < 0:
+                if reminder_id >= len(db_data_copy[self.author.id]) or reminder_id < 0:
                     raise BotException(
                         "Invalid Reminder ID!",
                         "Reminder ID was not an existing reminder ID",
