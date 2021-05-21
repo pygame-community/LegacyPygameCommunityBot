@@ -10,6 +10,7 @@ starts the bot
 import asyncio
 import os
 import random
+import signal
 import unidecode
 
 import discord
@@ -93,7 +94,7 @@ async def on_member_join(member: discord.Member):
                 + f"{common.roles_channel.mention}{end}"
             )
             # new member joined, yaayyy, snek is happi
-            await emotion.update("happy", 3)
+            emotion.update("happy", 3)
             return
 
 
@@ -105,23 +106,23 @@ async def on_member_leave(member: discord.Member):
     member = member.id
 
     ping = db.DiscordDB("stream")
-    data: list = await ping.get([])
+    data: list = ping.get([])
     if member in data:
         data.remove(member)
-        await ping.write(data)
+        ping.write(data)
 
     reminders = db.DiscordDB("reminders")
-    data: dict = await reminders.get({})
+    data: dict = reminders.get({})
     if member in data:
         data.pop(member)
-        await reminders.write(data)
+        reminders.write(data)
 
     clock = db.DiscordDB("clock")
-    data = await clock.get([])
+    data = clock.get([])
     for cnt, (mem, _, _) in enumerate(data):
         if mem == member:
             data.pop(cnt)
-            await clock.write(data)
+            clock.write(data)
 
 
 @common.bot.event
@@ -137,7 +138,7 @@ async def on_message(msg: discord.Message):
         if len(common.cmd_logs) > 100:
             del common.cmd_logs[common.cmd_logs.keys()[0]]
 
-        await emotion.update("bored", -15)
+        emotion.update("bored", -15)
 
     elif not common.TEST_MODE:
         no_mentions = discord.AllowedMentions.none()
@@ -148,10 +149,10 @@ async def on_message(msg: discord.Message):
         if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
             # ded chat makes snek sad
             await msg.channel.send(
-                "good." if (await emotion.get("anger")) >= 60 else common.BYDARIO_QUOTE,
+                "good." if emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
                 allowed_mentions=no_mentions,
             )
-            await emotion.update("happy", -4)
+            emotion.update("happy", -4)
 
         if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
             if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
@@ -166,7 +167,7 @@ async def on_message(msg: discord.Message):
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
         else:
-            happy = await emotion.get("happy")
+            happy = emotion.get("happy")
             if happy < -60:
                 # snek sad, no dad jokes
                 return
@@ -219,8 +220,37 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
             pass
 
 
+def cleanup(*args):
+    """
+    Call cleanup functions
+    """
+    common.bot.loop.run_until_complete(db.quit())
+    common.bot.loop.run_until_complete(common.bot.close())
+    common.bot.loop.close()
+
+
+def run():
+    """
+    Does what discord.Client.run does, except, handles custom cleanup functions
+    """
+
+    # use signal.signal to setup SIGTERM signal handler, runs after event loop
+    # closes
+    signal.signal(signal.SIGTERM, cleanup)
+
+    try:
+        common.bot.loop.run_until_complete(common.bot.start(common.TOKEN))
+
+    except KeyboardInterrupt:
+        # Silence keyboard interrupt traceback (it contains no useful info)
+        pass
+
+    finally:
+        cleanup()
+
+
 if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()  # pylint: disable=no-member
     common.window = pygame.display.set_mode((1, 1))
-    common.bot.run(common.TOKEN)
+    run()

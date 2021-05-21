@@ -20,11 +20,11 @@ EMOTION_CAPS = {
 db_obj = db.DiscordDB("emotions")
 
 
-async def update(emotion_name: str, value: int):
+def update(emotion_name: str, value: int):
     """
     Update emotion characteristic 'emotion_name' with value 'value' integer
     """
-    emotions = await db_obj.get({})
+    emotions = db_obj.get({})
     try:
         emotions[emotion_name] += value
     except KeyError:
@@ -36,14 +36,14 @@ async def update(emotion_name: str, value: int):
     if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
         emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
 
-    await db_obj.write(emotions)
+    db_obj.write(emotions)
 
 
-async def get(emotion_name: str):
+def get(emotion_name: str):
     """
     Get emotion characteristic 'emotion_name'
     """
-    emotions = await db_obj.get({})
+    emotions = db_obj.get({})
     try:
         return emotions[emotion_name]
     except KeyError:
@@ -55,7 +55,7 @@ async def check_bonk(msg: discord.Message):
         return
 
     bonks = msg.content.count(common.BONK)
-    if (await get("anger")) + bonks > 30:
+    if get("anger") + bonks > 30:
         await embed_utils.send_2(
             msg.channel,
             title="Did you hit the snek?",
@@ -63,5 +63,5 @@ async def check_bonk(msg: discord.Message):
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
 
-    await update("anger", bonks)
-    await update("happy", -bonks)
+    update("anger", bonks)
+    update("happy", -bonks)

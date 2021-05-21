@@ -507,7 +507,7 @@ class BaseCommand:
         cmd, args, kwargs = await self.parse_args()
 
         # command has been blacklisted from running
-        if cmd in await db.DiscordDB("blacklist").get([]):
+        if cmd in db.DiscordDB("blacklist").get([]):
             raise BotException(
                 "Cannot execute comamand!",
                 f"The command '{cmd}' has been temporarily been blocked from "
@@ -544,7 +544,7 @@ class BaseCommand:
         if (
             hasattr(func, "fun_cmd")
             and random.randint(0, 1)
-            and (await emotion.get("bored")) < -600
+            and emotion.get("bored") < -600
         ):
             raise BotException(
                 "I am Exhausted!",

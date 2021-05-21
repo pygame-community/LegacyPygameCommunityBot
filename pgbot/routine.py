@@ -20,7 +20,7 @@ async def handle_reminders(guild: discord.Guild):
     """
     Handle reminder routines
     """
-    reminders = await reminder_obj.get({})
+    reminders = reminder_obj.get({})
 
     new_reminders = {}
     for mem_id, reminder_dict in reminders.items():
@@ -66,7 +66,7 @@ async def handle_reminders(guild: discord.Guild):
                 new_reminders[mem_id][dt] = (msg, chan_id, msg_id)
 
     if reminders != new_reminders:
-        await reminder_obj.write(new_reminders)
+        reminder_obj.write(new_reminders)
 
 
 async def routine(guild: discord.Guild):
@@ -76,4 +76,4 @@ async def routine(guild: discord.Guild):
     """
     await handle_reminders(guild)
     if not random.randint(0, 3):
-        await emotion.update("bored", 1)
+        emotion.update("bored", 1)
