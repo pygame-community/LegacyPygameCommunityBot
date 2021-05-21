@@ -10,7 +10,6 @@ starts the bot
 import asyncio
 import os
 import random
-import signal
 import unidecode
 
 import discord
@@ -228,24 +227,10 @@ async def _cleanup():
     await common.bot.close()
 
 
-def cleanup():
-    """
-    Cleanup function that runs when the bot is going to close. Closes asyncio
-    event loop
-    """
-    common.bot.loop.run_until_complete(_cleanup())
-    common.bot.loop.close()
-
-
 def run():
     """
     Does what discord.Client.run does, except, handles custom cleanup functions
     """
-    try:
-        common.bot.loop.add_signal_handler(signal.SIGTERM, cleanup)
-    except NotImplementedError:
-        pass
-
     try:
         common.bot.loop.run_until_complete(common.bot.start(common.TOKEN))
 
@@ -254,7 +239,8 @@ def run():
         pass
 
     finally:
-        cleanup()
+        common.bot.loop.run_until_complete(_cleanup())
+        common.bot.loop.close()
 
 
 if __name__ == "__main__":
