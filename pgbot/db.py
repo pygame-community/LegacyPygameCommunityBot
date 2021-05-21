@@ -39,6 +39,7 @@ async def quit():
     """
     Flushes local cache for storage to the DB, and cleans up
     """
+    print("Calling cleanup functions!")
     if common.TEST_MODE:
         return
 

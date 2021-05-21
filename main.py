@@ -220,13 +220,20 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
             pass
 
 
+async def _cleanup():
+    """
+    Helper for cleanup
+    """
+    await db.quit()
+    await common.bot.close()
+
+
 def cleanup():
     """
     Cleanup function that runs when the bot is going to close. Closes asyncio
     event loop
     """
-    common.bot.loop.run_until_complete(db.quit())
-    common.bot.loop.run_until_complete(common.bot.close())
+    common.bot.loop.run_until_complete(_cleanup())
     common.bot.loop.close()
 
 
