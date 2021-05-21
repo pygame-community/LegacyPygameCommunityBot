@@ -180,11 +180,12 @@ class UserCommand(BaseCommand):
                 f"I cannot set more than {limit} reminders for you",
             )
 
-        db_data[self.author.id][on] = (
+        db_data[self.author.id][on] = [
             msg.string.strip(),
             self.channel.id,
             self.invoke_msg.id,
-        )
+            len(db_data[self.author.id]) + 1,
+        ]
         await db_obj.write(db_data)
 
         await embed_utils.replace(
@@ -280,10 +281,15 @@ class UserCommand(BaseCommand):
         msg = "You have no reminders set"
         if self.author.id in db_data:
             msg = ""
-            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
+            for on, (reminder, chan_id, _, reminder_id) in db_data[
+                self.author.id
+            ].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
-                msg += f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
+                msg += (
+                    f"Reminder ID: `{reminder_id}`\n"
+                    f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
+                )
 
         await embed_utils.replace(
             self.response_msg,
@@ -292,32 +298,38 @@ class UserCommand(BaseCommand):
         )
 
     @add_group("reminders", "remove")
-    async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
+    async def cmd_reminders_remove(self, *reminder_ids: int):
         """
         ->type Reminders
         ->signature pg!reminders remove [*datetimes]
         ->description Remove reminders
         ->extended description
         Remove variable number of reminders, corresponding to each datetime argument
-        The date-time argument must be in ISO format, UTC time (see example command)
+        The reminder id argument must be an integer
         If no arguments are passed, the command clears all reminders
-        ->example command pg!reminder remove "2021-8-12 11:19:36"
+        ->example command pg!reminder remove 1
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
         db_obj = db.DiscordDB("reminders")
         db_data = await db_obj.get({})
         cnt = 0
-        if datetimes:
-            for dt in datetimes:
+        if reminder_ids:
+            for reminder_id in reminder_ids:
                 if self.author.id in db_data:
-                    if dt in db_data[self.author.id]:
+                    found_id = False
+                    reminder_to_pop = None
+                    for dt, reminder in db_data[self.author.id].items():
+                        if reminder[3] == reminder_id:
+                            found_id = True
+                            reminder_to_pop = dt
+                    if found_id:
                         cnt += 1
-                        db_data[self.author.id].pop(dt)
+                        db_data[self.author.id].pop(reminder_to_pop)
                     else:
                         raise BotException(
-                            "Invalid datetime argument!",
-                            "Datetime argument was not a previously set reminder",
+                            "Invalid Reminder ID!",
+                            "Reminder ID was not an existing reminder ID",
                         )
 
             if self.author.id in db_data and not db_data[self.author.id]:
@@ -325,6 +337,10 @@ class UserCommand(BaseCommand):
 
         elif self.author.id in db_data:
             cnt = len(db_data.pop(self.author.id))
+
+        for reminders in db_data.values():
+            for count, reminder in enumerate(reminders.values(), 1):
+                reminder[3] = count
 
         await db_obj.write(db_data)
         await embed_utils.replace(

@@ -181,7 +181,7 @@ async def on_message(msg: discord.Message):
                 if msg.author.id != 683852333293109269 and random.randint(0, prob):
                     return
 
-                name = msg.content[lowered.index("i am") + 4 :].strip()
+                name = msg.content[lowered.index("i am") + 4:].strip()
                 await msg.channel.send(
                     f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
                 )

@@ -33,7 +33,6 @@ def discordify(message):
     Converts normal string into "discord" string that includes backspaces to
     cancel out unwanted changes
     """
-    # TODO: This who knows stuff about circular imports, is there any way to put this in utils.py?
     message = (
         message.replace("\\", r"\\")
         .replace("*", r"\*")
