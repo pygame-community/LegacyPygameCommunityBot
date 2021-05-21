@@ -11,6 +11,7 @@ import os
 
 import discord
 import pygame
+
 from dotenv import load_dotenv
 
 if os.path.isfile(".env"):

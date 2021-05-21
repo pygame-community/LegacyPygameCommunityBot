@@ -62,9 +62,10 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, text, no_backticks=False):
+    def __init__(self, text: str, no_backticks=False):
         self.lang = None
         self.text = code = text
+
         md_bacticks = ("```", "`")
 
         if no_backticks and "\n" in code:
@@ -82,7 +83,7 @@ class CodeBlock:
                 self.lang = code[:i]
                 code = code[i + 1 :]
 
-        self.code = code.strip().strip("\\")  # because \\ causes problems
+        self.code: str = code.strip().strip("\\")  # because \\ causes problems
 
 
 class String:
@@ -91,10 +92,10 @@ class String:
     it is a string enclosed in quotes
     """
 
-    def __init__(self, string):
+    def __init__(self, string: str):
         self.string = self.escape(string)
 
-    def escape(self, string):
+    def escape(self, string: str):
         """
         Convert a "raw" string to one where characters are escaped
         """
@@ -155,7 +156,7 @@ def fun_command(func):
     return func
 
 
-def add_group(groupname, *subcmds):
+def add_group(groupname: str, *subcmds: str):
     """
     Utility to add a function name to a group command
     """
@@ -265,7 +266,7 @@ class BaseCommand:
                 continue
 
             arg = arg.replace(" =", "=")
-            for substr in arg.split(" "):
+            for substr in arg.split():
                 substr = substr.strip()
                 if not substr:
                     continue
@@ -669,13 +670,13 @@ class BaseCommand:
 
             msg = utils.code_block(elog)
 
-            if len(title) > 2048 or len(elog) > 2048:
+            if len(title) > 256 or len(elog) > 2048:
                 with io.StringIO() as fobj:
                     fobj.write(f"{title}\n{elog}")
-                    print(fobj.getvalue())
-
+                    fobj.seek(0)
                     await self.response_msg.channel.send(
-                        file=discord.File(fobj, filename="exception.txt")
+                        content="Here is the full error log",
+                        file=discord.File(fobj, filename="exception.txt"),
                     )
 
         await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)

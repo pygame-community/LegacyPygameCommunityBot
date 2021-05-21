@@ -18,15 +18,15 @@ from typing import Optional
 
 import discord
 import pygame
-from pgbot import clock, common, docs, embed_utils, emotion, sandbox, utils, db
+from pgbot import clock, common, db, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import (
     BaseCommand,
     BotException,
     CodeBlock,
     HiddenArg,
     String,
-    fun_command,
     add_group,
+    fun_command,
 )
 
 
