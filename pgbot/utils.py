@@ -28,25 +28,18 @@ def color_to_rgb_int(col: pygame.Color):
     return (((col.r << 8) + col.g) << 8) + col.b
 
 
-def discordify(message):
+def discordify(text):
     """
     Converts normal string into "discord" string that includes backspaces to
     cancel out unwanted changes
     """
-    message = (
-        message.replace("\\", r"\\")
-        .replace("*", r"\*")
-        .replace("`", r"\`")
-        .replace("_", r"\_")
-    )
-    return message
+    return discord.utils.escape_markdown(text)
 
 
-def format_time(seconds: float, decimal_places: int = 4):
-    """
-    Formats time with a prefix
-    """
-    for fractions, unit in (
+def format_time(
+    seconds: float,
+    decimal_places: int = 4,
+    unit_data=(
         (1.0, "s"),
         (1e-03, "ms"),
         (1e-06, "\u03bcs"),
@@ -56,7 +49,12 @@ def format_time(seconds: float, decimal_places: int = 4):
         (1e-18, "as"),
         (1e-21, "zs"),
         (1e-24, "ys"),
-    ):
+    ),
+):
+    """
+    Formats time with a prefix
+    """
+    for fractions, unit in unit_data:
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
     return f"very fast"
@@ -330,7 +328,7 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
     )
 
 
-def format_entries_message(message: discord.Message, entry_type: str):
+def format_entries_message(msg: discord.Message, entry_type: str):
     """
     Formats an entries message to be reposted in discussion channel
     """
@@ -339,78 +337,24 @@ def format_entries_message(message: discord.Message, entry_type: str):
 
     msg_link = (
         "[View](https://discordapp.com/channels/"
-        f"{message.author.guild.id}/{message.channel.id}/{message.id})"
+        f"{msg.jump_url})"
     )
 
     attachments = ""
-    if message.attachments:
-        for i, attachment in enumerate(message.attachments):
+    if msg.attachments:
+        for i, attachment in enumerate(msg.attachments):
             attachments += f" • [Link {i + 1}]({attachment.url})\n"
     else:
         attachments = "No attachments"
 
-    msg = message.content if message.content else "No description provided."
+    msg = msg.content if msg.content else "No description provided."
 
-    fields.append(["**Posted by**", message.author.mention, True])
+    fields.append(["**Posted by**", msg.author.mention, True])
     fields.append(["**Original msg.**", msg_link, True])
     fields.append(["**Attachments**", attachments, True])
     fields.append(["**Description**", msg, True])
 
     return title, fields
-
-
-async def format_archive_messages(messages: list[discord.Message]):
-    """
-    Formats a message to be archived
-    """
-    formatted_msgs = []
-    for message in messages:
-        triple_block_quote = "```"
-
-        author = f"{message.author} ({message.author.mention}) [{message.author.id}]"
-        content = message.content.replace("\n", "\n> ") if message.content else None
-
-        if message.attachments:
-            attachment_list = []
-            for i, attachment in enumerate(message.attachments, 1):
-                filename = repr(attachment.filename)
-                attachment_list.append(
-                    f"{i}:\n    **Name**: {filename}\n    **URL**: {attachment.url}"
-                )
-            attachments = "\n> ".join(attachment_list)
-        else:
-            attachments = ""
-
-        if message.embeds:
-            embed_list = []
-            for i, embed in enumerate(message.embeds, 1):
-                if isinstance(embed, discord.Embed):
-                    if isinstance(embed.description, str):
-                        desc = embed.description.replace(
-                            triple_block_quote, common.ESC_BACKTICK_3X
-                        )
-                    else:
-                        desc = "\n"
-
-                    embed_list.append(
-                        f"{i}:\n\t**Title**: {embed.title}\n\t**Description**: ```\n{desc}```\n\t**Image URL**: {embed.image.url}"
-                    )
-                else:
-                    embed_list.append("\n")
-            embeds = "\n> ".join(embed_list)
-        else:
-            embeds = ""
-
-        formatted_msgs.append(
-            f"**AUTHOR**: {author}\n"
-            + (f"**MESSAGE**: \n> {content}\n" if content else "")
-            + (f"**ATTACHMENT(S)**: \n> {attachments}\n" if message.attachments else "")
-            + (f"**EMBED(S)**: \n> {embeds}\n" if message.embeds else "")
-        )
-        await asyncio.sleep(0.01)  # Lets the bot do other things
-
-    return formatted_msgs
-
 
 def code_block(string: str, max_characters=2048):
     """
