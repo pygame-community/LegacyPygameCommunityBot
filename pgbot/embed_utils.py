@@ -1067,13 +1067,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     )
 
 
-def get_user_info_embed(member: discord.Member):
+def get_member_info_embed(member: Union[discord.Member, discord.User]):
     """
     Generate an embed containing info about a server member.
     """
 
     return create(
-        title="__Member Info__",
+        title="__"+ ("Member" if isinstance(member, discord.Member) else "User") + " Info__",
         description=get_member_info_str(member),
         thumbnail_url=str(member.avatar_url),
     )

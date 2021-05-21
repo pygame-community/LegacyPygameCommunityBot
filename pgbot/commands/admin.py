@@ -523,7 +523,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
     async def cmd_info(
         self,
-        *objs: Union[discord.Message, discord.Member],
+        *objs: Union[discord.Message, discord.Member, discord.User],
         author: bool = True,
     ):
         """
@@ -537,7 +537,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         if not objs:
             obj = self.author
-            embed = embed_utils.get_user_info_embed(obj)
+            embed = embed_utils.get_member_info_embed(obj)
             await self.response_msg.channel.send(embed=embed)
 
         for obj in objs:
@@ -546,8 +546,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if isinstance(obj, discord.Message):
                 embed = embed_utils.get_msg_info_embed(obj, author=author)
 
-            elif isinstance(obj, discord.Member):
-                embed = embed_utils.get_user_info_embed(obj)
+            elif isinstance(obj, (discord.Member, discord.User)):
+                embed = embed_utils.get_member_info_embed(obj)
 
             if embed is not None:
                 await self.response_msg.channel.send(embed=embed)
