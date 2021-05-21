@@ -10,6 +10,7 @@ starts the bot
 import asyncio
 import os
 import random
+import signal
 import unidecode
 
 import discord
@@ -219,18 +220,24 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
             pass
 
 
-async def _cleanup():
+def cleanup(*args):
     """
-    Helper for cleanup
+    Call cleanup functions
     """
-    await db.quit()
-    await common.bot.close()
+    common.bot.loop.run_until_complete(db.quit())
+    common.bot.loop.run_until_complete(common.bot.close())
+    common.bot.loop.close()
 
 
 def run():
     """
     Does what discord.Client.run does, except, handles custom cleanup functions
     """
+
+    # use signal.signal to setup SIGTERM signal handler, runs after event loop
+    # closes
+    signal.signal(signal.SIGTERM, cleanup)
+
     try:
         common.bot.loop.run_until_complete(common.bot.start(common.TOKEN))
 
@@ -239,8 +246,7 @@ def run():
         pass
 
     finally:
-        common.bot.loop.run_until_complete(_cleanup())
-        common.bot.loop.close()
+        cleanup()
 
 
 if __name__ == "__main__":

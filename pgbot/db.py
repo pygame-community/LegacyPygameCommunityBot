@@ -51,6 +51,8 @@ async def quit():
         with io.BytesIO(picked) as fobj:
             await db_channel.send(name, file=discord.File(fobj))
 
+    print("Successfully called cleanup functions")
+
 
 class DiscordDB:
     """
