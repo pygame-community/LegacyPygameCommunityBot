@@ -46,7 +46,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         with io.StringIO() as fobj:
             fobj.write(
                 black.format_str(
-                    repr(await db.DiscordDB(name).get()),
+                    repr(db.DiscordDB(name).get()),
                     mode=black.FileMode(),
                 )
             )
@@ -67,14 +67,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!whitelist_cmd, to whitelist commands
         """
         db_obj = db.DiscordDB("blacklist")
-        commands = await db_obj.get([])
+        commands = db_obj.get([])
         cnt = 0
         for cmd in cmds:
             if cmd in commands:
                 cnt += 1
                 commands.remove(cmd)
 
-        await db_obj.write(commands)
+        db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -91,7 +91,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!blacklist_cmd, to blacklist commands
         """
         db_obj = db.DiscordDB("blacklist")
-        commands = await db_obj.get([])
+        commands = db_obj.get([])
 
         cnt = 0
         for cmd in cmds:
@@ -99,7 +99,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 cnt += 1
                 commands.append(cmd)
 
-        await db_obj.write(commands)
+        db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,

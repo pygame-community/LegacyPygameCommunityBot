@@ -170,7 +170,7 @@ class UserCommand(BaseCommand):
         on -= datetime.timedelta(microseconds=on.microsecond)
 
         db_obj = db.DiscordDB("reminders")
-        db_data = await db_obj.get({})
+        db_data = db_obj.get({})
         if self.author.id not in db_data:
             db_data[self.author.id] = {}
 
@@ -186,7 +186,7 @@ class UserCommand(BaseCommand):
             self.channel.id,
             self.invoke_msg.id,
         )
-        await db_obj.write(db_data)
+        db_obj.write(db_data)
 
         await embed_utils.replace(
             self.response_msg,
@@ -276,7 +276,7 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!reminders, for users to view their reminders
         """
-        db_data = await db.DiscordDB("reminders").get({})
+        db_data = db.DiscordDB("reminders").get({})
 
         msg = "You have no reminders set"
         if self.author.id in db_data:
@@ -312,7 +312,7 @@ class UserCommand(BaseCommand):
         Implement pg!reminders_remove, for users to remove their reminders
         """
         db_obj = db.DiscordDB("reminders")
-        db_data = await db_obj.get({})
+        db_data = db_obj.get({})
         db_data_copy = copy.deepcopy(db_data)
         cnt = 0
         if reminder_ids:
@@ -335,7 +335,7 @@ class UserCommand(BaseCommand):
         elif self.author.id in db_data:
             cnt = len(db_data.pop(self.author.id))
 
-        await db_obj.write(db_data)
+        db_obj.write(db_data)
         await embed_utils.replace(
             self.response_msg,
             "Reminders removed!",
@@ -366,7 +366,7 @@ class UserCommand(BaseCommand):
         """
         db_obj = db.DiscordDB("clock")
 
-        timezones = await db_obj.get([])
+        timezones = db_obj.get([])
         if action:
             if member is None:
                 member = self.author
@@ -417,17 +417,19 @@ class UserCommand(BaseCommand):
                     "Failed to update clock!", f"Invalid action specifier {action}"
                 )
 
-            await db_obj.write(timezones)
+            db_obj.write(timezones)
 
         t = time.time()
+
         pygame.image.save(
             await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
         )
         common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
             file=discord.File(f"temp{t}.png")
         )
-        await self.response_msg.delete()
         os.remove(f"temp{t}.png")
+
+        await self.response_msg.delete()
 
     async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
@@ -569,7 +571,7 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!pet, to pet the bot
         """
-        fname = "die.gif" if (await emotion.get("anger")) > 60 else "pet.gif"
+        fname = "die.gif" if emotion.get("anger") > 60 else "pet.gif"
         await embed_utils.replace(
             self.response_msg,
             "",
@@ -579,7 +581,7 @@ class UserCommand(BaseCommand):
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
-        await emotion.update("happy", 2)
+        emotion.update("happy", 5)
 
     @fun_command
     async def cmd_vibecheck(self):
@@ -606,7 +608,7 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!sorry, to ask forgiveness from the bot after bonccing it
         """
-        anger = await emotion.get("anger")
+        anger = emotion.get("anger")
         if not anger:
             await embed_utils.replace(
                 self.response_msg,
@@ -623,7 +625,7 @@ class UserCommand(BaseCommand):
                 "Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
             )
-            await emotion.update("anger", -num)
+            emotion.update("anger", -num)
         else:
             await embed_utils.replace(
                 self.response_msg,
@@ -1045,7 +1047,7 @@ class UserCommand(BaseCommand):
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
         """
-        data = await db.DiscordDB("stream").get([])
+        data = db.DiscordDB("stream").get([])
         if not data:
             await embed_utils.replace(
                 self.response_msg,
@@ -1073,7 +1075,7 @@ class UserCommand(BaseCommand):
         you later with `pg!stream del`
         """
         ping_db = db.DiscordDB("stream")
-        data: list = await ping_db.get([])
+        data: list = ping_db.get([])
 
         if members:
             for mem in members:
@@ -1082,7 +1084,7 @@ class UserCommand(BaseCommand):
         elif self.author.id not in data:
             data.append(self.author.id)
 
-        await ping_db.write(data)
+        ping_db.write(data)
         await self.cmd_stream()
 
     @add_group("stream", "del")
@@ -1096,7 +1098,7 @@ class UserCommand(BaseCommand):
         you later with `pg!stream add`
         """
         ping_db = db.DiscordDB("stream")
-        data: list = await ping_db.get([])
+        data: list = ping_db.get([])
 
         try:
             if members:
@@ -1110,7 +1112,7 @@ class UserCommand(BaseCommand):
                 "Member was not previously added to the ping list",
             )
 
-        await ping_db.write(data)
+        ping_db.write(data)
         await self.cmd_stream()
 
     @add_group("stream", "ping")
@@ -1125,7 +1127,7 @@ class UserCommand(BaseCommand):
         The streamer name will be included and many people will be pinged so \
         don't make pranks with this command.
         """
-        data: list = await db.DiscordDB("stream").get([])
+        data: list = db.DiscordDB("stream").get([])
 
         msg = message.string if message else "Enjoy the stream!"
         ping = (
