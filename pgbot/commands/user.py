@@ -8,6 +8,7 @@ This file defines the command handler class for the user commands of the bot
 
 from __future__ import annotations
 
+import copy
 import datetime
 import os
 import random
@@ -180,12 +181,11 @@ class UserCommand(BaseCommand):
                 f"I cannot set more than {limit} reminders for you",
             )
 
-        db_data[self.author.id][on] = [
+        db_data[self.author.id][on] = (
             msg.string.strip(),
             self.channel.id,
             self.invoke_msg.id,
-            len(db_data[self.author.id]) + 1,
-        ]
+        )
         await db_obj.write(db_data)
 
         await embed_utils.replace(
@@ -281,15 +281,17 @@ class UserCommand(BaseCommand):
         msg = "You have no reminders set"
         if self.author.id in db_data:
             msg = ""
-            for on, (reminder, chan_id, _, reminder_id) in db_data[
+            cnt = 1
+            for on, (reminder, chan_id, _) in db_data[
                 self.author.id
             ].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
                 msg += (
-                    f"Reminder ID: `{reminder_id}`\n"
+                    f"Reminder ID: `{cnt}`\n"
                     f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
                 )
+                cnt += 1
 
         await embed_utils.replace(
             self.response_msg,
@@ -313,34 +315,27 @@ class UserCommand(BaseCommand):
         """
         db_obj = db.DiscordDB("reminders")
         db_data = await db_obj.get({})
+        db_data_copy = copy.deepcopy(db_data)
         cnt = 0
         if reminder_ids:
-            for reminder_id in reminder_ids:
+            for reminder_id in sorted(set(reminder_ids), reverse=True):
                 if self.author.id in db_data:
-                    found_id = False
-                    reminder_to_pop = None
-                    for dt, reminder in db_data[self.author.id].items():
-                        if reminder[3] == reminder_id:
-                            found_id = True
-                            reminder_to_pop = dt
-                    if found_id:
-                        cnt += 1
-                        db_data[self.author.id].pop(reminder_to_pop)
-                    else:
-                        raise BotException(
-                            "Invalid Reminder ID!",
-                            "Reminder ID was not an existing reminder ID",
-                        )
+                    for i, dt in enumerate(db_data_copy[self.author.id], 1):
+                        if i == reminder_id:
+                            db_data[self.author.id].pop(dt)
+                            cnt += 1
+                            break
+                if reminder_id > len(db_data_copy[self.author.id]) or reminder_id < 0:
+                    raise BotException(
+                        "Invalid Reminder ID!",
+                        "Reminder ID was not an existing reminder ID",
+                    )
 
             if self.author.id in db_data and not db_data[self.author.id]:
                 db_data.pop(self.author.id)
 
         elif self.author.id in db_data:
             cnt = len(db_data.pop(self.author.id))
-
-        for reminders in db_data.values():
-            for count, reminder in enumerate(reminders.values(), 1):
-                reminder[3] = count
 
         await db_obj.write(db_data)
         await embed_utils.replace(
