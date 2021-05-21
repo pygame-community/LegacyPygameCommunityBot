@@ -8,6 +8,7 @@ This file defines the command handler class for the user commands of the bot
 
 from __future__ import annotations
 
+import copy
 import datetime
 import os
 import random
@@ -280,10 +281,15 @@ class UserCommand(BaseCommand):
         msg = "You have no reminders set"
         if self.author.id in db_data:
             msg = ""
+            cnt = 0
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
-                msg += f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
+                msg += (
+                    f"Reminder ID: `{cnt}`\n"
+                    f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
+                )
+                cnt += 1
 
         await embed_utils.replace(
             self.response_msg,
@@ -292,33 +298,36 @@ class UserCommand(BaseCommand):
         )
 
     @add_group("reminders", "remove")
-    async def cmd_reminders_remove(self, *datetimes: datetime.datetime):
+    async def cmd_reminders_remove(self, *reminder_ids: int):
         """
         ->type Reminders
         ->signature pg!reminders remove [*datetimes]
         ->description Remove reminders
         ->extended description
         Remove variable number of reminders, corresponding to each datetime argument
-        The date-time argument must be in ISO format, UTC time (see example command)
+        The reminder id argument must be an integer
         If no arguments are passed, the command clears all reminders
-        ->example command pg!reminder remove "2021-8-12 11:19:36"
+        ->example command pg!reminder remove 1
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
         db_obj = db.DiscordDB("reminders")
         db_data = await db_obj.get({})
+        db_data_copy = copy.deepcopy(db_data)
         cnt = 0
-        if datetimes:
-            for dt in datetimes:
+        if reminder_ids:
+            for reminder_id in sorted(set(reminder_ids), reverse=True):
                 if self.author.id in db_data:
-                    if dt in db_data[self.author.id]:
-                        cnt += 1
-                        db_data[self.author.id].pop(dt)
-                    else:
-                        raise BotException(
-                            "Invalid datetime argument!",
-                            "Datetime argument was not a previously set reminder",
-                        )
+                    for i, dt in enumerate(db_data_copy[self.author.id]):
+                        if i == reminder_id:
+                            db_data[self.author.id].pop(dt)
+                            cnt += 1
+                            break
+                if reminder_id >= len(db_data_copy[self.author.id]) or reminder_id < 0:
+                    raise BotException(
+                        "Invalid Reminder ID!",
+                        "Reminder ID was not an existing reminder ID",
+                    )
 
             if self.author.id in db_data and not db_data[self.author.id]:
                 db_data.pop(self.author.id)

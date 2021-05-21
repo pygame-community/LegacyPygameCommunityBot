@@ -108,7 +108,6 @@ class EmsudoCommand(BaseCommand):
                         color=0xFF0000,
                     )
                     continue
-                    
 
                 embed_data = await attachment_obj.read()
                 embed_data = embed_data.decode()
@@ -235,7 +234,7 @@ class EmsudoCommand(BaseCommand):
                             color=0xFF0000,
                         )
                         continue
-              
+
                 if arg_count > 5:
                     if isinstance(args[5], (tuple, list)):
                         if len(args[5]) == 2:
