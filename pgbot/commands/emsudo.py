@@ -980,58 +980,58 @@ class EmsudoCommand(BaseCommand):
                     "No embed data found in message.",
                 )
 
-            embed_dict = msg.embeds[0].to_dict()
+            for embed in msg.embeds:
+                embed_dict = embed.to_dict()
+                if reduced_embed_attr_keys:
+                    for key in tuple(embed_dict.keys()):
+                        if key not in reduced_embed_attr_keys:
+                            del embed_dict[key]
 
-            if reduced_embed_attr_keys:
-                for key in tuple(embed_dict.keys()):
-                    if key not in reduced_embed_attr_keys:
-                        del embed_dict[key]
+                    if (
+                        "fields" in reduced_embed_attr_keys
+                        and "fields" in embed_dict
+                        and filtered_field_indices
+                    ):
+                        embed_dict["fields"] = [
+                            embed_dict["fields"][idx]
+                            for idx in sorted(filtered_field_indices)
+                        ]
 
-                if (
-                    "fields" in reduced_embed_attr_keys
-                    and "fields" in embed_dict
-                    and filtered_field_indices
-                ):
-                    embed_dict["fields"] = [
-                        embed_dict["fields"][idx]
-                        for idx in sorted(filtered_field_indices)
-                    ]
-
-            with io.StringIO() as fobj:
-                embed_utils.export_embed_data(
-                    embed_dict, fp=fobj, indent=4, as_json=json
-                )
-                fobj.seek(0)
-                await self.response_msg.channel.send(
-                    embed=await embed_utils.send_2(
-                        None,
-                        author_name="Embed Data",
-                        title=(
-                            embed_dict.get(
-                                "title", "(add a title by editing this embed)"
+                with io.StringIO() as fobj:
+                    embed_utils.export_embed_data(
+                        embed_dict, fp=fobj, indent=4, as_json=json
+                    )
+                    fobj.seek(0)
+                    await self.response_msg.channel.send(
+                        embed=await embed_utils.send_2(
+                            None,
+                            author_name="Embed Data",
+                            title=(
+                                embed_dict.get(
+                                    "title", "(add a title by editing this embed)"
+                                )
                             )
-                        )
-                        if len(msgs) < 2
-                        else "(add a title by editing this embed)",
-                        fields=(
-                            (
-                                "\u2800",
-                                f"**[View Original Message]({msg.jump_url})**",
-                                True,
+                            if len(msgs) < 2
+                            else "(add a title by editing this embed)",
+                            fields=(
+                                (
+                                    "\u2800",
+                                    f"**[View Original Message]({msg.jump_url})**",
+                                    True,
+                                ),
                             ),
                         ),
-                    ),
-                    file=discord.File(
-                        fobj,
-                        filename=(
-                            "embeddata.py"
-                            if py
-                            else "embeddata.json"
-                            if json
-                            else "embeddata.txt"
+                        file=discord.File(
+                            fobj,
+                            filename=(
+                                "embeddata.py"
+                                if py
+                                else "embeddata.json"
+                                if json
+                                else "embeddata.txt"
+                            ),
                         ),
-                    ),
-                )
+                    )
             await asyncio.sleep(0)
 
         await self.response_msg.delete()
