@@ -281,7 +281,7 @@ class UserCommand(BaseCommand):
         msg = "You have no reminders set"
         if self.author.id in db_data:
             msg = ""
-            cnt = 1
+            cnt = 0
             for on, (reminder, chan_id, _) in db_data[
                 self.author.id
             ].items():
@@ -320,7 +320,7 @@ class UserCommand(BaseCommand):
         if reminder_ids:
             for reminder_id in sorted(set(reminder_ids), reverse=True):
                 if self.author.id in db_data:
-                    for i, dt in enumerate(db_data_copy[self.author.id], 1):
+                    for i, dt in enumerate(db_data_copy[self.author.id]):
                         if i == reminder_id:
                             db_data[self.author.id].pop(dt)
                             cnt += 1
