@@ -282,9 +282,7 @@ class UserCommand(BaseCommand):
         if self.author.id in db_data:
             msg = ""
             cnt = 0
-            for on, (reminder, chan_id, _) in db_data[
-                self.author.id
-            ].items():
+            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
                 msg += (
