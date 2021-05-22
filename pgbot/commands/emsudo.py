@@ -226,13 +226,9 @@ class EmsudoCommand(BaseCommand):
                         fields = embed_utils.get_fields(*args[4])
                         for f in fields:
                             if isinstance(f, list):
-                                util_send_embed_args.update(
-                                    fields=fields
-                                )
+                                util_send_embed_args.update(fields=fields)
                             else:
-                                util_send_embed_args.update(
-                                    fields=[fields]
-                                )
+                                util_send_embed_args.update(fields=[fields])
                             break
                     except TypeError:
                         await embed_utils.send_2(
@@ -488,18 +484,14 @@ class EmsudoCommand(BaseCommand):
                     fields = embed_utils.get_fields(*args[4])
                     for f in fields:
                         if isinstance(f, list):
-                            util_replace_embed_args.update(
-                                fields=fields
-                            )
+                            util_replace_embed_args.update(fields=fields)
                         else:
-                            util_replace_embed_args.update(
-                                fields=[fields]
-                            )
+                            util_replace_embed_args.update(fields=[fields])
                         break
                 except TypeError:
                     await embed_utils.send_2(
                         self.response_msg.channel,
-                        title=f"Input {i}: Invalid format for field string(s)!",
+                        title=f"Invalid format for field string(s)!",
                         description=' The format should be `"<name|value|inline>"`',
                         color=0xFF0000,
                     )
@@ -793,13 +785,9 @@ class EmsudoCommand(BaseCommand):
                         fields = embed_utils.get_fields(*args[4])
                         for f in fields:
                             if isinstance(f, list):
-                                util_edit_embed_args.update(
-                                    fields=fields
-                                )
+                                util_edit_embed_args.update(fields=fields)
                             else:
-                                util_edit_embed_args.update(
-                                    fields=[fields]
-                                )
+                                util_edit_embed_args.update(fields=[fields])
                             break
                     except TypeError:
                         await embed_utils.send_2(
@@ -913,6 +901,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_get(
         self,
         *msgs: discord.Message,
+        a: String = String(""),
         attributes: String = String(""),
         name: String = String("(add a title by editing this embed)"),
         json: bool = True,
@@ -962,7 +951,9 @@ class EmsudoCommand(BaseCommand):
         filtered_field_indices = []
         offset_idx = None
 
-        attributes = attributes.string
+        attributes = (
+            attributes.string if attributes.string else a.string if a.string else None
+        )
         attrib_tuple = attributes.split()
 
         for i in range(len(attrib_tuple)):

@@ -335,10 +335,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     fields = []
 
-    msg_link = (
-        "[View](https://discordapp.com/channels/"
-        f"{msg.jump_url})"
-    )
+    msg_link = "[View](https://discordapp.com/channels/" f"{msg.jump_url})"
 
     attachments = ""
     if msg.attachments:
@@ -355,6 +352,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     fields.append(["**Description**", msg, True])
 
     return title, fields
+
 
 def code_block(string: str, max_characters=2048):
     """

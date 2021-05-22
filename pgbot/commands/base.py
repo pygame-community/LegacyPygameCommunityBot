@@ -391,7 +391,7 @@ class BaseCommand:
                     return await self.guild.fetch_member(utils.filter_id(arg))
                 except discord.errors.NotFound:
                     raise ValueError()
-            
+
             elif anno == "discord.User":
                 try:
                     return await common.bot.fetch_user(utils.filter_id(arg))

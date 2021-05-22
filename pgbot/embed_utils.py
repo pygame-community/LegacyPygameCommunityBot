@@ -1073,7 +1073,9 @@ def get_member_info_embed(member: Union[discord.Member, discord.User]):
     """
 
     return create(
-        title="__"+ ("Member" if isinstance(member, discord.Member) else "User") + " Info__",
+        title="__"
+        + ("Member" if isinstance(member, discord.Member) else "User")
+        + " Info__",
         description=get_member_info_str(member),
         thumbnail_url=str(member.avatar_url),
     )
