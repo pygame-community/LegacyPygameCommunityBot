@@ -366,14 +366,11 @@ class UserCommand(BaseCommand):
         """
         db_obj = db.DiscordDB("clock")
 
-        timezones = db_obj.get([])
+        timezones = db_obj.get({})
         if action:
             if member is None:
                 member = self.author
-                for mem_id, _, _ in timezones:
-                    if mem_id == member.id:
-                        break
-                else:
+                if member.id not in timezones:
                     raise BotException(
                         "Cannot update clock!",
                         "You cannot run clock update commands because you are "
@@ -386,27 +383,25 @@ class UserCommand(BaseCommand):
                         "Failed to update clock!", "Timezone offset out of range"
                     )
 
-                for cnt, (mem_id, _, _) in enumerate(timezones):
-                    if mem_id == member.id:
-                        timezones[cnt][1] = timezone
-                        if color is not None:
-                            timezones[cnt][2] = int(color)
-                        break
+                if member.id in timezones:
+                    timezones[member.id][0] = timezone
+                    if color is not None:
+                        timezones[member.id][1] = int(color)
                 else:
                     if color is None:
                         raise BotException(
                             "Failed to update clock!",
                             "Color argument is required when adding new people",
                         )
-                    timezones.append([member.id, timezone, int(color)])
-                    timezones.sort(key=lambda x: x[1])
+                    timezones[member.id] = [timezone, int(color)]
+
+                # sort timezones dict after an update operation
+                timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
 
             elif action == "remove":
-                for cnt, (mem_id, _, _) in enumerate(timezones):
-                    if mem_id == member.id:
-                        timezones.pop(cnt)
-                        break
-                else:
+                try:
+                    timezones.pop(member.id)
+                except KeyError:
                     raise BotException(
                         "Failed to update clock!",
                         "Cannot remove non-existing person from clock",
@@ -446,7 +441,7 @@ class UserCommand(BaseCommand):
 
     async def cmd_exec(self, code: CodeBlock):
         """
-        ->type Run code
+        ->type Play With Me :snake:
         ->signature pg!exec <python code block>
         ->description Run python code in an isolated environment.
         ->extended description

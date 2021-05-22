@@ -34,13 +34,28 @@ class AdminCommand(UserCommand, EmsudoCommand):
     Base class for all admin commands
     """
 
-    async def cmd_see_db(self, name: str):
+    @add_group("db")
+    async def cmd_db(self):
         """
         ->type Admin commands
-        ->signature pg!see_db <name>
+        ->signature pg!db
+        ->description List contents of DB (table names)
+        -----
+        Implement pg!db, list contents of DB
+        """
+
+        await embed_utils.replace(
+            self.response_msg, "Tables:", "\n".join(db.db_obj_cache)
+        )
+
+    @add_group("db", "read")
+    async def cmd_db_read(self, name: str):
+        """
+        ->type Admin commands
+        ->signature pg!db read <name>
         ->description Visualize DB
         -----
-        Implement pg!see_db, to visualise DB messages
+        Implement pg!db_read, to visualise DB messages
         """
 
         with io.StringIO() as fobj:
@@ -57,6 +72,45 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 f"Here are the contents of the table `{name}`:",
                 file=discord.File(fobj, filename=f"{name}_db.py"),
             )
+
+    @add_group("db", "write")
+    async def cmd_db_write(self, name: str, data: CodeBlock):
+        """
+        ->type Admin commands
+        ->signature pg!db write <name> <data>
+        ->description Overwrite DB. Do not use unless you know what you are doing
+        -----
+        Implement pg!db_write, to overwrite DB messages
+        """
+
+        db.DiscordDB(name).write(eval(data.code))
+
+        await embed_utils.replace(
+            self.response_msg,
+            "DB overwritten!",
+            "DB contents have been overwritten successfully",
+        )
+
+    @add_group("db", "del")
+    async def cmd_db_del(self, name: str):
+        """
+        ->type Admin commands
+        ->signature pg!db del <name>
+        ->description Delete DB. Do not use unless you know what you are doing
+        -----
+        Implement pg!db_del, to delete DB messages
+        """
+
+        try:
+            db.db_obj_cache.pop(name)
+        except KeyError:
+            raise BotException("Could not delete DB", "No such DB exists")
+
+        await embed_utils.replace(
+            self.response_msg,
+            "DB overwritten!",
+            "DB contents have been overwritten successfully",
+        )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
         """
@@ -115,7 +169,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         member: Optional[discord.Member] = None,
     ):
         """
-        ->type Admin commands
+        ->type Get help
         ->signature pg!clock [action] [timezone] [color] [member]
         ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
         ->extended description
@@ -344,7 +398,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->type More admin commands
         ->signature pg!sudo_get <message> <message>... [content_attachment] [info] [attachments] [embeds]
         ->description Get the text of messages through the bot
-
+        ->extended description
         Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
         to the channel where this command was invoked.
         -----
@@ -466,7 +520,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->type More admin commands
         ->signature pg!sudo_clone <msg> <msg>... [embeds] [attachments] [spoiler] [info] [author]
         ->description Clone a message through the bot
-
+        ->extended description
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
@@ -887,7 +941,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         thumbnail: Optional[String] = None,
     ):
         """
-        ->type Admin commands
+        ->type Other commands
         ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
@@ -921,7 +975,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
-        ->type Admin commands
+        ->type Other commands
         ->signature pg!poll close <msg> [color]
         ->description Close an ongoing poll.
         ->extended description
@@ -933,7 +987,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     @add_group("stream", "add")
     async def cmd_stream_add(self, *members: discord.Member):
         """
-        ->type Admin commands
+        ->type Reminders
         ->signature pg!stream add [*members]
         ->description Add user(s) to the ping list for stream
         ->extended description
@@ -947,7 +1001,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     @add_group("stream", "del")
     async def cmd_stream_del(self, *members: discord.Member):
         """
-        ->type Admin commands
+        ->type Reminders
         ->signature pg!stream del [*members]
         ->description Remove user(s) to the ping list for stream
         ->extended description

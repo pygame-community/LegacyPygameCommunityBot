@@ -103,26 +103,12 @@ async def on_member_leave(member: discord.Member):
     """
     This function silently removes users from database messages
     """
-    member = member.id
-
-    ping = db.DiscordDB("stream")
-    data: list = ping.get([])
-    if member in data:
-        data.remove(member)
-        ping.write(data)
-
-    reminders = db.DiscordDB("reminders")
-    data: dict = reminders.get({})
-    if member in data:
-        data.pop(member)
-        reminders.write(data)
-
-    clock = db.DiscordDB("clock")
-    data = clock.get([])
-    for cnt, (mem, _, _) in enumerate(data):
-        if mem == member:
-            data.pop(cnt)
-            clock.write(data)
+    for table_name in ("stream", "reminders", "clock"):
+        db_obj = db.DiscordDB(table_name)
+        data = db_obj.get([])
+        if member.id in data:
+            data.remove(member)
+            db_obj.write(data)
 
 
 @common.bot.event
