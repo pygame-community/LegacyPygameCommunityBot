@@ -146,13 +146,13 @@ async def on_message(msg: discord.Message):
 
         # Check for these specific messages, do not try to generalise, because we do not
         # want the bot spamming the dario quote
-        if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
-            # ded chat makes snek sad
-            await msg.channel.send(
-                "good." if emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
-                allowed_mentions=no_mentions,
-            )
-            emotion.update("happy", -4)
+        # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
+        #     # ded chat makes snek sad
+        #     await msg.channel.send(
+        #         "good." if emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
+        #         allowed_mentions=no_mentions,
+        #     )
+        #     emotion.update("happy", -4)
 
         if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
             if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
