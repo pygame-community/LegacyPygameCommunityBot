@@ -356,6 +356,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
 
     return title, fields
 
+
 def code_block(string: str, max_characters=2048):
     """
     Formats text into discord code blocks
