@@ -10,6 +10,7 @@ This file defines user_clock function, to get image of the clock
 import math
 import os
 
+import discord
 import pygame
 
 
@@ -88,7 +89,7 @@ def generate_arrow_points(
     )
 
 
-async def user_clock(t, clock_timezones, guild):
+async def user_clock(t: float, clock_timezones: dict, guild: discord.Guild):
     """
     Generate a 24 hour clock for special server roles
     """
@@ -125,7 +126,7 @@ async def user_clock(t, clock_timezones, guild):
 
     tx = ty = 0
     tz_and_col = {}
-    for mem, offset, color in clock_timezones:
+    for mem, (offset, color) in clock_timezones.items():
         mem = await guild.fetch_member(mem)
         # try to use nickname, if it is too long, fallback to name
         # 14 happens to be the sweet spot, any longer and the name overflows

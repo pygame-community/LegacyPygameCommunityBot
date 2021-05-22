@@ -1059,7 +1059,7 @@ class EmsudoCommand(BaseCommand):
         data: Union[CodeBlock, String],
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_add_field [*args]
         ->description Add an embed field through the bot
         ->extended description
@@ -1161,7 +1161,7 @@ class EmsudoCommand(BaseCommand):
         data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_add_fields <message> [data]
         ->description Add embed fields through the bot
         ->extended description
@@ -1316,7 +1316,7 @@ class EmsudoCommand(BaseCommand):
         data: Union[CodeBlock, String],
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_insert_field [*args]
         ->description Insert an embed field through the bot
         ->extended description
@@ -1419,7 +1419,7 @@ class EmsudoCommand(BaseCommand):
         data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_insert_fields [*args]
         ->description Insert embed fields through the bot
         ->extended description
@@ -1577,7 +1577,7 @@ class EmsudoCommand(BaseCommand):
         data: Union[CodeBlock, String],
     ):
         """
-        ->type More admin commands
+        ->type More emsudo commands
         ->signature pg!emsudo_edit_field [*args]
         ->description Replace an embed field through the bot
         ->extended description
@@ -1679,7 +1679,7 @@ class EmsudoCommand(BaseCommand):
         data: Optional[Union[discord.Message, CodeBlock, String]] = None,
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_edit_fields [*args]
         ->description Edit multiple embed fields through the bot
         ->extended description
@@ -1836,7 +1836,7 @@ class EmsudoCommand(BaseCommand):
         data: Union[CodeBlock, String],
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_replace [*args]
         ->description Replace an embed field through the bot
         ->extended description
@@ -1936,7 +1936,7 @@ class EmsudoCommand(BaseCommand):
         self, msg: discord.Message, index_a: int, index_b: int
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_swap_fields [*args]
         ->description Swap embed fields through the bot
         ->extended description
@@ -1968,7 +1968,7 @@ class EmsudoCommand(BaseCommand):
         clone_to: Optional[int] = None,
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_clone_fields [*args]
         ->description Clone multiple embed fields through the bot
         ->extended description
@@ -2022,7 +2022,7 @@ class EmsudoCommand(BaseCommand):
         *indices: Union[range, int],
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_remove_fields [*args]
         ->description Remove an embed field through the bot
         ->extended description
@@ -2072,7 +2072,7 @@ class EmsudoCommand(BaseCommand):
         msg: discord.Message,
     ):
         """
-        ->type emsudo commands
+        ->type More emsudo commands
         ->signature pg!emsudo_clear_fields [*args]
         ->description Remove all embed fields through the bot
         ->extended description
