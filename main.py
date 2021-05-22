@@ -105,9 +105,9 @@ async def on_member_leave(member: discord.Member):
     """
     for table_name in ("stream", "reminders", "clock"):
         db_obj = db.DiscordDB(table_name)
-        data = db_obj.get([])
+        data = db_obj.get({})
         if member.id in data:
-            data.remove(member)
+            data.pop(member)
             db_obj.write(data)
 
 
