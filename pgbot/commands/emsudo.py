@@ -223,9 +223,17 @@ class EmsudoCommand(BaseCommand):
 
                 if arg_count > 4:
                     try:
-                        util_send_embed_args.update(
-                            fields=embed_utils.get_fields(*args[4])
-                        )
+                        fields = embed_utils.get_fields(*args[4])
+                        for f in fields:
+                            if isinstance(f, list):
+                                util_send_embed_args.update(
+                                    fields=fields
+                                )
+                            else:
+                                util_send_embed_args.update(
+                                    fields=[fields]
+                                )
+                            break
                     except TypeError:
                         await embed_utils.send_2(
                             self.response_msg.channel,
@@ -477,13 +485,23 @@ class EmsudoCommand(BaseCommand):
 
             if arg_count > 4:
                 try:
-                    util_replace_embed_args.update(
-                        fields=embed_utils.get_fields(*args[4])
-                    )
+                    fields = embed_utils.get_fields(*args[4])
+                    for f in fields:
+                        if isinstance(f, list):
+                            util_replace_embed_args.update(
+                                fields=fields
+                            )
+                        else:
+                            util_replace_embed_args.update(
+                                fields=[fields]
+                            )
+                        break
                 except TypeError:
-                    raise BotException(
-                        "Invalid format for field string(s)!",
-                        ' The format should be `"<name|value|inline>"`',
+                    await embed_utils.send_2(
+                        self.response_msg.channel,
+                        title=f"Input {i}: Invalid format for field string(s)!",
+                        description=' The format should be `"<name|value|inline>"`',
+                        color=0xFF0000,
                     )
 
             if arg_count > 5:
@@ -772,9 +790,17 @@ class EmsudoCommand(BaseCommand):
 
                 if arg_count > 4:
                     try:
-                        util_edit_embed_args.update(
-                            fields=embed_utils.get_fields(*args[4])
-                        )
+                        fields = embed_utils.get_fields(*args[4])
+                        for f in fields:
+                            if isinstance(f, list):
+                                util_edit_embed_args.update(
+                                    fields=fields
+                                )
+                            else:
+                                util_edit_embed_args.update(
+                                    fields=[fields]
+                                )
+                            break
                     except TypeError:
                         await embed_utils.send_2(
                             self.response_msg.channel,
