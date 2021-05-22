@@ -952,7 +952,7 @@ class EmsudoCommand(BaseCommand):
         offset_idx = None
 
         attributes = (
-            attributes.string if attributes.string else a.string if a.string else None
+            attributes.string if attributes.string else a.string if a.string else ""
         )
         attrib_tuple = attributes.split()
 
