@@ -30,6 +30,9 @@ def get_perms(mem: discord.Member):
         elif role.id in common.PRIV_ROLES:
             is_priv = True
 
+    if mem.id in common.TEST_USER_IDS:
+        return True, True
+
     return False, is_priv
 
 
