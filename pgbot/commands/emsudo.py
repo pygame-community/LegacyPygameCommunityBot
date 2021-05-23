@@ -43,7 +43,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudos, for admins to send multiple embeds via the bot
         """
 
+        data_count = len(datas)
         for i, data in enumerate(datas):
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title=f"Your command is being processed:",
+                    description=f"`{i}/{data_count}` inputs processed\n"
+                    f"{(i/data_count)*100:.01f}% | "
+                    + utils.progress_bar(i/data_count, divisions=30)
+                )
+            )
             await self.invoke_msg.channel.trigger_typing()
 
             util_send_embed_args = dict(
@@ -262,6 +271,15 @@ class EmsudoCommand(BaseCommand):
 
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
             await asyncio.sleep(0)
+
+            if i+1 == data_count:
+                await self.response_msg.edit(
+                    embed=embed_utils.create(
+                        title="Processing Complete",
+                        description=f"`{data_count}/{data_count}` inputs processed\n"
+                        f"100% | " + utils.progress_bar(1.0, divisions=30)
+                    )
+                )
 
         if not datas:
             attachment_msg = self.invoke_msg
@@ -563,7 +581,16 @@ class EmsudoCommand(BaseCommand):
                 "No message IDs given as input.",
             )
 
+        msg_count = len(msgs)
         for i, msg in enumerate(msgs):
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title=f"Your command is being processed:",
+                    description=f"`{i}/{msg_count}` messages processed\n"
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i/msg_count, divisions=30)
+                )
+            )
             await self.response_msg.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
@@ -573,7 +600,15 @@ class EmsudoCommand(BaseCommand):
             await msg.edit(embed=None)
             await asyncio.sleep(0)
 
-        await self.response_msg.delete()
+        await self.response_msg.edit(
+            embed=embed_utils.create(
+                title=f"Your command is being processed:",
+                description=f"`{msg_count}/{msg_count}` messages processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30)
+            )
+        )
+
+        await self.response_msg.delete(delay=10.0)
         await self.invoke_msg.delete()
 
     async def cmd_emsudo_edit(
@@ -599,7 +634,16 @@ class EmsudoCommand(BaseCommand):
 
         msg_embed = msg.embeds[0]
 
+        data_count = len(datas)
         for i, data in enumerate(datas):
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title=f"Your command is being processed:",
+                    description=f"`{i}/{data_count}` inputs processed\n"
+                    f"{(i/data_count)*100:.01f}% | "
+                    + utils.progress_bar(i/data_count, divisions=30)
+                )
+            )
             await self.invoke_msg.channel.trigger_typing()
 
             util_edit_embed_args = dict(
@@ -819,6 +863,16 @@ class EmsudoCommand(BaseCommand):
                 if arg_count > 6:
                     util_edit_embed_args.update(timestamp=args[6])
 
+                
+            if i+1 == data_count:
+                await self.response_msg.edit(
+                    embed=embed_utils.create(
+                        title="Processing Complete",
+                        description=f"`{data_count}/{data_count}` messages processed\n"
+                        f"100% | " + utils.progress_bar(1.0, divisions=30)
+                    )
+                )
+
             await embed_utils.edit_2(msg, msg_embed, **util_edit_embed_args)
             await asyncio.sleep(0)
 
@@ -920,8 +974,8 @@ class EmsudoCommand(BaseCommand):
         (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
         ->example command pg!emsudo_get 123456789123456789 title
-        pg!emsudo_get 123456789123456789/98765432198765444321 "description fields"
         pg!emsudo_get 123456789123456789/98765432198765444321
+        pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields author"
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
@@ -952,7 +1006,7 @@ class EmsudoCommand(BaseCommand):
         offset_idx = None
 
         attributes = (
-            attributes.string if attributes.string else a.string if a.string else ""
+            a.string if a.string else attributes.string if attributes.string else ""
         )
         attrib_tuple = attributes.split()
 
@@ -989,7 +1043,16 @@ class EmsudoCommand(BaseCommand):
                         "Invalid embed attribute names!",
                     )
 
+        msg_count = len(msgs)
         for i, msg in enumerate(msgs):
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title=f"Your command is being processed:",
+                    description=f"`{i}/{msg_count}` messages processed\n"
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i/msg_count, divisions=30)
+                )
+            )
             await self.response_msg.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
@@ -1051,7 +1114,15 @@ class EmsudoCommand(BaseCommand):
                     )
             await asyncio.sleep(0)
 
-        await self.response_msg.delete()
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title="Processing Complete",
+                    description=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30)
+                )
+            )
+
+        await self.response_msg.delete(delay=10.0)
 
     async def cmd_emsudo_add_field(
         self,
@@ -1165,11 +1236,6 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_add_fields <message> [data]
         ->description Add embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_add_fields ({target_message_id}, {field_string_tuple})
-        pg!emsudo_add_fields ({target_message_id}, {field_dict_tuple})
-        pg!emsudo_add_fields ({target_message_id}, {field_string_or_dict_tuple})
-        ```
         Add multiple embed fields to the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_add_fields, for admins to add multiple fields to embeds sent via the bot
@@ -1317,13 +1383,9 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_insert_field [*args]
+        ->signature pg!emsudo_insert_field <message> <index> [data]
         ->description Insert an embed field through the bot
         ->extended description
-        ```
-        pg!emsudo_insert_field ({target_message_id}, {index}, {field_string})
-        pg!emsudo_insert_field ({target_message_id}, {index}, {field_dict})
-        ```
         Insert an embed field at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_insert_field, for admins to insert fields into embeds sent via the bot
@@ -1420,16 +1482,9 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_insert_fields [*args]
+        ->signature pg!emsudo_insert_fields <message> <index> [data]
         ->description Insert embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_insert_fields {target_message_id} {index} {channel_id}
-        pg!emsudo_insert_fields {target_message_id} {index} {channel_id} {message_id}
-        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_tuple})
-        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_dict_tuple})
-        pg!emsudo_insert_fields ({target_message_id}, {index}, {field_string_or_dict_tuple})
-        ```
         Insert multiple embed fields at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_insert_fields, for admins to insert multiple fields to embeds sent via the bot
@@ -1680,17 +1735,12 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_edit_fields [*args]
+        ->signature pg!emsudo_edit_fields <message> [data]
         ->description Edit multiple embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_edit_fields ({target_message_id}, {field_string_tuple})
-        pg!emsudo_edit_fields ({target_message_id}, {field_dict_tuple})
-        pg!emsudo_edit_fields ({target_message_id}, {field_string_or_dict_tuple})
-        ```
         Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
         Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
-        to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at it's index when passed to this command.
+        to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
         -----
         Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
         """

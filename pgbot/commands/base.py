@@ -518,9 +518,9 @@ class BaseCommand:
             raise BotException(
                 "Cannot execute comamand!",
                 f"The command '{cmd}' has been temporarily been blocked from "
-                + "running, while wizards are casting their spells on it!\n"
-                + "Please try running the command after the maintenance work "
-                + "has been finished",
+                "running, while wizards are casting their spells on it!\n"
+                "Please try running the command after the maintenance work "
+                "has been finished",
             )
 
         is_group = False
