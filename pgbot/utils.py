@@ -333,9 +333,6 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     Formats an entries message to be reposted in discussion channel
     """
     title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
-    fields = []
-
-    msg_link = "[View](https://discordapp.com/channels/" f"{msg.jump_url})"
 
     attachments = ""
     if msg.attachments:
@@ -344,13 +341,14 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     else:
         attachments = "No attachments"
 
-    msg = msg.content if msg.content else "No description provided."
+    desc = msg.content if msg.content else "No description provided."
 
-    fields.append(["**Posted by**", msg.author.mention, True])
-    fields.append(["**Original msg.**", msg_link, True])
-    fields.append(["**Attachments**", attachments, True])
-    fields.append(["**Description**", msg, True])
-
+    fields = [
+        ["**Posted by**", msg.author.mention, True],
+        ["**Original msg.**", f"[View]({msg.jump_url})", True],
+        ["**Attachments**", attachments, True],
+        ["**Description**", desc, True],
+    ]
     return title, fields
 
 
