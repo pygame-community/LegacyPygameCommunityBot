@@ -386,6 +386,10 @@ class BaseCommand:
                     return range(*splits)
                 raise ValueError()
 
+            elif anno == "discord.Object":
+                # Generic discord API Object that has an ID
+                return discord.Object(utils.filter_id(arg))
+
             elif anno == "discord.Member":
                 try:
                     return await self.guild.fetch_member(utils.filter_id(arg))
@@ -473,11 +477,17 @@ class BaseCommand:
                     "parenthesis"
                 )
 
+            elif anno == "discord.Object":
+                typ = "a generic discord Object, which has an ID"
+
             elif anno == "discord.Member":
                 typ = (
                     "an id of a person or a mention to them \nPlease make sure"
                     "that the ID is a valid ID of a member in the server"
                 )
+
+            elif anno == "discord.User":
+                typ = "an id of a person"
 
             elif anno == "discord.TextChannel":
                 typ = (
