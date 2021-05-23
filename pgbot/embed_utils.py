@@ -300,8 +300,6 @@ def create(
         title=title, type=embed_type, url=url, description=description, color=color
     )
 
-    embed_dict = {}
-
     if timestamp:
         if isinstance(timestamp, str):
             embed.timestamp = datetime.datetime.fromisoformat(timestamp)

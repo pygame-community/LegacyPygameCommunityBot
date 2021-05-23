@@ -525,10 +525,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await self.response_msg.delete()
 
-    async def cmd_sudo_id(
+    async def cmd_sudo_fetch(
         self,
         origin: discord.TextChannel,
         quantity: int,
+        urls: bool = False,
+        pinned: bool = False,
         before: Optional[Union[int, datetime.datetime]] = None,
         after: Optional[Union[int, datetime.datetime]] = None,
         around: Optional[Union[int, datetime.datetime]] = None,
@@ -541,7 +543,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->type Admin commands
         ->signature pg!sudo_ids <origin channel> <quantity> [mode] [destination channel]
         [before] [after] [around] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
-        ->description Archive messages to another channel
+        ->description Fetch messages IDs or URLs
         -----
         Implement pg!sudo_id, for admins to fetch several message IDs at once
         """
@@ -552,68 +554,99 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         destination = self.channel
 
-        if isinstance(before, int):
-            try:
-                before = await origin.fetch_message(before)
-            except discord.NotFound:
+        if pinned:
+            messages = await origin.pins()
+            if not messages:
                 raise BotException(
-                    "Invalid `before` argument",
-                    "`before` has to be an ID to a message from the origin channel",
+                    "No pinned messages found",
+                    "No pinned messages were found in the specified channel.",
                 )
+            
+            if not oldest_first:
+                messages.reverse()
 
-        if isinstance(after, int):
-            try:
-                after = await origin.fetch_message(after)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `after` argument",
-                    "`after` has to be an ID to a message from the origin channel",
-                )
-
-        if isinstance(around, int):
-            try:
-                around = await origin.fetch_message(around)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `around` argument",
-                    "`around` has to be an ID to a message from the origin channel",
-                )
-
-        if quantity <= 0:
-            if quantity == 0 and not after:
+            if quantity > 0:
+                messages = messages[:quantity+1]
+        
+            elif quantity < 0:
                 raise BotException(
                     "Invalid `quantity` argument",
-                    "`quantity` must be above 0 when `after=` is not specified.",
+                    "Quantity has to be a positive integer (`=> 0`).",
                 )
-            elif quantity != 0:
+        else:
+            if isinstance(before, int):
+                try:
+                    before = await origin.fetch_message(before)
+                except discord.NotFound:
+                    raise BotException(
+                        "Invalid `before` argument",
+                        "`before` has to be an ID to a message from the origin channel",
+                    )
+
+            if isinstance(after, int):
+                try:
+                    after = await origin.fetch_message(after)
+                except discord.NotFound:
+                    raise BotException(
+                        "Invalid `after` argument",
+                        "`after` has to be an ID to a message from the origin channel",
+                    )
+
+            if isinstance(around, int):
+                try:
+                    around = await origin.fetch_message(around)
+                except discord.NotFound:
+                    raise BotException(
+                        "Invalid `around` argument",
+                        "`around` has to be an ID to a message from the origin channel",
+                    )
+
+            if quantity <= 0:
+                if quantity == 0 and not after:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "`quantity` must be above 0 when `after=` is not specified.",
+                    )
+                elif quantity != 0:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "Quantity has to be a positive integer (or `0` when `after=` is specified).",
+                    )
+
+            await destination.trigger_typing()
+            messages = await origin.history(
+                limit=quantity if quantity != 0 else None,
+                before=before,
+                after=after,
+                around=around,
+            ).flatten()
+
+            if not messages:
                 raise BotException(
-                    "Invalid `quantity` argument",
-                    "Quantity has to be a positive integer (or `0` when `after=` is specified).",
+                    "Invalid time range",
+                    "No messages were found for the specified input values.",
                 )
 
-        await destination.trigger_typing()
-        messages = await origin.history(
-            limit=quantity if quantity != 0 else None,
-            before=before,
-            after=after,
-            around=around,
-        ).flatten()
+            if not after and oldest_first:
+                messages.reverse()
 
-        if not messages:
-            raise BotException(
-                "Invalid time range",
-                "No messages were found for the specified timestamps.",
-            )
-
-        if not after and oldest_first:
-            messages.reverse()
-
-        output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
+        if urls:
+            output_filename = "message_urls.txt"
+            output_str = prefix + sep.join(msg.jump_url for msg in messages) + suffix
+        else:
+            output_filename = "message_ids.txt"
+            output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
 
         with io.StringIO() as fobj:
             fobj.write(output_str)
             fobj.seek(0)
-            await destination.send(file=discord.File(fobj, filename="message_ids.txt"))
+            try:
+                await destination.send(file=discord.File(fobj, filename=output_filename))
+            except discord.HTTPException as e:
+                raise BotException(
+                    "Something went wrong",
+                    e.args[0]
+                )
 
         await self.response_msg.delete()
 
@@ -636,6 +669,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
         msg_count = len(msgs)
+        no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
             await self.response_msg.edit(
                 embed=embed_utils.create(
@@ -672,6 +706,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     content=msg.content,
                     embed=msg.embeds[0] if msg.embeds and embeds else None,
                     file=attached_files[0] if attached_files else None,
+                    allowed_mentions=no_mentions,
                 )
             else:
                 raise BotException(
@@ -1184,7 +1219,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!pin <channel> <message> <message>...
+        ->signature pg!unpin <channel> <message> <message>...
         ->description Unpin a message in the specified channel.
         ->example command pg!unpin #general 23456234567834567 3456734523456734567...
         """
@@ -1217,7 +1252,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
         pinned_msgs = await channel.pins()
-        pinned_msgs_set = set( msg.id for msg in pinned_msgs )
+        pinned_msg_id_set = set( msg.id for msg in pinned_msgs )
 
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
@@ -1229,7 +1264,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
             )
 
-            if msg.id in pinned_msgs_set:
+            if msg.id in pinned_msg_id_set:
                 try:
                     await msg.unpin()
                 except discord.HTTPException as e:
@@ -1239,13 +1274,104 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await self.response_msg.edit(
             embed=embed_utils.create(
-                title=f"Sucessfully pinned {len(input_msgs)} message(s)! ({unpin_count} removed)",
+                title=f"Sucessfully unpinned {msg_count} message(s)!",
                 description=f"`{msg_count}/{msg_count}` messages processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30)
             )
         )
 
-        await self.invoke_msg.delete()
+        await self.response_msg.delete(delay=10)
+
+    async def cmd_unpin_by_index(
+        self,
+        channel: discord.TextChannel,
+        *indices: Union[int, range],
+    ):
+        """
+        ->type Other commands
+        ->signature pg!pin <channel> <message> <message>...
+        ->description Unpin a message in the specified channel.
+        ->example command pg!unpin #general 23456234567834567 3456734523456734567...
+        """
+
+        channel_perms = channel.permissions_for(self.invoke_msg.author)
+
+        if not channel_perms.manage_messages:
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
+        if not indices:
+            raise BotException(
+                f"Invalid arguments!",
+                "No channel pin list indices given as input.",
+            )
+
+        pinned_msgs = await channel.pins()
+
+        pinned_msg_count = len(pinned_msgs)
+        
+        if not pinned_msgs:
+            raise BotException(
+                f"No messages to unpin!",
+                "No messages are currently pinned on the specified channel.",
+            )
+        
+        unpinned_msg_id_set = set()
+
+        indices_list = []
+
+        for index in indices:
+            if isinstance(index, range):
+                if len(index) > 50:
+                    raise BotException(
+                        f"Invalid range object!",
+                        "The given range object must not contain more than 50 integers.",
+                    )
+                else:
+                    indices_list.extend(index)
+            
+            else:
+                indices_list.append(index)
+
+        indices_list = sorted(set(indices_list))
+        indices_list.reverse()
+
+        idx_count = len(indices_list)
+
+        for i, unpin_index in enumerate(indices_list):
+            if unpin_index < 0:
+                unpin_index = pinned_msg_count+unpin_index
+             
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title=f"Your command is being processed:",
+                    description=f"`{i}/{idx_count}` messages processed\n"
+                    f"{(i/idx_count)*100:.01f}% | " + utils.progress_bar(i/idx_count, divisions=30)
+                )
+            )
+
+            if 0 <= unpin_index < pinned_msg_count:         
+                msg = pinned_msgs[unpin_index]
+
+                if msg.id not in unpinned_msg_id_set:
+                    try:
+                        await msg.unpin()
+                        unpinned_msg_id_set.add(msg.id)
+                    except discord.HTTPException as e:
+                        raise BotException(f"Cannot unpin input message {i}!", e.args[0])
+
+            await asyncio.sleep(0)
+
+        await self.response_msg.edit(
+            embed=embed_utils.create(
+                title=f"Sucessfully unpinned {idx_count} message(s)!",
+                description=f"`{idx_count}/{idx_count}` messages processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30)
+            )
+        )
+
         await self.response_msg.delete(delay=10)
 
     @add_group("poll")
