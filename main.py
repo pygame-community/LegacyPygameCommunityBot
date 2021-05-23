@@ -161,7 +161,7 @@ async def on_message(msg: discord.Message):
             prob = 8 if happy <= 20 else (100 - happy) // 10
             prob += 1
 
-            lowered = msg.content.lower()
+            lowered = unidecode.unidecode(msg.content.lower())
             if "i am" in lowered and len(lowered) < 60:
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
