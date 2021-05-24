@@ -71,7 +71,7 @@ async def check_bonk(msg: discord.Message):
 async def dad_joke(msg: discord.Message):
     lowered = unidecode.unidecode(msg.content.lower().strip())
     if (" i am " in lowered or lowered.startswith("i am ") or lowered == "i am") and len(lowered) < 60:
-        name = msg.content[lowered.index("i am") + 4:].strip()
+        name = msg.content[msg.content.lower()("i am") + 4:].strip()
         if name:
             await msg.channel.send(
                 f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=discord.AllowedMentions.none()
