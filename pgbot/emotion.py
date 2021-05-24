@@ -81,7 +81,7 @@ async def dad_joke(msg: discord.Message):
 
 
 def euphoria():
-    db.DiscordDB("emotions").write({
+    db_obj.write({
         "happy": EMOTION_CAPS["happy"][1],
         "anger": EMOTION_CAPS["anger"][1],
         "bored": EMOTION_CAPS["bored"][1],
