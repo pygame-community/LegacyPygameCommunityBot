@@ -126,7 +126,7 @@ async def on_message(msg: discord.Message):
 
         emotion.update("bored", -15)
 
-    elif not common.TEST_MODE:
+    elif common.TEST_MODE:
         no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
@@ -162,16 +162,29 @@ async def on_message(msg: discord.Message):
             prob += 1
 
             lowered = unidecode.unidecode(msg.content.lower())
-            if "i am" in lowered and len(lowered) < 60:
+            if (" i am " in lowered or lowered.startswith("i am ")) and len(lowered) < 60:
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
                 if msg.author.id != 683852333293109269 and random.randint(0, prob):
                     return
 
-                name = msg.content[lowered.index("i am") + 4 :].strip()
-                await msg.channel.send(
-                    f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
-                )
+                name = msg.content[lowered.index("i am") + 4:].strip()
+                if name:
+                    await msg.channel.send(
+                        f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
+                    )
+                elif random.random() < 0.1 or msg.author.id == 691691416799150152:
+                    await msg.channel.send(
+                        """To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them. To die—to sleep,
+No more; and by a sleep to say we end
+The heart-ache and the thousand natural shocks
+That flesh is heir to: 'tis a consummation
+Devoutly to be wish'd. To die, to sleep..."""
+                        )
 
 
 @common.bot.event
