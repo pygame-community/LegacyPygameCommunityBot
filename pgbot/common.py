@@ -84,14 +84,6 @@ ADMIN_ROLES = {
     841338117968756766,
 }
 
-# AvaxarXapaxa, BaconInvader, MegaJC, Ankith
-ADMIN_USERS = {
-    414330602930700288,
-    265154376409153537,
-    444116866944991236,
-    763015391710281729,
-}
-
 # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
 PRIV_ROLES = {
     774473681325785098,
@@ -248,4 +240,17 @@ BYDARIO_QUOTE = """
 > When you are death ppl dont go to your tomb and say: dead person
 > I know because I am dead and noone comes to visit me
 <@!691691416799150152>
+"""
+
+SHAKESPEARE_QUOTE = """
+To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them. To die—to sleep,
+No more; and by a sleep to say we end
+The heart-ache and the thousand natural shocks
+That flesh is heir to: 'tis a consummation
+Devoutly to be wish'd. To die, to sleep...
+\\@ Shakespeare
 """
