@@ -152,9 +152,8 @@ async def on_message(msg: discord.Message):
             await embed_utils.send(
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
-        else:
-            if random.random() < emotion.get("happy")/200 or msg.author.id == 683852333293109269:
-                await emotion.dad_joke(msg)
+        elif random.random() < emotion.get("happy")/200 or msg.author.id == 683852333293109269:
+            await emotion.dad_joke(msg)
 
 
 @common.bot.event
