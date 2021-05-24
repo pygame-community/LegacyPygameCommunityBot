@@ -1026,12 +1026,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
                             )
 
                 if not mode:
-                    await destination.send(
-                        content=msg.content,
-                        embed=msg.embeds[0] if msg.embeds else None,
-                        files=attached_files[0] if attached_files else None,
-                        allowed_mentions=no_mentions,
-                    )
+                    if msg.content or msg.embeds or attached_files:
+                        await destination.send(
+                            content=msg.content,
+                            embed=msg.embeds[0] if msg.embeds else None,
+                            files=attached_files[0] if attached_files else None,
+                            allowed_mentions=no_mentions,
+                        )
+                    elif msg.type == discord.MessageType.pins_add:
+                        await destination.send(
+                            content=f"{msg.author.name}#{msg.author.discriminator} pinned a message in #{origin.name}"
+                        )
 
                     if len(attached_files) > 1:
                         for i in range(1, len(attached_files)):
@@ -1313,9 +1318,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!unpin_at <channel> <index/(start;stop;step)> ...
+        ->signature pg!unpin_at <channel> <index/range> ...
         ->description Unpin a message in the specified channel.
-        ->example command pg!unpin_at #general 3... (9;15)...
+        ->example command pg!unpin_at #general 3.. range(9, 15)..
         """
 
         channel_perms = channel.permissions_for(self.invoke_msg.author)
