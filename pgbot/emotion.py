@@ -7,6 +7,7 @@ This file defines some utitities and functions for the bots emotion system
 """
 
 import discord
+import unidecode
 
 from . import common, db, embed_utils
 
@@ -65,3 +66,15 @@ async def check_bonk(msg: discord.Message):
 
     update("anger", bonks)
     update("happy", -bonks)
+
+
+async def dad_joke(msg: discord.Message):
+    lowered = unidecode.unidecode(msg.content.lower().strip())
+    if (" i am " in lowered or lowered.startswith("i am ") or lowered == "i am") and len(lowered) < 60:
+        name = msg.content[lowered.index("i am") + 4:].strip()
+        if name:
+            await msg.channel.send(
+                f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=discord.AllowedMentions.none()
+            )
+        elif lowered == 'i am':
+            await msg.channel.send(common.SHAKESPEARE_QUOTE)

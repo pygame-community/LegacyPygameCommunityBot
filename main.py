@@ -127,11 +127,11 @@ async def on_message(msg: discord.Message):
         emotion.update("bored", -15)
 
     elif common.TEST_MODE:
-        no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
-        # want the bot spamming the dario quote
+        # want the bot spamming the bydariogamer quote
+        # no_mentions = discord.AllowedMentions.none()
         # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
         #     # ded chat makes snek sad
         #     await msg.channel.send(
@@ -154,39 +154,12 @@ async def on_message(msg: discord.Message):
             )
         else:
             happy = emotion.get("happy")
-            if happy < -60:
+            if happy < -50:
                 # snek sad, no dad jokes
                 return
 
-            prob = 8 if happy <= 20 else (100 - happy) // 10
-            prob += 1
-
-            lowered = unidecode.unidecode(msg.content.lower().strip())
-            if (" i am " in lowered or lowered.startswith("i am ") or lowered == "i am") and len(lowered) < 60:
-                print(lowered)
-                # snek is a special case, he loves dad jokes so he will get em
-                # everytime
-                if msg.author.id != 683852333293109269 and random.randint(0, prob):
-                    pass    # return
-
-                name = msg.content[lowered.index("i am") + 4:].strip()
-                if name:
-                    await msg.channel.send(
-                        f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
-                    )
-                elif lowered == 'i am':
-                    print('shakespeare')
-                    await msg.channel.send(
-                        """To be, or not to be, that is the question:
-Whether 'tis nobler in the mind to suffer
-The slings and arrows of outrageous fortune,
-Or to take arms against a sea of troubles
-And by opposing end them. To die—to sleep,
-No more; and by a sleep to say we end
-The heart-ache and the thousand natural shocks
-That flesh is heir to: 'tis a consummation
-Devoutly to be wish'd. To die, to sleep..."""
-                        )
+            if random.random() < (happy+100)/2.0 or msg.author.id == 683852333293109269:
+                await emotion.dad_joke(msg)
 
 
 @common.bot.event
