@@ -800,6 +800,7 @@ def import_embed_data(
     from_json=False,
     from_json_string=False,
     as_string=False,
+    as_dict=True
 ):
     """
     Import embed data from a file or a string containing JSON
@@ -811,7 +812,7 @@ def import_embed_data(
         if from_json_string:
             json_data = json.loads(source)
 
-            if not isinstance(json_data, dict):
+            if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
                     f"The given string must contain a JSON object that"
                     f" can be converted into a Python `dict` object"
