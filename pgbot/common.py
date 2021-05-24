@@ -74,14 +74,15 @@ ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 CMD_FUNC_PREFIX = "cmd_"
 
 GUILD_LEVEL = 1
-GUILD_MAX_FILE_SIZE = 8_000_000  # 8 MB
+GUILD_MAX_FILE_SIZE = 8_000_000 # bytes
 
-# Admin, Moderator, Senior Mage, Wizards
+# Admin, Moderator, Senior Mage, Wizards, Lead Forgers
 ADMIN_ROLES = {
     772521884373614603,
     772508687256125440,
     772849669591400501,
     841338117968756766,
+    839869589343961099,
 }
 
 # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
