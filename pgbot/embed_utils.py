@@ -44,6 +44,8 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
 
     return old_dict
 
+def copy_embed(embed):
+    return discord.Embed.from_dict(embed.to_dict())
 
 def get_fields(*messages):
     """
@@ -464,7 +466,7 @@ async def edit_2(
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
-    
+
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -478,6 +480,7 @@ async def send_from_dict(channel, data):
 
     if channel is None:
         return discord.Embed.from_dict(data)
+
     return await channel.send(embed=discord.Embed.from_dict(data))
 
 
@@ -489,6 +492,7 @@ async def replace_from_dict(message, data):
 
     if message is None:
         return discord.Embed.from_dict(data)
+
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
@@ -501,6 +505,7 @@ async def edit_from_dict(message, embed, update_embed_dict):
     recursive_update(old_embed_dict, update_embed_dict, skip_value="")
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
+
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -522,6 +527,7 @@ async def replace_field_from_dict(message, embed, field_dict, index):
 
     if message is None:
         return embed
+
     return await message.edit(embed=embed)
 
 
@@ -550,6 +556,7 @@ async def edit_field_from_dict(message, embed, field_dict, index):
 
     if message is None:
         return embed
+
     return await message.edit(embed=embed)
 
 
@@ -584,6 +591,7 @@ async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
             )
     if message is None:
         return embed
+
     return await message.edit(embed=embed)
 
 
@@ -598,6 +606,8 @@ async def add_field_from_dict(message, embed, field_dict):
         value=field_dict.get("value", ""),
         inline=field_dict.get("inline", True),
     )
+    if message is None:
+        return embed
 
     return await message.edit(embed=embed)
 
@@ -614,6 +624,8 @@ async def add_fields_from_dicts(message, embed: discord.Embed, field_dicts):
             value=field_dict.get("value", ""),
             inline=field_dict.get("inline", True),
         )
+    if message is None:
+        return embed
 
     return await message.edit(embed=embed)
 
@@ -632,6 +644,8 @@ async def insert_field_from_dict(message, embed, field_dict, index):
         value=field_dict.get("value", ""),
         inline=field_dict.get("inline", True),
     )
+    if message is None:
+        return embed
 
     return await message.edit(embed=embed)
 
@@ -650,6 +664,8 @@ async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, i
             value=field_dict.get("value", ""),
             inline=field_dict.get("inline", True),
         )
+    if message is None:
+        return embed
 
     return await message.edit(embed=embed)
 
@@ -663,6 +679,9 @@ async def remove_field(message, embed, index):
     fields_count = len(embed.fields)
     index = fields_count + index if index < 0 else index
     embed.remove_field(index)
+    if message is None:
+        return embed
+
     return await message.edit(embed=embed)
 
 
@@ -682,6 +701,9 @@ async def remove_fields(message, embed, field_indices):
 
     for index in parsed_field_indices:
         embed.remove_field(index)
+    if message is None:
+        return embed
+
     return await message.edit(embed=embed)
 
 
@@ -701,6 +723,9 @@ async def swap_fields(message, embed, index_a, index_b):
         fields_list[index_b],
         fields_list[index_a],
     )
+    if message is None:
+        return discord.Embed.from_dict(embed_dict)
+
     return await message.edit(embed=discord.Embed.from_dict(embed_dict))
 
 
@@ -715,6 +740,9 @@ async def clone_field(message, embed, index):
     embed_dict = embed.to_dict()
     cloned_field = embed_dict["fields"][index].copy()
     embed_dict["fields"].insert(index, cloned_field)
+    if message is None:
+        return embed
+    
     return await message.edit(embed=discord.Embed.from_dict(embed_dict))
 
 
@@ -748,6 +776,9 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
         for index in parsed_field_indices:
             cloned_field = embed_dict["fields"][index].copy()
             embed_dict["fields"].insert(index, cloned_field)
+    
+    if message is None:
+        return embed
 
     return await message.edit(embed=discord.Embed.from_dict(embed_dict))
 
@@ -758,11 +789,17 @@ async def clear_fields(message, embed):
     dictionary with a much more tight function
     """
     embed.clear_fields()
+    if message is None:
+        return embed
     return await message.edit(embed=embed)
 
 
 def import_embed_data(
-    source: Union[str, io.StringIO], from_string=False, from_json=False, from_json_string=False, as_string=False
+    source: Union[str, io.StringIO],
+    from_string=False,
+    from_json=False,
+    from_json_string=False,
+    as_string=False,
 ):
     """
     Import embed data from a file or a string containing JSON
@@ -838,7 +875,11 @@ def import_embed_data(
 
 
 def export_embed_data(
-    data_dict: dict, fp: Union[str, io.StringIO] = None, indent=None, as_json=True, always_return=False
+    data_dict: dict,
+    fp: Union[str, io.StringIO] = None,
+    indent=None,
+    as_json=True,
+    always_return=False,
 ):
     """
     Export embed data to serialized JSON or a Python dictionary and store it in a file or a string.

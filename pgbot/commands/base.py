@@ -72,7 +72,7 @@ class CodeBlock:
             newline_idx = code.index("\n")
             self.lang = code[:newline_idx].strip().lower()
             self.lang = self.lang if self.lang else None
-            code = code[newline_idx + 1:]
+            code = code[newline_idx + 1 :]
 
         elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
             code = code.strip("`")

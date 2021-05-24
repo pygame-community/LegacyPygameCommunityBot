@@ -137,7 +137,9 @@ class EmsudoCommand(BaseCommand):
             if not only_description:
                 if data.lang == "json":
                     try:
-                        embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
+                        embed_dict = embed_utils.import_embed_data(
+                            data.code, from_json_string=True
+                        )
                     except json.JSONDecodeError as j:
                         await embed_utils.send_2(
                             self.response_msg.channel,
@@ -146,10 +148,12 @@ class EmsudoCommand(BaseCommand):
                             color=0xFF0000,
                         )
                         continue
-                    await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                    await embed_utils.send_from_dict(
+                        self.invoke_msg.channel, embed_dict
+                    )
                     continue
 
-                elif data.lang.startswith(("py", "python", "python3")):
+                else:
                     try:
                         args = literal_eval(data.code)
                     except Exception as e:
@@ -437,25 +441,21 @@ class EmsudoCommand(BaseCommand):
         if not only_description:
             if data.lang == "json":
                 try:
-                    embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
-                except json.JSONDecodeError as j:
-                    raise BotException(
-                        f"Invalid JSON data",
-                        j.args[0]
+                    embed_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True
                     )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
                 await embed_utils.replace_from_dict(msg, embed_dict)
                 await self.invoke_msg.delete()
                 await self.response_msg.delete()
                 return
 
-            elif data.lang.startswith(("py", "python", "python3")):
+            else:
                 try:
                     args = literal_eval(data.code)
                 except Exception as e:
-                    raise BotException(
-                        f"Invalid arguments!",
-                        e.args[0]
-                    )
+                    raise BotException(f"Invalid arguments!", e.args[0])
 
                 if isinstance(args, dict):
                     await embed_utils.replace_from_dict(msg, args)
@@ -469,7 +469,7 @@ class EmsudoCommand(BaseCommand):
                         " contain either a Python `tuple`/`list` of embed data, or a"
                         " Python `dict` of embed data matching the JSON structure of"
                         " a Discord embed object, or JSON embed data (\n```json\n"
-                        "data\n```\n)"
+                        "data\n```\n)",
                     )
 
                 arg_count = len(args)
@@ -560,7 +560,7 @@ class EmsudoCommand(BaseCommand):
                     except TypeError:
                         raise BotException(
                             "Invalid format for field string(s)!",
-                            'The format should be `"<name|value|inline>"`'
+                            'The format should be `"<name|value|inline>"`',
                         )
 
                 if arg_count > 5:
@@ -683,25 +683,6 @@ class EmsudoCommand(BaseCommand):
 
         msg_embed = msg.embeds[0]
 
-        old_embed_dict = msg_embed.to_dict()
-
-        main_edit_embed_args = dict(
-            embed_type="rich",
-            author_name=EmptyEmbed,
-            author_url=EmptyEmbed,
-            author_icon_url=EmptyEmbed,
-            title=EmptyEmbed,
-            url=EmptyEmbed,
-            thumbnail_url=EmptyEmbed,
-            description=EmptyEmbed,
-            image_url=EmptyEmbed,
-            color=0xFFFFAA,
-            fields=(),
-            footer_text=EmptyEmbed,
-            footer_icon_url=EmptyEmbed,
-            timestamp=None,
-        )
-
         data_count = len(datas)
         for i, data in enumerate(datas):
             await self.response_msg.edit(
@@ -789,13 +770,15 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
+                msg_embed = await embed_utils.edit_from_dict(None, msg_embed, embed_dict)
                 continue
 
             if not only_description:
                 if data.lang == "json":
                     try:
-                        embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
+                        embed_dict = embed_utils.import_embed_data(
+                            data.code, from_json_string=True
+                        )
                     except json.JSONDecodeError as j:
                         await embed_utils.send_2(
                             self.response_msg.channel,
@@ -804,10 +787,10 @@ class EmsudoCommand(BaseCommand):
                             color=0xFF0000,
                         )
                         continue
-                    await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
+                    msg_embed = await embed_utils.edit_from_dict(None, msg_embed, embed_dict)
                     continue
 
-                elif data.lang.startswith(("py", "python", "python3")):
+                else:
                     try:
                         args = literal_eval(data.code)
                     except Exception as e:
@@ -957,19 +940,10 @@ class EmsudoCommand(BaseCommand):
 
                     if arg_count > 6:
                         util_edit_embed_args.update(timestamp=args[6])
-
-            if i + 1 == data_count:
-                await self.response_msg.edit(
-                    embed=embed_utils.create(
-                        title="Processing Complete",
-                        description=f"`{data_count}/{data_count}` messages processed\n"
-                        f"100% | " + utils.progress_bar(1.0, divisions=30),
-                    )
-                )
-
-            await embed_utils.edit_2(msg, msg_embed, **util_edit_embed_args)
-            await asyncio.sleep(0)
-
+                
+                msg_embed = await embed_utils.edit_2(None, msg_embed, **util_edit_embed_args) 
+                await asyncio.sleep(0)
+   
         if not datas:
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
@@ -1004,9 +978,20 @@ class EmsudoCommand(BaseCommand):
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
-
-        await self.response_msg.delete()
+            
+        else:
+            await msg.edit(embed=msg_embed)
+            await self.response_msg.edit(
+                embed=embed_utils.create(
+                    title="Processing Complete",
+                    description=f"`{data_count}/{data_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                )
+            )
+        
         await self.invoke_msg.delete()
+        await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
+        
 
     async def cmd_emsudo_clone(self, *msgs: discord.Message):
         """
