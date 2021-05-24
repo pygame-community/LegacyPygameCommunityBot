@@ -83,14 +83,6 @@ ADMIN_ROLES = {
     841338117968756766,
 }
 
-# AvaxarXapaxa, BaconInvader, MegaJC, Ankith
-ADMIN_USERS = {
-    414330602930700288,
-    265154376409153537,
-    444116866944991236,
-    763015391710281729,
-}
-
 # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
 PRIV_ROLES = {
     774473681325785098,
