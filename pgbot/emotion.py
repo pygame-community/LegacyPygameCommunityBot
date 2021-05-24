@@ -78,3 +78,16 @@ async def dad_joke(msg: discord.Message):
             )
         elif lowered == 'i am':
             await msg.channel.send(common.SHAKESPEARE_QUOTE)
+
+
+def euphoria():
+    db_obj.write({
+        "happy": EMOTION_CAPS["happy"][1],
+        "anger": EMOTION_CAPS["anger"][1],
+        "bored": EMOTION_CAPS["bored"][1],
+    })
+
+
+async def server_boost(msg: discord.Message):
+    euphoria()
+    await msg.channel.send("A LOT OF THANKSSS! :heart: :pg_snake:")
