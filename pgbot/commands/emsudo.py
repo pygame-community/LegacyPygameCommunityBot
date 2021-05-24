@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 from ast import literal_eval
 from typing import Optional, Union
 
@@ -134,140 +135,167 @@ class EmsudoCommand(BaseCommand):
                 continue
 
             if not only_description:
-                try:
-                    args = literal_eval(data.code)
-                except Exception as e:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: Invalid arguments!",
-                        description=f"```\n{''.join(utils.format_code_exception(e))}```",
-                        color=0xFF0000,
-                    )
-                    continue
-
-                if isinstance(args, dict):
-                    await embed_utils.send_from_dict(self.invoke_msg.channel, args)
-                    continue
-
-                arg_count = len(args)
-
-                if arg_count > 0:
-                    if isinstance(args[0], (tuple, list)):
-                        if len(args[0]) == 3:
-                            util_send_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                                author_icon_url=args[0][2],
-                            )
-                        elif len(args[0]) == 2:
-                            util_send_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                            )
-                        elif len(args[0]) == 1:
-                            util_send_embed_args.update(
-                                author_name=args[0][0],
-                            )
-
-                    else:
-                        util_send_embed_args.update(
-                            author_name=args[0],
-                        )
-                else:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: Invalid arguments!",
-                        color=0xFF0000,
-                    )
-                    continue
-
-                if arg_count > 1:
-                    if isinstance(args[1], (tuple, list)):
-                        if len(args[1]) == 3:
-                            util_send_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                                thumbnail_url=args[1][2],
-                            )
-
-                        elif len(args[1]) == 2:
-                            util_send_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                            )
-
-                        elif len(args[1]) == 1:
-                            util_send_embed_args.update(
-                                title=args[1][0],
-                            )
-
-                    else:
-                        util_send_embed_args.update(
-                            title=args[1],
-                        )
-
-                if arg_count > 2:
-                    if isinstance(args[2], (tuple, list)):
-                        if len(args[2]) == 2:
-                            util_send_embed_args.update(
-                                description=args[2][0],
-                                image_url=args[2][1],
-                            )
-
-                        elif len(args[2]) == 1:
-                            util_send_embed_args.update(
-                                description=args[2][0],
-                            )
-
-                    else:
-                        util_send_embed_args.update(
-                            description=args[2],
-                        )
-
-                if arg_count > 3:
-                    if args[3] > -1:
-                        util_send_embed_args.update(
-                            color=args[3],
-                        )
-
-                if arg_count > 4:
+                if data.lang == "json":
                     try:
-                        fields = embed_utils.get_fields(*args[4])
-                        for f in fields:
-                            if isinstance(f, list):
-                                util_send_embed_args.update(fields=fields)
-                            else:
-                                util_send_embed_args.update(fields=[fields])
-                            break
-                    except TypeError:
+                        embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
+                    except json.JSONDecodeError as j:
                         await embed_utils.send_2(
                             self.response_msg.channel,
-                            title=f"Input {i}: Invalid format for field string(s)!",
-                            description=' The format should be `"<name|value|inline>"`',
+                            title=f"Input {i}: Invalid JSON data",
+                            description=f"```\n{j.args[0]}\n```",
+                            color=0xFF0000,
+                        )
+                        continue
+                    await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                    continue
+
+                elif data.lang.startswith(("py", "python", "python3")):
+                    try:
+                        args = literal_eval(data.code)
+                    except Exception as e:
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            description=f"```\n{''.join(utils.format_code_exception(e))}```",
                             color=0xFF0000,
                         )
                         continue
 
-                if arg_count > 5:
-                    if isinstance(args[5], (tuple, list)):
-                        if len(args[5]) == 2:
-                            util_send_embed_args.update(
-                                footer_text=args[5][0],
-                                footer_icon_url=args[5][1],
-                            )
-
-                        elif len(args[5]) == 1:
-                            util_send_embed_args.update(
-                                footer_text=args[5][0],
-                            )
-
-                    else:
-                        util_send_embed_args.update(
-                            footer_text=args[5],
+                    if isinstance(args, dict):
+                        await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                        continue
+                    elif not isinstance(args, (list, tuple)):
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            description="A code block given as input must"
+                            " contain either a Python `tuple`/`list` of embed data, or a"
+                            " Python `dict` of embed data matching the JSON structure of"
+                            " a Discord embed object, or JSON embed data (\n```json\n"
+                            "data\n```\n)",
+                            color=0xFF0000,
                         )
+                        continue
 
-                if arg_count > 6:
-                    util_send_embed_args.update(timestamp=args[6])
+                    arg_count = len(args)
+
+                    if arg_count > 0:
+                        if isinstance(args[0], (tuple, list)):
+                            if len(args[0]) == 3:
+                                util_send_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                    author_icon_url=args[0][2],
+                                )
+                            elif len(args[0]) == 2:
+                                util_send_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                )
+                            elif len(args[0]) == 1:
+                                util_send_embed_args.update(
+                                    author_name=args[0][0],
+                                )
+
+                        else:
+                            util_send_embed_args.update(
+                                author_name=args[0],
+                            )
+                    else:
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            color=0xFF0000,
+                        )
+                        continue
+
+                    if arg_count > 1:
+                        if isinstance(args[1], (tuple, list)):
+                            if len(args[1]) == 3:
+                                util_send_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                    thumbnail_url=args[1][2],
+                                )
+
+                            elif len(args[1]) == 2:
+                                util_send_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                )
+
+                            elif len(args[1]) == 1:
+                                util_send_embed_args.update(
+                                    title=args[1][0],
+                                )
+
+                        else:
+                            util_send_embed_args.update(
+                                title=args[1],
+                            )
+
+                    if arg_count > 2:
+                        if isinstance(args[2], (tuple, list)):
+                            if len(args[2]) == 2:
+                                util_send_embed_args.update(
+                                    description=args[2][0],
+                                    image_url=args[2][1],
+                                )
+
+                            elif len(args[2]) == 1:
+                                util_send_embed_args.update(
+                                    description=args[2][0],
+                                )
+
+                        else:
+                            util_send_embed_args.update(
+                                description=args[2],
+                            )
+
+                    if arg_count > 3:
+                        if args[3] > -1:
+                            util_send_embed_args.update(
+                                color=args[3],
+                            )
+
+                    if arg_count > 4:
+                        try:
+                            fields = embed_utils.get_fields(*args[4])
+                            for f in fields:
+                                if isinstance(f, list):
+                                    util_send_embed_args.update(fields=fields)
+                                else:
+                                    util_send_embed_args.update(fields=[fields])
+                                break
+                        except TypeError:
+                            await embed_utils.send_2(
+                                self.response_msg.channel,
+                                title=f"Input {i}: Invalid format for field string(s)!",
+                                description=' The format should be `"<name|value|inline>"`',
+                                color=0xFF0000,
+                            )
+                            continue
+
+                    if arg_count > 5:
+                        if isinstance(args[5], (tuple, list)):
+                            if len(args[5]) == 2:
+                                util_send_embed_args.update(
+                                    footer_text=args[5][0],
+                                    footer_icon_url=args[5][1],
+                                )
+
+                            elif len(args[5]) == 1:
+                                util_send_embed_args.update(
+                                    footer_text=args[5][0],
+                                )
+
+                        else:
+                            util_send_embed_args.update(
+                                footer_text=args[5],
+                            )
+
+                    if arg_count > 6:
+                        util_send_embed_args.update(timestamp=args[6])
 
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
             await asyncio.sleep(0)
@@ -402,142 +430,163 @@ class EmsudoCommand(BaseCommand):
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             await embed_utils.replace_from_dict(msg, embed_dict)
-            await self.response_msg.delete()
             await self.invoke_msg.delete()
+            await self.response_msg.delete()
             return
 
         if not only_description:
-            try:
-                args = literal_eval(data.code)
-            except Exception as e:
-                raise BotException(
-                    "Invalid arguments!",
-                    f"```\n{''.join(utils.format_code_exception(e))}```",
-                )
-
-            if isinstance(args, dict):
-                await embed_utils.replace_from_dict(msg, args)
-                await self.response_msg.delete()
+            if data.lang == "json":
+                try:
+                    embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
+                except json.JSONDecodeError as j:
+                    raise BotException(
+                        f"Invalid JSON data",
+                        j.args[0]
+                    )
+                await embed_utils.replace_from_dict(msg, embed_dict)
                 await self.invoke_msg.delete()
+                await self.response_msg.delete()
                 return
 
-            arg_count = len(args)
-
-            if arg_count > 0:
-                if isinstance(args[0], (tuple, list)):
-                    if len(args[0]) == 3:
-                        util_replace_embed_args.update(
-                            author_name=args[0][0],
-                            author_url=args[0][1],
-                            author_icon_url=args[0][2],
-                        )
-                    elif len(args[0]) == 2:
-                        util_replace_embed_args.update(
-                            author_name=args[0][0],
-                            author_url=args[0][1],
-                        )
-                    elif len(args[0]) == 1:
-                        util_replace_embed_args.update(
-                            author_name=args[0][0],
-                        )
-
-                else:
-                    util_replace_embed_args.update(
-                        author_name=args[0],
-                    )
-            else:
-                raise BotException("Invalid arguments!", "")
-
-            if arg_count > 1:
-                if isinstance(args[1], (tuple, list)):
-                    if len(args[1]) == 3:
-                        util_replace_embed_args.update(
-                            title=args[1][0],
-                            url=args[1][1],
-                            thumbnail_url=args[1][2],
-                        )
-
-                    elif len(args[1]) == 2:
-                        util_replace_embed_args.update(
-                            title=args[1][0],
-                            url=args[1][1],
-                        )
-
-                    elif len(args[1]) == 1:
-                        util_replace_embed_args.update(
-                            title=args[1][0],
-                        )
-
-                else:
-                    util_replace_embed_args.update(
-                        title=args[1],
-                    )
-
-            if arg_count > 2:
-                if isinstance(args[2], (tuple, list)):
-                    if len(args[2]) == 2:
-                        util_replace_embed_args.update(
-                            description=args[2][0],
-                            image_url=args[2][1],
-                        )
-
-                    elif len(args[2]) == 1:
-                        util_replace_embed_args.update(
-                            description=args[2][0],
-                        )
-
-                else:
-                    util_replace_embed_args.update(
-                        description=args[2],
-                    )
-
-            if arg_count > 3:
-                if args[3] > -1:
-                    util_replace_embed_args.update(
-                        color=args[3],
-                    )
-
-            if arg_count > 4:
+            elif data.lang.startswith(("py", "python", "python3")):
                 try:
-                    fields = embed_utils.get_fields(*args[4])
-                    for f in fields:
-                        if isinstance(f, list):
-                            util_replace_embed_args.update(fields=fields)
-                        else:
-                            util_replace_embed_args.update(fields=[fields])
-                        break
-                except TypeError:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Invalid format for field string(s)!",
-                        description=' The format should be `"<name|value|inline>"`',
-                        color=0xFF0000,
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        f"Invalid arguments!",
+                        e.args[0]
                     )
 
-            if arg_count > 5:
-                if isinstance(args[5], (tuple, list)):
-                    if len(args[5]) == 2:
-                        util_replace_embed_args.update(
-                            footer_text=args[5][0],
-                            footer_icon_url=args[5][1],
-                        )
+                if isinstance(args, dict):
+                    await embed_utils.replace_from_dict(msg, args)
+                    await self.invoke_msg.delete()
+                    await self.response_msg.delete()
+                    return
+                elif not isinstance(args, (list, tuple)):
+                    raise BotException(
+                        f"Invalid arguments!",
+                        "A code block given as input must"
+                        " contain either a Python `tuple`/`list` of embed data, or a"
+                        " Python `dict` of embed data matching the JSON structure of"
+                        " a Discord embed object, or JSON embed data (\n```json\n"
+                        "data\n```\n)"
+                    )
 
-                    elif len(args[5]) == 1:
-                        util_replace_embed_args.update(
-                            footer_text=args[5][0],
-                        )
+                arg_count = len(args)
 
+                if arg_count > 0:
+                    if isinstance(args[0], (tuple, list)):
+                        if len(args[0]) == 3:
+                            util_replace_embed_args.update(
+                                author_name=args[0][0],
+                                author_url=args[0][1],
+                                author_icon_url=args[0][2],
+                            )
+                        elif len(args[0]) == 2:
+                            util_replace_embed_args.update(
+                                author_name=args[0][0],
+                                author_url=args[0][1],
+                            )
+                        elif len(args[0]) == 1:
+                            util_replace_embed_args.update(
+                                author_name=args[0][0],
+                            )
+
+                    else:
+                        util_replace_embed_args.update(
+                            author_name=args[0],
+                        )
                 else:
-                    util_replace_embed_args.update(
-                        footer_text=args[5],
-                    )
+                    raise BotException("Invalid arguments!", "")
 
-            if arg_count > 6:
-                util_replace_embed_args.update(timestamp=args[6])
+                if arg_count > 1:
+                    if isinstance(args[1], (tuple, list)):
+                        if len(args[1]) == 3:
+                            util_replace_embed_args.update(
+                                title=args[1][0],
+                                url=args[1][1],
+                                thumbnail_url=args[1][2],
+                            )
+
+                        elif len(args[1]) == 2:
+                            util_replace_embed_args.update(
+                                title=args[1][0],
+                                url=args[1][1],
+                            )
+
+                        elif len(args[1]) == 1:
+                            util_replace_embed_args.update(
+                                title=args[1][0],
+                            )
+
+                    else:
+                        util_replace_embed_args.update(
+                            title=args[1],
+                        )
+
+                if arg_count > 2:
+                    if isinstance(args[2], (tuple, list)):
+                        if len(args[2]) == 2:
+                            util_replace_embed_args.update(
+                                description=args[2][0],
+                                image_url=args[2][1],
+                            )
+
+                        elif len(args[2]) == 1:
+                            util_replace_embed_args.update(
+                                description=args[2][0],
+                            )
+
+                    else:
+                        util_replace_embed_args.update(
+                            description=args[2],
+                        )
+
+                if arg_count > 3:
+                    if args[3] > -1:
+                        util_replace_embed_args.update(
+                            color=args[3],
+                        )
+
+                if arg_count > 4:
+                    try:
+                        fields = embed_utils.get_fields(*args[4])
+                        for f in fields:
+                            if isinstance(f, list):
+                                util_replace_embed_args.update(fields=fields)
+                            else:
+                                util_replace_embed_args.update(fields=[fields])
+                            break
+                    except TypeError:
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            'The format should be `"<name|value|inline>"`'
+                        )
+
+                if arg_count > 5:
+                    if isinstance(args[5], (tuple, list)):
+                        if len(args[5]) == 2:
+                            util_replace_embed_args.update(
+                                footer_text=args[5][0],
+                                footer_icon_url=args[5][1],
+                            )
+
+                        elif len(args[5]) == 1:
+                            util_replace_embed_args.update(
+                                footer_text=args[5][0],
+                            )
+
+                    else:
+                        util_replace_embed_args.update(
+                            footer_text=args[5],
+                        )
+
+                if arg_count > 6:
+                    util_replace_embed_args.update(timestamp=args[6])
 
         await embed_utils.replace_2(msg, **util_replace_embed_args)
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_add(
         self,
@@ -634,6 +683,25 @@ class EmsudoCommand(BaseCommand):
 
         msg_embed = msg.embeds[0]
 
+        old_embed_dict = msg_embed.to_dict()
+
+        main_edit_embed_args = dict(
+            embed_type="rich",
+            author_name=EmptyEmbed,
+            author_url=EmptyEmbed,
+            author_icon_url=EmptyEmbed,
+            title=EmptyEmbed,
+            url=EmptyEmbed,
+            thumbnail_url=EmptyEmbed,
+            description=EmptyEmbed,
+            image_url=EmptyEmbed,
+            color=0xFFFFAA,
+            fields=(),
+            footer_text=EmptyEmbed,
+            footer_icon_url=EmptyEmbed,
+            timestamp=None,
+        )
+
         data_count = len(datas)
         for i, data in enumerate(datas):
             await self.response_msg.edit(
@@ -725,143 +793,170 @@ class EmsudoCommand(BaseCommand):
                 continue
 
             if not only_description:
-                try:
-                    args = literal_eval(data.code)
-                except Exception as e:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: Invalid arguments!",
-                        description=f"```\n{''.join(utils.format_code_exception(e))}```",
-                        color=0xFF0000,
-                    )
-                    continue
-
-                if isinstance(args, dict):
-                    await embed_utils.edit_from_dict(msg, msg_embed, args)
-                    continue
-
-                arg_count = len(args)
-
-                if arg_count > 0:
-                    if isinstance(args[0], (tuple, list)):
-                        if len(args[0]) == 3:
-                            util_edit_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                                author_icon_url=args[0][2],
-                            )
-                        elif len(args[0]) == 2:
-                            util_edit_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                            )
-                        elif len(args[0]) == 1:
-                            util_edit_embed_args.update(
-                                author_name=args[0][0],
-                            )
-
-                    else:
-                        util_edit_embed_args.update(
-                            author_name=args[0],
-                        )
-                else:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: Invalid arguments!",
-                        color=0xFF0000,
-                    )
-                    continue
-
-                if arg_count > 1:
-                    if isinstance(args[1], (tuple, list)):
-                        if len(args[1]) == 3:
-                            util_edit_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                                thumbnail_url=args[1][2],
-                            )
-
-                        elif len(args[1]) == 2:
-                            util_edit_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                            )
-
-                        elif len(args[1]) == 1:
-                            util_edit_embed_args.update(
-                                title=args[1][0],
-                            )
-
-                    else:
-                        util_edit_embed_args.update(
-                            title=args[1],
-                        )
-
-                if arg_count > 2:
-                    if isinstance(args[2], (tuple, list)):
-                        if len(args[2]) == 2:
-                            util_edit_embed_args.update(
-                                description=args[2][0],
-                                image_url=args[2][1],
-                            )
-
-                        elif len(args[2]) == 1:
-                            util_edit_embed_args.update(
-                                description=args[2][0],
-                            )
-
-                    else:
-                        util_edit_embed_args.update(
-                            description=args[2],
-                        )
-
-                if arg_count > 3:
-                    util_edit_embed_args.update(
-                        color=args[3],
-                    )
-                else:
-                    util_edit_embed_args.update(
-                        color=-1,
-                    )
-
-                if arg_count > 4:
+                if data.lang == "json":
                     try:
-                        fields = embed_utils.get_fields(*args[4])
-                        for f in fields:
-                            if isinstance(f, list):
-                                util_edit_embed_args.update(fields=fields)
-                            else:
-                                util_edit_embed_args.update(fields=[fields])
-                            break
-                    except TypeError:
+                        embed_dict = embed_utils.import_embed_data(data.code, from_json_string=True)
+                    except json.JSONDecodeError as j:
                         await embed_utils.send_2(
                             self.response_msg.channel,
-                            title=f"Input {i}: Invalid format for field string(s)!",
-                            description=' The format should be `"<name|value|inline>"`',
+                            title=f"Input {i}: Invalid JSON data",
+                            description=f"```\n{j.args[0]}\n```",
+                            color=0xFF0000,
+                        )
+                        continue
+                    await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
+                    continue
+
+                elif data.lang.startswith(("py", "python", "python3")):
+                    try:
+                        args = literal_eval(data.code)
+                    except Exception as e:
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            description=f"```\n{''.join(utils.format_code_exception(e))}```",
                             color=0xFF0000,
                         )
                         continue
 
-                if arg_count > 5:
-                    if isinstance(args[5], (tuple, list)):
-                        if len(args[5]) == 2:
+                    if isinstance(args, dict):
+                        await embed_utils.edit_from_dict(msg, msg_embed, args)
+                        continue
+                    elif not isinstance(args, (list, tuple)):
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            description="A code block given as input must"
+                            " contain either a Python `tuple`/`list` of embed data, or a"
+                            " Python `dict` of embed data matching the JSON structure of"
+                            " a Discord embed object, or JSON embed data (\n```json\n"
+                            "data\n```\n)",
+                            color=0xFF0000,
+                        )
+                        continue
+
+                    arg_count = len(args)
+
+                    if arg_count > 0:
+                        if isinstance(args[0], (tuple, list)):
+                            if len(args[0]) == 3:
+                                util_edit_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                    author_icon_url=args[0][2],
+                                )
+                            elif len(args[0]) == 2:
+                                util_edit_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                )
+                            elif len(args[0]) == 1:
+                                util_edit_embed_args.update(
+                                    author_name=args[0][0],
+                                )
+
+                        else:
                             util_edit_embed_args.update(
-                                footer_text=args[5][0],
-                                footer_icon_url=args[5][1],
+                                author_name=args[0],
+                            )
+                    else:
+                        await embed_utils.send_2(
+                            self.response_msg.channel,
+                            title=f"Input {i}: Invalid arguments!",
+                            color=0xFF0000,
+                        )
+                        continue
+
+                    if arg_count > 1:
+                        if isinstance(args[1], (tuple, list)):
+                            if len(args[1]) == 3:
+                                util_edit_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                    thumbnail_url=args[1][2],
+                                )
+
+                            elif len(args[1]) == 2:
+                                util_edit_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                )
+
+                            elif len(args[1]) == 1:
+                                util_edit_embed_args.update(
+                                    title=args[1][0],
+                                )
+
+                        else:
+                            util_edit_embed_args.update(
+                                title=args[1],
                             )
 
-                        elif len(args[5]) == 1:
+                    if arg_count > 2:
+                        if isinstance(args[2], (tuple, list)):
+                            if len(args[2]) == 2:
+                                util_edit_embed_args.update(
+                                    description=args[2][0],
+                                    image_url=args[2][1],
+                                )
+
+                            elif len(args[2]) == 1:
+                                util_edit_embed_args.update(
+                                    description=args[2][0],
+                                )
+
+                        else:
                             util_edit_embed_args.update(
-                                footer_text=args[5][0],
+                                description=args[2],
                             )
 
+                    if arg_count > 3:
+                        util_edit_embed_args.update(
+                            color=args[3],
+                        )
                     else:
                         util_edit_embed_args.update(
-                            footer_text=args[5],
+                            color=-1,
                         )
 
-                if arg_count > 6:
-                    util_edit_embed_args.update(timestamp=args[6])
+                    if arg_count > 4:
+                        try:
+                            fields = embed_utils.get_fields(*args[4])
+                            for f in fields:
+                                if isinstance(f, list):
+                                    util_edit_embed_args.update(fields=fields)
+                                else:
+                                    util_edit_embed_args.update(fields=[fields])
+                                break
+                        except TypeError:
+                            await embed_utils.send_2(
+                                self.response_msg.channel,
+                                title=f"Input {i}: Invalid format for field string(s)!",
+                                description=' The format should be `"<name|value|inline>"`',
+                                color=0xFF0000,
+                            )
+                            continue
+
+                    if arg_count > 5:
+                        if isinstance(args[5], (tuple, list)):
+                            if len(args[5]) == 2:
+                                util_edit_embed_args.update(
+                                    footer_text=args[5][0],
+                                    footer_icon_url=args[5][1],
+                                )
+
+                            elif len(args[5]) == 1:
+                                util_edit_embed_args.update(
+                                    footer_text=args[5][0],
+                                )
+
+                        else:
+                            util_edit_embed_args.update(
+                                footer_text=args[5],
+                            )
+
+                    if arg_count > 6:
+                        util_edit_embed_args.update(timestamp=args[6])
 
             if i + 1 == data_count:
                 await self.response_msg.edit(

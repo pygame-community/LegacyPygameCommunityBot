@@ -412,6 +412,9 @@ async def replace_2(
         timestamp=timestamp,
     )
 
+    if message is None:
+        return embed
+
     return await message.edit(embed=embed)
 
 
@@ -459,6 +462,9 @@ async def edit_2(
 
     recursive_update(old_embed_dict, update_embed_dict, skip_value="")
 
+    if message is None:
+        return discord.Embed.from_dict(old_embed_dict)
+    
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -466,6 +472,12 @@ async def send_from_dict(channel, data):
     """
     Sends an embed from a dictionary with a much more tight function
     """
+
+    if data.get("timestamp") and data["timestamp"].endswith("Z"):
+        data["timestamp"] = data["timestamp"][:-1]
+
+    if channel is None:
+        return discord.Embed.from_dict(data)
     return await channel.send(embed=discord.Embed.from_dict(data))
 
 
@@ -474,6 +486,9 @@ async def replace_from_dict(message, data):
     Replaces the embed of a message from a dictionary with a much more
     tight function
     """
+
+    if message is None:
+        return discord.Embed.from_dict(data)
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
@@ -484,6 +499,8 @@ async def edit_from_dict(message, embed, update_embed_dict):
     """
     old_embed_dict = embed.to_dict()
     recursive_update(old_embed_dict, update_embed_dict, skip_value="")
+    if message is None:
+        return discord.Embed.from_dict(old_embed_dict)
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
@@ -503,6 +520,8 @@ async def replace_field_from_dict(message, embed, field_dict, index):
         inline=field_dict.get("inline", True),
     )
 
+    if message is None:
+        return embed
     return await message.edit(embed=embed)
 
 
@@ -529,6 +548,8 @@ async def edit_field_from_dict(message, embed, field_dict, index):
         inline=old_field_dict.get("inline", True),
     )
 
+    if message is None:
+        return embed
     return await message.edit(embed=embed)
 
 
@@ -561,7 +582,8 @@ async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
                 value=old_field_dict.get("value", ""),
                 inline=old_field_dict.get("inline", True),
             )
-
+    if message is None:
+        return embed
     return await message.edit(embed=embed)
 
 
@@ -740,10 +762,11 @@ async def clear_fields(message, embed):
 
 
 def import_embed_data(
-    source, from_string=False, from_json=False, from_json_string=False, as_string=False
+    source: Union[str, io.StringIO], from_string=False, from_json=False, from_json_string=False, as_string=False
 ):
     """
-    Import embed data from a file or a string containing JSON or a Python dictionary and return it as a Python dictionary or string.
+    Import embed data from a file or a string containing JSON
+    or a Python dictionary and return it as a Python dictionary or string.
     """
 
     if from_json or from_json_string:
@@ -753,8 +776,8 @@ def import_embed_data(
 
             if not isinstance(json_data, dict):
                 raise TypeError(
-                    f"the file at '{source}' must contain a JSON object that"
-                    f" can be converted into a dictionary"
+                    f"The given string must contain a JSON object that"
+                    f" can be converted into a Python `dict` object"
                 )
             elif as_string:
                 json_data = json.dumps(json_data)
@@ -767,7 +790,7 @@ def import_embed_data(
             if not isinstance(json_data, dict):
                 raise TypeError(
                     f"the file at '{source}' must contain a JSON object that"
-                    f" can be converted into a dictionary"
+                    f" can be converted into a Python `dict` object"
                 )
             elif as_string:
                 json_data = json.dumps(json_data)
@@ -815,7 +838,7 @@ def import_embed_data(
 
 
 def export_embed_data(
-    data_dict, fp=None, indent=None, as_json=True, always_return=False
+    data_dict: dict, fp: Union[str, io.StringIO] = None, indent=None, as_json=True, always_return=False
 ):
     """
     Export embed data to serialized JSON or a Python dictionary and store it in a file or a string.
