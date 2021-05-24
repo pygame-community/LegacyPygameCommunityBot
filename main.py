@@ -154,11 +154,10 @@ async def on_message(msg: discord.Message):
             )
         else:
             happy = emotion.get("happy")
-            if happy < -50:
-                # snek sad, no dad jokes
+            if happy < -50:     # snek sad, no dad jokes
                 return
 
-            if random.random() < (happy+100)/2.0 or msg.author.id == 683852333293109269:
+            if random.random() < (happy+100)/200 or msg.author.id == 683852333293109269:
                 await emotion.dad_joke(msg)
 
 
