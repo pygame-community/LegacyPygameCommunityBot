@@ -161,19 +161,21 @@ async def on_message(msg: discord.Message):
             prob = 8 if happy <= 20 else (100 - happy) // 10
             prob += 1
 
-            lowered = unidecode.unidecode(msg.content.lower())
-            if (" i am " in lowered or lowered.startswith("i am ")) and len(lowered) < 60:
+            lowered = unidecode.unidecode(msg.content.lower().strip())
+            if (" i am " in lowered or lowered.startswith("i am ") or lowered == "i am") and len(lowered) < 60:
+                print(lowered)
                 # snek is a special case, he loves dad jokes so he will get em
                 # everytime
                 if msg.author.id != 683852333293109269 and random.randint(0, prob):
-                    return
+                    pass    # return
 
                 name = msg.content[lowered.index("i am") + 4:].strip()
                 if name:
                     await msg.channel.send(
                         f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
                     )
-                elif random.random() < 0.1 or msg.author.id == 691691416799150152:
+                elif lowered == 'i am':
+                    print('shakespeare')
                     await msg.channel.send(
                         """To be, or not to be, that is the question:
 Whether 'tis nobler in the mind to suffer
