@@ -413,7 +413,7 @@ class BaseCommand:
                     arg = arg[:-1] if arg.endswith(">") else arg
                     arg = arg[:-1] if arg.endswith("/") else arg
                     ids = arg[len(prefix1) :].split(sep="/")
-                
+
                 elif arg.startswith((prefix2, f"<{prefix2}")):
                     arg = arg[1:] if arg.startswith("<") else arg
                     arg = arg[:-1] if arg.endswith(">") else arg
@@ -442,7 +442,7 @@ class BaseCommand:
                     arg = arg[:-1] if arg.endswith(">") else arg
                     arg = arg[:-1] if arg.endswith("/") else arg
                     ids = arg[len(prefix1) :].split(sep="/")
-                
+
                 elif arg.startswith((prefix2, f"<{prefix2}")):
                     arg = arg[1:] if arg.startswith("<") else arg
                     arg = arg[:-1] if arg.endswith(">") else arg

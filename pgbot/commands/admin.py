@@ -551,7 +551,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         channel_perms = origin.permissions_for(self.invoke_msg.author)
 
-        if not any(channel_perms.view_channel, channel_perms.read_message_history):
+        if not any((channel_perms.view_channel, channel_perms.read_message_history)):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
@@ -576,10 +576,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if quantity > 0:
                 messages = messages[: quantity + 1]
-            
+
             elif quantity == 0:
                 if pin_range:
-                    messages = messages[pin_range.start : pin_range.stop : pin_range.step]
+                    messages = messages[
+                        pin_range.start : pin_range.stop : pin_range.step
+                    ]
 
             elif quantity < 0:
                 raise BotException(
@@ -587,7 +589,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "Quantity has to be a positive integer (`=> 0`).",
                 )
 
-            
         else:
             if isinstance(before, int):
                 try:
@@ -862,7 +863,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         channel_perms = origin.permissions_for(self.invoke_msg.author)
 
-        if not all(channel_perms.view_channel, channel_perms.read_message_history):
+        if not all((channel_perms.view_channel, channel_perms.read_message_history)):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
