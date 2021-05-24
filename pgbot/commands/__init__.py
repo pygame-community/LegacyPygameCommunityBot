@@ -20,8 +20,6 @@ def get_perms(mem: discord.Member):
     """
     Return a tuple (is_admin, is_priv) for a given user
     """
-    if mem.id in common.ADMIN_USERS:
-        return True, True
 
     is_priv = False
     for role in mem.roles:
