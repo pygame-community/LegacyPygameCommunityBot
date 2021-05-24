@@ -381,7 +381,7 @@ class BaseCommand:
                 if not arg.startswith("(") or not arg.endswith(")"):
                     raise ValueError()
 
-                splits = [int(i) for i in arg[1:-1].split("-")]
+                splits = [int(i) for i in arg[1:-1].split(";")]
                 if splits and len(splits) <= 3:
                     return range(*splits)
                 raise ValueError()
@@ -403,6 +403,23 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno == "discord.TextChannel":
+                ids = None
+                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
+                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
+
+                if arg.startswith(prefix1):
+                    arg = arg[:-1] if arg.endswith("/") else arg
+                    ids = arg[len(prefix1):].split(sep="/")
+                elif arg.startswith(prefix2):
+                    arg = arg[:-1] if arg.endswith("/") else arg
+                    ids = arg[len(prefix2):].split(sep="/")
+                
+                if ids is not None:
+                    if len(ids) == 1:
+                        arg = ids[0]
+                    else:
+                        raise ValueError()
+                
                 chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
                     raise ValueError()
@@ -410,7 +427,24 @@ class BaseCommand:
                 return chan
 
             elif anno == "discord.Message":
-                a, b, c = arg.partition("/")
+                ids = None
+                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
+                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
+
+                if arg.startswith(prefix1):
+                    ids = arg[len(prefix1):].split(sep="/")
+                elif arg.startswith(prefix2):
+                    ids = arg[len(prefix2):].split(sep="/")
+                
+                if ids is not None:
+                    if len(ids) == 2:
+                        b = "/"
+                        a, c = ids
+                    else:
+                        raise ValueError()
+                else:
+                    a, b, c = arg.partition("/")
+                
                 if b:
                     msg = int(c)
                     chan = self.guild.get_channel(utils.filter_id(a))
@@ -528,9 +562,9 @@ class BaseCommand:
             raise BotException(
                 "Cannot execute comamand!",
                 f"The command '{cmd}' has been temporarily been blocked from "
-                + "running, while wizards are casting their spells on it!\n"
-                + "Please try running the command after the maintenance work "
-                + "has been finished",
+                "running, while wizards are casting their spells on it!\n"
+                "Please try running the command after the maintenance work "
+                "has been finished",
             )
 
         is_group = False

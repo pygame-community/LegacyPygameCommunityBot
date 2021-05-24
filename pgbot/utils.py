@@ -35,6 +35,14 @@ def discordify(text):
     """
     return discord.utils.escape_markdown(text)
 
+def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: int = 10):
+    """
+    A simple horizontal progress bar generator.
+    """
+    percentage = 0 if pct < 0 else 1 if pct > 1 else pct
+    return full_bar*(int(divisions*pct)) + empty_bar*(divisions-int(divisions*pct))
+
+
 
 def format_time(
     seconds: float,

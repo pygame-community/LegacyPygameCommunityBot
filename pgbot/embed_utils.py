@@ -35,7 +35,7 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
 
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
-            new_value = recursive_update(old_dict.get(k, {}), v)
+            new_value = recursive_update(old_dict.get(k, {}), v, skip_value=skip_value)
             if new_value != skip_value:
                 old_dict[k] = new_value
         else:

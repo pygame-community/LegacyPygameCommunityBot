@@ -29,6 +29,7 @@ roles_channel: discord.TextChannel
 guide_channel: discord.TextChannel
 entries_discussion_channel: discord.TextChannel
 entry_channels = {}
+CHANNEL_NAME_MAP: dict
 
 cmd_logs = {}
 
