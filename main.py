@@ -127,11 +127,11 @@ async def on_message(msg: discord.Message):
         emotion.update("bored", -15)
 
     elif not common.TEST_MODE:
-        no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
-        # want the bot spamming the dario quote
+        # want the bot spamming the bydariogamer quote
+        # no_mentions = discord.AllowedMentions.none()
         # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
         #     # ded chat makes snek sad
         #     await msg.channel.send(
@@ -152,26 +152,8 @@ async def on_message(msg: discord.Message):
             await embed_utils.send(
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
-        else:
-            happy = emotion.get("happy")
-            if happy < -60:
-                # snek sad, no dad jokes
-                return
-
-            prob = 8 if happy <= 20 else (100 - happy) // 10
-            prob += 1
-
-            lowered = msg.content.lower()
-            if "i am" in lowered and len(lowered) < 60:
-                # snek is a special case, he loves dad jokes so he will get em
-                # everytime
-                if msg.author.id != 683852333293109269 and random.randint(0, prob):
-                    return
-
-                name = msg.content[lowered.index("i am") + 4 :].strip()
-                await msg.channel.send(
-                    f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
-                )
+        elif random.random() < emotion.get("happy")/200 or msg.author.id == 683852333293109269:
+            await emotion.dad_joke(msg)
 
 
 @common.bot.event
