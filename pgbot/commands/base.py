@@ -378,10 +378,11 @@ class BaseCommand:
                 return float(arg)
 
             elif anno == "range":
-                if not arg.startswith("(") or not arg.endswith(")"):
+                if not arg.startswith("range(") or not arg.endswith(")"):
                     raise ValueError()
 
-                splits = [int(i) for i in arg[1:-1].split(";")]
+                splits = [int(i.strip()) for i in arg[6:-1].split(",")]
+
                 if splits and len(splits) <= 3:
                     return range(*splits)
                 raise ValueError()
@@ -407,19 +408,24 @@ class BaseCommand:
                 prefix1 = f"https://discord.com/channels/{self.guild.id}/"
                 prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
 
-                if arg.startswith(prefix1):
+                if arg.startswith((prefix1, f"<{prefix1}")):
+                    arg = arg[1:] if arg.startswith("<") else arg
+                    arg = arg[:-1] if arg.endswith(">") else arg
                     arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix1):].split(sep="/")
-                elif arg.startswith(prefix2):
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix2):].split(sep="/")
+                    ids = arg[len(prefix1) :].split(sep="/")
                 
+                elif arg.startswith((prefix2, f"<{prefix2}")):
+                    arg = arg[1:] if arg.startswith("<") else arg
+                    arg = arg[:-1] if arg.endswith(">") else arg
+                    arg = arg[:-1] if arg.endswith("/") else arg
+                    ids = arg[len(prefix2) :].split(sep="/")
+
                 if ids is not None:
                     if len(ids) == 1:
                         arg = ids[0]
                     else:
                         raise ValueError()
-                
+
                 chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
                     raise ValueError()
@@ -431,11 +437,18 @@ class BaseCommand:
                 prefix1 = f"https://discord.com/channels/{self.guild.id}/"
                 prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
 
-                if arg.startswith(prefix1):
-                    ids = arg[len(prefix1):].split(sep="/")
-                elif arg.startswith(prefix2):
-                    ids = arg[len(prefix2):].split(sep="/")
+                if arg.startswith((prefix1, f"<{prefix1}")):
+                    arg = arg[1:] if arg.startswith("<") else arg
+                    arg = arg[:-1] if arg.endswith(">") else arg
+                    arg = arg[:-1] if arg.endswith("/") else arg
+                    ids = arg[len(prefix1) :].split(sep="/")
                 
+                elif arg.startswith((prefix2, f"<{prefix2}")):
+                    arg = arg[1:] if arg.startswith("<") else arg
+                    arg = arg[:-1] if arg.endswith(">") else arg
+                    arg = arg[:-1] if arg.endswith("/") else arg
+                    ids = arg[len(prefix2) :].split(sep="/")
+
                 if ids is not None:
                     if len(ids) == 2:
                         b = "/"
@@ -444,7 +457,7 @@ class BaseCommand:
                         raise ValueError()
                 else:
                     a, b, c = arg.partition("/")
-                
+
                 if b:
                     msg = int(c)
                     chan = self.guild.get_channel(utils.filter_id(a))
