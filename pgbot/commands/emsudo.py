@@ -50,7 +50,7 @@ class EmsudoCommand(BaseCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
-                    + utils.progress_bar(i/data_count, divisions=30)
+                    + utils.progress_bar(i / data_count, divisions=30),
                 )
             )
             await self.invoke_msg.channel.trigger_typing()
@@ -272,12 +272,12 @@ class EmsudoCommand(BaseCommand):
             await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
             await asyncio.sleep(0)
 
-            if i+1 == data_count:
+            if i + 1 == data_count:
                 await self.response_msg.edit(
                     embed=embed_utils.create(
                         title="Processing Complete",
                         description=f"`{data_count}/{data_count}` inputs processed\n"
-                        f"100% | " + utils.progress_bar(1.0, divisions=30)
+                        f"100% | " + utils.progress_bar(1.0, divisions=30),
                     )
                 )
 
@@ -588,7 +588,7 @@ class EmsudoCommand(BaseCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i/msg_count, divisions=30)
+                    + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
             await self.response_msg.channel.trigger_typing()
@@ -604,11 +604,11 @@ class EmsudoCommand(BaseCommand):
             embed=embed_utils.create(
                 title=f"Your command is being processed:",
                 description=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10.0)
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
     async def cmd_emsudo_edit(
@@ -641,7 +641,7 @@ class EmsudoCommand(BaseCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
-                    + utils.progress_bar(i/data_count, divisions=30)
+                    + utils.progress_bar(i / data_count, divisions=30),
                 )
             )
             await self.invoke_msg.channel.trigger_typing()
@@ -863,13 +863,12 @@ class EmsudoCommand(BaseCommand):
                 if arg_count > 6:
                     util_edit_embed_args.update(timestamp=args[6])
 
-                
-            if i+1 == data_count:
+            if i + 1 == data_count:
                 await self.response_msg.edit(
                     embed=embed_utils.create(
                         title="Processing Complete",
                         description=f"`{data_count}/{data_count}` messages processed\n"
-                        f"100% | " + utils.progress_bar(1.0, divisions=30)
+                        f"100% | " + utils.progress_bar(1.0, divisions=30),
                     )
                 )
 
@@ -1050,7 +1049,7 @@ class EmsudoCommand(BaseCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i/msg_count, divisions=30)
+                    + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
             await self.response_msg.channel.trigger_typing()
@@ -1118,11 +1117,11 @@ class EmsudoCommand(BaseCommand):
                 embed=embed_utils.create(
                     title="Processing Complete",
                     description=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30)
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
                 )
             )
 
-        await self.response_msg.delete(delay=10.0)
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
     async def cmd_emsudo_add_field(
         self,

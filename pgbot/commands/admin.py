@@ -228,7 +228,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
-                    + utils.progress_bar(i/data_count, divisions=30)
+                    + utils.progress_bar(i / data_count, divisions=30),
                 )
             )
             attachment_msg: discord.Message = None
@@ -324,11 +324,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title="Processing Complete",
                 description=f"`{data_count}/{data_count}` inputs processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10.0)
+        await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
     async def cmd_sudo_edit(
@@ -531,6 +531,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         quantity: int,
         urls: bool = False,
         pinned: bool = False,
+        pin_range: Optional[range] = None,
         before: Optional[Union[int, datetime.datetime]] = None,
         after: Optional[Union[int, datetime.datetime]] = None,
         around: Optional[Union[int, datetime.datetime]] = None,
@@ -548,6 +549,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_id, for admins to fetch several message IDs at once
         """
 
+        channel_perms = origin.permissions_for(self.invoke_msg.author)
+
+        if not any(channel_perms.view_channel, channel_perms.read_message_history):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
         prefix = prefix.string
         sep = sep.string
         suffix = suffix.string
@@ -561,18 +570,24 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "No pinned messages found",
                     "No pinned messages were found in the specified channel.",
                 )
-            
+
             if not oldest_first:
                 messages.reverse()
 
             if quantity > 0:
-                messages = messages[:quantity+1]
-        
+                messages = messages[: quantity + 1]
+            
+            elif quantity == 0:
+                if pin_range:
+                    messages = messages[pin_range.start : pin_range.stop : pin_range.step]
+
             elif quantity < 0:
                 raise BotException(
                     "Invalid `quantity` argument",
                     "Quantity has to be a positive integer (`=> 0`).",
                 )
+
+            
         else:
             if isinstance(before, int):
                 try:
@@ -641,12 +656,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
             fobj.write(output_str)
             fobj.seek(0)
             try:
-                await destination.send(file=discord.File(fobj, filename=output_filename))
-            except discord.HTTPException as e:
-                raise BotException(
-                    "Something went wrong",
-                    e.args[0]
+                await destination.send(
+                    file=discord.File(fobj, filename=output_filename)
                 )
+            except discord.HTTPException as e:
+                raise BotException("Something went wrong", e.args[0])
 
         await self.response_msg.delete()
 
@@ -676,7 +690,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i/msg_count, divisions=30)
+                    + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
             await self.response_msg.channel.trigger_typing()
@@ -709,9 +723,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     allowed_mentions=no_mentions,
                 )
             else:
-                raise BotException(
-                    f"Cannot clone an empty message!", ""
-                )
+                raise BotException(f"Cannot clone an empty message!", "")
 
             for i in range(1, len(attached_files)):
                 await self.response_msg.channel.send(
@@ -735,11 +747,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title=f"Processing Complete",
                 description=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10)
+        await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
 
     async def cmd_info(
         self,
@@ -767,7 +779,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     title=f"Your command is being processed:",
                     description=f"`{i}/{obj_count}` inputs processed\n"
                     f"{(i/obj_count)*100:.01f}% | "
-                    + utils.progress_bar(i/obj_count, divisions=30)
+                    + utils.progress_bar(i / obj_count, divisions=30),
                 )
             )
             await self.response_msg.channel.trigger_typing()
@@ -782,16 +794,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 await self.response_msg.channel.send(embed=embed)
 
             await asyncio.sleep(0)
-        
+
         await self.response_msg.edit(
             embed=embed_utils.create(
                 title="Processing Complete",
                 description=f"`{obj_count}/{obj_count}` inputs processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10.0)
+        await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
     async def cmd_heap(self):
         """
@@ -847,6 +859,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!archive, for admins to archive messages
         """
+
+        channel_perms = origin.permissions_for(self.invoke_msg.author)
+
+        if not all(channel_perms.view_channel, channel_perms.read_message_history):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         archive_header_msg = None
         archive_header_msg_embed = None
@@ -957,7 +977,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         title=f"Your command is being processed:",
                         description=f"`{i}/{msg_count}` messages archived\n"
                         f"{(i/msg_count)*100:.01f}% | "
-                        + utils.progress_bar(i/msg_count, divisions=30)
+                        + utils.progress_bar(i / msg_count, divisions=30),
                     )
                 )
                 author = msg.author
@@ -1121,11 +1141,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title=f"Successfully archived {msg_count} message(s)!",
                 description=f"`{msg_count}/{msg_count}` messages archived\n"
-                f"100% | "
-                + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
-        await self.response_msg.delete(delay=10.0)
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
     async def cmd_pin(
         self,
@@ -1185,7 +1204,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 embed=embed_utils.create(
                     title=f"Your command is being processed:",
                     description=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | " + utils.progress_bar(i/msg_count, divisions=30)
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
             try:
@@ -1195,7 +1215,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if delete_system_messages:
                 try:
-                    await (await channel.fetch_message(channel.last_message_id)).delete()
+                    await (
+                        await channel.fetch_message(channel.last_message_id)
+                    ).delete()
                 except (discord.HTTPException, discord.NotFound) as e:
                     pass
 
@@ -1205,12 +1227,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title=f"Sucessfully pinned {len(input_msgs)} message(s)! ({unpin_count} removed)",
                 description=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
         await self.invoke_msg.delete()
-        await self.response_msg.delete(delay=10)
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
     async def cmd_unpin(
         self,
@@ -1252,7 +1274,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
         pinned_msgs = await channel.pins()
-        pinned_msg_id_set = set( msg.id for msg in pinned_msgs )
+        pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
@@ -1260,7 +1282,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 embed=embed_utils.create(
                     title=f"Your command is being processed:",
                     description=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | " + utils.progress_bar(i/msg_count, divisions=30)
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
 
@@ -1276,22 +1299,22 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title=f"Sucessfully unpinned {msg_count} message(s)!",
                 description=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10)
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
-    async def cmd_unpin_by_index(
+    async def cmd_unpin_at(
         self,
         channel: discord.TextChannel,
         *indices: Union[int, range],
     ):
         """
         ->type Other commands
-        ->signature pg!pin <channel> <message> <message>...
+        ->signature pg!unpin_at <channel> <index/(start;stop;step)> ...
         ->description Unpin a message in the specified channel.
-        ->example command pg!unpin #general 23456234567834567 3456734523456734567...
+        ->example command pg!unpin_at #general 3... (9;15)...
         """
 
         channel_perms = channel.permissions_for(self.invoke_msg.author)
@@ -1311,13 +1334,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
         pinned_msgs = await channel.pins()
 
         pinned_msg_count = len(pinned_msgs)
-        
+
         if not pinned_msgs:
             raise BotException(
                 f"No messages to unpin!",
                 "No messages are currently pinned on the specified channel.",
             )
-        
+
         unpinned_msg_id_set = set()
 
         indices_list = []
@@ -1331,7 +1354,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                 else:
                     indices_list.extend(index)
-            
+
             else:
                 indices_list.append(index)
 
@@ -1342,17 +1365,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         for i, unpin_index in enumerate(indices_list):
             if unpin_index < 0:
-                unpin_index = pinned_msg_count+unpin_index
-             
+                unpin_index = pinned_msg_count + unpin_index
+
             await self.response_msg.edit(
                 embed=embed_utils.create(
                     title=f"Your command is being processed:",
                     description=f"`{i}/{idx_count}` messages processed\n"
-                    f"{(i/idx_count)*100:.01f}% | " + utils.progress_bar(i/idx_count, divisions=30)
+                    f"{(i/idx_count)*100:.01f}% | "
+                    + utils.progress_bar(i / idx_count, divisions=30),
                 )
             )
 
-            if 0 <= unpin_index < pinned_msg_count:         
+            if 0 <= unpin_index < pinned_msg_count:
                 msg = pinned_msgs[unpin_index]
 
                 if msg.id not in unpinned_msg_id_set:
@@ -1360,7 +1384,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         await msg.unpin()
                         unpinned_msg_id_set.add(msg.id)
                     except discord.HTTPException as e:
-                        raise BotException(f"Cannot unpin input message {i}!", e.args[0])
+                        raise BotException(
+                            f"Cannot unpin input message {i}!", e.args[0]
+                        )
 
             await asyncio.sleep(0)
 
@@ -1368,11 +1394,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed=embed_utils.create(
                 title=f"Sucessfully unpinned {idx_count} message(s)!",
                 description=f"`{idx_count}/{idx_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30)
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
 
-        await self.response_msg.delete(delay=10)
+        await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
 
     @add_group("poll")
     async def cmd_poll(
