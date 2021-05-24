@@ -126,7 +126,7 @@ async def on_message(msg: discord.Message):
 
         emotion.update("bored", -15)
 
-    elif common.TEST_MODE:
+    elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
