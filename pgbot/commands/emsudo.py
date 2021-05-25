@@ -1102,18 +1102,18 @@ class EmsudoCommand(BaseCommand):
             )
 
         embed_attr_keys = {
-            "author",
-            "provider",
-            "title",
-            "url",
-            "description",
-            "type",
-            "color",
-            "fields",
-            "thumbnail",
-            "image",
-            "footer",
-            "timestamp",
+            "provider": None,
+            "type": None,
+            "title": None,
+            "description": None,
+            "url": None,
+            "color":None,
+            "timestamp": None,
+            "footer": None,
+            "thumbnail": None,
+            "image" : None,
+            "author": None,
+            "fields": None
         }
 
         reduced_embed_attr_keys = set()
@@ -1194,7 +1194,7 @@ class EmsudoCommand(BaseCommand):
 
                 with io.StringIO() as fobj:
                     embed_utils.export_embed_data(
-                        embed_dict, fp=fobj, indent=4, as_json=json
+                        {k:embed_dict[k] for k in embed_attr_keys if k in embed_dict}, fp=fobj, indent=4, as_json=json
                     )
                     fobj.seek(0)
                     await self.response_msg.channel.send(
