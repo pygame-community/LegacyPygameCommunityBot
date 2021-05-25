@@ -44,8 +44,10 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
 
     return old_dict
 
+
 def copy_embed(embed):
     return discord.Embed.from_dict(embed.to_dict())
+
 
 def get_fields(*messages):
     """
@@ -742,7 +744,7 @@ async def clone_field(message, embed, index):
     embed_dict["fields"].insert(index, cloned_field)
     if message is None:
         return embed
-    
+
     return await message.edit(embed=discord.Embed.from_dict(embed_dict))
 
 
@@ -776,7 +778,7 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
         for index in parsed_field_indices:
             cloned_field = embed_dict["fields"][index].copy()
             embed_dict["fields"].insert(index, cloned_field)
-    
+
     if message is None:
         return embed
 
@@ -800,7 +802,7 @@ def import_embed_data(
     from_json=False,
     from_json_string=False,
     as_string=False,
-    as_dict=True
+    as_dict=True,
 ):
     """
     Import embed data from a file or a string containing JSON

@@ -75,5 +75,5 @@ async def routine(guild: discord.Guild):
     routine functions to handle stuff
     """
     await handle_reminders(guild)
-    if not random.randint(0, 3):
+    if random.randint(0, 3) == 0:
         emotion.update("bored", 1)
