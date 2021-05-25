@@ -532,9 +532,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         urls: bool = False,
         pinned: bool = False,
         pin_range: Optional[range] = None,
-        before: Optional[Union[int, datetime.datetime]] = None,
-        after: Optional[Union[int, datetime.datetime]] = None,
-        around: Optional[Union[int, datetime.datetime]] = None,
+        before: Optional[Union[discord.Message, datetime.datetime]] = None,
+        after: Optional[Union[discord.Message, datetime.datetime]] = None,
+        around: Optional[Union[discord.Message, datetime.datetime]] = None,
         oldest_first: bool = True,
         prefix: String = String(""),
         sep: String = String(" "),
@@ -542,11 +542,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!sudo_ids <origin channel> <quantity> [mode] [destination channel]
-        [before] [after] [around] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
+        ->signature pg!sudo_fetch <origin channel> <quantity> [urls=False] [pinned=False] [before=None]
+        [after=None] [around=None] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
         ->description Fetch messages IDs or URLs
         -----
-        Implement pg!sudo_id, for admins to fetch several message IDs at once
+        Implement pg!sudo_fetch, for admins to fetch several message IDs and links at once
         """
 
         channel_perms = origin.permissions_for(self.invoke_msg.author)
@@ -590,32 +590,23 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
         else:
-            if isinstance(before, int):
-                try:
-                    before = await origin.fetch_message(before)
-                except discord.NotFound:
-                    raise BotException(
-                        "Invalid `before` argument",
-                        "`before` has to be an ID to a message from the origin channel",
-                    )
+            if isinstance(before, discord.Message) and before.channel != origin:
+                raise BotException(
+                    "Invalid `before` argument",
+                    "`before` has to be an ID to a message from the origin channel",
+                )
 
-            if isinstance(after, int):
-                try:
-                    after = await origin.fetch_message(after)
-                except discord.NotFound:
-                    raise BotException(
-                        "Invalid `after` argument",
-                        "`after` has to be an ID to a message from the origin channel",
-                    )
+            if isinstance(after, discord.Message) and after.channel != origin:
+                raise BotException(
+                    "Invalid `after` argument",
+                    "`after` has to be an ID to a message from the origin channel",
+                )
 
-            if isinstance(around, int):
-                try:
-                    around = await origin.fetch_message(around)
-                except discord.NotFound:
-                    raise BotException(
-                        "Invalid `around` argument",
-                        "`around` has to be an ID to a message from the origin channel",
-                    )
+            if isinstance(around, discord.Message) and around.channel != origin:
+                raise BotException(
+                    "Invalid `around` argument",
+                    "`around` has to be an ID to a message from the origin channel",
+                )
 
             if quantity <= 0:
                 if quantity == 0 and not after:
@@ -840,9 +831,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         quantity: int,
         mode: Optional[int] = 0,
         destination: Optional[discord.TextChannel] = None,
-        before: Optional[Union[int, datetime.datetime]] = None,
-        after: Optional[Union[int, datetime.datetime]] = None,
-        around: Optional[Union[int, datetime.datetime]] = None,
+        before: Optional[Union[discord.Message, datetime.datetime]] = None,
+        after: Optional[Union[discord.Message, datetime.datetime]] = None,
+        around: Optional[Union[discord.Message, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
@@ -884,32 +875,23 @@ class AdminCommand(UserCommand, EmsudoCommand):
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider_str.string
 
-        if isinstance(before, int):
-            try:
-                before = await origin.fetch_message(before)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `before` argument",
-                    "`before` has to be an ID to a message from the origin channel",
-                )
+        if isinstance(before, discord.Message) and before.channel != origin:
+            raise BotException(
+                "Invalid `before` argument",
+                "`before` has to be an ID to a message from the origin channel",
+            )
 
-        if isinstance(after, int):
-            try:
-                after = await origin.fetch_message(after)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `after` argument",
-                    "`after` has to be an ID to a message from the origin channel",
-                )
+        if isinstance(after, discord.Message) and after.channel != origin:
+            raise BotException(
+                "Invalid `after` argument",
+                "`after` has to be an ID to a message from the origin channel",
+            )
 
-        if isinstance(around, int):
-            try:
-                around = await origin.fetch_message(around)
-            except discord.NotFound:
-                raise BotException(
-                    "Invalid `around` argument",
-                    "`around` has to be an ID to a message from the origin channel",
-                )
+        if isinstance(around, discord.Message) and around.channel != origin:
+            raise BotException(
+                "Invalid `around` argument",
+                "`around` has to be an ID to a message from the origin channel",
+            )
 
         if quantity <= 0:
             if quantity == 0 and not after:
@@ -1008,7 +990,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         else:
                             author_embed = embed_utils.create(
                                 description=f"{author.mention}"
-                                f" (`{author.name}#{author.discriminator}`)\n"
+                                f"(`{author.name}#{author.discriminator}`)\n"
                                 f"**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
                                 footer_text="\nISO Time: "
@@ -1155,7 +1137,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_pin(
         self,
         channel: discord.TextChannel,
-        *msgs: int,
+        *msgs: discord.Message,
         delete_system_messages: bool = True,
         flush_bottom: bool = True,
     ):
@@ -1185,13 +1167,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "Cannot pin more than 50 messages in a channel.",
             )
 
-        try:
-            input_msgs = [await channel.fetch_message(msg_id) for msg_id in msgs]
-        except discord.NotFound:
+        if not all(msg.channel == channel for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
             )
+        
+        input_msgs = msgs
 
         pinned_msgs = await channel.pins()
 
@@ -1243,7 +1225,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_unpin(
         self,
         channel: discord.TextChannel,
-        *msgs: int,
+        *msgs: discord.Message,
     ):
         """
         ->type Other commands
@@ -1271,13 +1253,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "No more than 50 messages can be pinned in a channel.",
             )
 
-        try:
-            input_msgs = [await channel.fetch_message(msg_id) for msg_id in msgs]
-        except discord.NotFound:
+        if not all(msg.channel == channel for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
             )
+        
+        input_msgs = msgs
 
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
