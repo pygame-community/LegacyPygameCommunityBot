@@ -78,7 +78,7 @@ async def dad_joke(msg: discord.Message):
         name = msg.content[msg.content.lower()("i am") + 4 :].strip()
         if name:
             await msg.channel.send(
-                f"Hi {name}! I am <@!{common.BOT_ID}>",
+                f"Hi {name}! I am <@!{common.bot.user.id}>",
                 allowed_mentions=discord.AllowedMentions.none(),
             )
         elif lowered == "i am":

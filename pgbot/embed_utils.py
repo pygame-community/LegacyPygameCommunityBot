@@ -215,7 +215,7 @@ class PagedEmbed:
         await self.message.remove_reaction(str(event.emoji), event.member)
         if self.caller and self.caller.id != event.user_id:
             for role in event.member.roles:
-                if role.id in common.ADMIN_ROLES:
+                if not common.GENERIC and role.id in common.ServerConstants.ADMIN_ROLES:
                     break
             else:
                 return False
@@ -847,11 +847,10 @@ def import_embed_data(
             ).with_traceback(e)
 
         if not isinstance(data, dict) and as_dict:
-                raise TypeError(
-                    f"the file at '{source}' must be of type dict"
-                    f", not '{type(data)}'"
-                )
-        
+            raise TypeError(
+                f"the file at '{source}' must be of type dict" f", not '{type(data)}'"
+            )
+
         if as_string:
             return repr(data)
 
@@ -867,7 +866,8 @@ def import_embed_data(
                     data = literal_eval(source.getvalue())
                 except Exception as e:
                     raise TypeError(
-                        f", not '{type(data)}'"f"the content of the file at '{source}' must be parsable into a"
+                        f", not '{type(data)}'"
+                        f"the content of the file at '{source}' must be parsable into a"
                         f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                     ).with_traceback(e)
 
@@ -885,7 +885,8 @@ def import_embed_data(
                         data = literal_eval(d.read())
                     except Exception as e:
                         raise TypeError(
-                            f", not '{type(data)}'"f"the content of the file at '{source}' must be parsable into a"
+                            f", not '{type(data)}'"
+                            f"the content of the file at '{source}' must be parsable into a"
                             f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                         ).with_traceback(e)
 
@@ -1005,13 +1006,15 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     else:
         member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
 
+    divider_roles = {} if common.GENERIC else common.ServerConstants.DIVIDER_ROLES
+
     member_func_role_count = (
         max(
             len(
                 tuple(
                     member.roles[i]
                     for i in range(1, len(member.roles))
-                    if member.roles[i].id not in common.DIVIDER_ROLES
+                    if member.roles[i].id not in divider_roles
                 )
             ),
             0,
