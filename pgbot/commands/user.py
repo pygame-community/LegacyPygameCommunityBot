@@ -271,7 +271,7 @@ class UserCommand(BaseCommand):
     async def cmd_reminders(self):
         """
         ->type Reminders
-        ->signature pg!reminders [member]
+        ->signature pg!reminders
         ->description View all the reminders you have set
         -----
         Implement pg!reminders, for users to view their reminders
@@ -279,12 +279,10 @@ class UserCommand(BaseCommand):
         db_data = db.DiscordDB("reminders").get({})
 
         msg = "You have no reminders set"
-        if self.author in db_data:
+        if self.author.id in db_data:
             msg = ""
             cnt = 0
-            for on, (reminder, chan_id, _) in db_data[
-                self.author.id
-            ].items():
+            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
                 msg += (
@@ -672,7 +670,7 @@ class UserCommand(BaseCommand):
             thumbnail_url=emoji_link,
             description=msg,
             footer_text="This is currently in beta version, so the end product may look different",
-            footer_icon_url="https://cdn.discordapp.com/emojis/844513909158969374.png?v=1"
+            footer_icon_url="https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
         )
 
     @fun_command

@@ -9,7 +9,6 @@ This file defines some important utility functions.
 from __future__ import annotations
 
 
-import asyncio
 import datetime
 import re
 import traceback
