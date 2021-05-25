@@ -268,7 +268,7 @@ class UserCommand(BaseCommand):
         await self.cmd_reminders_add(msg, None, delta=delta)
 
     @add_group("reminders")
-    async def cmd_reminders(self, member: Optional[discord.Member] = None):
+    async def cmd_reminders(self):
         """
         ->type Reminders
         ->signature pg!reminders [member]
@@ -279,11 +279,11 @@ class UserCommand(BaseCommand):
         db_data = db.DiscordDB("reminders").get({})
 
         msg = "You have no reminders set"
-        if (self.author.id if member is None else member.id) in db_data:
+        if self.author in db_data:
             msg = ""
             cnt = 0
             for on, (reminder, chan_id, _) in db_data[
-                (self.author.id if member is None else member.id)
+                self.author.id
             ].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
@@ -295,7 +295,7 @@ class UserCommand(BaseCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            f"Reminders for {self.author.display_name if member is None else member.display_name}:",
+            f"Reminders for {self.author.display_name}:",
             msg,
         )
 
