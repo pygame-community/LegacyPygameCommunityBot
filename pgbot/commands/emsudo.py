@@ -40,6 +40,19 @@ class EmsudoCommand(BaseCommand):
         to the channel where this command was invoked. If the optional arguments `[data]`
         are omitted, attempt to read input data from an attachment in the message that invoked
         this command.
+        ->example command pg!emsudo "This is one embed" "This is another"
+        pg!emsudo 987654321987654321
+        pg!emsudo
+        \\`\\`\\`json
+        {
+            "title": "An Embed",
+            "description": "Lol",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "footer text"
+                }
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudos, for admins to send multiple embeds via the bot
         """
@@ -380,7 +393,7 @@ class EmsudoCommand(BaseCommand):
                 )
 
         await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        await self.response_msg.delete(delay=10.0 if len(datas) > 1 else 0)
 
     async def cmd_emsudo_replace(
         self,
@@ -395,6 +408,19 @@ class EmsudoCommand(BaseCommand):
         Replace the embed of a message in the channel where this command was invoked using the given arguments.
         If the optional argument `[data]` is omitted, attempt to read input data from an attachment in the message that invoked
         this command.
+        ->example command pg!emsudo_replace 987654321987654321 "Whoops the embed is boring now"
+        pg!emsudo_replace 987654321987654321 123456789012345678
+        pg!emsudo_replace 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "title": "An Embed Replacement",
+            "description": "Lolz",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "another footer text"
+                }
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_replace, for admins to replace embeds via the bot
         """
@@ -627,12 +653,25 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_add <message> [data] [overwrite]
+        ->signature pg!emsudo_add <message> [data] [overwrite=False]
         ->description Add an embed through the bot
         ->extended description
         Add an embed to a message in the channel where this command was invoked using the given arguments.
         If the optional argument `[data]` is omitted, attempt to read input data from an attachment in the message that invoked
         this command.
+        ->example command pg!emsudo_add 987654321987654321 "A wild __Embed__ appeared!"
+        pg!emsudo_add 987654321987654321 123456789012345678
+        pg!emsudo_add 987654321987654321
+        \\`\\`\\`json
+        {
+            "title": "An Embed Replacement",
+            "description": "Lolz",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "another footer text"
+                }
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_add, for admins to add embeds to messages via the bot
         """
@@ -702,6 +741,17 @@ class EmsudoCommand(BaseCommand):
         ->description Edit an embed through the bot
         ->extended description
         Update the given attributes of an embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command pg!emsudo_edit 987654321987654321 "Lol only the embed description changed"
+        pg!emsudo_edit 987654321987654321 123456789012345678 251613726327333621
+        pg!emsudo_edit 987654321987654321
+        \\`\\`\\`json
+        {
+            "title": "An Embed Edit",
+            "footer": {
+                "text": "yet another footer text"
+                }
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_edit, for admins to replace embeds via the bot
         """
@@ -1036,6 +1086,8 @@ class EmsudoCommand(BaseCommand):
         ->description Clone all embeds.
         ->extended description
         Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
+        ->example command
+        pg!emsudo_clone 987654321987654321 123456789123456789 https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
@@ -1078,19 +1130,15 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_get  <message> [<message>...] [attributes]
+        ->signature pg!emsudo_get <message> [<message>...] [attributes=""]
         ->description Get the embed data of a message
         ->extended description
-        ```
-        pg!emsudo_get {message_id} {optional_embed_attr} {optional_embed_attr}...
-        pg!emsudo_get {channel_id} {message_id} {optional_embed_attr} {optional_embed_attr}...
-        ```
         Get the contents of the embed of a message from the given arguments and send it as another message
         (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
-        ->example command pg!emsudo_get 123456789123456789 title
-        pg!emsudo_get 123456789123456789/98765432198765444321
+        ->example command pg!emsudo_get 98765432198765444321
         pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields author"
+        pg!emsudo_get 123456789123456789/98765432198765444321 attributes="fields 2 3 7 author"
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
@@ -1246,14 +1294,19 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_add_field [*args]
+        ->signature pg!emsudo_add_field <message> <data>
         ->description Add an embed field through the bot
         ->extended description
-        ```
-        pg!emsudo_add_field ({target_message_id}, {field_string})
-        pg!emsudo_add_field ({target_message_id}, {field_dict})
-        ```
         Add an embed field to the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command 
+        pg!emsudo_add_field 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+           "name": "Mr Field",
+           "value": "I value nothing",
+           "inline": false
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_add_field, for admins to add fields to embeds sent via the bot
         """
@@ -1367,6 +1420,24 @@ class EmsudoCommand(BaseCommand):
         ->description Add embed fields through the bot
         ->extended description
         Add multiple embed fields to the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command
+        pg!emsudo_add_fields 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "fields": [
+                {
+                    "name": "Mrs Field",
+                    "value": "I value nothing more than my husband",
+                    "inline": true
+                },
+                {
+                    "name": "Mr Field",
+                    "value": "I value nothing more than being embedded",
+                    "inline": false
+                }
+            ]
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_add_fields, for admins to add multiple fields to embeds sent via the bot
         """
@@ -1533,6 +1604,15 @@ class EmsudoCommand(BaseCommand):
         ->description Insert an embed field through the bot
         ->extended description
         Insert an embed field at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command
+        pg!emsudo_insert_field 2 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "name": "Mrs Field",
+            "value": "I value nothing more than my husband",
+            "inline": true
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_insert_field, for admins to insert fields into embeds sent via the bot
         """
@@ -1641,6 +1721,24 @@ class EmsudoCommand(BaseCommand):
         ->description Insert embed fields through the bot
         ->extended description
         Insert multiple embed fields at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command
+        pg!emsudo_insert_fields 2 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "fields": [
+                {
+                    "name": "Mrs Field",
+                    "value": "I value nothing more than my husband",
+                    "inline": true
+                },
+                {
+                    "name": "Baby Field",
+                    "value": "uwu",
+                    "inline": false
+                }
+            ]
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_insert_fields, for admins to insert multiple fields to embeds sent via the bot
         """
@@ -1807,11 +1905,16 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_edit_field [*args]
         ->description Replace an embed field through the bot
         ->extended description
-        ```
-        pg!emsudo_edit_field ({target_message_id}, {index}, {field_string})
-        pg!emsudo_edit_field ({target_message_id}, {index}, {field_dict})
-        ```
         Edit parts of an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command 
+        pg!emsudo_edit_field 7 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+           "name": "Boy Field",
+           "value": "I value nothing",
+           "inline": false
+        }
+        \\`\\`\\`
         -----
         Implement pg!emsudo_edit_field, for admins to update fields of embeds sent via the bot
         """
@@ -1920,6 +2023,18 @@ class EmsudoCommand(BaseCommand):
         Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
         Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
         to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
+        ->example command 
+        pg!emsudo_edit_fields 987654321987654321/123456789123456789
+        \\`\\`\\`python
+        [
+            {},
+            {
+                "name": "Girl Field",
+                "value": "I value...",
+                "inline": False
+            }
+        ]
+        \\`\\`\\`
         -----
         Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
         """
@@ -2084,10 +2199,15 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_replace [*args]
         ->description Replace an embed field through the bot
         ->extended description
-        ```
-        pg!emsudo_replace_field ({target_message_id}, {index}, {field_string})
-        pg!emsudo_replace_field ({target_message_id}, {index}, {field_dict})
-        ```
+        ->example command 
+        pg!emsudo_replace_field 2 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+           "name": "Uncle Field",
+           "value": "values.",
+           "inline": false
+        }
+        \\`\\`\\`
         Replace an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_replace_field, for admins to update fields of embeds sent via the bot
@@ -2193,10 +2313,8 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_swap_fields [*args]
         ->description Swap embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_swap_fields {target_message_id} {index_a} {index_b}
-        ```
         Swap the positions of embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command pg!emsudo_swap_fields 123456789123456789 6 9
         -----
         Implement pg!emsudo_swap_fields, for admins to swap fields in embeds sent via the bot
         """
@@ -2225,12 +2343,12 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_clone_fields [*args]
         ->description Clone multiple embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_clone_fields {target_message_id} {index_1} {index_2}... i={insertion_idx}
-        pg!emsudo_clone_fields ({target_message_id}, {range_object}, insertion_idx)
-        ```
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
-        If `insertion_idx` is excluded, the cloned fields will be inserted at the index where they were cloned from.
+        If `clone_to` is excluded, the cloned fields will be inserted at the index where they were cloned from.
+        ->example command 
+        pg!emsudo_clone_fields 987654321987654321 range(4, 10, 2) clone_to=1
+        pg!emsudo_clone_fields 987654321987654321 3 6 9 12 clone_to=8
+        pg!emsudo_clone_fields 123456674923481222/987654321987654321 range(6)
         -----
         Implement pg!emsudo_clone_fields, for admins to remove fields in embeds sent via the bot
         """
@@ -2279,11 +2397,10 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_remove_fields [*args]
         ->description Remove an embed field through the bot
         ->extended description
-        ```
-        pg!emsudo_remove_fields {target_message_id} {index_1} {index_2}...
-        pg!emsudo_remove_fields ({target_message_id}, {range_object})
-        ```
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        ->example command
+        pg!emsudo_remove_fields 987654321987654321/123456789123456789 range(0, 10, 2)
+        pg!emsudo_remove_fields 987654321987654321 5
         -----
         Implement pg!emsudo_remove_fields, for admins to remove fields in embeds sent via the bot
         """
@@ -2326,12 +2443,9 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_clear_fields [*args]
+        ->signature pg!emsudo_clear_fields <message>
         ->description Remove all embed fields through the bot
         ->extended description
-        ```
-        pg!emsudo_clear_fields {target_message_id}
-        ```
         Remove all embed fields of the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         Implement pg!emsudo_clear_fields, for admins to remove fields in embeds sent via the bot
