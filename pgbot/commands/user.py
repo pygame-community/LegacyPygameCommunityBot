@@ -661,6 +661,7 @@ class UserCommand(BaseCommand):
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1"
                 )
+                bot_emotion = "angry"
         except KeyError:
             pass
 
