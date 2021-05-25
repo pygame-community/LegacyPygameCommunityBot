@@ -392,8 +392,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     f"Too little/many characters!",
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
-        
-        await edit_msg.edit(content=msg_text)
+        try:
+            await edit_msg.edit(content=msg_text)
+        except discord.HTTPException as e:
+            raise BotException(
+                "An exception occured while handling the command!",
+                e.args[0]
+            )
         await self.invoke_msg.delete()
         await self.response_msg.delete()
         return

@@ -745,4 +745,4 @@ class BaseCommand:
                         file=discord.File(fobj, filename="exception.txt"),
                     )
 
-        await embed_utils.replace(self.response_msg, title, msg, 0xFF0000)
+        await embed_utils.replace_2(self.response_msg, author_name="BotException", title=title, description=msg, color=0xFF0000)
