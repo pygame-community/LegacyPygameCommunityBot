@@ -801,7 +801,9 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                msg_embed = await embed_utils.edit_from_dict(None, msg_embed, embed_dict)
+                msg_embed = await embed_utils.edit_from_dict(
+                    None, msg_embed, embed_dict
+                )
                 continue
 
             if not only_description:
@@ -818,7 +820,9 @@ class EmsudoCommand(BaseCommand):
                             color=0xFF0000,
                         )
                         continue
-                    msg_embed = await embed_utils.edit_from_dict(None, msg_embed, embed_dict)
+                    msg_embed = await embed_utils.edit_from_dict(
+                        None, msg_embed, embed_dict
+                    )
                     continue
 
                 else:
@@ -971,10 +975,12 @@ class EmsudoCommand(BaseCommand):
 
                     if arg_count > 6:
                         util_edit_embed_args.update(timestamp=args[6])
-                
-                msg_embed = await embed_utils.edit_2(None, msg_embed, **util_edit_embed_args) 
+
+                msg_embed = await embed_utils.edit_2(
+                    None, msg_embed, **util_edit_embed_args
+                )
                 await asyncio.sleep(0)
-   
+
         if not datas:
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
@@ -1009,7 +1015,7 @@ class EmsudoCommand(BaseCommand):
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
-            
+
         else:
             await msg.edit(embed=msg_embed)
             await self.response_msg.edit(
@@ -1019,10 +1025,9 @@ class EmsudoCommand(BaseCommand):
                     f"100% | " + utils.progress_bar(1.0, divisions=30),
                 )
             )
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
-        
 
     async def cmd_emsudo_clone(self, *msgs: discord.Message):
         """

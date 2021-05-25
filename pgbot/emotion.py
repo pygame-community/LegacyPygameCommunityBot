@@ -5,6 +5,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 
 This file defines some utitities and functions for the bots emotion system
 """
+import random
 
 import discord
 import unidecode
@@ -63,6 +64,7 @@ async def check_bonk(msg: discord.Message):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
+    bonks = msg.content.count(common.BONK) // 5 + random.randint(0, 8)
 
     update("anger", bonks)
     update("happy", -bonks)
@@ -81,3 +83,18 @@ async def dad_joke(msg: discord.Message):
             )
         elif lowered == "i am":
             await msg.channel.send(common.SHAKESPEARE_QUOTE)
+
+
+def euphoria():
+    db_obj.write(
+        {
+            "happy": EMOTION_CAPS["happy"][1],
+            "anger": EMOTION_CAPS["anger"][0],
+            "bored": 0,
+        }
+    )
+
+
+async def server_boost(msg: discord.Message):
+    euphoria()
+    await msg.channel.send("A LOT OF THANKSSS! :heart: :pg_snake:")

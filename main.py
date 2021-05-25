@@ -116,6 +116,9 @@ async def on_message(msg: discord.Message):
     """
     This function is called for every message by user.
     """
+    if msg.type == discord.MessageType.premium_guild_subscription:
+        await emotion.server_boost(msg)
+
     if msg.author.bot:
         return
 
