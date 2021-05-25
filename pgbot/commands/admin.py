@@ -210,7 +210,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo(
-        self, *datas: Union[discord.Message, String], from_attachment: bool = True
+        self, *datas: Union[discord.Message, String], from_attachment: bool = True,
     ):
         """
         ->type More admin commands
@@ -277,14 +277,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 msg_text = await attachment_obj.read()
                 msg_text = msg_text.decode()
 
-                if 0 < len(msg_text) <= 2000:
+                if not 0 < len(msg_text) <= 2000:
                     await self.channel.send(msg_text)
                     continue
 
-                raise BotException(
-                    f"Input {i}: Too little/many characters!",
-                    "a Discord message must contain at least one character and cannot contain more than 2000.",
-                )
+                    raise BotException(
+                        f"Input {i}: Too little/many characters!",
+                        "a Discord message must contain at least one character and cannot contain more than 2000.",
+                    )
 
             await asyncio.sleep(0)
 
@@ -345,15 +345,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
         attachment_msg: discord.Message = None
+        msg_text = ""
+
         if isinstance(data, String):
             if not data.string:
                 attachment_msg = self.invoke_msg
             else:
                 msg_text = data.string
-                await edit_msg.edit(content=msg_text)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
 
         elif isinstance(data, discord.Message):
             if from_attachment:
@@ -361,14 +359,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             else:
                 src_msg_txt = data.content
                 if src_msg_txt:
-                    await edit_msg.edit(content=src_msg_txt)
-                    await self.response_msg.delete()
-                    await self.invoke_msg.delete()
-                    return
-                raise BotException(
-                    "No message text found!",
-                    "The message given as input does not have any text content.",
-                )
+                    msg_text = src_msg_txt
+                else:
+                    raise BotException(
+                        "No message text found!",
+                        "The message given as input does not have any text content.",
+                    )
 
         if attachment_msg:
             if not attachment_msg.attachments:
@@ -393,17 +389,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
             msg_text = await attachment_obj.read()
             msg_text = msg_text.decode()
 
-            if len(msg_text) < 2001:
-                await edit_msg.edit(content=msg_text)
-                await self.response_msg.delete()
-                await self.invoke_msg.delete()
-                return
+            if not 0 < len(msg_text) <= 2000:
+                raise BotException(
+                    f"Too little/many characters!",
+                    "a Discord message must contain at least one character and cannot contain more than 2000.",
+                )
+        
+        await edit_msg.edit(content=msg_text)
+        await self.invoke_msg.delete()
+        await self.response_msg.delete()
+        return
 
-            raise BotException(
-                "Too many characters!",
-                "a Discord message cannot contain more than 2000 characters.",
-            )
-
+        
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
@@ -709,7 +706,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                     attached_files = [
                         (
-                            await a.to_file(spoiler=a.is_spoiler())
+                            await a.to_file(spoiler=a.is_spoiler() or spoiler)
                             if a.size <= file_size_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )

@@ -817,7 +817,7 @@ def import_embed_data(
                     f"The given string must contain a JSON object that"
                     f" can be converted into a Python `dict` object"
                 )
-            elif as_string:
+            if as_string:
                 json_data = json.dumps(json_data)
 
             return json_data
@@ -825,58 +825,78 @@ def import_embed_data(
         else:
             json_data = json.load(source)
 
-            if not isinstance(json_data, dict):
+            if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
                     f"the file at '{source}' must contain a JSON object that"
                     f" can be converted into a Python `dict` object"
                 )
-            elif as_string:
+            if as_string:
                 json_data = json.dumps(json_data)
 
             return json_data
 
     elif from_string:
         try:
-            dict_data = dict(literal_eval(source))
-        except Exception:
-            raise BotException(
-                f"the file at '{source}' must be of type dict"
-                f", not '{type(dict_data)}'"
-            )
+            data = literal_eval(source)
+        except Exception as e:
+            raise TypeError(
+                f"the content of the given object of type '{type(data).__name}' must be parsable into"
+                f" literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+            ).with_traceback(e)
 
+        if not isinstance(data, dict) and as_dict:
+                raise TypeError(
+                    f"the file at '{source}' must be of type dict"
+                    f", not '{type(data)}'"
+                )
+        
         if as_string:
-            return repr(dict_data)
+            return repr(data)
 
-        return dict_data
+        return data
 
     else:
-        dict_data = None
+        data = None
         if isinstance(source, io.StringIO):
             if as_string:
-                dict_data = source.getvalue()
+                data = source.getvalue()
             else:
-                dict_data = literal_eval(source.getvalue())
-                if not isinstance(dict_data, dict):
+                try:
+                    data = literal_eval(source.getvalue())
+                except Exception as e:
                     raise TypeError(
-                        f"the file/data at '{source}' must be of type dict"
-                        f", not '{type(dict_data)}'"
+                        f", not '{type(data)}'"f"the content of the file at '{source}' must be parsable into a"
+                        f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                    ).with_traceback(e)
+
+                if not isinstance(data, dict) and as_dict:
+                    raise TypeError(
+                        f"the file at '{source}' must be of type dict"
+                        f", not '{type(data)}'"
                     )
         else:
             with open(source, "r", encoding="utf-8") as d:
                 if as_string:
-                    dict_data = d.read()
+                    data = d.read()
                 else:
-                    dict_data = dict(literal_eval(d.read()))
-                    if not isinstance(dict_data, dict):
+                    try:
+                        data = literal_eval(d.read())
+                    except Exception as e:
+                        raise TypeError(
+                            f", not '{type(data)}'"f"the content of the file at '{source}' must be parsable into a"
+                            f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                        ).with_traceback(e)
+
+                    if not isinstance(data, dict) and as_dict:
                         raise TypeError(
                             f"the file at '{source}' must be of type dict"
-                            f", not '{type(dict_data)}'"
+                            f", not '{type(data)}'"
                         )
-        return dict_data
+        return data
 
 
 def export_embed_data(
-    data_dict: dict,
+    data: Union[dict, tuple, list],
     fp: Union[str, io.StringIO] = None,
     indent=None,
     as_json=True,
@@ -890,16 +910,16 @@ def export_embed_data(
         return_data = None
         if isinstance(fp, str):
             with open(fp, "w", encoding="utf-8") as fobj:
-                json.dump(data_dict, fobj, indent=indent)
+                json.dump(data, fobj, indent=indent)
             if always_return:
-                return_data = json.dumps(data_dict, indent=indent)
+                return_data = json.dumps(data, indent=indent)
 
         elif isinstance(fp, io.StringIO):
-            json.dump(data_dict, fp, indent=indent)
+            json.dump(data, fp, indent=indent)
             if always_return:
                 return_data = fp.getvalue()
         else:
-            return_data = json.dumps(data_dict, indent=indent)
+            return_data = json.dumps(data, indent=indent)
 
         return return_data
 
@@ -909,14 +929,14 @@ def export_embed_data(
             with open(fp, "w", encoding="utf-8") as fobj:
                 if always_return:
                     return_data = black.format_str(
-                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        repr(data),
                         mode=black.FileMode(),
                     )
                     fobj.write(return_data)
                 else:
                     fobj.write(
                         black.format_str(
-                            repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                            repr(data),
                             mode=black.FileMode(),
                         )
                     )
@@ -924,7 +944,7 @@ def export_embed_data(
         elif isinstance(fp, io.StringIO):
             if always_return:
                 return_data = black.format_str(
-                    repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                    repr(data),
                     mode=black.FileMode(),
                 )
                 fp.write(return_data)
@@ -932,13 +952,13 @@ def export_embed_data(
             else:
                 fp.write(
                     black.format_str(
-                        repr({k: data_dict[k] for k in reversed(data_dict.keys())}),
+                        repr(data),
                         mode=black.FileMode(),
                     )
                 )
                 fp.seek(0)
         else:
-            return_data = repr({k: data_dict[k] for k in reversed(data_dict.keys())})
+            return_data = repr(data)
 
         return return_data
 

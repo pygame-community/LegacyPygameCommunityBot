@@ -131,7 +131,13 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                try:
+                    await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                except discord.HTTPException as e:
+                    raise BotException(
+                        "An exception occured while handling the command!",
+                        e.args[0]
+                    )
                 continue
 
             if not only_description:
@@ -148,9 +154,14 @@ class EmsudoCommand(BaseCommand):
                             color=0xFF0000,
                         )
                         continue
-                    await embed_utils.send_from_dict(
-                        self.invoke_msg.channel, embed_dict
-                    )
+
+                    try:
+                        await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                    except discord.HTTPException as e:
+                        raise BotException(
+                            "An exception occured while handling the command!",
+                            e.args[0]
+                        )
                     continue
 
                 else:
@@ -166,7 +177,13 @@ class EmsudoCommand(BaseCommand):
                         continue
 
                     if isinstance(args, dict):
-                        await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                        try:
+                            await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                        except discord.HTTPException as e:
+                            raise BotException(
+                                "An exception occured while handling the command!",
+                                e.args[0]
+                            )
                         continue
                     elif not isinstance(args, (list, tuple)):
                         await embed_utils.send_2(
@@ -301,7 +318,15 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 6:
                         util_send_embed_args.update(timestamp=args[6])
 
-            await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+            try:
+                await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+            except discord.HTTPException as e:
+                await embed_utils.send_2(
+                    self.response_msg.channel,
+                    title="An exception occured while handling the command!",
+                    description=e.args[0],
+                    color=0xFF0000,
+                )
             await asyncio.sleep(0)
 
             if i + 1 == data_count:
@@ -346,10 +371,16 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+            try:
+                await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+            except discord.HTTPException as e:
+                raise BotException(
+                    "An exception occured while handling the command!",
+                    e.args[0]
+                )
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_replace(
         self,
@@ -715,7 +746,7 @@ class EmsudoCommand(BaseCommand):
             attachment_msg: discord.Message = None
             only_description = False
 
-            if data is False:
+            if not data:
                 attachment_msg = self.invoke_msg
 
             elif isinstance(data, String):
@@ -803,7 +834,7 @@ class EmsudoCommand(BaseCommand):
                         continue
 
                     if isinstance(args, dict):
-                        await embed_utils.edit_from_dict(msg, msg_embed, args)
+                        msg_embed = await embed_utils.edit_from_dict(None, msg_embed, args)
                         continue
                     elif not isinstance(args, (list, tuple)):
                         await embed_utils.send_2(
@@ -1258,52 +1289,67 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, CodeBlock):
-            try:
-                args = literal_eval(data.code)
-            except Exception as e:
-                raise BotException(
-                    "Invalid arguments!",
-                    f"```\n{''.join(utils.format_code_exception(e))}```",
-                )
-
-            if isinstance(args, dict):
-                field_dict = args
-
-            elif isinstance(args, str):
-                field_str = args
-
+            if data.lang == "json":
                 try:
-                    field_list = embed_utils.get_fields(field_str)
-                except (TypeError, IndexError):
+                    field_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
+
+                if isinstance(args, dict):
+                    field_dict = args
+
+                elif isinstance(args, str):
+                    field_str = args
+
+                    try:
+                        field_list = embed_utils.get_fields(field_str)
+                    except (TypeError, IndexError):
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"` or a code block '
+                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                        )
+
+                    if field_list:
+                        field_dict = {
+                            "name": field_list[0],
+                            "value": field_list[1],
+                            "inline": field_list[2],
+                        }
+
+                    else:
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"`',
+                        )
+                else:
                     raise BotException(
                         "Invalid format for field string(s)!",
                         ' The format should be `"<name|value|inline>"` or a code block '
                         "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
 
-                if field_list:
-                    field_dict = {
-                        "name": field_list[0],
-                        "value": field_list[1],
-                        "inline": field_list[2],
-                    }
-
-                else:
-                    raise BotException(
-                        "Invalid format for field string(s)!",
-                        ' The format should be `"<name|value|inline>"`',
-                    )
-            else:
-                raise BotException(
-                    "Invalid format for field string(s)!",
-                    ' The format should be `"<name|value|inline>"` or a code block '
-                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
-        await embed_utils.add_field_from_dict(msg, msg_embed, field_dict)
-
-        await self.response_msg.delete()
+        try:
+            await embed_utils.add_field_from_dict(msg, msg_embed, field_dict)
+        except discord.HTTPException as e:
+            raise BotException(
+                "An exception occured while handling the command!",
+                e.args[0]
+            )
+        
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
+        
 
     async def cmd_emsudo_add_fields(
         self,
@@ -1386,73 +1432,89 @@ class EmsudoCommand(BaseCommand):
             await embed_utils.add_fields_from_dicts(
                 msg, msg_embed, embed_dict["fields"]
             )
-            await self.response_msg.delete()
-            await self.invoke_msg.delete()
-            return
 
-        try:
-            args = literal_eval(data.code)
-        except Exception as e:
-            raise BotException(
-                "Invalid arguments!",
-                f"```\n{''.join(utils.format_code_exception(e))}```",
-            )
+        else:
+            if data.lang == "json":
+                try:
+                    embed_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+                
+                if "fields" not in embed_dict or not embed_dict["fields"]:
+                    raise BotException("No embed field data found in the given JSON embed data.")
 
-        if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args):
-                if isinstance(data, dict):
-                    field_dicts_list.append(data)
+                await embed_utils.add_fields_from_dicts(
+                    msg, msg_embed, embed_dict["fields"]
+                )
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
 
-                elif isinstance(data, str):
-                    try:
-                        data_list = embed_utils.get_fields(data)
-                    except (TypeError, IndexError):
-                        raise BotException(
-                            "Invalid format for field string(s)!",
-                            ' The format should be `"<name|value|inline>"` or a code block '
-                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                        )
+                if isinstance(args, (list, tuple)):
+                    for i, data in enumerate(args):
+                        if isinstance(data, dict):
+                            field_dicts_list.append(data)
 
-                    if len(data_list) == 3:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": data_list[2],
-                        }
-                    elif len(data_list) == 2:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": False,
-                        }
+                        elif isinstance(data, str):
+                            try:
+                                data_list = embed_utils.get_fields(data)
+                            except (TypeError, IndexError):
+                                raise BotException(
+                                    "Invalid format for field string(s)!",
+                                    ' The format should be `"<name|value|inline>"` or a code block '
+                                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                                )
 
-                    elif not data_list:
-                        await embed_utils.replace(
-                            self.response_msg,
-                            "Invalid format for field string!",
-                            "",
-                        )
-                        return
+                            if len(data_list) == 3:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": data_list[2],
+                                }
+                            elif len(data_list) == 2:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": False,
+                                }
 
-                    field_dicts_list.append(data_dict)
+                            elif not data_list:
+                                await embed_utils.replace(
+                                    self.response_msg,
+                                    "Invalid format for field string!",
+                                    "",
+                                )
+                                return
+
+                            field_dicts_list.append(data_dict)
+                        else:
+                            raise BotException(
+                                f"Invalid field string in input list at index {i}!",
+                                ' The format should be `"<name|value|inline>"` or a code block '
+                                "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                            )
+
                 else:
                     raise BotException(
-                        f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                        "",
+                        "Invalid arguments!",
+                        'Argument `data` must be omitted or be an empty string `""`,'
+                        " a message `[channel_id/]message_id` or a code block containing"
+                        ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
+                        " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
-        else:
-            raise BotException(
-                "Invalid arguments!",
-                'Argument `data` must be omitted or be an empty string `""`,'
-                " a message `[channel_id/]message_id` or a code block containing"
-                ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-            )
-
-        await embed_utils.add_fields_from_dicts(msg, msg_embed, field_dicts_list)
-
-        await self.response_msg.delete()
+                
+                await embed_utils.add_fields_from_dicts(msg, msg_embed, field_dicts_list)
+        
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
+        
 
     async def cmd_emsudo_insert_field(
         self,
@@ -1506,52 +1568,61 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, CodeBlock):
-            try:
-                args = literal_eval(data.code)
-            except Exception as e:
-                raise BotException(
-                    "Invalid arguments!",
-                    f"```\n{''.join(utils.format_code_exception(e))}```",
-                )
-
-            if isinstance(args, dict):
-                field_dict = args
-
-            elif isinstance(args, str):
-                field_str = args
-
+            if data.lang == "json":
                 try:
-                    field_list = embed_utils.get_fields(field_str)
-                except (TypeError, IndexError):
+                    field_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
+
+                if isinstance(args, dict):
+                    field_dict = args
+
+                elif isinstance(args, str):
+                    field_str = args
+
+                    try:
+                        field_list = embed_utils.get_fields(field_str)
+                    except (TypeError, IndexError):
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"` or a code block '
+                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                        )
+
+                    if field_list:
+                        field_dict = {
+                            "name": field_list[0],
+                            "value": field_list[1],
+                            "inline": field_list[2],
+                        }
+
+                    else:
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"`',
+                        )
+                else:
                     raise BotException(
                         "Invalid format for field string(s)!",
                         ' The format should be `"<name|value|inline>"` or a code block '
                         "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
 
-                if field_list:
-                    field_dict = {
-                        "name": field_list[0],
-                        "value": field_list[1],
-                        "inline": field_list[2],
-                    }
-
-                else:
-                    raise BotException(
-                        "Invalid format for field string(s)!",
-                        ' The format should be `"<name|value|inline>"`',
-                    )
-            else:
-                raise BotException(
-                    "Invalid format for field string(s)!",
-                    ' The format should be `"<name|value|inline>"` or a code block '
-                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         await embed_utils.insert_field_from_dict(msg, msg_embed, field_dict, index)
-
-        await self.response_msg.delete()
+        
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
+        
 
     async def cmd_emsudo_insert_fields(
         self,
@@ -1635,74 +1706,90 @@ class EmsudoCommand(BaseCommand):
             await embed_utils.insert_fields_from_dicts(
                 msg, msg_embed, embed_dict["fields"], index
             )
-            await self.response_msg.delete()
-            await self.invoke_msg.delete()
-            return
 
-        try:
-            args = literal_eval(data.code)
-        except Exception as e:
-            raise BotException(
-                "Invalid arguments!",
-                f"```\n{''.join(utils.format_code_exception(e))}```",
-            )
+        else:
+            if data.lang == "json":
+                try:
+                    embed_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+                
+                if "fields" not in embed_dict or not embed_dict["fields"]:
+                    raise BotException("No embed field data found in the given JSON embed data.")
 
-        if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args):
-                if isinstance(data, dict):
-                    field_dicts_list.append(data)
+                await embed_utils.insert_fields_from_dicts(
+                    msg, msg_embed, embed_dict["fields"], index
+                )
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
 
-                elif isinstance(data, str):
-                    try:
-                        data_list = embed_utils.get_fields(data)
-                    except (TypeError, IndexError):
-                        raise BotException(
-                            "Invalid format for field string(s)!",
-                            ' The format should be `"<name|value|inline>"` or a code block '
-                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                        )
+                if isinstance(args, (list, tuple)):
+                    for i, data in enumerate(args):
+                        if isinstance(data, dict):
+                            field_dicts_list.append(data)
 
-                    if len(data_list) == 3:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": data_list[2],
-                        }
-                    elif len(data_list) == 2:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": False,
-                        }
+                        elif isinstance(data, str):
+                            try:
+                                data_list = embed_utils.get_fields(data)
+                            except (TypeError, IndexError):
+                                raise BotException(
+                                    "Invalid format for field string(s)!",
+                                    ' The format should be `"<name|value|inline>"` or a code block '
+                                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                                )
 
-                    elif not data_list:
-                        raise BotException(
-                            "Invalid format for field string(s)!",
-                            ' The format should be `"<name|value|inline>"` or a code block '
-                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                        )
+                            if len(data_list) == 3:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": data_list[2],
+                                }
+                            elif len(data_list) == 2:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": False,
+                                }
 
-                    field_dicts_list.append(data_dict)
+                            elif not data_list:
+                                await embed_utils.replace(
+                                    self.response_msg,
+                                    "Invalid format for field string!",
+                                    "",
+                                )
+                                return
+
+                            field_dicts_list.append(data_dict)
+                        else:
+                            raise BotException(
+                                f"Invalid field string in input list at index {i}!",
+                                ' The format should be `"<name|value|inline>"` or a code block '
+                                "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                            )
+
                 else:
                     raise BotException(
-                        f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                        "",
+                        "Invalid arguments!",
+                        'Argument `data` must be omitted or be an empty string `""`,'
+                        " a message `[channel_id/]message_id` or a code block containing"
+                        ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
+                        " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
-        else:
-            raise BotException(
-                "Invalid arguments!",
-                'Argument `data` must be omitted or be an empty string `""`,'
-                " a message `[channel_id/]message_id` or a code block containing"
-                ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-            )
+                
+                await embed_utils.insert_fields_from_dicts(
+                    msg, msg_embed, reversed(field_dicts_list), index
+                )
 
-        await embed_utils.insert_fields_from_dicts(
-            msg, msg_embed, reversed(field_dicts_list), index
-        )
-
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_edit_field(
         self,
@@ -1760,52 +1847,60 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, CodeBlock):
-            try:
-                args = literal_eval(data.code)
-            except Exception as e:
-                raise BotException(
-                    "Invalid arguments!",
-                    f"```\n{''.join(utils.format_code_exception(e))}```",
-                )
-
-            if isinstance(args, dict):
-                field_dict = args
-
-            elif isinstance(args, str):
-                field_str = args
-
+            if data.lang == "json":
                 try:
-                    field_list = embed_utils.get_fields(field_str)
-                except (TypeError, IndexError):
+                    field_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
+
+                if isinstance(args, dict):
+                    field_dict = args
+
+                elif isinstance(args, str):
+                    field_str = args
+
+                    try:
+                        field_list = embed_utils.get_fields(field_str)
+                    except (TypeError, IndexError):
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"` or a code block '
+                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                        )
+
+                    if field_list:
+                        field_dict = {
+                            "name": field_list[0],
+                            "value": field_list[1],
+                            "inline": field_list[2],
+                        }
+
+                    else:
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"`',
+                        )
+                else:
                     raise BotException(
                         "Invalid format for field string(s)!",
                         ' The format should be `"<name|value|inline>"` or a code block '
                         "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
 
-                if field_list:
-                    field_dict = {
-                        "name": field_list[0],
-                        "value": field_list[1],
-                        "inline": field_list[2],
-                    }
-
-                else:
-                    raise BotException(
-                        "Invalid format for field string(s)!",
-                        ' The format should be `"<name|value|inline>"`',
-                    )
-            else:
-                raise BotException(
-                    "Invalid format for field string(s)!",
-                    ' The format should be `"<name|value|inline>"` or a code block '
-                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         await embed_utils.edit_field_from_dict(msg, msg_embed, field_dict, index)
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_edit_fields(
         self,
@@ -1890,73 +1985,88 @@ class EmsudoCommand(BaseCommand):
             await embed_utils.edit_fields_from_dicts(
                 msg, msg_embed, embed_dict["fields"]
             )
-            await self.response_msg.delete()
-            await self.invoke_msg.delete()
-            return
 
-        try:
-            args = literal_eval(data.code)
-        except Exception as e:
-            raise BotException(
-                "Invalid arguments!",
-                f"```\n{''.join(utils.format_code_exception(e))}```",
-            )
+        else:
+            if data.lang == "json":
+                try:
+                    embed_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+                
+                if "fields" not in embed_dict or not embed_dict["fields"]:
+                    raise BotException("No embed field data found in the given JSON embed data.")
 
-        if isinstance(args, (list, tuple)):
-            for i, data in enumerate(args):
-                if isinstance(data, dict):
-                    field_dicts_list.append(data)
+                await embed_utils.edit_fields_from_dicts(
+                    msg, msg_embed, embed_dict["fields"]
+                )
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
 
-                elif isinstance(data, str):
-                    try:
-                        data_list = embed_utils.get_fields(data)
-                    except (TypeError, IndexError):
-                        raise BotException(
-                            "Invalid format for field string(s)!",
-                            ' The format should be `"<name|value|inline>"` or a code block '
-                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                        )
+                if isinstance(args, (list, tuple)):
+                    for i, data in enumerate(args):
+                        if isinstance(data, dict):
+                            field_dicts_list.append(data)
 
-                    if len(data_list) == 3:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": data_list[2],
-                        }
-                    elif len(data_list) == 2:
-                        data_dict = {
-                            "name": data_list[0],
-                            "value": data_list[1],
-                            "inline": False,
-                        }
+                        elif isinstance(data, str):
+                            try:
+                                data_list = embed_utils.get_fields(data)
+                            except (TypeError, IndexError):
+                                raise BotException(
+                                    "Invalid format for field string(s)!",
+                                    ' The format should be `"<name|value|inline>"` or a code block '
+                                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                                )
 
-                    elif not data_list:
-                        await embed_utils.replace(
-                            self.response_msg,
-                            "Invalid format for field string!",
-                            "",
-                        )
-                        return
+                            if len(data_list) == 3:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": data_list[2],
+                                }
+                            elif len(data_list) == 2:
+                                data_dict = {
+                                    "name": data_list[0],
+                                    "value": data_list[1],
+                                    "inline": True,
+                                }
 
-                    field_dicts_list.append(data_dict)
+                            elif not data_list:
+                                await embed_utils.replace(
+                                    self.response_msg,
+                                    "Invalid format for field string!",
+                                    "",
+                                )
+                                return
+
+                            field_dicts_list.append(data_dict)
+                        else:
+                            raise BotException(
+                                f"Invalid field string in input list at index {i}!",
+                                ' The format should be `"<name|value|inline>"` or a code block '
+                                "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                            )
+
                 else:
                     raise BotException(
-                        f"Invalid field data in input list at index {i}! Must be a dictionary or string.",
-                        "",
+                        "Invalid arguments!",
+                        'Argument `data` must be omitted or be an empty string `""`,'
+                        " a message `[channel_id/]message_id` or a code block containing"
+                        ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
+                        " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
-        else:
-            raise BotException(
-                "Invalid arguments!",
-                'Argument `data` must be omitted or be an empty string `""`,'
-                " a message `[channel_id/]message_id` or a code block containing"
-                ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-            )
 
-        await embed_utils.edit_fields_from_dicts(msg, msg_embed, field_dicts_list)
+                await embed_utils.edit_fields_from_dicts(msg, msg_embed, field_dicts_list)
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_replace_field(
         self,
@@ -2014,52 +2124,61 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, CodeBlock):
-            try:
-                args = literal_eval(data.code)
-            except Exception as e:
-                raise BotException(
-                    "Invalid arguments!",
-                    f"```\n{''.join(utils.format_code_exception(e))}```",
-                )
-
-            if isinstance(args, dict):
-                field_dict = args
-
-            elif isinstance(args, str):
-                field_str = args
-
+            if data.lang == "json":
                 try:
-                    field_list = embed_utils.get_fields(field_str)
-                except (TypeError, IndexError):
+                    field_dict = embed_utils.import_embed_data(
+                        data.code, from_json_string=True,
+                    )
+                except json.JSONDecodeError as j:
+                    raise BotException(f"Invalid JSON data", j.args[0])
+            else:
+                try:
+                    args = literal_eval(data.code)
+                except Exception as e:
+                    raise BotException(
+                        "Invalid arguments!",
+                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                    )
+
+                if isinstance(args, dict):
+                    field_dict = args
+
+                elif isinstance(args, str):
+                    field_str = args
+
+                    try:
+                        field_list = embed_utils.get_fields(field_str)
+                    except (TypeError, IndexError):
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"` or a code block '
+                            "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                        )
+
+                    if field_list:
+                        field_dict = {
+                            "name": field_list[0],
+                            "value": field_list[1],
+                            "inline": field_list[2],
+                        }
+
+                    else:
+                        raise BotException(
+                            "Invalid format for field string(s)!",
+                            ' The format should be `"<name|value|inline>"`',
+                        )
+                else:
                     raise BotException(
                         "Invalid format for field string(s)!",
                         ' The format should be `"<name|value|inline>"` or a code block '
                         "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
 
-                if field_list:
-                    field_dict = {
-                        "name": field_list[0],
-                        "value": field_list[1],
-                        "inline": field_list[2],
-                    }
-
-                else:
-                    raise BotException(
-                        "Invalid format for field string(s)!",
-                        ' The format should be `"<name|value|inline>"`',
-                    )
-            else:
-                raise BotException(
-                    "Invalid format for field string(s)!",
-                    ' The format should be `"<name|value|inline>"` or a code block '
-                    "containing `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
-                )
-
         await embed_utils.replace_field_from_dict(msg, msg_embed, field_dict, index)
-
-        await self.response_msg.delete()
+        
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
+        
 
     async def cmd_emsudo_swap_fields(
         self, msg: discord.Message, index_a: int, index_b: int
@@ -2087,8 +2206,8 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.swap_fields(msg, msg_embed, index_a, index_b)
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_clone_fields(
         self,
@@ -2142,8 +2261,8 @@ class EmsudoCommand(BaseCommand):
         except IndexError:
             raise BotException("Invalid field index/indices!", "")
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_remove_fields(
         self,
@@ -2193,8 +2312,8 @@ class EmsudoCommand(BaseCommand):
         except IndexError:
             raise BotException("Invalid field index/indices!", "")
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_emsudo_clear_fields(
         self,
@@ -2223,5 +2342,5 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.clear_fields(msg, msg_embed)
 
-        await self.response_msg.delete()
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
