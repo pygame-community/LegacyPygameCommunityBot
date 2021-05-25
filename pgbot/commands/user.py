@@ -79,11 +79,19 @@ class UserCommand(BaseCommand):
         if not rules:
             raise BotException("Please enter rule number(s)", "")
 
-        rule_chan = self.guild.get_channel(common.RULES_CHANNEL_ID)
+        if common.GENERIC:
+            raise BotException(
+                "Cannot execute command!",
+                "This command cannot be exected when the bot is on generic mode",
+            )
+
+        rule_chan = self.guild.get_channel(common.ServerConstants.RULES_CHANNEL_ID)
         fields = []
         for rule in sorted(set(rules)):
-            if 0 < rule <= len(common.RULES):
-                msg = await rule_chan.fetch_message(common.RULES[rule - 1])
+            if 0 < rule <= len(common.ServerConstants.RULES):
+                msg = await rule_chan.fetch_message(
+                    common.ServerConstants.RULES[rule - 1]
+                )
                 value = msg.content
 
             elif rule == 42:
@@ -984,6 +992,12 @@ class UserCommand(BaseCommand):
             810942043488256060,
         }
 
+        if common.GENERIC:
+            raise BotException(
+                "Cannot execute command!",
+                "This command cannot be exected when the bot is on generic mode",
+            )
+
         def process_tag(tag: str):
             for to_replace in ("tag_", "tag-", "<", ">", "`"):
                 tag = tag.replace(to_replace, "")
@@ -992,9 +1006,7 @@ class UserCommand(BaseCommand):
         def filter_func(x):
             return x.id != msg_to_filter
 
-        resource_entries_channel = self.guild.get_channel(
-            common.ENTRY_CHANNEL_IDS["resource"]
-        )
+        resource_entries_channel = common.entry_channels["resource"]
 
         msgs = await resource_entries_channel.history(
             oldest_first=oldest_first
