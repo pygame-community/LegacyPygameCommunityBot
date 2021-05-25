@@ -990,12 +990,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         else:
                             author_embed = embed_utils.create(
                                 description=f"{author.mention}"
-                                f"(`{author.name}#{author.discriminator}`)\n"
-                                f"**[View Original]({msg.jump_url})**",
+                                f" (`{author.name}#{author.discriminator}`)\n"
+                                f"ID: `{author.id}`\u2800|\u2800**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
                                 footer_text="\nISO Time: "
-                                f"{msg.created_at.replace(tzinfo=None).isoformat()}"
-                                f"\nID: {author.id}",
+                                f"{msg.created_at.replace(tzinfo=None).isoformat()}",
                                 timestamp=msg.created_at.replace(tzinfo=tz_utc),
                                 footer_icon_url=str(author.avatar_url),
                             )
