@@ -11,7 +11,7 @@ import asyncio
 import os
 import random
 import signal
-import unidecode
+from typing import Optional
 
 import discord
 import pygame
@@ -26,31 +26,38 @@ async def on_ready():
     """
     print("The PygameCommunityBot is now online!")
     print("The bot is present in these server(s):")
+
+    guild: Optional[discord.Guild] = None
+
     for server in common.bot.guilds:
         print("-", server.name)
-        if server.id == common.SERVER_ID:
+        if common.GENERIC or server.id == common.ServerConstants.SERVER_ID:
             guild = server
 
         for channel in server.channels:
             print(" +", channel.name)
-            if channel.id == common.DB_CHANNEL_ID:
+            if common.GENERIC:
+                continue
+
+            if channel.id == common.ServerConstants.DB_CHANNEL_ID:
                 await db.init(channel)
-            if channel.id == common.LOG_CHANNEL_ID:
+            if channel.id == common.ServerConstants.LOG_CHANNEL_ID:
                 common.log_channel = channel
-            if channel.id == common.ARRIVALS_CHANNEL_ID:
+            if channel.id == common.ServerConstants.ARRIVALS_CHANNEL_ID:
                 common.arrivals_channel = channel
-            if channel.id == common.GUIDE_CHANNEL_ID:
+            if channel.id == common.ServerConstants.GUIDE_CHANNEL_ID:
                 common.guide_channel = channel
-            if channel.id == common.ROLES_CHANNEL_ID:
+            if channel.id == common.ServerConstants.ROLES_CHANNEL_ID:
                 common.roles_channel = channel
-            if channel.id == common.ENTRIES_DISCUSSION_CHANNEL_ID:
+            if channel.id == common.ServerConstants.ENTRIES_DISCUSSION_CHANNEL_ID:
                 common.entries_discussion_channel = channel
-            for key, value in common.ENTRY_CHANNEL_IDS.items():
+            for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
     while True:
-        await routine.routine(guild)
+        if guild is not None:
+            await routine.routine(guild)
         await common.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="discord.io/pygame_community"
@@ -70,7 +77,7 @@ async def on_member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
     """
-    if common.TEST_MODE or member.bot:
+    if common.TEST_MODE or member.bot or common.GENERIC:
         # Do not greet people in test mode, or if a bot joins
         return
 
@@ -116,6 +123,9 @@ async def on_message(msg: discord.Message):
     """
     This function is called for every message by user.
     """
+    if msg.type == discord.MessageType.premium_guild_subscription:
+        await emotion.server_boost(msg)
+
     if msg.author.bot:
         return
 
@@ -127,11 +137,11 @@ async def on_message(msg: discord.Message):
         emotion.update("bored", -15)
 
     elif not common.TEST_MODE:
-        no_mentions = discord.AllowedMentions.none()
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
-        # want the bot spamming the dario quote
+        # want the bot spamming the bydariogamer quote
+        # no_mentions = discord.AllowedMentions.none()
         # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
         #     # ded chat makes snek sad
         #     await msg.channel.send(
@@ -139,9 +149,11 @@ async def on_message(msg: discord.Message):
         #         allowed_mentions=no_mentions,
         #     )
         #     emotion.update("happy", -4)
+        if common.GENERIC:
+            return
 
-        if msg.channel.id in common.ENTRY_CHANNEL_IDS.values():
-            if msg.channel.id == common.ENTRY_CHANNEL_IDS["showcase"]:
+        if msg.channel in common.entry_channels.values():
+            if msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
                 entry_type = "showcase"
                 color = 0xFF8800
             else:
@@ -152,26 +164,11 @@ async def on_message(msg: discord.Message):
             await embed_utils.send(
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
-        else:
-            happy = emotion.get("happy")
-            if happy < -60:
-                # snek sad, no dad jokes
-                return
-
-            prob = 8 if happy <= 20 else (100 - happy) // 10
-            prob += 1
-
-            lowered = msg.content.lower()
-            if "i am" in lowered and len(lowered) < 60:
-                # snek is a special case, he loves dad jokes so he will get em
-                # everytime
-                if msg.author.id != 683852333293109269 and random.randint(0, prob):
-                    return
-
-                name = msg.content[lowered.index("i am") + 4 :].strip()
-                await msg.channel.send(
-                    f"Hi {name}! I am <@!{common.BOT_ID}>", allowed_mentions=no_mentions
-                )
+        elif (
+            random.random() < emotion.get("happy") / 200
+            or msg.author.id == 683852333293109269
+        ):
+            await emotion.dad_joke(msg)
 
 
 @common.bot.event

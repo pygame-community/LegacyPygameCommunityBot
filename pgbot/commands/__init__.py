@@ -20,15 +20,15 @@ def get_perms(mem: discord.Member):
     """
     Return a tuple (is_admin, is_priv) for a given user
     """
-    if mem.id in common.ADMIN_USERS:
-        return True, True
 
     is_priv = False
-    for role in mem.roles:
-        if role.id in common.ADMIN_ROLES:
-            return True, True
-        elif role.id in common.PRIV_ROLES:
-            is_priv = True
+
+    if not common.GENERIC:
+        for role in mem.roles:
+            if role.id in common.ServerConstants.ADMIN_ROLES:
+                return True, True
+            elif role.id in common.ServerConstants.PRIV_ROLES:
+                is_priv = True
 
     if mem.id in common.TEST_USER_IDS:
         return True, True
@@ -85,12 +85,15 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         sys.exit(0)
 
     if not common.TEST_MODE:
-        await embed_utils.send_2(
-            common.log_channel,
-            title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-            description=discord.utils.escape_markdown(invoke_msg.content),
-            fields=(("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),),
-        )
+        if not common.GENERIC:
+            await embed_utils.send_2(
+                common.log_channel,
+                title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+                description=discord.utils.escape_markdown(invoke_msg.content),
+                fields=(
+                    ("\u200b", f"**[View Original]({invoke_msg.jump_url})**", False),
+                ),
+            )
 
     elif common.TEST_USER_IDS and invoke_msg.author.id not in common.TEST_USER_IDS:
         return
