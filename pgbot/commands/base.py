@@ -199,8 +199,10 @@ class BaseCommand:
         self.channel: discord.TextChannel = self.invoke_msg.channel
         self.guild: discord.Guild = self.invoke_msg.guild
         self.is_dm = self.guild is None
-        if self.is_dm:
-            self.guild = common.bot.get_guild(common.SERVER_ID)
+
+        # if someone is DMing, set guild to PG server
+        if self.is_dm and not common.GENERIC:
+            self.guild = common.bot.get_guild(common.ServerConstants.SERVER_ID)
 
         self.cmds_and_funcs = {}
         self.groups = {}
@@ -745,4 +747,10 @@ class BaseCommand:
                         file=discord.File(fobj, filename="exception.txt"),
                     )
 
-        await embed_utils.replace_2(self.response_msg, author_name="BotException", title=title, description=msg, color=0xFF0000)
+        await embed_utils.replace_2(
+            self.response_msg,
+            author_name="BotException",
+            title=title,
+            description=msg,
+            color=0xFF0000,
+        )
