@@ -139,7 +139,7 @@ class UserCommand(BaseCommand):
         ->description Set a reminder to yourself
         ->extended description
         Allows you to set a reminder to yourself
-        The date-time must be ISO time formatted string, in UTC time
+        The date-time must be an ISO time formatted string, in UTC time
         string
         ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
         -----
@@ -271,7 +271,7 @@ class UserCommand(BaseCommand):
     async def cmd_reminders(self):
         """
         ->type Reminders
-        ->signature pg!reminders
+        ->signature pg!reminders [member]
         ->description View all the reminders you have set
         -----
         Implement pg!reminders, for users to view their reminders
@@ -279,10 +279,12 @@ class UserCommand(BaseCommand):
         db_data = db.DiscordDB("reminders").get({})
 
         msg = "You have no reminders set"
-        if self.author.id in db_data:
+        if self.author in db_data:
             msg = ""
             cnt = 0
-            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
+            for on, (reminder, chan_id, _) in db_data[
+                self.author.id
+            ].items():
                 channel = self.guild.get_channel(chan_id)
                 cin = channel.mention if channel is not None else "DM"
                 msg += (
@@ -587,10 +589,90 @@ class UserCommand(BaseCommand):
         -----
         Implement pg!vibecheck, to check if the bot is angry
         """
-        await embed_utils.replace(
+        db_obj = db.DiscordDB("emotions")
+        all_emotions = db_obj.get({})
+
+        # NOTE: Users shouldn't see this often, as there are a lot of emotions that can override it
+        msg = (
+            f"The snek feels no emotion right now.\n"
+            f"There's nothing going on, I'm not bored, happy, sad, or angry, I'm just neutral\n"
+            f"Interact with me to get a different response!"
+        )
+        emoji_link = "https://cdn.discordapp.com/emojis/772643407326740531.png?v=1"
+        bot_emotion = "not feeling anything"
+        try:
+            if all_emotions["happy"] >= 0:
+                msg = (
+                    f"The snek is happi right now!\n"
+                    f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
+                    f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
+                    f"The snek's happiness level is {all_emotions['happy']}, don't let it go to zero!"
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1"
+                )
+                bot_emotion = "happy"
+            else:
+                msg = (
+                    f"The snek is sad right now!\n"
+                    f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
+                    f"The snek's happiness level is {all_emotions['happy']}, pet me to increase "
+                    f"my happiness!"
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1"
+                )
+                bot_emotion = "sad"
+        except KeyError:
+            pass
+
+        try:
+            if all_emotions["bored"] < -600:
+                msg = (
+                    f"The snek is exhausted!\nI ran too many commands, "
+                    f"so I shall take a break real quick\n"
+                    f"While I am resting, fun commands would sometimes not work, so be careful!\n"
+                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
+                    f"{abs((all_emotions['bored'] + 600) // 15)} more command(s) to be happi."
+                )
+                bot_emotion = "exhausted"
+            elif all_emotions["bored"] > 600:
+                msg = (
+                    f"The snek is bored!\nNo one has interacted with me in a while, "
+                    f"and I feel lonely!\n"
+                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
+                    f"{abs((all_emotions['bored'] - 600) // 15)} more command(s) to be happi."
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1"
+                )
+                bot_emotion = "bored"
+        except KeyError:
+            pass
+
+        try:
+            if all_emotions["anger"] > 30:
+                msg = (
+                    f"The snek is angry!\nI've been bonked too many times, you'll also be "
+                    f"angry if someone bonked you 50 times :unamused:\n"
+                    f"While I am angry, I would replace the classic dario quote with something else, "
+                    f"and give you a slight surprise when you pet me :wink:\n"
+                    f"The snek's anger level is {all_emotions['anger']}, ask for forgiveness from me "
+                    f"to lower the anger level!"
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1"
+                )
+        except KeyError:
+            pass
+
+        await embed_utils.replace_2(
             self.response_msg,
-            "TODO",
-            "We are working on an upgrade for this",
+            title=f"The snek is {bot_emotion} right now!",
+            thumbnail_url=emoji_link,
+            description=msg,
+            footer_text="This is currently in beta version, so the end product may look different",
+            footer_icon_url="https://cdn.discordapp.com/emojis/844513909158969374.png?v=1"
         )
 
     @fun_command
