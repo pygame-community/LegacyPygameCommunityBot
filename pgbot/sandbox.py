@@ -19,13 +19,15 @@ import string
 import sys
 import time
 import traceback
+from inspect import getframeinfo, stack
+
 
 import psutil
 import pygame.freetype
 import pygame.gfxdraw
 from PIL import Image
 
-from . import common
+from . import common, utils
 
 
 class Output:
@@ -36,11 +38,95 @@ class Output:
     def __init__(self):
         self.text = ""
         self.img = None
-        self.imgs = []
-        self.delay = 200
-        self.loops = 0
+
+        # internal
         self.exc = None
         self.duration = -1  # The script execution time
+
+        # gif related
+        self._delay = 200
+        self.loops = 0
+        self.imgs = []
+        self.delays = []
+
+    @property
+    def delay(self):
+        return self._delay
+
+    @delay.setter
+    def delay(self, value):
+        if not isinstance(value, (int, float)):
+            lineno = getframeinfo(stack()[1][0]).lineno
+            self.exc = PgExecBot(
+                f"TypeError at line {lineno}: "
+                f"delay must be must be int not '{value.__class__.__name__}'"
+            )
+
+        self._delay = int(value)
+
+    def add_frame(self, image, delay=None):
+        lineno = getframeinfo(stack()[1][0]).lineno
+        if delay is None:
+            delay = self._delay
+
+        if isinstance(delay, (int, float)):
+            try:
+                delay = int(delay)
+            except OverflowError:
+                delay = 65536
+
+            if 65535 < delay:
+                self.exc = PgExecBot(
+                    "That would take a lot of time."
+                    f" Please choose a number between 0 and 65535. (line {lineno})"
+                )
+                return
+            if 0 > delay:
+                self.exc = PgExecBot(
+                    "Negative time? That does not make sense..."
+                    f" Please choose between 0 and 65535. (line {lineno})"
+                )
+                return
+        else:
+            self.exc = PgExecBot(
+                f"TypeError at line {lineno}: "
+                f"Argument delay must be int not '{delay.__class__.__name__}'"
+            )
+            return
+
+        if not isinstance(image, pygame.Surface):
+            self.exc = PgExecBot(
+                f"TypeError at line {lineno}: "
+                "Argument image must be type of pygame.Surface"
+            )
+            return
+
+        self.delays.append(delay)
+        self.imgs.append(image.copy())
+
+    def _get_kwargs(self, tstamp, images):
+        if len(self.delays) != len(self.imgs):
+            return "Length of delays must be the same as the length of imgs"
+
+        try:
+            loops = int(getattr(self, "loops", 0))
+        except OverflowError:
+            loops = 0
+        except (ValueError, TypeError):
+            return "Please set the loops to an integer value."
+
+        kwargs = {
+            "fp": f"temp{tstamp}.gif",
+            "format": "GIF",
+            "append_images": images[1:],
+            "save_all": True,
+            "duration": self.delays,
+        }
+
+        if loops != 1:
+            kwargs["loop"] = utils.clamp(loops - 1, 0, 100)
+
+        return kwargs
 
 
 class SandboxFunctionsObject:
@@ -251,66 +337,26 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         images = []
         if isinstance(output.imgs, list):
             for surf in output.imgs:
-                if isinstance(surf, pygame.Surface):
-                    if i == 0:
-                        pygame.image.save(surf, f"temp{tstamp}.png")
+                if i == 0:
+                    pygame.image.save(surf, f"temp{tstamp}.png")
 
-                    image = Image.frombytes(
-                        "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
-                    )
-                    images.append(image)
+                image = Image.frombytes(
+                    "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
+                )
+                images.append(image)
 
-                    i += 1
+                i += 1
 
             if i > 0:
-                handle_gif(tstamp, output, sanitized_output, images)
+                img = Image.open(f"temp{tstamp}.png")
+                kwargs = output._get_kwargs(tstamp, images)
+                if isinstance(kwargs, str):
+                    sanitized_output.exc = PgExecBot(kwargs)
+                else:
+                    img.save(**kwargs)
+                    sanitized_output.imgs = True
 
     q.put(sanitized_output)
-
-
-def handle_gif(tstamp, output, sanitized_output, images):
-    try:
-        duration = int(getattr(output, "delay", 200))
-    except OverflowError:
-        duration = 65536
-    except (ValueError, TypeError):
-        sanitized_output.exc = PgExecBot("Please set the duration to an integer value.")
-        return
-
-    if 65535 < duration:
-        sanitized_output.exc = PgExecBot(
-            "That would take a lot of time. Please choose between 0 and 65535."
-        )
-        return
-    if 0 > duration:
-        sanitized_output.exc = PgExecBot(
-            "Negative time? That does not make sense..."
-            " Please choose between 0 and 65535."
-        )
-        return
-
-    try:
-        loops = int(getattr(output, "loops", 0))
-    except OverflowError:
-        loops = 0
-    except (ValueError, TypeError):
-        sanitized_output.exc = PgExecBot("Please set the loops to an integer value.")
-        return
-
-    kwargs = {
-        "fp": f"temp{tstamp}.gif",
-        "format": "GIF",
-        "append_images": images[1:],
-        "save_all": True,
-        "duration": duration,
-    }
-    if loops != 1:
-        kwargs["loop"] = max(min(loops - 1, 100), 0)
-
-    img = Image.open(f"temp{tstamp}.png")
-    img.save(**kwargs)
-
-    sanitized_output.imgs = True
 
 
 async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
