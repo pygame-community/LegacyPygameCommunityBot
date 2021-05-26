@@ -149,7 +149,10 @@ class EmsudoCommand(BaseCommand):
                             data.code, from_json_string=True
                         )
                     except json.JSONDecodeError as j:
-                        raise BotException(f"Invalid JSON data", j.args[0])
+                        raise BotException(
+                            f"Input {i}: Invalid JSON data",
+                            f"```\n{j.args[0]}\n```",
+                        )
 
                     output_embeds.append(embed_utils.create_from_dict(embed_dict))
                     continue
@@ -445,7 +448,10 @@ class EmsudoCommand(BaseCommand):
                         data.code, from_json_string=True
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
                 await embed_utils.replace_from_dict(msg, embed_dict)
                 await self.invoke_msg.delete()
                 await self.response_msg.delete()
@@ -1276,7 +1282,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
             else:
                 try:
                     args = literal_eval(data.code)
@@ -1432,7 +1441,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
 
                 if "fields" not in embed_dict or not embed_dict["fields"]:
                     raise BotException(
@@ -1594,7 +1606,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
             else:
                 try:
                     args = literal_eval(data.code)
@@ -1751,7 +1766,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
 
                 if "fields" not in embed_dict or not embed_dict["fields"]:
                     raise BotException(
@@ -1913,7 +1931,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
             else:
                 try:
                     args = literal_eval(data.code)
@@ -2068,7 +2089,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
 
                 if "fields" not in embed_dict or not embed_dict["fields"]:
                     raise BotException(
@@ -2230,7 +2254,10 @@ class EmsudoCommand(BaseCommand):
                         from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
-                    raise BotException(f"Invalid JSON data", j.args[0])
+                    raise BotException(
+                        f"Invalid JSON data",
+                        f"```\n{j.args[0]}\n```",
+                    )
             else:
                 try:
                     args = literal_eval(data.code)
