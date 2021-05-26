@@ -53,6 +53,9 @@ def get(emotion_name: str):
 
 
 async def check_bonk(msg: discord.Message):
+    """
+    Function to check bonk, update emotion state, and reply when bonked
+    """
     if common.BONK not in msg.content:
         return
 
@@ -71,6 +74,9 @@ async def check_bonk(msg: discord.Message):
 
 
 async def dad_joke(msg: discord.Message):
+    """
+    Utility to handle the bot making dad jokes
+    """
     lowered = unidecode.unidecode(msg.content.lower().strip())
     if (
         " i am " in lowered or lowered.startswith("i am ") or lowered == "i am"

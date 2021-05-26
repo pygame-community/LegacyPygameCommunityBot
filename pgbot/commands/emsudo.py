@@ -14,7 +14,6 @@ import json
 from ast import literal_eval
 from typing import Optional, Union
 
-import black
 import discord
 from discord.embeds import EmptyEmbed
 
@@ -145,11 +144,12 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 try:
-                    await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                    await embed_utils.send_from_dict(
+                        self.invoke_msg.channel, embed_dict
+                    )
                 except discord.HTTPException as e:
                     raise BotException(
-                        "An exception occured while handling the command!",
-                        e.args[0]
+                        "An exception occured while handling the command!", e.args[0]
                     )
                 continue
 
@@ -169,11 +169,13 @@ class EmsudoCommand(BaseCommand):
                         continue
 
                     try:
-                        await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+                        await embed_utils.send_from_dict(
+                            self.invoke_msg.channel, embed_dict
+                        )
                     except discord.HTTPException as e:
                         raise BotException(
                             "An exception occured while handling the command!",
-                            e.args[0]
+                            e.args[0],
                         )
                     continue
 
@@ -184,18 +186,22 @@ class EmsudoCommand(BaseCommand):
                         await embed_utils.send_2(
                             self.response_msg.channel,
                             title=f"Input {i}: Invalid arguments!",
-                            description=f"```\n{''.join(utils.format_code_exception(e))}```",
+                            description=utils.code_block(
+                                utils.format_code_exception(e)
+                            ),
                             color=0xFF0000,
                         )
                         continue
 
                     if isinstance(args, dict):
                         try:
-                            await embed_utils.send_from_dict(self.invoke_msg.channel, args)
+                            await embed_utils.send_from_dict(
+                                self.invoke_msg.channel, args
+                            )
                         except discord.HTTPException as e:
                             raise BotException(
                                 "An exception occured while handling the command!",
-                                e.args[0]
+                                e.args[0],
                             )
                         continue
                     elif not isinstance(args, (list, tuple)):
@@ -332,7 +338,9 @@ class EmsudoCommand(BaseCommand):
                         util_send_embed_args.update(timestamp=args[6])
 
             try:
-                await embed_utils.send_2(self.invoke_msg.channel, **util_send_embed_args)
+                await embed_utils.send_2(
+                    self.invoke_msg.channel, **util_send_embed_args
+                )
             except discord.HTTPException as e:
                 await embed_utils.send_2(
                     self.response_msg.channel,
@@ -388,8 +396,7 @@ class EmsudoCommand(BaseCommand):
                 await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
             except discord.HTTPException as e:
                 raise BotException(
-                    "An exception occured while handling the command!",
-                    e.args[0]
+                    "An exception occured while handling the command!", e.args[0]
                 )
 
         await self.invoke_msg.delete()
@@ -882,13 +889,17 @@ class EmsudoCommand(BaseCommand):
                         await embed_utils.send_2(
                             self.response_msg.channel,
                             title=f"Input {i}: Invalid arguments!",
-                            description=f"```\n{''.join(utils.format_code_exception(e))}```",
+                            description=utils.code_block(
+                                utils.format_code_exception(e)
+                            ),
                             color=0xFF0000,
                         )
                         continue
 
                     if isinstance(args, dict):
-                        msg_embed = await embed_utils.edit_from_dict(None, msg_embed, args)
+                        msg_embed = await embed_utils.edit_from_dict(
+                            None, msg_embed, args
+                        )
                         continue
                     elif not isinstance(args, (list, tuple)):
                         await embed_utils.send_2(
@@ -1155,13 +1166,13 @@ class EmsudoCommand(BaseCommand):
             "title": None,
             "description": None,
             "url": None,
-            "color":None,
+            "color": None,
             "timestamp": None,
             "footer": None,
             "thumbnail": None,
-            "image" : None,
+            "image": None,
             "author": None,
-            "fields": None
+            "fields": None,
         }
 
         reduced_embed_attr_keys = set()
@@ -1242,7 +1253,10 @@ class EmsudoCommand(BaseCommand):
 
                 with io.StringIO() as fobj:
                     embed_utils.export_embed_data(
-                        {k:embed_dict[k] for k in embed_attr_keys if k in embed_dict}, fp=fobj, indent=4, as_json=json
+                        {k: embed_dict[k] for k in embed_attr_keys if k in embed_dict},
+                        fp=fobj,
+                        indent=4,
+                        as_json=json,
                     )
                     fobj.seek(0)
                     await self.response_msg.channel.send(
@@ -1298,7 +1312,7 @@ class EmsudoCommand(BaseCommand):
         ->description Add an embed field through the bot
         ->extended description
         Add an embed field to the embed of a message in the channel where this command was invoked using the given arguments.
-        ->example command 
+        ->example command
         pg!emsudo_add_field 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
@@ -1350,7 +1364,8 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     field_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
@@ -1360,7 +1375,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, dict):
@@ -1401,13 +1416,11 @@ class EmsudoCommand(BaseCommand):
             await embed_utils.add_field_from_dict(msg, msg_embed, field_dict)
         except discord.HTTPException as e:
             raise BotException(
-                "An exception occured while handling the command!",
-                e.args[0]
+                "An exception occured while handling the command!", e.args[0]
             )
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
-        
 
     async def cmd_emsudo_add_fields(
         self,
@@ -1513,13 +1526,16 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     embed_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
-                
+
                 if "fields" not in embed_dict or not embed_dict["fields"]:
-                    raise BotException("No embed field data found in the given JSON embed data.")
+                    raise BotException(
+                        "No embed field data found in the given JSON embed data."
+                    )
 
                 await embed_utils.add_fields_from_dicts(
                     msg, msg_embed, embed_dict["fields"]
@@ -1530,7 +1546,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, (list, tuple)):
@@ -1585,12 +1601,13 @@ class EmsudoCommand(BaseCommand):
                         ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
                         " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
-                
-                await embed_utils.add_fields_from_dicts(msg, msg_embed, field_dicts_list)
-        
+
+                await embed_utils.add_fields_from_dicts(
+                    msg, msg_embed, field_dicts_list
+                )
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
-        
 
     async def cmd_emsudo_insert_field(
         self,
@@ -1656,7 +1673,8 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     field_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
@@ -1666,7 +1684,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, dict):
@@ -1704,10 +1722,9 @@ class EmsudoCommand(BaseCommand):
                     )
 
         await embed_utils.insert_field_from_dict(msg, msg_embed, field_dict, index)
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
-        
 
     async def cmd_emsudo_insert_fields(
         self,
@@ -1814,13 +1831,16 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     embed_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
-                
+
                 if "fields" not in embed_dict or not embed_dict["fields"]:
-                    raise BotException("No embed field data found in the given JSON embed data.")
+                    raise BotException(
+                        "No embed field data found in the given JSON embed data."
+                    )
 
                 await embed_utils.insert_fields_from_dicts(
                     msg, msg_embed, embed_dict["fields"], index
@@ -1831,7 +1851,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, (list, tuple)):
@@ -1886,7 +1906,7 @@ class EmsudoCommand(BaseCommand):
                         ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
                         " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
-                
+
                 await embed_utils.insert_fields_from_dicts(
                     msg, msg_embed, reversed(field_dicts_list), index
                 )
@@ -1906,7 +1926,7 @@ class EmsudoCommand(BaseCommand):
         ->description Replace an embed field through the bot
         ->extended description
         Edit parts of an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
-        ->example command 
+        ->example command
         pg!emsudo_edit_field 7 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
@@ -1958,7 +1978,8 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     field_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
@@ -1968,7 +1989,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, dict):
@@ -2023,7 +2044,7 @@ class EmsudoCommand(BaseCommand):
         Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
         Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
         to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
-        ->example command 
+        ->example command
         pg!emsudo_edit_fields 987654321987654321/123456789123456789
         \\`\\`\\`python
         [
@@ -2110,13 +2131,16 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     embed_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
-                
+
                 if "fields" not in embed_dict or not embed_dict["fields"]:
-                    raise BotException("No embed field data found in the given JSON embed data.")
+                    raise BotException(
+                        "No embed field data found in the given JSON embed data."
+                    )
 
                 await embed_utils.edit_fields_from_dicts(
                     msg, msg_embed, embed_dict["fields"]
@@ -2127,7 +2151,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, (list, tuple)):
@@ -2183,7 +2207,9 @@ class EmsudoCommand(BaseCommand):
                         " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                     )
 
-                await embed_utils.edit_fields_from_dicts(msg, msg_embed, field_dicts_list)
+                await embed_utils.edit_fields_from_dicts(
+                    msg, msg_embed, field_dicts_list
+                )
 
         await self.invoke_msg.delete()
         await self.response_msg.delete()
@@ -2199,7 +2225,7 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_replace [*args]
         ->description Replace an embed field through the bot
         ->extended description
-        ->example command 
+        ->example command
         pg!emsudo_replace_field 2 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
@@ -2252,7 +2278,8 @@ class EmsudoCommand(BaseCommand):
             if data.lang == "json":
                 try:
                     field_dict = embed_utils.import_embed_data(
-                        data.code, from_json_string=True,
+                        data.code,
+                        from_json_string=True,
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(f"Invalid JSON data", j.args[0])
@@ -2262,7 +2289,7 @@ class EmsudoCommand(BaseCommand):
                 except Exception as e:
                     raise BotException(
                         "Invalid arguments!",
-                        f"```\n{''.join(utils.format_code_exception(e))}```",
+                        utils.code_block(utils.format_code_exception(e)),
                     )
 
                 if isinstance(args, dict):
@@ -2300,10 +2327,9 @@ class EmsudoCommand(BaseCommand):
                     )
 
         await embed_utils.replace_field_from_dict(msg, msg_embed, field_dict, index)
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
-        
 
     async def cmd_emsudo_swap_fields(
         self, msg: discord.Message, index_a: int, index_b: int
@@ -2345,7 +2371,7 @@ class EmsudoCommand(BaseCommand):
         ->extended description
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
         If `clone_to` is excluded, the cloned fields will be inserted at the index where they were cloned from.
-        ->example command 
+        ->example command
         pg!emsudo_clone_fields 987654321987654321 range(4, 10, 2) clone_to=1
         pg!emsudo_clone_fields 987654321987654321 3 6 9 12 clone_to=8
         pg!emsudo_clone_fields 123456674923481222/987654321987654321 range(6)

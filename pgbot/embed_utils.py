@@ -12,15 +12,13 @@ import datetime
 import io
 import json
 import re
-from typing import Optional, Union, List, Iterable
-
 from ast import literal_eval
 from collections.abc import Mapping
+from typing import Union
 
 import black
 import discord
 from discord.embeds import EmptyEmbed
-from pgbot.commands.base import BotException
 
 from . import common
 
@@ -842,8 +840,9 @@ def import_embed_data(
             data = literal_eval(source)
         except Exception as e:
             raise TypeError(
-                f"the content of the given object of type '{type(data).__name}' must be parsable into"
-                f" literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                "The contents of the given object must be parsable into literal Python "
+                "strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and "
+                "None."
             ).with_traceback(e)
 
         if not isinstance(data, dict) and as_dict:

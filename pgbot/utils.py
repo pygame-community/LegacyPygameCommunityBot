@@ -8,9 +8,11 @@ This file defines some important utility functions.
 
 from __future__ import annotations
 
-
 import datetime
+import os
+import platform
 import re
+import sys
 import traceback
 
 import discord
@@ -27,12 +29,28 @@ def color_to_rgb_int(col: pygame.Color):
     return (((col.r << 8) + col.g) << 8) + col.b
 
 
-def discordify(text):
+def discordify(text: str):
     """
     Converts normal string into "discord" string that includes backspaces to
     cancel out unwanted changes
     """
     return discord.utils.escape_markdown(text)
+
+
+def format_discord_link(link: str, guild_id: int):
+    """
+    Format a discord link to a channel or message
+    """
+    link = link.lstrip("<").rstrip(">").rstrip("/")
+
+    for prefix in (
+        f"https://discord.com/channels/{guild_id}/",
+        f"https://www.discord.com/channels/{guild_id}/",
+    ):
+        if link.startswith(prefix):
+            link = link[len(prefix) :]
+
+    return link
 
 
 def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: int = 10):
@@ -137,15 +155,22 @@ def split_long_message(message: str):
     return split_output
 
 
-def format_code_exception(e):
+def format_code_exception(e, pops: int = 1):
     """
     Provide a formatted exception for code snippets
     """
     tbs = traceback.format_exception(type(e), e, e.__traceback__)
     # Pop out the first entry in the traceback, because that's
     # this function call itself
-    tbs.pop(1)
-    return tbs
+    for _ in range(pops):
+        tbs.pop(1)
+
+    ret = "".join(tbs).replace(os.getcwd(), "PgBot")
+    if platform.system() == "Windows":
+        # Hide path to python on windows
+        ret = ret.replace(os.path.dirname(sys.executable), "Python")
+
+    return ret
 
 
 def filter_id(mention: str):
