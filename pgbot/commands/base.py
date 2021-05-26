@@ -672,10 +672,7 @@ class BaseCommand:
             title, msg = exc.args
 
         except discord.HTTPException as exc:
-            title, msg = "HttpException", exc.args[0]
-
-        except discord.Forbidden as exc:
-            title, msg = "Forbidden", exc.args[0]
+            title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
             title = "An exception occured while handling the command!"
