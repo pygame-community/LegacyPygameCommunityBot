@@ -507,10 +507,7 @@ class UserCommand(BaseCommand):
                     else:
                         exc = ("Unable to send gif", "Gif size is above 4mib")
             else:
-                exc = (
-                    "An exception occured:",
-                    utils.code_block(", ".join(map(str, returned.exc.args))),
-                )
+                exc = ("An exception occured:", utils.code_block(returned.exc))
 
         try:
             await self.response_msg.delete()

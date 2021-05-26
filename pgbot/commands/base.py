@@ -13,16 +13,12 @@ from __future__ import annotations
 import datetime
 import inspect
 import io
-import os
-import platform
 import random
-import sys
-import traceback
 from typing import TypeVar
 
 import discord
 import pygame
-from pgbot import common, db, embed_utils, utils, emotion
+from pgbot import common, db, embed_utils, emotion, utils
 
 ESCAPES = {
     "0": "\0",
@@ -409,27 +405,7 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno == "discord.TextChannel":
-                ids = None
-                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
-                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
-
-                if arg.startswith((prefix1, f"<{prefix1}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix1) :].split(sep="/")
-
-                elif arg.startswith((prefix2, f"<{prefix2}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix2) :].split(sep="/")
-
-                if ids is not None:
-                    if len(ids) == 1:
-                        arg = ids[0]
-                    else:
-                        raise ValueError()
+                arg = utils.format_discord_link(arg, self.guild.id)
 
                 chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
@@ -438,31 +414,9 @@ class BaseCommand:
                 return chan
 
             elif anno == "discord.Message":
-                ids = None
-                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
-                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
+                arg = utils.format_discord_link(arg, self.guild.id)
 
-                if arg.startswith((prefix1, f"<{prefix1}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix1) :].split(sep="/")
-
-                elif arg.startswith((prefix2, f"<{prefix2}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix2) :].split(sep="/")
-
-                if ids is not None:
-                    if len(ids) == 2:
-                        b = "/"
-                        a, c = ids
-                    else:
-                        raise ValueError()
-                else:
-                    a, b, c = arg.partition("/")
-
+                a, b, c = arg.partition("/")
                 if b:
                     msg = int(c)
                     chan = self.guild.get_channel(utils.filter_id(a))
@@ -534,7 +488,7 @@ class BaseCommand:
 
             elif anno == "discord.Member":
                 typ = (
-                    "an id of a person or a mention to them \nPlease make sure"
+                    "an id of a person or a mention to them \nPlease make sure "
                     "that the ID is a valid ID of a member in the server"
                 )
 
@@ -543,13 +497,13 @@ class BaseCommand:
 
             elif anno == "discord.TextChannel":
                 typ = (
-                    "an id or mention to a text channel\nPlease make sure"
+                    "an id or mention to a text channel\nPlease make sure "
                     "that the ID is a valid ID of a channel in the server"
                 )
 
             elif anno == "discord.Message":
                 typ = (
-                    "a message id, or a 'channel/message' combo\nPlease make"
+                    "a message id, or a 'channel/message' combo\nPlease make "
                     "sure that the ID(s) is(are) valid ones"
                 )
 
@@ -721,27 +675,15 @@ class BaseCommand:
 
         except Exception as exc:
             title = "An exception occured while handling the command!"
-            tbs = traceback.format_exception(type(exc), exc, exc.__traceback__)
-            # Pop out the second and third entry in the traceback, because that
-            # is this function call itself
-            tbs.pop(1)
-            tbs.pop(1)
 
             elog = (
-                "This error is most likely caused due to a bug in "
-                + "the bot itself. Here is the traceback:\n"
+                "This error is most likely caused due to a bug in the bot "
+                "itself. Here is the traceback:\n" + utils.format_code_exception(exc, 2)
             )
-            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
-            if platform.system() == "Windows":
-                # Hide path to python on windows
-                elog = elog.replace(os.path.dirname(sys.executable), "Python")
-
             msg = utils.code_block(elog)
 
-            if len(title) > 256 or len(elog) > 2048:
-                with io.StringIO() as fobj:
-                    fobj.write(f"{title}\n{elog}")
-                    fobj.seek(0)
+            if len(elog) > 2048:
+                with io.StringIO(f"{title}\n{elog}") as fobj:
                     await self.response_msg.channel.send(
                         content="Here is the full error log",
                         file=discord.File(fobj, filename="exception.txt"),

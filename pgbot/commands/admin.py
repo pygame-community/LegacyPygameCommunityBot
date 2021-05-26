@@ -57,16 +57,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!db_read, to visualise DB messages
         """
+        str_obj = black.format_str(
+            repr(db.DiscordDB(name).get()),
+            mode=black.FileMode(),
+        )
 
-        with io.StringIO() as fobj:
-            fobj.write(
-                black.format_str(
-                    repr(db.DiscordDB(name).get()),
-                    mode=black.FileMode(),
-                )
-            )
-            fobj.seek(0)
-
+        with io.StringIO(str_obj) as fobj:
             await self.response_msg.delete()
             await self.channel.send(
                 f"Here are the contents of the table `{name}`:",
@@ -210,7 +206,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
 
     async def cmd_sudo(
-        self, *datas: Union[discord.Message, String], from_attachment: bool = True,
+        self,
+        *datas: Union[discord.Message, String],
+        from_attachment: bool = True,
     ):
         """
         ->type More admin commands
@@ -325,7 +323,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
             )
         )
-        
+
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
@@ -396,14 +394,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await edit_msg.edit(content=msg_text)
         except discord.HTTPException as e:
             raise BotException(
-                "An exception occured while handling the command!",
-                e.args[0]
+                "An exception occured while handling the command!", e.args[0]
             )
         await self.invoke_msg.delete()
         await self.response_msg.delete()
         return
 
-        
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
@@ -427,8 +423,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await self.response_msg.channel.trigger_typing()
             attached_files = None
             if attachments:
-                with io.StringIO() as fobj:
-                    fobj.write("This file was too large to be duplicated.")
+                with io.StringIO("This file was too large to be duplicated.") as fobj:
                     file_size_limit = (
                         msg.guild.filesize_limit
                         if msg.guild
@@ -451,9 +446,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                 content_file = None
                 if content_attachment and msg.content:
-                    with io.StringIO() as fobj:
-                        fobj.write(msg.content)
-                        fobj.seek(0)
+                    with io.StringIO(msg.content) as fobj:
                         content_file = discord.File(fobj, "get.txt")
 
                 await self.response_msg.channel.send(
@@ -461,10 +454,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
             elif content_attachment:
-                with io.StringIO() as fobj:
-                    fobj.write(msg.content)
-                    fobj.seek(0)
-
+                with io.StringIO(msg.content) as fobj:
                     await self.channel.send(
                         file=discord.File(fobj, "get.txt"),
                         embed=embed_utils.create(
@@ -644,9 +634,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             output_filename = "message_ids.txt"
             output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
 
-        with io.StringIO() as fobj:
-            fobj.write(output_str)
-            fobj.seek(0)
+        with io.StringIO(output_str) as fobj:
             try:
                 await destination.send(
                     file=discord.File(fobj, filename=output_filename)
@@ -689,10 +677,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
-                with io.StringIO() as fobj:
-                    fobj.write("This file was too large to be cloned.")
-                    fobj.seek(0)
-
+                with io.StringIO("This file was too large to be cloned.") as fobj:
                     file_size_limit = (
                         msg.guild.filesize_limit
                         if msg.guild
@@ -949,9 +934,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         no_mentions = discord.AllowedMentions.none()
 
         msg_count = len(messages)
-        with io.StringIO() as fobj:
-            fobj.write("This file was too large to be archived.")
-
+        with io.StringIO("This file was too large to be archived.") as fobj:
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
@@ -1074,9 +1057,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                 elif mode == 2:
                     if msg.content:
-                        with io.StringIO() as fobj2:
-                            fobj2.write(msg.content)
-                            fobj2.seek(0)
+                        with io.StringIO(msg.content) as fobj2:
                             await destination.send(
                                 file=discord.File(fobj2, filename="messagedata.txt"),
                                 allowed_mentions=no_mentions,
@@ -1171,7 +1152,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
             )
-        
+
         input_msgs = msgs
 
         pinned_msgs = await channel.pins()
@@ -1257,7 +1238,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
             )
-        
+
         input_msgs = msgs
 
         pinned_msgs = await channel.pins()
