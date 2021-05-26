@@ -692,8 +692,8 @@ class BaseCommand:
 
         await embed_utils.replace_2(
             self.response_msg,
-            author_name="BotException",
             title=title,
             description=msg,
             color=0xFF0000,
+            footer_text="BotException"
         )
