@@ -695,5 +695,5 @@ class BaseCommand:
             title=title,
             description=msg,
             color=0xFF0000,
-            footer_text="BotException"
+            footer_text="BotException",
         )
