@@ -469,7 +469,8 @@ class BaseCommand:
 
         except ValueError:
             if anno == "CodeBlock":
-                typ = "a codeblock, please surround your code in codeticks"
+                typ = "a codeblock, please surround your code in codeblocks,"
+                " and add a correct language specifier (e.g. \\`\\`\\`python) when needed"
 
             elif anno == "String":
                 typ = 'a string, please surround it in quotes (`""`)'
@@ -478,10 +479,7 @@ class BaseCommand:
                 typ = "a string, that denotes datetime in iso format"
 
             elif anno == "range":
-                typ = (
-                    "a range specifier, formatted with hyphens, enclosed in "
-                    "parenthesis"
-                )
+                typ = "a range specifier, matching the `range` object in Python 3.x"
 
             elif anno == "discord.Object":
                 typ = "a generic discord Object, which has an ID"
@@ -503,8 +501,8 @@ class BaseCommand:
 
             elif anno == "discord.Message":
                 typ = (
-                    "a message id, or a 'channel/message' combo\nPlease make "
-                    "sure that the ID(s) is(are) valid ones"
+                    "a message id, or a 'channel_id/message_id' combo, or a [link](#) to a message\nPlease make "
+                    "sure that the given ID(s) is/are valid and that the message is accesible to the bot"
                 )
 
             elif anno == "pygame.Color":
@@ -672,6 +670,12 @@ class BaseCommand:
 
         except BotException as exc:
             title, msg = exc.args
+
+        except discord.HTTPException as exc:
+            title, msg = "HttpException", exc.args[0]
+
+        except discord.Forbidden as exc:
+            title, msg = "Forbidden", exc.args[0]
 
         except Exception as exc:
             title = "An exception occured while handling the command!"
