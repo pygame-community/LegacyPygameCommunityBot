@@ -469,6 +469,7 @@ async def edit_2(
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
+
 def create_from_dict(data):
     """
     Creates an embed from a dictionary with a much more tight function
@@ -478,6 +479,7 @@ def create_from_dict(data):
         data["timestamp"] = data["timestamp"][:-1]
 
     return discord.Embed.from_dict(data)
+
 
 async def send_from_dict(channel, data):
     """

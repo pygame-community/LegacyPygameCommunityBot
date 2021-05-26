@@ -139,9 +139,7 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                output_embeds.append(
-                    embed_utils.create_from_dict(embed_dict)
-                )
+                output_embeds.append(embed_utils.create_from_dict(embed_dict))
                 continue
 
             if not only_description:
@@ -153,9 +151,7 @@ class EmsudoCommand(BaseCommand):
                     except json.JSONDecodeError as j:
                         raise BotException(f"Invalid JSON data", j.args[0])
 
-                    output_embeds.append(
-                        embed_utils.create_from_dict(embed_dict)
-                    )
+                    output_embeds.append(embed_utils.create_from_dict(embed_dict))
                     continue
 
                 else:
@@ -165,9 +161,7 @@ class EmsudoCommand(BaseCommand):
                         raise BotException(f"Invalid arguments!", e.args[0])
 
                     if isinstance(args, dict):
-                        output_embeds.append(
-                            embed_utils.create_from_dict(args)
-                        )
+                        output_embeds.append(embed_utils.create_from_dict(args))
                         continue
                     elif not isinstance(args, (list, tuple)):
                         raise BotException(
@@ -204,9 +198,7 @@ class EmsudoCommand(BaseCommand):
                                 author_name=args[0],
                             )
                     else:
-                        raise BotException(
-                            f"Input {i}: Invalid arguments!", ""
-                        )
+                        raise BotException(f"Input {i}: Invalid arguments!", "")
 
                     if arg_count > 1:
                         if isinstance(args[1], (tuple, list)):
@@ -268,7 +260,7 @@ class EmsudoCommand(BaseCommand):
                                 break
                         except TypeError:
                             raise BotException(
-                               f"Input {i}: Invalid format for field string(s)!",
+                                f"Input {i}: Invalid format for field string(s)!",
                                 'The format should be `"<name|value|inline>"`',
                             )
 
@@ -293,9 +285,7 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 6:
                         util_send_embed_args.update(timestamp=args[6])
 
-            output_embeds.append(
-                embed_utils.create(**util_send_embed_args)
-            )
+            output_embeds.append(embed_utils.create(**util_send_embed_args))
             await asyncio.sleep(0)
 
             if i + 1 == data_count:
@@ -340,13 +330,11 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            output_embeds.append(
-                embed_utils.create_from_dict(embed_dict)
-            )
+            output_embeds.append(embed_utils.create_from_dict(embed_dict))
 
         for embed in output_embeds:
             await self.invoke_msg.channel.send(embed=embed)
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if len(datas) > 1 else 0)
 
@@ -476,13 +464,13 @@ class EmsudoCommand(BaseCommand):
                     return
                 elif not isinstance(args, (list, tuple)):
                     raise BotException(
-                            f"Invalid arguments!",
-                            "A code block given as input must"
-                            " contain either a Python `tuple`/`list` of embed data, or a"
-                            " Python `dict` of embed data matching the JSON structure of"
-                            " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
-                            "data\n\\`\\`\\`\n)",
-                        )
+                        f"Invalid arguments!",
+                        "A code block given as input must"
+                        " contain either a Python `tuple`/`list` of embed data, or a"
+                        " Python `dict` of embed data matching the JSON structure of"
+                        " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
+                        "data\n\\`\\`\\`\n)",
+                    )
 
                 arg_count = len(args)
 
@@ -867,9 +855,7 @@ class EmsudoCommand(BaseCommand):
                                 author_name=args[0],
                             )
                     else:
-                        raise BotException(
-                            f"Input {i}: Invalid arguments!", ""
-                        )
+                        raise BotException(f"Input {i}: Invalid arguments!", "")
 
                     if arg_count > 1:
                         if isinstance(args[1], (tuple, list)):
@@ -937,7 +923,6 @@ class EmsudoCommand(BaseCommand):
                                 f"Input {i}: Invalid format for field string(s)!",
                                 ' The format should be `"<name|value|inline>"`',
                             )
-
 
                     if arg_count > 5:
                         if isinstance(args[5], (tuple, list)):
