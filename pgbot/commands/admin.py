@@ -97,15 +97,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!db_del, to delete DB messages
         """
 
-        try:
-            db.db_obj_cache.pop(name)
-        except KeyError:
+        if not db.DiscordDB(name).delete():
             raise BotException("Could not delete DB", "No such DB exists")
 
         await embed_utils.replace(
             self.response_msg,
-            "DB overwritten!",
-            "DB contents have been overwritten successfully",
+            "DB has been deleted!",
+            "DB contents have been deleted successfully",
         )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
