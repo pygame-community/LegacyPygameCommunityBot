@@ -226,7 +226,7 @@ class BaseCommand:
         for substr in split_str.split(splitchar):
             if cnt % 2:
                 if substr.endswith("\\"):
-                    prev += substr + splitchar
+                    prev += substr[:-1] + splitchar
                     continue
 
                 yield splitfunc(prev + substr, *exargs)
