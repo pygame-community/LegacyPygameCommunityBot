@@ -830,7 +830,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         ->type Admin commands
         ->signature pg!archive <origin channel> <quantity> [mode] [destination channel]
-        [before] [after] [around] [raw=False] [show_header=True] [show_author=True]
+        [before=None] [after=None] [around=None] [raw=False] [show_header=True] [show_author=True]
         [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----

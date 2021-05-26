@@ -2232,7 +2232,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_replace <message> <index> <data>
+        ->signature pg!emsudo_replace_field <message> <index> <data>
         ->description Replace an embed field through the bot
         ->extended description
         ->example command
@@ -2376,7 +2376,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_clone_fields [*args]
+        ->signature pg!emsudo_clone_fields <message> <index> [<index>...] [clone_to=None]
         ->description Clone multiple embed fields through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
@@ -2430,7 +2430,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_remove_fields [*args]
+        ->signature pg!emsudo_remove_fields <message> <index> [<index>...]
         ->description Remove an embed field through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
