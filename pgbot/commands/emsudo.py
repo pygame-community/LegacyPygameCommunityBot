@@ -57,6 +57,8 @@ class EmsudoCommand(BaseCommand):
         """
 
         data_count = len(datas)
+        output_embeds = []
+
         for i, data in enumerate(datas):
             await self.response_msg.edit(
                 embed=embed_utils.create(
@@ -103,14 +105,11 @@ class EmsudoCommand(BaseCommand):
 
             if attachment_msg:
                 if not attachment_msg.attachments:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: No valid attachment found in message.",
-                        description="It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt`, `.py` file containing a Python dictionary,"
                         " or a `.json` file containing embed data.",
-                        color=0xFF0000,
                     )
-                    continue
 
                 for attachment in attachment_msg.attachments:
                     if (
@@ -122,14 +121,11 @@ class EmsudoCommand(BaseCommand):
                         attachment_obj = attachment
                         break
                 else:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: No valid attachment found in message.",
-                        description="It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt`, `.py` file containing a Python dictionary,"
                         " or a `.json` file containing embed data.",
-                        color=0xFF0000,
                     )
-                    continue
 
                 embed_data = await attachment_obj.read()
                 embed_data = embed_data.decode()
@@ -143,8 +139,8 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                await embed_utils.send_from_dict(
-                    self.invoke_msg.channel, embed_dict
+                output_embeds.append(
+                    embed_utils.create_from_dict(embed_dict)
                 )
                 continue
 
@@ -155,16 +151,10 @@ class EmsudoCommand(BaseCommand):
                             data.code, from_json_string=True
                         )
                     except json.JSONDecodeError as j:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid JSON data",
-                            description=f"```\n{j.args[0]}\n```",
-                            color=0xFF0000,
-                        )
-                        continue
+                        raise BotException(f"Invalid JSON data", j.args[0])
 
-                    await embed_utils.send_from_dict(
-                        self.invoke_msg.channel, embed_dict
+                    output_embeds.append(
+                        embed_utils.create_from_dict(embed_dict)
                     )
                     continue
 
@@ -172,33 +162,22 @@ class EmsudoCommand(BaseCommand):
                     try:
                         args = literal_eval(data.code)
                     except Exception as e:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            description=utils.code_block(
-                                utils.format_code_exception(e)
-                            ),
-                            color=0xFF0000,
-                        )
-                        continue
+                        raise BotException(f"Invalid arguments!", e.args[0])
 
                     if isinstance(args, dict):
-                        await embed_utils.send_from_dict(
-                            self.invoke_msg.channel, args
+                        output_embeds.append(
+                            embed_utils.create_from_dict(args)
                         )
                         continue
                     elif not isinstance(args, (list, tuple)):
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            description="A code block given as input must"
+                        raise BotException(
+                            f"Input {i}: Invalid arguments!",
+                            "A code block given as input must"
                             " contain either a Python `tuple`/`list` of embed data, or a"
                             " Python `dict` of embed data matching the JSON structure of"
-                            " a Discord embed object, or JSON embed data (\n```json\n"
-                            "data\n```\n)",
-                            color=0xFF0000,
+                            " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
+                            "data\n\\`\\`\\`\n)",
                         )
-                        continue
 
                     arg_count = len(args)
 
@@ -225,12 +204,9 @@ class EmsudoCommand(BaseCommand):
                                 author_name=args[0],
                             )
                     else:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            color=0xFF0000,
+                        raise BotException(
+                            f"Input {i}: Invalid arguments!", ""
                         )
-                        continue
 
                     if arg_count > 1:
                         if isinstance(args[1], (tuple, list)):
@@ -291,13 +267,10 @@ class EmsudoCommand(BaseCommand):
                                     util_send_embed_args.update(fields=[fields])
                                 break
                         except TypeError:
-                            await embed_utils.send_2(
-                                self.response_msg.channel,
-                                title=f"Input {i}: Invalid format for field string(s)!",
-                                description=' The format should be `"<name|value|inline>"`',
-                                color=0xFF0000,
+                            raise BotException(
+                               f"Input {i}: Invalid format for field string(s)!",
+                                'The format should be `"<name|value|inline>"`',
                             )
-                            continue
 
                     if arg_count > 5:
                         if isinstance(args[5], (tuple, list)):
@@ -320,8 +293,8 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 6:
                         util_send_embed_args.update(timestamp=args[6])
 
-            await embed_utils.send_2(
-                self.invoke_msg.channel, **util_send_embed_args
+            output_embeds.append(
+                embed_utils.create(**util_send_embed_args)
             )
             await asyncio.sleep(0)
 
@@ -367,8 +340,13 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            await embed_utils.send_from_dict(self.invoke_msg.channel, embed_dict)
+            output_embeds.append(
+                embed_utils.create_from_dict(embed_dict)
+            )
 
+        for embed in output_embeds:
+            await self.invoke_msg.channel.send(embed=embed)
+        
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if len(datas) > 1 else 0)
 
@@ -498,13 +476,13 @@ class EmsudoCommand(BaseCommand):
                     return
                 elif not isinstance(args, (list, tuple)):
                     raise BotException(
-                        f"Invalid arguments!",
-                        "A code block given as input must"
-                        " contain either a Python `tuple`/`list` of embed data, or a"
-                        " Python `dict` of embed data matching the JSON structure of"
-                        " a Discord embed object, or JSON embed data (\n```json\n"
-                        "data\n```\n)",
-                    )
+                            f"Invalid arguments!",
+                            "A code block given as input must"
+                            " contain either a Python `tuple`/`list` of embed data, or a"
+                            " Python `dict` of embed data matching the JSON structure of"
+                            " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
+                            "data\n\\`\\`\\`\n)",
+                        )
 
                 arg_count = len(args)
 
@@ -788,14 +766,11 @@ class EmsudoCommand(BaseCommand):
 
             if attachment_msg:
                 if not attachment_msg.attachments:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: No valid attachment found in message.",
-                        description="It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt`, `.py` file containing a Python dictionary,"
                         " or a `.json` file containing embed data.",
-                        color=0xFF0000,
                     )
-                    continue
 
                 for attachment in attachment_msg.attachments:
                     if (
@@ -807,14 +782,11 @@ class EmsudoCommand(BaseCommand):
                         attachment_obj = attachment
                         break
                 else:
-                    await embed_utils.send_2(
-                        self.response_msg.channel,
-                        title=f"Input {i}: No valid attachment found in message.",
-                        description="It must be a `.txt`, `.py` file containing a Python dictionary,"
+                    raise BotException(
+                        f"Input {i}: No valid attachment found in message.",
+                        "It must be a `.txt`, `.py` file containing a Python dictionary,"
                         " or a `.json` file containing embed data.",
-                        color=0xFF0000,
                     )
-                    continue
 
                 embed_data = await attachment_obj.read()
                 embed_data = embed_data.decode()
@@ -840,13 +812,10 @@ class EmsudoCommand(BaseCommand):
                             data.code, from_json_string=True
                         )
                     except json.JSONDecodeError as j:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid JSON data",
-                            description=f"```\n{j.args[0]}\n```",
-                            color=0xFF0000,
+                        raise BotException(
+                            f"Input {i}: Invalid JSON data",
+                            f"```\n{j.args[0]}\n```",
                         )
-                        continue
                     msg_embed = await embed_utils.edit_from_dict(
                         None, msg_embed, embed_dict
                     )
@@ -856,15 +825,7 @@ class EmsudoCommand(BaseCommand):
                     try:
                         args = literal_eval(data.code)
                     except Exception as e:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            description=utils.code_block(
-                                utils.format_code_exception(e)
-                            ),
-                            color=0xFF0000,
-                        )
-                        continue
+                        raise BotException(f"Input {i}: Invalid arguments!", e.args[0])
 
                     if isinstance(args, dict):
                         msg_embed = await embed_utils.edit_from_dict(
@@ -872,17 +833,14 @@ class EmsudoCommand(BaseCommand):
                         )
                         continue
                     elif not isinstance(args, (list, tuple)):
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            description="A code block given as input must"
+                        raise BotException(
+                            f"Input {i}: Invalid arguments!",
+                            "A code block given as input must"
                             " contain either a Python `tuple`/`list` of embed data, or a"
                             " Python `dict` of embed data matching the JSON structure of"
-                            " a Discord embed object, or JSON embed data (\n```json\n"
-                            "data\n```\n)",
-                            color=0xFF0000,
+                            " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
+                            "data\n\\`\\`\\`\n)",
                         )
-                        continue
 
                     arg_count = len(args)
 
@@ -909,12 +867,9 @@ class EmsudoCommand(BaseCommand):
                                 author_name=args[0],
                             )
                     else:
-                        await embed_utils.send_2(
-                            self.response_msg.channel,
-                            title=f"Input {i}: Invalid arguments!",
-                            color=0xFF0000,
+                        raise BotException(
+                            f"Input {i}: Invalid arguments!", ""
                         )
-                        continue
 
                     if arg_count > 1:
                         if isinstance(args[1], (tuple, list)):
@@ -978,13 +933,11 @@ class EmsudoCommand(BaseCommand):
                                     util_edit_embed_args.update(fields=[fields])
                                 break
                         except TypeError:
-                            await embed_utils.send_2(
-                                self.response_msg.channel,
-                                title=f"Input {i}: Invalid format for field string(s)!",
-                                description=' The format should be `"<name|value|inline>"`',
-                                color=0xFF0000,
+                            raise BotException(
+                                f"Input {i}: Invalid format for field string(s)!",
+                                ' The format should be `"<name|value|inline>"`',
                             )
-                            continue
+
 
                     if arg_count > 5:
                         if isinstance(args[5], (tuple, list)):
