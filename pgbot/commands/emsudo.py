@@ -1600,12 +1600,12 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_insert_field <message> <index> [data]
+        ->signature pg!emsudo_insert_field <message> <index> <data>
         ->description Insert an embed field through the bot
         ->extended description
         Insert an embed field at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
         ->example command
-        pg!emsudo_insert_field 2 987654321987654321/123456789123456789
+        pg!emsudo_insert_field https://discord.com/channels/772505616680878080/775317562715406336/846955385688031282 2
         \\`\\`\\`json
         {
             "name": "Mrs Field",
@@ -1902,7 +1902,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_edit_field [*args]
+        ->signature pg!emsudo_edit_field <message> <index> <data> 
         ->description Replace an embed field through the bot
         ->extended description
         Edit parts of an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
@@ -2025,15 +2025,17 @@ class EmsudoCommand(BaseCommand):
         to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
         ->example command 
         pg!emsudo_edit_fields 987654321987654321/123456789123456789
-        \\`\\`\\`python
-        [
-            {},
-            {
-                "name": "Girl Field",
-                "value": "I value...",
-                "inline": False
-            }
-        ]
+        \\`\\`\\`json
+        {
+            "fields": [
+                {},
+                {
+                    "name": "Girl Field",
+                    "value": "I value...",
+                    "inline": False
+                }
+            ]
+        }
         \\`\\`\\`
         -----
         Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
@@ -2130,8 +2132,22 @@ class EmsudoCommand(BaseCommand):
                         f"```\n{''.join(utils.format_code_exception(e))}```",
                     )
 
-                if isinstance(args, (list, tuple)):
-                    for i, data in enumerate(args):
+                if isinstance(args, (list, tuple, dict)):
+                    if isinstance(args, dict):
+                        if "fields" in args:
+                            embed_field_list = args["fields"]
+                        else:
+                            raise BotException(
+                                "Invalid arguments!",
+                                'Argument `data` must be omitted or be an empty string `""`,'
+                                " a message `[channel_id/]message_id` or a python code block containing"
+                                ' a list/tuple of embed field strings `"<name|value|inline>"` or embed field dictionaries'
+                                " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`. It can also be a JSON"
+                                " code block containing JSON embed field data.",
+                            )
+                    else:
+                        embed_field_list = args
+                    for i, data in enumerate(embed_field_list):
                         if isinstance(data, dict):
                             field_dicts_list.append(data)
 
@@ -2178,9 +2194,10 @@ class EmsudoCommand(BaseCommand):
                     raise BotException(
                         "Invalid arguments!",
                         'Argument `data` must be omitted or be an empty string `""`,'
-                        " a message `[channel_id/]message_id` or a code block containing"
-                        ' a list/tuple of embed field strings `"<name|value|inline>"` or embed dictionaries'
-                        " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
+                        " a message `[channel_id/]message_id` or a python code block containing"
+                        ' a list/tuple of embed field strings `"<name|value|inline>"` or embed field dictionaries'
+                        " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`. It can also be a JSON"
+                        " code block containing JSON embed field data.",
                     )
 
                 await embed_utils.edit_fields_from_dicts(msg, msg_embed, field_dicts_list)
@@ -2196,7 +2213,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_replace [*args]
+        ->signature pg!emsudo_replace <message> <index> <data>
         ->description Replace an embed field through the bot
         ->extended description
         ->example command 
@@ -2310,7 +2327,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_swap_fields [*args]
+        ->signature pg!emsudo_swap_fields <message> <index_a> <index_b>
         ->description Swap embed fields through the bot
         ->extended description
         Swap the positions of embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
