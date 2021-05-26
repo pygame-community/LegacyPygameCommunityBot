@@ -335,8 +335,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit <edit_msg> <string>
+        ->signature pg!sudo_edit <edit_msg> <data> [from_attachment]
         ->description Edit a message that the bot sent.
+        ->extended description
+        If `from_attachment=` is set to `True`, the attachment of the given message
+        will be used for editing the target message.
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
@@ -403,14 +406,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
-        content_attachment: bool = False,
+        as_attachment: bool = False,
         info: bool = False,
         attachments: bool = True,
         embeds: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <message> <message>... [content_attachment] [info] [attachments] [embeds]
+        ->signature pg!sudo_get <message> <message>... [as_attachment] [info] [attachments] [embeds]
         ->description Get the text of messages through the bot
         ->extended description
         Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
