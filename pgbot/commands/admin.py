@@ -335,7 +335,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit <edit_msg> <data> [from_attachment]
+        ->signature pg!sudo_edit <edit_msg> <data> [from_attachment=True]
         ->description Edit a message that the bot sent.
         ->extended description
         If `from_attachment=` is set to `True`, the attachment of the given message
@@ -417,7 +417,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->description Get the text of messages through the bot
         ->extended description
         Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
-        to the channel where this command was invoked.
+        to the channel where this command was invoked. If `as_attachment=` is set to `True`, the message data will
+        be returned in `.txt` files.
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
@@ -448,7 +449,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 info_embed.description = f"```\n{msg.content}```\n\u2800"
 
                 content_file = None
-                if content_attachment and msg.content:
+                if as_attachment and msg.content:
                     with io.StringIO(msg.content) as fobj:
                         content_file = discord.File(fobj, "get.txt")
 
@@ -456,7 +457,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed=info_embed, file=content_file
                 )
 
-            elif content_attachment:
+            elif as_attachment:
                 with io.StringIO(msg.content) as fobj:
                     await self.channel.send(
                         file=discord.File(fobj, "get.txt"),

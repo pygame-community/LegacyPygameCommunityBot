@@ -58,7 +58,6 @@ class EmsudoCommand(BaseCommand):
 
         data_count = len(datas)
         output_embeds = []
-
         for i, data in enumerate(datas):
             await self.response_msg.edit(
                 embed=embed_utils.create(
