@@ -18,7 +18,7 @@ import discord
 from discord.embeds import EmptyEmbed
 
 from pgbot import embed_utils, utils
-from pgbot.commands.base import BaseCommand, BotException, CodeBlock, String
+from pgbot.commands.base import BaseCommand, BotException, CodeBlock, String, add_group
 
 
 class EmsudoCommand(BaseCommand):
@@ -26,6 +26,7 @@ class EmsudoCommand(BaseCommand):
     Base class to handle emsudo commands.
     """
 
+    @add_group("emsudo")
     async def cmd_emsudo(
         self,
         *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
@@ -296,7 +297,10 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 6:
                         util_send_embed_args.update(timestamp=args[6])
 
-            output_embeds.append(embed_utils.create(**util_send_embed_args))
+                output_embeds.append(embed_utils.create(**util_send_embed_args))
+            else:
+                output_embeds.append(embed_utils.create(description=util_send_embed_args["description"]))
+
             await asyncio.sleep(0)
 
             if i + 1 == data_count:
@@ -349,6 +353,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if len(datas) > 1 else 0)
 
+    @add_group("emsudo", "replace")
     async def cmd_emsudo_replace(
         self,
         msg: discord.Message,
@@ -607,6 +612,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "add")
     async def cmd_emsudo_add(
         self,
         msg: discord.Message,
@@ -647,6 +653,7 @@ class EmsudoCommand(BaseCommand):
                 " `overwrite=` is set to `False`",
             )
 
+    @add_group("emsudo", "remove")
     async def cmd_emsudo_remove(self, *msgs: discord.Message):
         """
         ->type emsudo commands
@@ -704,6 +711,7 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
+    @add_group("emsudo", "edit")
     async def cmd_emsudo_edit(
         self,
         msg: discord.Message,
@@ -998,7 +1006,12 @@ class EmsudoCommand(BaseCommand):
                 msg_embed = await embed_utils.edit_2(
                     None, msg_embed, **util_edit_embed_args
                 )
-                await asyncio.sleep(0)
+            else:
+                msg_embed = await embed_utils.edit_2(
+                    None, msg_embed, description=util_edit_embed_args["description"], color=-1
+                )
+
+            await asyncio.sleep(0)
 
         if not datas:
             attachment_msg = self.invoke_msg
@@ -1048,6 +1061,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
 
+    @add_group("emsudo", "clone")
     async def cmd_emsudo_clone(self, *msgs: discord.Message):
         """
         ->type emsudo commands
@@ -1100,6 +1114,7 @@ class EmsudoCommand(BaseCommand):
 
         await self.response_msg.delete()
 
+    @add_group("emsudo", "get")
     async def cmd_emsudo_get(
         self,
         *msgs: discord.Message,
@@ -1283,6 +1298,7 @@ class EmsudoCommand(BaseCommand):
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
+    @add_group("emsudo", "add_field")
     async def cmd_emsudo_add_field(
         self,
         msg: discord.Message,
@@ -1411,6 +1427,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "add_fields")
     async def cmd_emsudo_add_fields(
         self,
         msg: discord.Message,
@@ -1618,6 +1635,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "insert_field")
     async def cmd_emsudo_insert_field(
         self,
         msg: discord.Message,
@@ -1747,6 +1765,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "insert_fields")
     async def cmd_emsudo_insert_fields(
         self,
         msg: discord.Message,
@@ -1955,6 +1974,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "edit_field")
     async def cmd_emsudo_edit_field(
         self,
         msg: discord.Message,
@@ -2083,6 +2103,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "edit_fields")
     async def cmd_emsudo_edit_fields(
         self,
         msg: discord.Message,
@@ -2288,6 +2309,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "replace_field")
     async def cmd_emsudo_replace_field(
         self,
         msg: discord.Message,
@@ -2416,6 +2438,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "swap_fields")
     async def cmd_emsudo_swap_fields(
         self, msg: discord.Message, index_a: int, index_b: int
     ):
@@ -2453,6 +2476,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "clone_fields")
     async def cmd_emsudo_clone_fields(
         self,
         msg: discord.Message,
@@ -2518,6 +2542,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "remove_fields")
     async def cmd_emsudo_remove_fields(
         self,
         msg: discord.Message,
@@ -2578,6 +2603,7 @@ class EmsudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
+    @add_group("emsudo", "clear_fields")
     async def cmd_emsudo_clear_fields(
         self,
         msg: discord.Message,
