@@ -65,7 +65,7 @@ class EmsudoCommand(BaseCommand):
                 ):
                     raise BotException(
                         f"Not enough permissions",
-                        "You do not have enough permissions to run this command on the specified channels.",
+                        "You do not have enough permissions to run this command with the specified arguments.",
                     )
             if not i % 50:
                 await asyncio.sleep(0)
@@ -749,7 +749,7 @@ class EmsudoCommand(BaseCommand):
                 ):
                     raise BotException(
                         f"Not enough permissions",
-                        "You do not have enough permissions to run this command on the specified channels.",
+                        "You do not have enough permissions to run this command with the specified arguments.",
                     )
             if not i % 50:
                 await asyncio.sleep(0)
