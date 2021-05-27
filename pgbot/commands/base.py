@@ -340,8 +340,7 @@ class BaseCommand:
             if self.invoke_msg.reference.channel_id != self.channel.id:
                 msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
             
-            last_idx = len(args)-1
-            for i in range(last_idx+1):
+            for i in range(len(args)):
                 if not isinstance(args[i], str):
                     args.insert(i, msg)
                     break
