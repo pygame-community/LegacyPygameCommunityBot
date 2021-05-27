@@ -69,6 +69,44 @@ class UserCommand(BaseCommand):
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
 
+    @fun_command
+    async def cmd_fontify(self, msg: String):
+        """
+        ->type Other commands
+        ->signature pg!fontify
+        ->description Display message in pygame font
+        """
+        fontified = ""
+        for char in msg.string:
+            if char.isalnum():
+                for emoji in self.guild.emojis:
+                    if emoji.name == f"pg_char_{char.lower()}":
+                        fontified += str(emoji)
+                        break
+
+            elif char.isspace():
+                fontified += " " * 5
+
+            else:
+                raise BotException(
+                    "Could not execute comamnd",
+                    "Please make sure your input contains only letters, "
+                    "numbers and whitespaces",
+                )
+
+        if len(fontified) > 2000:
+            raise BotException(
+                "Could not execute comamnd",
+                "Input text width exceeded maximum limit (2KB)",
+            )
+
+        await embed_utils.replace_2(
+            self.response_msg,
+            author_name=self.author.display_name,
+            author_icon_url=self.author.avatar_url,
+        )
+        await self.channel.send(fontified)
+
     async def cmd_rules(self, *rules: int):
         """
         ->type Get help
