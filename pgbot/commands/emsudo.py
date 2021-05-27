@@ -56,6 +56,20 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudos, for admins to send multiple embeds via the bot
         """
 
+        for i, data in enumerate(datas):
+            if isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command on the specified channels.",
+                    )
+            if not i % 50:
+                await asyncio.sleep(0)
+
         data_count = len(datas)
         output_embeds = []
         for i, data in enumerate(datas):
@@ -254,12 +268,7 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 4:
                         try:
                             fields = embed_utils.get_fields(*args[4])
-                            for f in fields:
-                                if isinstance(f, list):
-                                    util_send_embed_args.update(fields=fields)
-                                else:
-                                    util_send_embed_args.update(fields=[fields])
-                                break
+                            util_send_embed_args.update(fields=fields)
                         except TypeError:
                             raise BotException(
                                 f"Input {i}: Invalid format for field string(s)!",
@@ -369,6 +378,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_replace, for admins to replace embeds via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         util_replace_embed_args = dict(
             embed_type="rich",
@@ -556,12 +575,7 @@ class EmsudoCommand(BaseCommand):
                 if arg_count > 4:
                     try:
                         fields = embed_utils.get_fields(*args[4])
-                        for f in fields:
-                            if isinstance(f, list):
-                                util_replace_embed_args.update(fields=fields)
-                            else:
-                                util_replace_embed_args.update(fields=[fields])
-                            break
+                        util_replace_embed_args.update(fields=fields)
                     except TypeError:
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -642,6 +656,18 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_remove, for admins to remove embeds from messages via the bot
         """
 
+        for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not i % 50:
+                asyncio.sleep(0)
+
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
@@ -658,7 +684,7 @@ class EmsudoCommand(BaseCommand):
                     + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
@@ -703,6 +729,30 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_edit, for admins to replace embeds via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        for i, data in enumerate(datas):
+            if isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command on the specified channels.",
+                    )
+            if not i % 50:
+                await asyncio.sleep(0)
 
         if not msg.embeds:
             raise BotException(
@@ -917,12 +967,7 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 4:
                         try:
                             fields = embed_utils.get_fields(*args[4])
-                            for f in fields:
-                                if isinstance(f, list):
-                                    util_edit_embed_args.update(fields=fields)
-                                else:
-                                    util_edit_embed_args.update(fields=[fields])
-                                break
+                            util_edit_embed_args.update(fields=fields)
                         except TypeError:
                             raise BotException(
                                 f"Input {i}: Invalid format for field string(s)!",
@@ -1016,6 +1061,18 @@ class EmsudoCommand(BaseCommand):
         Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
 
+        for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not i % 50:
+                asyncio.sleep(0)
+
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
@@ -1023,11 +1080,11 @@ class EmsudoCommand(BaseCommand):
             )
 
         for i, msg in enumerate(msgs):
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
 
             if not msg.embeds:
                 await embed_utils.send_2(
-                    self.response_msg.channel,
+                    self.channel,
                     title=f"Input {i}: Cannot execute command:",
                     description="No embed data found in message.",
                     color=0xFF0000,
@@ -1036,8 +1093,8 @@ class EmsudoCommand(BaseCommand):
 
             for j, embed in enumerate(msg.embeds):
                 if not j % 3:
-                    await self.response_msg.channel.trigger_typing()
-                await self.response_msg.channel.send(embed=embed)
+                    await self.channel.trigger_typing()
+                await self.channel.send(embed=embed)
 
             await asyncio.sleep(0)
 
@@ -1066,6 +1123,18 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
+
+        for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not i % 50:
+                asyncio.sleep(0)
 
         if not msgs:
             raise BotException(
@@ -1140,7 +1209,7 @@ class EmsudoCommand(BaseCommand):
                     + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
                     f"Input {i}: Cannot execute command:",
@@ -1172,7 +1241,7 @@ class EmsudoCommand(BaseCommand):
                         as_json=json,
                     )
                     fobj.seek(0)
-                    await self.response_msg.channel.send(
+                    await self.channel.send(
                         embed=await embed_utils.send_2(
                             None,
                             author_name="Embed Data",
@@ -1238,6 +1307,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_add_field, for admins to add fields to embeds sent via the bot
         """
 
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
         field_list = None
         field_dict = None
 
@@ -1253,7 +1332,7 @@ class EmsudoCommand(BaseCommand):
             field_str = data.string
 
             try:
-                field_list = embed_utils.get_fields(field_str)
+                field_list = embed_utils.get_fields(field_str)[0]
             except (TypeError, IndexError):
                 raise BotException(
                     "Invalid format for field string(s)!",
@@ -1301,7 +1380,7 @@ class EmsudoCommand(BaseCommand):
                     field_str = args
 
                     try:
-                        field_list = embed_utils.get_fields(field_str)
+                        field_list = embed_utils.get_fields(field_str)[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -1364,6 +1443,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_add_fields, for admins to add multiple fields to embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
 
         attachment_msg = None
         field_dicts_list = []
@@ -1483,7 +1572,7 @@ class EmsudoCommand(BaseCommand):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = embed_utils.get_fields(data)
+                                data_list = embed_utils.get_fields(data)[0]
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -1491,26 +1580,18 @@ class EmsudoCommand(BaseCommand):
                                     " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
 
-                            if len(data_list) == 3:
+                            if data_list:
                                 data_dict = {
                                     "name": data_list[0],
                                     "value": data_list[1],
                                     "inline": data_list[2],
                                 }
-                            elif len(data_list) == 2:
-                                data_dict = {
-                                    "name": data_list[0],
-                                    "value": data_list[1],
-                                    "inline": False,
-                                }
-
-                            elif not data_list:
-                                await embed_utils.replace(
-                                    self.response_msg,
-                                    "Invalid format for field string!",
-                                    "",
+                            else:
+                                raise BotException(
+                                    f"Invalid field string in input list at index {i}!",
+                                    ' The format should be `"<name|value|inline>"` or'
+                                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
-                                return
 
                             field_dicts_list.append(data_dict)
                         else:
@@ -1562,6 +1643,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_insert_field, for admins to insert fields into embeds sent via the bot
         """
 
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
         field_list = None
         field_dict = None
 
@@ -1577,21 +1668,21 @@ class EmsudoCommand(BaseCommand):
             field_str = data.string
 
             try:
-                field_list = embed_utils.get_fields(field_str)
+                field_list = embed_utils.get_fields(field_str)[0]
             except (TypeError, IndexError):
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
                 )
 
-            if len(field_list) == 3:
+            if field_list:
                 field_dict = {
                     "name": field_list[0],
                     "value": field_list[1],
                     "inline": field_list[2],
                 }
 
-            elif not field_list:
+            else:
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
@@ -1625,7 +1716,7 @@ class EmsudoCommand(BaseCommand):
                     field_str = args
 
                     try:
-                        field_list = embed_utils.get_fields(field_str)
+                        field_list = embed_utils.get_fields(field_str)[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -1689,6 +1780,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_insert_fields, for admins to insert multiple fields to embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         attachment_msg = None
         field_dicts_list = []
@@ -1808,7 +1909,7 @@ class EmsudoCommand(BaseCommand):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = embed_utils.get_fields(data)
+                                data_list = embed_utils.get_fields(data)[0]
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -1816,26 +1917,18 @@ class EmsudoCommand(BaseCommand):
                                     " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
 
-                            if len(data_list) == 3:
+                            if data_list:
                                 data_dict = {
                                     "name": data_list[0],
                                     "value": data_list[1],
                                     "inline": data_list[2],
                                 }
-                            elif len(data_list) == 2:
-                                data_dict = {
-                                    "name": data_list[0],
-                                    "value": data_list[1],
-                                    "inline": False,
-                                }
-
-                            elif not data_list:
-                                await embed_utils.replace(
-                                    self.response_msg,
-                                    "Invalid format for field string!",
-                                    "",
+                            else:
+                                raise BotException(
+                                    f"Invalid field string in input list at index {i}!",
+                                    ' The format should be `"<name|value|inline>"` or'
+                                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
-                                return
 
                             field_dicts_list.append(data_dict)
                         else:
@@ -1887,6 +1980,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_edit_field, for admins to update fields of embeds sent via the bot
         """
 
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
         field_list = None
         field_dict = None
 
@@ -1902,21 +2005,20 @@ class EmsudoCommand(BaseCommand):
             field_str = data.string
 
             try:
-                field_list = embed_utils.get_fields(field_str)
+                field_list = embed_utils.get_fields(field_str)[0]
             except (TypeError, IndexError):
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
                 )
 
-            if len(field_list) == 3:
+            if field_list:
                 field_dict = {
                     "name": field_list[0],
                     "value": field_list[1],
                     "inline": field_list[2],
                 }
-
-            elif not field_list:
+            else:
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
@@ -1950,7 +2052,7 @@ class EmsudoCommand(BaseCommand):
                     field_str = args
 
                     try:
-                        field_list = embed_utils.get_fields(field_str)
+                        field_list = embed_utils.get_fields(field_str)[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -1964,7 +2066,6 @@ class EmsudoCommand(BaseCommand):
                             "value": field_list[1],
                             "inline": field_list[2],
                         }
-
                     else:
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -1993,7 +2094,7 @@ class EmsudoCommand(BaseCommand):
         ->description Edit multiple embed fields through the bot
         ->extended description
         Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
-        Combining the new fields with the old fields works like a bitwise OR operation, where any embed field argument that is passed
+        Combining the new fields with the old fields works like a bitwise OR operation from the first to the last embed field, where any embed field argument that is passed
         to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
         ->example command
         pg!emsudo_edit_fields 987654321987654321/123456789123456789
@@ -2012,6 +2113,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_edit_fields, for admins to edit multiple embed fields of embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         attachment_msg = None
         field_dicts_list = []
@@ -2131,7 +2242,7 @@ class EmsudoCommand(BaseCommand):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = embed_utils.get_fields(data)
+                                data_list = embed_utils.get_fields(data)[0]
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -2139,26 +2250,18 @@ class EmsudoCommand(BaseCommand):
                                     " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
 
-                            if len(data_list) == 3:
+                            if data_list:
                                 data_dict = {
                                     "name": data_list[0],
                                     "value": data_list[1],
                                     "inline": data_list[2],
                                 }
-                            elif len(data_list) == 2:
-                                data_dict = {
-                                    "name": data_list[0],
-                                    "value": data_list[1],
-                                    "inline": True,
-                                }
-
-                            elif not data_list:
-                                await embed_utils.replace(
-                                    self.response_msg,
-                                    "Invalid format for field string!",
-                                    "",
+                            else:
+                                raise BotException(
+                                    f"Invalid field string in input list at index {i}!",
+                                    ' The format should be `"<name|value|inline>"` or'
+                                    " `{'name: 'name', 'value': 'value'[, 'inline': True/False]}`.",
                                 )
-                                return
 
                             field_dicts_list.append(data_dict)
                         else:
@@ -2210,6 +2313,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_replace_field, for admins to update fields of embeds sent via the bot
         """
 
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
         field_list = None
         field_dict = None
 
@@ -2225,21 +2338,20 @@ class EmsudoCommand(BaseCommand):
             field_str = data.string
 
             try:
-                field_list = embed_utils.get_fields(field_str)
+                field_list = embed_utils.get_fields(field_str)[0]
             except (TypeError, IndexError):
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
                 )
 
-            if len(field_list) == 3:
+            if field_list:
                 field_dict = {
                     "name": field_list[0],
                     "value": field_list[1],
                     "inline": field_list[2],
                 }
-
-            elif not field_list:
+            else:
                 raise BotException(
                     "Invalid format for field string(s)!",
                     ' The format should be `"<name|value|inline>"`.',
@@ -2273,7 +2385,7 @@ class EmsudoCommand(BaseCommand):
                     field_str = args
 
                     try:
-                        field_list = embed_utils.get_fields(field_str)
+                        field_list = embed_utils.get_fields(field_str)[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -2287,7 +2399,6 @@ class EmsudoCommand(BaseCommand):
                             "value": field_list[1],
                             "inline": field_list[2],
                         }
-
                     else:
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -2318,6 +2429,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_swap_fields, for admins to swap fields in embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         if not msg.embeds:
             raise BotException(
@@ -2352,6 +2473,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_clone_fields, for admins to remove fields in embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         if not msg.embeds:
             raise BotException(
@@ -2405,6 +2536,16 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_remove_fields, for admins to remove fields in embeds sent via the bot
         """
 
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
         if not msg.embeds:
             raise BotException(
                 "Cannot execute command:",
@@ -2450,6 +2591,16 @@ class EmsudoCommand(BaseCommand):
         -----
         Implement pg!emsudo_clear_fields, for admins to remove fields in embeds sent via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
 
         if not msg.embeds:
             raise BotException(

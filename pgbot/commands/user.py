@@ -428,7 +428,7 @@ class UserCommand(BaseCommand):
         pygame.image.save(
             await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
         )
-        common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
+        common.cmd_logs[self.invoke_msg.id] = await self.channel.send(
             file=discord.File(f"temp{t}.png")
         )
         os.remove(f"temp{t}.png")
@@ -760,7 +760,8 @@ class UserCommand(BaseCommand):
         self,
         desc: String,
         *emojis: String,
-        admin_embed: HiddenArg = {},
+        destination: HiddenArg = None,
+        admin_embed_dict: HiddenArg = {},
     ):
         """
         ->type Other commands
@@ -773,8 +774,11 @@ class UserCommand(BaseCommand):
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
 
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
         newline = "\n"
-        base_embed = {
+        base_embed_dict = {
             "title": "Voting in progress",
             "fields": [
                 {
@@ -799,7 +803,7 @@ class UserCommand(BaseCommand):
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string,
         }
-        base_embed.update(admin_embed)
+        base_embed_dict.update(admin_embed_dict)
 
         if emojis:
             if len(emojis) <= 3 or len(emojis) % 2:
@@ -811,10 +815,10 @@ class UserCommand(BaseCommand):
                     " information, see `pg!help poll`",
                 )
 
-            base_embed["fields"] = []
+            base_embed_dict["fields"] = []
             for i, substr in enumerate(emojis):
                 if not i % 2:
-                    base_embed["fields"].append(
+                    base_embed_dict["fields"].append(
                         {
                             "name": substr.string.strip(),
                             "value": common.ZERO_SPACE,
@@ -822,11 +826,13 @@ class UserCommand(BaseCommand):
                         }
                     )
                 else:
-                    base_embed["fields"][i // 2]["value"] = substr.string.strip()
+                    base_embed_dict["fields"][i // 2]["value"] = substr.string.strip()
 
-        await embed_utils.replace_from_dict(self.response_msg, base_embed)
+        final_embed = discord.Embed.from_dict(base_embed_dict)
+        poll_msg = await destination.send(embed=final_embed)
+        await self.response_msg.delete()
 
-        for field in base_embed["fields"]:
+        for field in base_embed_dict["fields"]:
             try:
                 emoji_id = utils.filter_emoji_id(field["name"].strip())
                 emoji = common.bot.get_emoji(emoji_id)
@@ -836,13 +842,13 @@ class UserCommand(BaseCommand):
                 emoji = field["name"]
 
             try:
-                await self.response_msg.add_reaction(emoji)
+                await poll_msg.add_reaction(emoji)
             except (discord.errors.HTTPException, discord.errors.NotFound):
                 # Either a custom emoji was used (which could not be added by
                 # our beloved snek) or some other error happened. Clear the
                 # reactions and prompt the user to make sure it is the currect
                 # emoji.
-                await self.response_msg.clear_reactions()
+                await poll_msg.clear_reactions()
                 raise BotException(
                     "Invalid emoji",
                     "The emoji could not be added as a reaction. Make sure it is"
@@ -897,7 +903,7 @@ class UserCommand(BaseCommand):
 
         if color is None and self.author.id != poll_owner:
             raise BotException(
-                "You cant stop this vote",
+                "You can't stop this vote",
                 "The vote was not started by you."
                 " Ask the person who started it to close it.",
             )
