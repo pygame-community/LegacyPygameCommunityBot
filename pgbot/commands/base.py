@@ -155,6 +155,14 @@ def fun_command(func):
     return func
 
 
+def no_dm(func):
+    """
+    A decorator to indicate a command that cannot be run on DM
+    """
+    func.no_dm = True
+    return func
+
+
 def add_group(groupname: str, *subcmds: str):
     """
     Utility to add a function name to a group command
@@ -561,6 +569,12 @@ class BaseCommand:
                     "commands, do `pg!help`",
                 )
             func = self.cmds_and_funcs[cmd]
+
+        if hasattr(func, "no_dm") and self.is_dm:
+            raise BotException(
+                "Cannot run this commands on DM",
+                "This command is not supported on DMs",
+            )
 
         if (
             hasattr(func, "fun_cmd")

@@ -27,6 +27,7 @@ from pgbot.commands.base import (
     String,
     add_group,
     fun_command,
+    no_dm,
 )
 
 
@@ -434,6 +435,7 @@ class UserCommand(BaseCommand):
 
         await self.response_msg.delete()
 
+    @no_dm
     async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
@@ -537,6 +539,7 @@ class UserCommand(BaseCommand):
         if os.path.isfile(f"temp{tstamp}.png"):
             os.remove(f"temp{tstamp}.png")
 
+    @no_dm
     async def cmd_help(self, *names: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
@@ -716,6 +719,7 @@ class UserCommand(BaseCommand):
                 + f"Anger level is {anger}",
             )
 
+    @no_dm
     async def cmd_refresh(self, msg: discord.Message):
         """
         ->type Other commands
@@ -750,6 +754,7 @@ class UserCommand(BaseCommand):
         elif command[0] == "doc":
             await self.cmd_doc(command[1], page=int(page) - 1, msg=msg)
 
+    @no_dm
     @add_group("poll")
     async def cmd_poll(
         self,
@@ -767,12 +772,6 @@ class UserCommand(BaseCommand):
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
-        if self.is_dm:
-            raise BotException(
-                "Cannot run poll commands on DM",
-                "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!",
-            )
 
         newline = "\n"
         base_embed = {
@@ -860,6 +859,7 @@ class UserCommand(BaseCommand):
             "Perhaps you meant, 'pg!poll close'",
         )
 
+    @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
         self,
@@ -874,12 +874,6 @@ class UserCommand(BaseCommand):
         The poll can only be closed by the person who started it or by mods.
         """
         newline = "\n"
-        if self.is_dm:
-            raise BotException(
-                "Cannot run poll commands on DM",
-                "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!",
-            )
 
         if not msg.embeds:
             raise BotException(
@@ -962,6 +956,7 @@ class UserCommand(BaseCommand):
         )
         await self.response_msg.delete()
 
+    @no_dm
     async def cmd_resources(
         self,
         limit: Optional[int] = None,
