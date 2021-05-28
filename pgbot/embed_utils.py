@@ -47,7 +47,7 @@ def copy_embed(embed):
     return discord.Embed.from_dict(embed.to_dict())
 
 
-def get_fields(*messages):
+def get_fields(*strings):
     """
     Get a list of fields from messages.
     Syntax of an embed field string: <name|value[|inline]>
@@ -61,10 +61,10 @@ def get_fields(*messages):
     # syntax: <Title|desc.[|inline=False]>
     field_regex = r"(<.*\|.*(\|True|\|False|\|1|\|0|)>)"
     field_datas = []
-    true_bool_strings = ("True", "1")
+    true_bool_strings = ("", "True", "1")
 
-    for message in messages:
-        field_list = re.split(field_regex, message)
+    for string in strings:
+        field_list = re.split(field_regex, string)
         for field in field_list:
             if field:
                 field = field.strip()[1:-1]  # remove < and >
@@ -79,7 +79,7 @@ def get_fields(*messages):
 
                 field_datas.append(field_data)
 
-    return field_datas[0] if len(field_datas) < 2 else field_datas
+    return field_datas
 
 
 class PagedEmbed:

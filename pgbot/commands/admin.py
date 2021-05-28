@@ -206,6 +206,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo(
         self,
         *datas: Union[discord.Message, String],
+        destination: Optional[discord.TextChannel] = None,
         from_attachment: bool = True,
     ):
         """
@@ -215,6 +216,32 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
+
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        for i, data in enumerate(datas):
+            if isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+
+            if not i % 50:
+                await asyncio.sleep(0)
 
         data_count = len(datas)
         for i, data in enumerate(datas):
@@ -242,7 +269,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 else:
                     src_msg_txt = data.content
                     if src_msg_txt:
-                        await self.channel.send(src_msg_txt)
+                        await destination.send(src_msg_txt)
                     else:
                         raise BotException(
                             f"Input {i}: No message text found!",
@@ -253,7 +280,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 if not attachment_msg.attachments:
                     raise BotException(
                         f"Input {i}: No valid attachment found in message.",
-                        "It must be a `.txt` file containing text data.",
+                        "It must be a `.txt` file containing text data."
+                        " If you want to retrieve the content of the"
+                        " given message(s) instead, set the"
+                        "` from_attachment=` argument to `False`",
                     )
 
                 for attachment in attachment_msg.attachments:
@@ -273,7 +303,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 msg_text = msg_text.decode()
 
                 if 0 < len(msg_text) <= 2000:
-                    await self.channel.send(msg_text)
+                    await destination.send(msg_text)
                 else:
                     raise BotException(
                         f"Input {i}: Too little/many characters!",
@@ -307,7 +337,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             msg_text = msg_text.decode()
 
             if 0 < len(msg_text) <= 2000:
-                await self.channel.send(msg_text)
+                await destination.send(msg_text)
             else:
                 raise BotException(
                     f"Too little/many characters!",
@@ -341,6 +371,27 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_edit, for admins to edit messages via the bot
         """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            edit_msg.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        elif isinstance(data, discord.Message) and not utils.check_channel_permissions(
+            self.author,
+            data.channel,
+            permissions=("view_channel",),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
         attachment_msg: discord.Message = None
         msg_text = ""
 
@@ -421,8 +472,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
 
+        for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not i % 50:
+                asyncio.sleep(0)
+
         for msg in msgs:
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
             attached_files = None
             if attachments:
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
@@ -451,9 +514,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     with io.StringIO(msg.content) as fobj:
                         content_file = discord.File(fobj, "get.txt")
 
-                await self.response_msg.channel.send(
-                    embed=info_embed, file=content_file
-                )
+                await self.channel.send(embed=info_embed, file=content_file)
 
             elif as_attachment:
                 with io.StringIO(msg.content) as fobj:
@@ -468,7 +529,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             else:
                 await embed_utils.send_2(
-                    self.response_msg.channel,
+                    self.channel,
                     author_name="Message data",
                     description="```\n{0}```".format(
                         msg.content.replace("```", "\\`\\`\\`")
@@ -484,7 +545,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if attached_files:
                 for i in range(len(attached_files)):
-                    await self.response_msg.channel.send(
+                    await self.channel.send(
                         content=f"**Message attachment** ({i+1}):",
                         file=attached_files[i],
                     )
@@ -503,7 +564,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     embed_data_fobjs.append(embed_data_fobj)
 
                 for i in range(len(embed_data_fobjs)):
-                    await self.response_msg.channel.send(
+                    await self.channel.send(
                         content=f"**Message embed** ({i+1}):",
                         file=discord.File(
                             embed_data_fobjs[i], filename="embeddata.json"
@@ -541,9 +602,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_fetch, for admins to fetch several message IDs and links at once
         """
 
-        channel_perms = origin.permissions_for(self.invoke_msg.author)
-
-        if not any((channel_perms.view_channel, channel_perms.read_message_history)):
+        if not utils.check_channel_permissions(
+            self.author,
+            origin,
+            permissions=("view_channel",),
+        ):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
@@ -664,6 +727,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
+
+        for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not i % 50:
+                asyncio.sleep(0)
+
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
@@ -675,7 +751,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     + utils.progress_bar(i / msg_count, divisions=30),
                 )
             )
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
@@ -695,7 +771,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ]
 
             if msg.content or msg.embeds or attached_files:
-                cloned_msg = await self.response_msg.channel.send(
+                cloned_msg = await self.channel.send(
                     content=msg.content,
                     embed=msg.embeds[0] if msg.embeds and embeds else None,
                     file=attached_files[0] if attached_files else None,
@@ -705,17 +781,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 raise BotException(f"Cannot clone an empty message!", "")
 
             for i in range(1, len(attached_files)):
-                await self.response_msg.channel.send(
+                await self.channel.send(
                     file=attached_files[i],
                 )
 
             for i in range(1, len(msg.embeds)):
-                await self.response_msg.channel.send(
+                await self.channel.send(
                     embed=msg.embeds[i],
                 )
 
             if info:
-                await self.response_msg.channel.send(
+                await self.channel.send(
                     embed=embed_utils.get_msg_info_embed(msg, author=author),
                     reference=cloned_msg,
                 )
@@ -746,10 +822,24 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!info, to get information about a message/member
         """
 
+        for i, obj in enumerate(objs):
+            if isinstance(obj, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    obj.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command on the specified channel.",
+                    )
+            if not i % 50:
+                asyncio.sleep(0)
+
         if not objs:
             obj = self.author
             embed = embed_utils.get_member_info_embed(obj)
-            await self.response_msg.channel.send(embed=embed)
+            await self.channel.send(embed=embed)
 
         obj_count = len(objs)
         for i, obj in enumerate(objs):
@@ -761,7 +851,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     + utils.progress_bar(i / obj_count, divisions=30),
                 )
             )
-            await self.response_msg.channel.trigger_typing()
+            await self.channel.trigger_typing()
             embed = None
             if isinstance(obj, discord.Message):
                 embed = embed_utils.get_msg_info_embed(obj, author=author)
@@ -770,7 +860,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 embed = embed_utils.get_member_info_embed(obj)
 
             if embed is not None:
-                await self.response_msg.channel.send(embed=embed)
+                await self.channel.send(embed=embed)
 
             await asyncio.sleep(0)
 
@@ -838,20 +928,25 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!archive, for admins to archive messages
         """
+        if destination is None:
+            destination = self.channel
 
-        channel_perms = origin.permissions_for(self.invoke_msg.author)
-
-        if not all((channel_perms.view_channel, channel_perms.read_message_history)):
+        if not utils.check_channel_permissions(
+            self.author,
+            origin,
+            permissions=("view_channel",),
+        ) or not utils.check_channel_permissions(
+            self.author,
+            destination,
+            permissions=("view_channel", "send_messages"),
+        ):
             raise BotException(
                 f"Not enough permissions",
-                "You do not have enough permissions to run this command on the specified channel.",
+                "You do not have enough permissions to run this command on the specified channel(s).",
             )
 
         archive_header_msg = None
         archive_header_msg_embed = None
-
-        if destination is None:
-            destination = self.channel
 
         if origin == destination and not same_channel:
             raise BotException(
@@ -1130,9 +1225,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->example command pg!pin 123412345567891 23456234567834567 3456734523456734567...
         """
 
-        channel_perms = channel.permissions_for(self.invoke_msg.author)
-
-        if not channel_perms.manage_messages:
+        if not utils.check_channel_permissions(
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
+        ):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
@@ -1149,7 +1246,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 "Cannot pin more than 50 messages in a channel.",
             )
 
-        if not all(msg.channel == channel for msg in msgs):
+        elif not all(msg.channel == channel for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
@@ -1216,9 +1313,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->example command pg!unpin #general 23456234567834567 3456734523456734567...
         """
 
-        channel_perms = channel.permissions_for(self.invoke_msg.author)
-
-        if not channel_perms.manage_messages:
+        if not utils.check_channel_permissions(
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
+        ):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
@@ -1234,8 +1333,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 f"Too many arguments!",
                 "No more than 50 messages can be pinned in a channel.",
             )
-
-        if not all(msg.channel == channel for msg in msgs):
+        elif not all(msg.channel == channel for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
@@ -1287,9 +1385,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->example command pg!unpin_at #general 3.. range(9, 15)..
         """
 
-        channel_perms = channel.permissions_for(self.invoke_msg.author)
-
-        if not channel_perms.manage_messages:
+        if not utils.check_channel_permissions(
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
+        ):
             raise BotException(
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
@@ -1375,6 +1475,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         self,
         desc: String,
         *emojis: String,
+        destination: Optional[discord.TextChannel] = None,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
@@ -1391,6 +1492,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Additionally admins can specify some keyword arguments to improve the appearance of the poll
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
+
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
+        if not utils.check_channel_permissions(
+            self.author,
+            destination,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel.",
+            )
+
         embed_dict = {}
         if author:
             embed_dict["author"] = {"name": author.string}
@@ -1407,7 +1522,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if thumbnail:
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
-        return await super().cmd_poll(desc, *emojis, admin_embed=embed_dict)
+        return await super().cmd_poll(
+            desc, *emojis, destination=destination, admin_embed_dict=embed_dict
+        )
 
     @add_group("poll", "close")
     async def cmd_poll_close(

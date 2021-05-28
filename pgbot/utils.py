@@ -8,12 +8,14 @@ This file defines some important utility functions.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import os
 import platform
 import re
 import sys
 import traceback
+import typing
 
 import discord
 import pygame
@@ -57,7 +59,7 @@ def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: 
     """
     A simple horizontal progress bar generator.
     """
-    percentage = 0 if pct < 0 else 1 if pct > 1 else pct
+    pct = 0 if pct < 0 else 1 if pct > 1 else pct
     return full_bar * (int(divisions * pct)) + empty_bar * (
         divisions - int(divisions * pct)
     )
@@ -397,3 +399,94 @@ def code_block(string: str, max_characters=2048):
         return f"```\n{string[:max_characters - 7]} ...```"
     else:
         return f"```\n{string[:max_characters]}```"
+
+
+def check_channel_permissions(
+    member: discord.Member,
+    channel: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> bool:
+
+    """
+    Checks if the given permissions apply to the given member in the given channel.
+    """
+
+    channel_perms = channel.permissions_for(member)
+    return bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+
+
+def check_channels_permissions(
+    member: discord.Member,
+    *channels: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    skip_invalid_channels: bool = False,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> typing.Tuple[bool]:
+
+    """
+    Checks if the given permissions apply to the given member in the given channels.
+    """
+
+    if skip_invalid_channels:
+        booleans = tuple(
+            bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+            for channel_perms in (
+                channel.permissions_for(member)
+                for channel in channels
+                if isinstance(channel, discord.TextChannel)
+            )
+        )
+    else:
+        booleans = tuple(
+            bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+            for channel_perms in (
+                channel.permissions_for(member) for channel in channels
+            )
+        )
+    return booleans
+
+
+async def coro_check_channels_permissions(
+    member: discord.Member,
+    *channels: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    skip_invalid_channels: bool = False,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> typing.List[bool]:
+
+    """
+    Checks if the given permissions apply to the given member in the given channels.
+    """
+
+    booleans = []
+    if skip_invalid_channels:
+        for i, channel in channels:
+            if isinstance(channel, discord.TextChannel):
+                channel_perms = channel.permissions_for(member)
+                booleans.append(
+                    bool_func(getattr(channel_perms, perm) for perm in permissions)
+                )
+
+            if not i % 5:
+                await asyncio.sleep(0)
+    else:
+        for i, channel in channels:
+            channel_perms = channel.permissions_for(member)
+            booleans.append(
+                bool_func(getattr(channel_perms, perm) for perm in permissions)
+            )
+
+            if not i % 5:
+                await asyncio.sleep(0)
+
+    return booleans
