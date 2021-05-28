@@ -118,7 +118,7 @@ class String:
                     try:
                         newstr += chr(int(var, base=16))
                     except ValueError:
-                        emotion.update_confused(time.time(), mode="cmd")
+
                         raise BotException(
                             "Invalid escape character",
                             "Invalid unicode escape character in string",
@@ -126,7 +126,7 @@ class String:
                 elif char in ESCAPES:
                     newstr += ESCAPES[char]
                 else:
-                    emotion.update_confused(time.time(), mode="cmd")
+
                     raise BotException(
                         "Invalid escape character",
                         "Invalid unicode escape character in string",
@@ -251,7 +251,7 @@ class BaseCommand:
             cnt += 1
 
         if not cnt % 2 or prev:
-            emotion.update_confused(time.time(), mode="cmd")
+
             raise BotException(
                 f"Invalid {splitfunc.__name__}",
                 f"{splitfunc.__name__} was not properly closed",
@@ -292,7 +292,7 @@ class BaseCommand:
                         continue
 
                     if kwstart:
-                        emotion.update_confused(time.time(), mode="cmd")
+
                         raise KwargError(
                             "Keyword arguments cannot come before positional "
                             + "arguments"
@@ -302,15 +302,15 @@ class BaseCommand:
                 else:
                     kwstart = True
                     if prevkey:
-                        emotion.update_confused(time.time(), mode="cmd")
+
                         raise KwargError("Did not specify argument after '='")
 
                     if not a:
-                        emotion.update_confused(time.time(), mode="cmd")
+
                         raise KwargError("Missing keyword before '=' symbol")
 
                     if not a[0].isalpha() and not a.startswith("_"):
-                        emotion.update_confused(time.time(), mode="cmd")
+
                         raise KwargError(
                             "Keyword argument must begin with an alphabet or "
                             + "underscore"
@@ -322,7 +322,7 @@ class BaseCommand:
                         prevkey = a
 
         if prevkey:
-            emotion.update_confused(time.time(), mode="cmd")
+
             raise KwargError("Did not specify argument after '='")
 
         # If user has put an attachment, check whether it's a text file, and
@@ -337,13 +337,13 @@ class BaseCommand:
         # user entered something like 'pg!', display help message
         if not args:
             if kwargs:
-                emotion.update_confused(time.time(), mode="cmd")
+
                 raise BotException("Invalid Command name!", "Command name must be str")
             args = ["help"]
 
         cmd = args.pop(0)
         if not isinstance(cmd, str):
-            emotion.update_confused(time.time(), mode="cmd")
+
             raise BotException("Invalid Command name!", "Command name must be str")
 
         if self.invoke_msg.reference is not None:
@@ -386,7 +386,7 @@ class BaseCommand:
                 raise ValueError()
 
             elif anno == "HiddenArg":
-                emotion.update_confused(time.time(), mode="cmd")
+
                 raise ArgError("Hidden arguments cannot be explicitly passed", cmd)
 
             elif anno == "pygame.Color":
@@ -458,7 +458,6 @@ class BaseCommand:
             elif anno == "str":
                 return arg
 
-            emotion.update_confused(time.time(), mode="cmd")
             raise BotException(
                 "Internal Bot error", f"Invalid type annotation `{anno}`"
             )
@@ -536,10 +535,9 @@ class BaseCommand:
                 typ = f"of type `{param.annotation}`"
 
             if key is None:
-                emotion.update_confused(time.time(), mode="cmd")
+
                 raise ArgError(f"The variable args/kwargs must be {typ}", cmd)
 
-            emotion.update_confused(time.time(), mode="cmd")
             raise ArgError(f"The argument `{key}` must be {typ}", cmd)
 
     async def call_cmd(self):
@@ -555,7 +553,6 @@ class BaseCommand:
 
         # command has been blacklisted from running
         if cmd in db.DiscordDB("blacklist").get([]):
-            emotion.update_confused(time.time(), mode="cmd")
             raise BotException(
                 "Cannot execute comamand!",
                 f"The command '{cmd}' has been temporarily been blocked from "
@@ -576,14 +573,12 @@ class BaseCommand:
         if not is_group:
             if cmd not in self.cmds_and_funcs:
                 if cmd in common.admin_commands:
-                    emotion.update_confused(time.time(), mode="cmd")
                     raise BotException(
                         "Permissions Error!",
                         f"The command '{cmd}' is an admin command, and you do "
                         "not have access to that",
                     )
 
-                emotion.update_confused(time.time(), mode="cmd")
                 raise BotException(
                     "Unrecognized command!",
                     f"The command '{cmd}' does not exist.\nFor help on bot "
@@ -592,7 +587,7 @@ class BaseCommand:
             func = self.cmds_and_funcs[cmd]
 
         if hasattr(func, "no_dm") and self.is_dm:
-            emotion.update_confused(time.time(), mode="cmd")
+
             raise BotException(
                 "Cannot run this commands on DM",
                 "This command is not supported on DMs",
@@ -639,7 +634,6 @@ class BaseCommand:
                 keyword_only_args.append(key)
                 if key not in kwargs:
                     if param.default == param.empty:
-                        emotion.update_confused(time.time(), mode="cmd")
                         raise KwargError(
                             f"Missed required keyword argument `{key}`", cmd
                         )
@@ -650,22 +644,18 @@ class BaseCommand:
                 # ran out of args, try to fill it with something
                 if key in kwargs:
                     if param.kind == param.POSITIONAL_ONLY:
-                        emotion.update_confused(time.time(), mode="cmd")
                         raise ArgError(
                             f"`{key}` cannot be passed as a keyword argument", cmd
                         )
                     args.append(kwargs.pop(key))
 
                 elif param.default == param.empty:
-                    emotion.update_confused(time.time(), mode="cmd")
                     raise ArgError(f"Missed required argument `{key}`", cmd)
-
                 else:
                     args.append(param.default)
                     continue
 
             elif key in kwargs:
-                emotion.update_confused(time.time(), mode="cmd")
                 raise ArgError(
                     "Positional cannot be passed again as a keyword argument", cmd
                 )
@@ -678,14 +668,13 @@ class BaseCommand:
         i += 1
         # More arguments were given than required
         if not is_var_pos and i < len(args):
-            emotion.update_confused(time.time(), mode="cmd")
             raise ArgError(f"Too many args were given (`{len(args)}`)", cmd)
 
         # Iterate through kwargs to check if we received invalid ones
         if not is_var_key:
             for key in kwargs:
                 if key not in sig.parameters:
-                    emotion.update_confused(time.time(), mode="cmd")
+
                     raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
@@ -698,11 +687,13 @@ class BaseCommand:
             return await self.call_cmd()
 
         except ArgError as exc:
+            emotion.update_confused(time.time(), mode="cmd")
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
+            emotion.update_confused(time.time(), mode="cmd")
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -711,9 +702,11 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
+            emotion.update_confused(time.time(), mode="cmd")
             title, msg = exc.args
 
         except discord.HTTPException as exc:
+            emotion.update_confused(time.time(), mode="cmd")
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
