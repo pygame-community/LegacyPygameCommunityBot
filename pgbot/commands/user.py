@@ -536,24 +536,24 @@ class UserCommand(BaseCommand):
                 embed_dict["description"] += utils.code_block(returned.text, 2000)
 
             if returned.img:
+                embed_dict["description"] += "\n**Image output:**"
                 if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                    embed_dict["description"] += "\n**Image output:**"
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
                     file = discord.File(f"temp{tstamp}.png")
                 else:
-                    returned.text += (
-                        "\n**BotException**\n```\nGIF could not be sent.\n"
+                    embed_dict["description"] += (
+                        "\n```\nGIF could not be sent.\n"
                         "The GIF file size is above 4MiB```"
                     )
 
             elif returned.imgs:
+                embed_dict["description"] += "\n**GIF output:**"
                 if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
-                    embed_dict["description"] += "\n**GIF output:**"
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
                     file = discord.File(f"temp{tstamp}.gif")
                 else:
-                    returned.text += (
-                        "\n**BotException**\n```GIF could not be sent.\n"
+                    embed_dict["description"] += (
+                        "\n```GIF could not be sent.\n"
                         "The GIF file size is above 4MiB```"
                     )
 
