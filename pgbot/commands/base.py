@@ -118,7 +118,6 @@ class String:
                     try:
                         newstr += chr(int(var, base=16))
                     except ValueError:
-
                         raise BotException(
                             "Invalid escape character",
                             "Invalid unicode escape character in string",
@@ -126,7 +125,6 @@ class String:
                 elif char in ESCAPES:
                     newstr += ESCAPES[char]
                 else:
-
                     raise BotException(
                         "Invalid escape character",
                         "Invalid unicode escape character in string",
@@ -251,7 +249,6 @@ class BaseCommand:
             cnt += 1
 
         if not cnt % 2 or prev:
-
             raise BotException(
                 f"Invalid {splitfunc.__name__}",
                 f"{splitfunc.__name__} was not properly closed",
@@ -292,7 +289,6 @@ class BaseCommand:
                         continue
 
                     if kwstart:
-
                         raise KwargError(
                             "Keyword arguments cannot come before positional "
                             + "arguments"
@@ -302,15 +298,12 @@ class BaseCommand:
                 else:
                     kwstart = True
                     if prevkey:
-
                         raise KwargError("Did not specify argument after '='")
 
                     if not a:
-
                         raise KwargError("Missing keyword before '=' symbol")
 
                     if not a[0].isalpha() and not a.startswith("_"):
-
                         raise KwargError(
                             "Keyword argument must begin with an alphabet or "
                             + "underscore"
@@ -337,13 +330,11 @@ class BaseCommand:
         # user entered something like 'pg!', display help message
         if not args:
             if kwargs:
-
                 raise BotException("Invalid Command name!", "Command name must be str")
             args = ["help"]
 
         cmd = args.pop(0)
         if not isinstance(cmd, str):
-
             raise BotException("Invalid Command name!", "Command name must be str")
 
         if self.invoke_msg.reference is not None:
@@ -386,7 +377,6 @@ class BaseCommand:
                 raise ValueError()
 
             elif anno == "HiddenArg":
-
                 raise ArgError("Hidden arguments cannot be explicitly passed", cmd)
 
             elif anno == "pygame.Color":
@@ -535,7 +525,6 @@ class BaseCommand:
                 typ = f"of type `{param.annotation}`"
 
             if key is None:
-
                 raise ArgError(f"The variable args/kwargs must be {typ}", cmd)
 
             raise ArgError(f"The argument `{key}` must be {typ}", cmd)
@@ -674,7 +663,6 @@ class BaseCommand:
         if not is_var_key:
             for key in kwargs:
                 if key not in sig.parameters:
-
                     raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
