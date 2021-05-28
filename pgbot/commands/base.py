@@ -672,16 +672,17 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
+            emotion.update("confused", -2)
             return await self.call_cmd()
 
         except ArgError as exc:
-            emotion.update_confused(time.time(), mode="cmd")
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
-            emotion.update_confused(time.time(), mode="cmd")
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -690,15 +691,14 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
-            emotion.update_confused(time.time(), mode="cmd")
+            emotion.update("confused", 2 + random.randint(10, 15))
             title, msg = exc.args
 
         except discord.HTTPException as exc:
-            emotion.update_confused(time.time(), mode="cmd")
+            emotion.update("confused", 2 + random.randint(10, 15))
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
-            now = time.time()
             title = "An exception occured while handling the command!"
             formatted_exception = utils.format_code_exception(exc, 2)
 
@@ -715,7 +715,7 @@ class BaseCommand:
                         file=discord.File(fobj, filename="exception.txt"),
                     )
 
-            emotion.update_confused(now, formatted_exception)
+            emotion.update("confused", len(formatted_exception) // 50 + random.randint(60, 110))
 
         await embed_utils.replace_2(
             self.response_msg,

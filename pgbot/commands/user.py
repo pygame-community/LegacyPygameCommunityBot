@@ -695,12 +695,12 @@ class UserCommand(BaseCommand):
             pass
 
         try:
-            if all_emotions["confused"]["value"] >= 20:
+            if all_emotions["confused"]["value"] >= 100:
                 msg = (
                     f"The snek is confused!\nEither there were too many exceptions in my code, "
                     f"or too many commands were used wrongly!\nThe snek's confused level is "
-                    f"`{all_emotions['confused']['value']}`.\nTo lower my confused level, after 24 hours after an "
-                    f"exception occured, I will lower my confused level."
+                    f"`{all_emotions['confused']['value']}`.\nTo lower my confused level, use commands "
+                    f"on me the right way."
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1"

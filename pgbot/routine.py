@@ -17,25 +17,6 @@ from pgbot import db, emotion
 reminder_obj = db.DiscordDB("reminders")
 
 
-def handle_confused_emotion():
-    """
-    Handles the routine of the confused emotion
-    Every 12h, the confused value would lower by given amount
-    """
-    now = time.time()
-    confused = emotion.get("confused")
-    cnt = 0
-    try:
-        for exception_time in confused["context"]:
-            if abs(now - exception_time[0]) > 24 * 60 * 60:
-                confused["context"].remove(exception_time)
-                cnt += exception_time[1]
-        confused["value"] -= cnt
-        emotion.override("confused", confused)
-    except TypeError:
-        pass
-
-
 async def handle_reminders(guild: discord.Guild):
     """
     Handle reminder routines
@@ -94,7 +75,6 @@ async def routine(guild: discord.Guild):
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    handle_confused_emotion()
     await handle_reminders(guild)
     if random.randint(0, 3) == 0:
         emotion.update("bored", 1)
