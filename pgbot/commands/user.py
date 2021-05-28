@@ -18,6 +18,8 @@ from typing import Optional
 
 import discord
 import pygame
+import unidecode
+
 from pgbot import clock, common, db, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import (
     BaseCommand,
@@ -78,10 +80,10 @@ class UserCommand(BaseCommand):
         """
         fontified = ""
 
-        for char in msg.string:
+        for char in unidecode.unidecode(msg.string.lower()):
             if char.isalnum():
                 for emoji in self.guild.emojis:
-                    if emoji.name == f"pg_char_{char.lower()}":
+                    if emoji.name == f"pg_char_{char}":
                         fontified += str(emoji)
                         break
                 else:
