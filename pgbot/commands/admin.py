@@ -482,7 +482,8 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
             if not i % 50:
-                asyncio.sleep(0)
+                # update asyncio event loop stuff
+                await asyncio.sleep(0)
 
         for msg in msgs:
             await self.channel.trigger_typing()

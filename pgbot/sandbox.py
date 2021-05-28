@@ -37,7 +37,7 @@ class Output:
         self.imgs = []
         self.delay = 200
         self.loops = 0
-        self.exc = None
+        self.exc = ""
         self.duration = -1  # The script execution time
 
 
@@ -87,8 +87,10 @@ for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
 
-filtered_builtins["__name__"] = filtered_builtins["__package__"] = "__main__"
-filtered_builtins["__doc__"] = None
+filtered_builtins["__name__"] = "__main__"
+filtered_builtins["__package__"] = ""
+filtered_builtins["__file__"] = "<string>"
+filtered_builtins["__doc__"] = filtered_builtins["__spec__"] = None
 
 
 class FilteredPygame:
@@ -194,11 +196,10 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
             q.put(output)
             return
 
+    script_start = time.perf_counter()
     try:
-        script_start = time.perf_counter()
         exec(code + "\n", allowed_globals)
-        output.duration = time.perf_counter() - script_start
-        output.exc = None
+        output.exc = ""
 
     except ImportError:
         output.exc = (
@@ -210,6 +211,9 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
 
     except Exception as err:
         output.exc = utils.format_code_exception(err)
+
+    finally:
+        output.duration = time.perf_counter() - script_start
 
     # Because output needs to go through queue, we need to sanitize it first
     # Any random data that gets put in the queue will likely crash the entire

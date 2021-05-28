@@ -73,7 +73,7 @@ class UserCommand(BaseCommand):
     async def cmd_fontify(self, msg: String):
         """
         ->type Other commands
-        ->signature pg!fontify
+        ->signature pg!fontify <msg>
         ->description Display message in pygame font
         """
         fontified = ""
@@ -522,40 +522,40 @@ class UserCommand(BaseCommand):
                 code.code, tstamp, 10 if self.is_priv else 5
             )
             dur = returned.duration  # the execution time of the script alone
-
             embed_dict = {
                 "description": "",
                 "author_name": f"Code executed in {utils.format_time(dur)}",
                 "author_url": self.invoke_msg.jump_url,
             }
+
             file = None
-            exc = None
+            returned.text += "\n" + returned.exc
 
-            if returned.exc is None:
-                if returned.text:
-                    embed_dict["description"] += "**Text output:**\n"
-                    embed_dict["description"] += utils.code_block(returned.text, 2000)
+            if returned.text:
+                embed_dict["description"] += "**Text output:**\n"
+                embed_dict["description"] += utils.code_block(returned.text, 2000)
 
-                if returned.img:
-                    if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                        embed_dict["description"] += "\n**Image output:**"
-                        embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
-                        file = discord.File(f"temp{tstamp}.png")
-                    else:
-                        exc = (
-                            "Image could not be sent",
-                            "The image file size is above 4MiB",
-                        )
+            if returned.img:
+                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
+                    embed_dict["description"] += "\n**Image output:**"
+                    embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
+                    file = discord.File(f"temp{tstamp}.png")
+                else:
+                    returned.text += (
+                        "\n**BotException**\n```\nGIF could not be sent.\n"
+                        "The GIF file size is above 4MiB```"
+                    )
 
-                elif returned.imgs:
-                    if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
-                        embed_dict["description"] += "\n**GIF output:**"
-                        embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
-                        file = discord.File(f"temp{tstamp}.gif")
-                    else:
-                        exc = ("Unable to send gif", "Gif size is above 4mib")
-            else:
-                exc = ("An exception occured:", utils.code_block(returned.exc))
+            elif returned.imgs:
+                if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
+                    embed_dict["description"] += "\n**GIF output:**"
+                    embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
+                    file = discord.File(f"temp{tstamp}.gif")
+                else:
+                    returned.text += (
+                        "\n**BotException**\n```GIF could not be sent.\n"
+                        "The GIF file size is above 4MiB```"
+                    )
 
         try:
             await self.response_msg.delete()
@@ -563,17 +563,7 @@ class UserCommand(BaseCommand):
             # Message already deleted
             pass
 
-        if exc is not None:
-            embed = await embed_utils.send(
-                self.channel,
-                exc[0],
-                exc[1],
-                color=0xFF0000,
-                do_return=True,
-            )
-        else:
-            embed = await embed_utils.send_2(None, **embed_dict)
-
+        embed = await embed_utils.send_2(None, **embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         if file:
