@@ -6,6 +6,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some utitities and functions for the bots emotion system
 """
 import random
+import time
 
 import discord
 import unidecode
@@ -16,6 +17,7 @@ EMOTION_CAPS = {
     "happy": (-100, 100),
     "anger": (0, 100),
     "bored": (-1000, 1000),
+    "confused": (0, 100),
 }
 
 
@@ -38,6 +40,15 @@ def update(emotion_name: str, value: int):
     if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
         emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
 
+    db_obj.write(emotions)
+
+
+def override(emotion_name: str, val_to_override):
+    """
+    Overrides emotion characteristic "emotion_name" with value "val_to_override" object
+    """
+    emotions = db_obj.get({})
+    emotions[emotion_name] = val_to_override
     db_obj.write(emotions)
 
 
@@ -99,6 +110,39 @@ def euphoria():
             "bored": 0,
         }
     )
+
+
+def update_confused(now, formatted_exception="", mode="exception"):
+    """Updating confused is a bit different than updating the rest of the emotions"""
+    confused = get("confused")
+    random_int = random.randint(1, 5)
+    cmd_val = 1
+    try:
+        confused["context"].append(
+            (round(now), random_int if mode == "exception" else cmd_val)
+        )
+
+        if confused["value"] < EMOTION_CAPS["confused"][1]:
+            if mode == "exception":
+                confused["value"] += len(formatted_exception) // 200 + random_int
+            else:
+                confused["value"] += cmd_val
+        else:
+            confused["value"] = EMOTION_CAPS["confused"][1]
+    except TypeError:
+        # Trying to subscript an integer (returned if there is no key in emotions)
+        if mode == "exception":
+            val = len(formatted_exception) // 200 + random_int
+        else:
+            val = cmd_val
+
+        if val > EMOTION_CAPS["confused"][1]:
+            val = EMOTION_CAPS["confused"][1]
+        confused = {
+            "context": [(round(now), (random_int if mode == "exception" else cmd_val))],
+            "value": val,
+        }
+    override("confused", confused)
 
 
 async def server_boost(msg: discord.Message):

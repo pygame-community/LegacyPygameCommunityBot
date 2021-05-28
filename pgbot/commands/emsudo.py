@@ -299,7 +299,9 @@ class EmsudoCommand(BaseCommand):
 
                 output_embeds.append(embed_utils.create(**util_send_embed_args))
             else:
-                output_embeds.append(embed_utils.create(description=util_send_embed_args["description"]))
+                output_embeds.append(
+                    embed_utils.create(description=util_send_embed_args["description"])
+                )
 
             await asyncio.sleep(0)
 
@@ -1008,7 +1010,10 @@ class EmsudoCommand(BaseCommand):
                 )
             else:
                 msg_embed = await embed_utils.edit_2(
-                    None, msg_embed, description=util_edit_embed_args["description"], color=-1
+                    None,
+                    msg_embed,
+                    description=util_edit_embed_args["description"],
+                    color=-1,
                 )
 
             await asyncio.sleep(0)
