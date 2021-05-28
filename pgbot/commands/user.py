@@ -80,10 +80,11 @@ class UserCommand(BaseCommand):
         for char in msg.string:
             if char.isalnum():
                 for emoji in self.guild.emojis:
-                    if emoji.name == f"pg_char_{char.lower()}":
+                    if emoji.name == f"pg_char_{char.lower()}" or \
+                            char.lower() == "\xfe" and emoji.name == "pg_char_th":
                         fontified += str(emoji)
                         break
-
+                        
             elif char.isspace():
                 fontified += " " * 5
 
