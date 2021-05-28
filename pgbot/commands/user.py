@@ -77,23 +77,21 @@ class UserCommand(BaseCommand):
         ->description Display message in pygame font
         """
         fontified = ""
+
         for char in msg.string:
             if char.isalnum():
                 for emoji in self.guild.emojis:
-                    if emoji.name == f"pg_char_{char.lower()}" or \
-                            char.lower() == "\xfe" and emoji.name == "pg_char_th":
+                    if emoji.name == f"pg_char_{char.lower()}":
                         fontified += str(emoji)
                         break
-                        
+                else:
+                    fontified += ":heavy_multiplication_x:"
+
             elif char.isspace():
                 fontified += " " * 5
 
             else:
-                raise BotException(
-                    "Could not execute comamnd",
-                    "Please make sure your input contains only letters, "
-                    "numbers and whitespaces",
-                )
+                fontified += ":heavy_multiplication_x:"
 
         if len(fontified) > 2000:
             raise BotException(
@@ -101,12 +99,21 @@ class UserCommand(BaseCommand):
                 "Input text width exceeded maximum limit (2KB)",
             )
 
+        if not fontified:
+            raise BotException(
+                "Could not execute comamnd",
+                "Text cannot be empty",
+            )
+
         await embed_utils.replace_2(
             self.response_msg,
-            author_name=self.author.display_name,
             author_icon_url=self.author.avatar_url,
+            author_name=self.author.display_name,
+            description=f"pygame font message invoked by {self.author.mention}",
+            color=0x40E32D,
         )
-        await self.channel.send(fontified)
+
+        await self.response_msg.edit(content=fontified)
 
     async def cmd_rules(self, *rules: int):
         """
