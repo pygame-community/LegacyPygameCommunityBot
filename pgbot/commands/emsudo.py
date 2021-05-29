@@ -718,6 +718,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
+        add_attributes: bool = True,
     ):
         """
         ->type emsudo commands
@@ -870,7 +871,7 @@ class EmsudoCommand(BaseCommand):
                             f"```\n{j.args[0]}\n```",
                         )
                     msg_embed = await embed_utils.edit_from_dict(
-                        None, msg_embed, embed_dict
+                        None, msg_embed, embed_dict, add_attributes=add_attributes
                     )
                     continue
 
@@ -1014,6 +1015,7 @@ class EmsudoCommand(BaseCommand):
                     msg_embed,
                     description=util_edit_embed_args["description"],
                     color=-1,
+                    add_attributes=add_attributes,
                 )
 
             await asyncio.sleep(0)
@@ -1051,7 +1053,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            await embed_utils.edit_from_dict(msg, msg_embed, embed_dict)
+            await embed_utils.edit_from_dict(msg, msg_embed, embed_dict, add_attributes=add_attributes)
 
         else:
             await msg.edit(embed=msg_embed)

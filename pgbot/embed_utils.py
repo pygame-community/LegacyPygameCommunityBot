@@ -23,7 +23,7 @@ from discord.embeds import EmptyEmbed
 from . import common
 
 
-def recursive_update(old_dict, update_dict, skip_value="\0"):
+def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
     """
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
@@ -33,11 +33,17 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
 
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
-            new_value = recursive_update(old_dict.get(k, {}), v, skip_value=skip_value)
-            if new_value != skip_value and k in old_dict:
+            new_value = recursive_update(old_dict.get(k, {}), v, add_new_keys=add_new_keys, skip_value=skip_value)
+            if new_value != skip_value:
+                if k not in old_dict:
+                    if not add_new_keys:
+                        continue
                 old_dict[k] = new_value
         else:
-            if v != skip_value and k in old_dict:
+            if v != skip_value:
+                if k not in old_dict:
+                    if not add_new_keys:
+                        continue
                 old_dict[k] = v
 
     return old_dict
@@ -485,6 +491,7 @@ async def edit_2(
     footer_text=EmptyEmbed,
     footer_icon_url=EmptyEmbed,
     timestamp=EmptyEmbed,
+    add_attributes=False,
 ):
     """
     Updates the changed attributes of the embed of a message with a
@@ -510,7 +517,7 @@ async def edit_2(
     old_embed_dict = embed.to_dict()
     update_embed_dict = update_embed.to_dict()
 
-    recursive_update(old_embed_dict, update_embed_dict, skip_value="")
+    recursive_update(old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value="")
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
@@ -555,15 +562,17 @@ async def replace_from_dict(message, data):
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def edit_from_dict(message, embed, update_embed_dict):
+async def edit_from_dict(message, embed, update_embed_dict, add_attributes=False):
     """
     Edits the changed attributes of the embed of a message from a
     dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
-    recursive_update(old_embed_dict, update_embed_dict, skip_value="")
+    recursive_update(old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value="")
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
+    
+    
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
