@@ -1226,7 +1226,7 @@ class EmsudoCommand(BaseCommand):
             attr_str for attr_str in attribs_tuple if isinstance(attr_str, str)
         }
 
-        input_attribs_set = { attr for sub_attr in attribs_tuple for attr in sub_attr }
+        input_attribs_set = {attr for sub_attr in attribs_tuple for attr in sub_attr}
 
         all_attribs_set = {
             "provider",
