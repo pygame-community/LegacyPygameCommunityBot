@@ -14,6 +14,7 @@ import datetime
 import inspect
 import io
 import random
+import time
 from typing import TypeVar
 
 import discord
@@ -314,6 +315,7 @@ class BaseCommand:
                         prevkey = a
 
         if prevkey:
+
             raise KwargError("Did not specify argument after '='")
 
         # If user has put an attachment, check whether it's a text file, and
@@ -576,6 +578,7 @@ class BaseCommand:
             func = self.cmds_and_funcs[cmd]
 
         if hasattr(func, "no_dm") and self.is_dm:
+
             raise BotException(
                 "Cannot run this commands on DM",
                 "This command is not supported on DMs",
@@ -639,7 +642,6 @@ class BaseCommand:
 
                 elif param.default == param.empty:
                     raise ArgError(f"Missed required argument `{key}`", cmd)
-
                 else:
                     args.append(param.default)
                     continue
@@ -672,14 +674,17 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
+            emotion.update("confused", -2)
             return await self.call_cmd()
 
         except ArgError as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -688,17 +693,20 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title, msg = exc.args
 
         except discord.HTTPException as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
             title = "An exception occured while handling the command!"
+            formatted_exception = utils.format_code_exception(exc, 2)
 
             elog = (
-                "This error is most likely caused due to a bug in the bot "
-                "itself. Here is the traceback:\n" + utils.format_code_exception(exc, 2)
+                f"This error is most likely caused due to a bug in the bot "
+                f"itself. Here is the traceback:\n{formatted_exception}"
             )
             msg = utils.code_block(elog)
 
@@ -708,6 +716,8 @@ class BaseCommand:
                         content="Here is the full error log",
                         file=discord.File(fobj, filename="exception.txt"),
                     )
+
+            emotion.update("confused", len(formatted_exception) // 50 + random.randint(60, 110))
 
         await embed_utils.replace_2(
             self.response_msg,

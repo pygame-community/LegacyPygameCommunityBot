@@ -8,6 +8,7 @@ It gets called every 5 seconds or so.
 """
 import datetime
 import random
+import time
 
 import discord
 
