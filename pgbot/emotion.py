@@ -16,6 +16,7 @@ EMOTION_CAPS = {
     "happy": (-100, 100),
     "anger": (0, 100),
     "bored": (-1000, 1000),
+    "confused": (0, 500),
 }
 
 
@@ -41,6 +42,15 @@ def update(emotion_name: str, value: int):
     db_obj.write(emotions)
 
 
+def override(emotion_name: str, val_to_override):
+    """
+    Overrides emotion characteristic "emotion_name" with value "val_to_override" object
+    """
+    emotions = db_obj.get({})
+    emotions[emotion_name] = val_to_override
+    db_obj.write(emotions)
+
+
 def get(emotion_name: str):
     """
     Get emotion characteristic 'emotion_name'
@@ -53,6 +63,9 @@ def get(emotion_name: str):
 
 
 async def check_bonk(msg: discord.Message):
+    """
+    Function to check bonk, update emotion state, and reply when bonked
+    """
     if common.BONK not in msg.content:
         return
 
@@ -71,6 +84,9 @@ async def check_bonk(msg: discord.Message):
 
 
 async def dad_joke(msg: discord.Message):
+    """
+    Utility to handle the bot making dad jokes
+    """
     lowered = unidecode.unidecode(msg.content.lower().strip())
     if (
         " i am " in lowered or lowered.startswith("i am ") or lowered == "i am"

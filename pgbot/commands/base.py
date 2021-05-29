@@ -13,16 +13,12 @@ from __future__ import annotations
 import datetime
 import inspect
 import io
-import os
-import platform
 import random
-import sys
-import traceback
 from typing import TypeVar
 
 import discord
 import pygame
-from pgbot import common, db, embed_utils, utils, emotion
+from pgbot import common, db, embed_utils, emotion, utils
 
 ESCAPES = {
     "0": "\0",
@@ -159,6 +155,14 @@ def fun_command(func):
     return func
 
 
+def no_dm(func):
+    """
+    A decorator to indicate a command that cannot be run on DM
+    """
+    func.no_dm = True
+    return func
+
+
 def add_group(groupname: str, *subcmds: str):
     """
     Utility to add a function name to a group command
@@ -230,7 +234,7 @@ class BaseCommand:
         for substr in split_str.split(splitchar):
             if cnt % 2:
                 if substr.endswith("\\"):
-                    prev += substr + splitchar
+                    prev += substr[:-1] + splitchar
                     continue
 
                 yield splitfunc(prev + substr, *exargs)
@@ -310,6 +314,7 @@ class BaseCommand:
                         prevkey = a
 
         if prevkey:
+
             raise KwargError("Did not specify argument after '='")
 
         # If user has put an attachment, check whether it's a text file, and
@@ -336,7 +341,12 @@ class BaseCommand:
             if self.invoke_msg.reference.channel_id != self.channel.id:
                 msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
 
-            args.insert(0, msg)
+            for i in range(len(args)):
+                if not isinstance(args[i], str):
+                    args.insert(i, msg)
+                    break
+            else:
+                args.append(msg)
 
         return cmd, args, kwargs
 
@@ -409,27 +419,7 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno == "discord.TextChannel":
-                ids = None
-                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
-                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
-
-                if arg.startswith((prefix1, f"<{prefix1}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix1) :].split(sep="/")
-
-                elif arg.startswith((prefix2, f"<{prefix2}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix2) :].split(sep="/")
-
-                if ids is not None:
-                    if len(ids) == 1:
-                        arg = ids[0]
-                    else:
-                        raise ValueError()
+                arg = utils.format_discord_link(arg, self.guild.id)
 
                 chan = self.guild.get_channel(utils.filter_id(arg))
                 if chan is None:
@@ -438,31 +428,9 @@ class BaseCommand:
                 return chan
 
             elif anno == "discord.Message":
-                ids = None
-                prefix1 = f"https://discord.com/channels/{self.guild.id}/"
-                prefix2 = f"https://www.discord.com/channels/{self.guild.id}/"
+                arg = utils.format_discord_link(arg, self.guild.id)
 
-                if arg.startswith((prefix1, f"<{prefix1}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix1) :].split(sep="/")
-
-                elif arg.startswith((prefix2, f"<{prefix2}")):
-                    arg = arg[1:] if arg.startswith("<") else arg
-                    arg = arg[:-1] if arg.endswith(">") else arg
-                    arg = arg[:-1] if arg.endswith("/") else arg
-                    ids = arg[len(prefix2) :].split(sep="/")
-
-                if ids is not None:
-                    if len(ids) == 2:
-                        b = "/"
-                        a, c = ids
-                    else:
-                        raise ValueError()
-                else:
-                    a, b, c = arg.partition("/")
-
+                a, b, c = arg.partition("/")
                 if b:
                     msg = int(c)
                     chan = self.guild.get_channel(utils.filter_id(a))
@@ -515,7 +483,8 @@ class BaseCommand:
 
         except ValueError:
             if anno == "CodeBlock":
-                typ = "a codeblock, please surround your code in codeticks"
+                typ = "a codeblock, please surround your code in codeblocks,"
+                " and add a correct language specifier (e.g. \\`\\`\\`python) when needed"
 
             elif anno == "String":
                 typ = 'a string, please surround it in quotes (`""`)'
@@ -524,17 +493,14 @@ class BaseCommand:
                 typ = "a string, that denotes datetime in iso format"
 
             elif anno == "range":
-                typ = (
-                    "a range specifier, formatted with hyphens, enclosed in "
-                    "parenthesis"
-                )
+                typ = "a range specifier, matching the `range` object in Python 3.x"
 
             elif anno == "discord.Object":
                 typ = "a generic discord Object, which has an ID"
 
             elif anno == "discord.Member":
                 typ = (
-                    "an id of a person or a mention to them \nPlease make sure"
+                    "an id of a person or a mention to them \nPlease make sure "
                     "that the ID is a valid ID of a member in the server"
                 )
 
@@ -543,14 +509,14 @@ class BaseCommand:
 
             elif anno == "discord.TextChannel":
                 typ = (
-                    "an id or mention to a text channel\nPlease make sure"
+                    "an id or mention to a text channel\nPlease make sure "
                     "that the ID is a valid ID of a channel in the server"
                 )
 
             elif anno == "discord.Message":
                 typ = (
-                    "a message id, or a 'channel/message' combo\nPlease make"
-                    "sure that the ID(s) is(are) valid ones"
+                    "a message id, or a 'channel_id/message_id' combo, or a [link](#) to a message\nPlease make "
+                    "sure that the given ID(s) is/are valid and that the message is accesible to the bot"
                 )
 
             elif anno == "pygame.Color":
@@ -610,6 +576,13 @@ class BaseCommand:
                 )
             func = self.cmds_and_funcs[cmd]
 
+        if hasattr(func, "no_dm") and self.is_dm:
+
+            raise BotException(
+                "Cannot run this commands on DM",
+                "This command is not supported on DMs",
+            )
+
         if (
             hasattr(func, "fun_cmd")
             and random.randint(0, 1)
@@ -668,7 +641,6 @@ class BaseCommand:
 
                 elif param.default == param.empty:
                     raise ArgError(f"Missed required argument `{key}`", cmd)
-
                 else:
                     args.append(param.default)
                     continue
@@ -701,14 +673,17 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
+            emotion.update("confused", -2)
             return await self.call_cmd()
 
         except ArgError as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -717,40 +692,38 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
             title, msg = exc.args
+
+        except discord.HTTPException as exc:
+            emotion.update("confused", 2 + random.randint(10, 15))
+            title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
             title = "An exception occured while handling the command!"
-            tbs = traceback.format_exception(type(exc), exc, exc.__traceback__)
-            # Pop out the second and third entry in the traceback, because that
-            # is this function call itself
-            tbs.pop(1)
-            tbs.pop(1)
+            formatted_exception = utils.format_code_exception(exc, 2)
 
             elog = (
-                "This error is most likely caused due to a bug in "
-                + "the bot itself. Here is the traceback:\n"
+                f"This error is most likely caused due to a bug in the bot "
+                f"itself. Here is the traceback:\n{formatted_exception}"
             )
-            elog += "".join(tbs).replace(os.getcwd(), "PgBot")
-            if platform.system() == "Windows":
-                # Hide path to python on windows
-                elog = elog.replace(os.path.dirname(sys.executable), "Python")
-
             msg = utils.code_block(elog)
 
-            if len(title) > 256 or len(elog) > 2048:
-                with io.StringIO() as fobj:
-                    fobj.write(f"{title}\n{elog}")
-                    fobj.seek(0)
+            if len(elog) > 2048:
+                with io.StringIO(f"{title}\n{elog}") as fobj:
                     await self.response_msg.channel.send(
                         content="Here is the full error log",
                         file=discord.File(fobj, filename="exception.txt"),
                     )
 
+            emotion.update(
+                "confused", len(formatted_exception) // 50 + random.randint(50, 100)
+            )
+
         await embed_utils.replace_2(
             self.response_msg,
-            author_name="BotException",
             title=title,
             description=msg,
             color=0xFF0000,
+            footer_text="BotException",
         )

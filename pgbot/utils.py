@@ -8,10 +8,14 @@ This file defines some important utility functions.
 
 from __future__ import annotations
 
-
+import asyncio
 import datetime
+import os
+import platform
 import re
+import sys
 import traceback
+import typing
 
 import discord
 import pygame
@@ -31,7 +35,7 @@ def color_to_rgb_int(col: pygame.Color):
     return (((col.r << 8) + col.g) << 8) + col.b
 
 
-def discordify(text):
+def discordify(text: str):
     """
     Converts normal string into "discord" string that includes backspaces to
     cancel out unwanted changes
@@ -39,11 +43,27 @@ def discordify(text):
     return discord.utils.escape_markdown(text)
 
 
+def format_discord_link(link: str, guild_id: int):
+    """
+    Format a discord link to a channel or message
+    """
+    link = link.lstrip("<").rstrip(">").rstrip("/")
+
+    for prefix in (
+        f"https://discord.com/channels/{guild_id}/",
+        f"https://www.discord.com/channels/{guild_id}/",
+    ):
+        if link.startswith(prefix):
+            link = link[len(prefix) :]
+
+    return link
+
+
 def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: int = 10):
     """
     A simple horizontal progress bar generator.
     """
-    percentage = 0 if pct < 0 else 1 if pct > 1 else pct
+    pct = 0 if pct < 0 else 1 if pct > 1 else pct
     return full_bar * (int(divisions * pct)) + empty_bar * (
         divisions - int(divisions * pct)
     )
@@ -141,15 +161,22 @@ def split_long_message(message: str):
     return split_output
 
 
-def format_code_exception(e):
+def format_code_exception(e, pops: int = 1):
     """
     Provide a formatted exception for code snippets
     """
     tbs = traceback.format_exception(type(e), e, e.__traceback__)
     # Pop out the first entry in the traceback, because that's
     # this function call itself
-    tbs.pop(1)
-    return tbs
+    for _ in range(pops):
+        tbs.pop(1)
+
+    ret = "".join(tbs).replace(os.getcwd(), "PgBot")
+    if platform.system() == "Windows":
+        # Hide path to python on windows
+        ret = ret.replace(os.path.dirname(sys.executable), "Python")
+
+    return ret
 
 
 def filter_id(mention: str):
@@ -376,3 +403,94 @@ def code_block(string: str, max_characters=2048):
         return f"```\n{string[:max_characters - 7]} ...```"
     else:
         return f"```\n{string[:max_characters]}```"
+
+
+def check_channel_permissions(
+    member: discord.Member,
+    channel: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> bool:
+
+    """
+    Checks if the given permissions apply to the given member in the given channel.
+    """
+
+    channel_perms = channel.permissions_for(member)
+    return bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+
+
+def check_channels_permissions(
+    member: discord.Member,
+    *channels: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    skip_invalid_channels: bool = False,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> typing.Tuple[bool]:
+
+    """
+    Checks if the given permissions apply to the given member in the given channels.
+    """
+
+    if skip_invalid_channels:
+        booleans = tuple(
+            bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+            for channel_perms in (
+                channel.permissions_for(member)
+                for channel in channels
+                if isinstance(channel, discord.TextChannel)
+            )
+        )
+    else:
+        booleans = tuple(
+            bool_func(getattr(channel_perms, perm_name) for perm_name in permissions)
+            for channel_perms in (
+                channel.permissions_for(member) for channel in channels
+            )
+        )
+    return booleans
+
+
+async def coro_check_channels_permissions(
+    member: discord.Member,
+    *channels: discord.TextChannel,
+    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    skip_invalid_channels: bool = False,
+    permissions: typing.Iterable[str] = (
+        "view_channel",
+        "send_messages",
+    ),
+) -> typing.List[bool]:
+
+    """
+    Checks if the given permissions apply to the given member in the given channels.
+    """
+
+    booleans = []
+    if skip_invalid_channels:
+        for i, channel in channels:
+            if isinstance(channel, discord.TextChannel):
+                channel_perms = channel.permissions_for(member)
+                booleans.append(
+                    bool_func(getattr(channel_perms, perm) for perm in permissions)
+                )
+
+            if not i % 5:
+                await asyncio.sleep(0)
+    else:
+        for i, channel in channels:
+            channel_perms = channel.permissions_for(member)
+            booleans.append(
+                bool_func(getattr(channel_perms, perm) for perm in permissions)
+            )
+
+            if not i % 5:
+                await asyncio.sleep(0)
+
+    return booleans

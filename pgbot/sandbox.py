@@ -16,9 +16,7 @@ import multiprocessing
 import random
 import re
 import string
-import sys
 import time
-import traceback
 from inspect import getframeinfo, stack
 
 
@@ -144,19 +142,11 @@ class SandboxFunctionsObject:
         self.output.text += sep.join(map(str, values)) + end
 
 
-class PgExecBot(Exception):
-    """
-    Base class for pg!exec exceptions
-    """
-
-
 filtered_builtins = {}
 disallowed_builtins = (
     "__debug__",
-    "__doc__",
     "__import__",
     "__loader__",
-    "__package__",
     "__spec__",
     "copyright",
     "credits",
@@ -182,6 +172,11 @@ disallowed_builtins = (
 for key in dir(builtins):
     if key not in disallowed_builtins:
         filtered_builtins[key] = getattr(builtins, key)
+
+filtered_builtins["__name__"] = "__main__"
+filtered_builtins["__package__"] = ""
+filtered_builtins["__file__"] = "<string>"
+filtered_builtins["__doc__"] = filtered_builtins["__spec__"] = None
 
 
 class FilteredPygame:
@@ -283,36 +278,28 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
 
     for ill_attr in common.ILLEGAL_ATTRIBUTES:
         if ill_attr in code:
-            output.exc = PgExecBot("Suspicious Pattern")
-            break
-    else:
-        try:
-            script_start = time.perf_counter()
-            exec(code, allowed_globals)
-            output.duration = time.perf_counter() - script_start
+            output.exc = "Suspicious Pattern"
+            q.put(output)
+            return
 
-        except ImportError:
-            output.exc = PgExecBot(
-                "Oopsies! The bot's exec function doesn't support importing "
-                + "external modules. Don't worry, many modules are pre-"
-                + "imported for you already! Just re-run your code, without "
-                + "the import statements"
-            )
+    script_start = time.perf_counter()
+    try:
+        exec(code + "\n", allowed_globals)
+        output.exc = ""
 
-        except SyntaxError as e:
-            offsetarrow = " " * e.offset + "^\n"
-            output.exc = PgExecBot(
-                f"SyntaxError at line {e.lineno}\n  " + e.text + offsetarrow + e.msg
-            )
+    except ImportError:
+        output.exc = (
+            "Oopsies! The bot's exec function doesn't support importing "
+            "external modules. Don't worry, many modules are pre- imported "
+            "for you already! Just re-run your code, without the import "
+            "statements"
+        )
 
-        except Exception as err:
-            ename = err.__class__.__name__
-            details = ""
-            if len(err.args):
-                details = err.args[0]
-            # Don't try to replace this, otherwise we may get wrong line numbers
-            lineno = traceback.extract_tb(sys.exc_info()[-1])[-1][1]
-            output.exc = PgExecBot(f"{ename} at line {lineno}: {details}")
+    except Exception as err:
+        output.exc = utils.format_code_exception(err)
+
+    finally:
+        output.duration = time.perf_counter() - script_start
 
     # Because output needs to go through queue, we need to sanitize it first
     # Any random data that gets put in the queue will likely crash the entire
@@ -324,7 +311,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     if isinstance(getattr(output, "duration", None), float):
         sanitized_output.duration = output.duration
 
-    if isinstance(getattr(output, "exc", None), PgExecBot):
+    if isinstance(getattr(output, "exc", None), str):
         sanitized_output.exc = output.exc
 
     if isinstance(getattr(output, "img", None), pygame.Surface):
@@ -359,7 +346,9 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     q.put(sanitized_output)
 
 
-async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
+async def exec_sandbox(
+    code: str, tstamp: int, timeout: int = 5, max_memory: int = 2 ** 28
+):
     """
     Helper to run pg!exec code in a sandbox, manages the seperate process that
     runs to execute user code.
@@ -378,16 +367,14 @@ async def exec_sandbox(code: str, tstamp: int, timeout=5, max_memory=2 ** 28):
     while proc.is_alive():
         if start + timeout < time.perf_counter():
             output = Output()
-            output.exc = PgExecBot(f"Hit timeout of {timeout} seconds!")
+            output.exc = f"Hit timeout of {timeout} seconds!"
             proc.kill()
             return output
 
         try:
             if psproc.memory_info().rss > max_memory:
                 output = Output()
-                output.exc = PgExecBot(
-                    f"The bot's memory has taken up to {max_memory} bytes!"
-                )
+                output.exc = f"The bot's memory has taken up to {max_memory} bytes!"
                 proc.kill()
                 return output
         except psutil.NoSuchProcess:

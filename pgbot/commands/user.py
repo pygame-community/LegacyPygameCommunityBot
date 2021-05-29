@@ -18,6 +18,8 @@ from typing import Optional
 
 import discord
 import pygame
+import unidecode
+
 from pgbot import clock, common, db, docs, embed_utils, emotion, sandbox, utils
 from pgbot.commands.base import (
     BaseCommand,
@@ -27,6 +29,7 @@ from pgbot.commands.base import (
     String,
     add_group,
     fun_command,
+    no_dm,
 )
 
 
@@ -67,6 +70,52 @@ class UserCommand(BaseCommand):
             f"The bots ping is `{utils.format_time(sec, 0)}`\n"
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
+
+    @fun_command
+    async def cmd_fontify(self, msg: String):
+        """
+        ->type Other commands
+        ->signature pg!fontify <msg>
+        ->description Display message in pygame font
+        """
+        fontified = ""
+
+        for char in unidecode.unidecode(msg.string.lower()):
+            if char.isalnum():
+                for emoji in self.guild.emojis:
+                    if emoji.name == f"pg_char_{char}":
+                        fontified += str(emoji)
+                        break
+                else:
+                    fontified += ":heavy_multiplication_x:"
+
+            elif char.isspace():
+                fontified += " " * 5
+
+            else:
+                fontified += ":heavy_multiplication_x:"
+
+        if len(fontified) > 2000:
+            raise BotException(
+                "Could not execute comamnd",
+                "Input text width exceeded maximum limit (2KB)",
+            )
+
+        if not fontified:
+            raise BotException(
+                "Could not execute comamnd",
+                "Text cannot be empty",
+            )
+
+        await embed_utils.replace_2(
+            self.response_msg,
+            author_icon_url=self.author.avatar_url,
+            author_name=self.author.display_name,
+            description=f"pygame font message invoked by {self.author.mention}",
+            color=0x40E32D,
+        )
+
+        await self.response_msg.edit(content=fontified)
 
     async def cmd_rules(self, *rules: int):
         """
@@ -427,13 +476,14 @@ class UserCommand(BaseCommand):
         pygame.image.save(
             await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
         )
-        common.cmd_logs[self.invoke_msg.id] = await self.response_msg.channel.send(
+        common.cmd_logs[self.invoke_msg.id] = await self.channel.send(
             file=discord.File(f"temp{t}.png")
         )
         os.remove(f"temp{t}.png")
 
         await self.response_msg.delete()
 
+    @no_dm
     async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
@@ -474,43 +524,40 @@ class UserCommand(BaseCommand):
                 code.code, tstamp, 10 if self.is_priv else 5
             )
             dur = returned.duration  # the execution time of the script alone
-
             embed_dict = {
                 "description": "",
                 "author_name": f"Code executed in {utils.format_time(dur)}",
                 "author_url": self.invoke_msg.jump_url,
             }
+
             file = None
-            exc = None
+            returned.text += "\n" + returned.exc
 
-            if returned.exc is None:
-                if returned.text:
-                    embed_dict["description"] += "**Text output:**\n"
-                    embed_dict["description"] += utils.code_block(returned.text, 2000)
+            if returned.text:
+                embed_dict["description"] += "**Text output:**\n"
+                embed_dict["description"] += utils.code_block(returned.text, 2000)
 
-                if returned.img:
-                    if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
-                        embed_dict["description"] += "\n**Image output:**"
-                        embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
-                        file = discord.File(f"temp{tstamp}.png")
-                    else:
-                        exc = (
-                            "Image could not be sent",
-                            "The image file size is above 4MiB",
-                        )
+            if returned.img:
+                embed_dict["description"] += "\n**Image output:**"
+                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
+                    embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
+                    file = discord.File(f"temp{tstamp}.png")
+                else:
+                    embed_dict["description"] += (
+                        "\n```\nGIF could not be sent.\n"
+                        "The GIF file size is above 4MiB```"
+                    )
 
-                elif returned.imgs:
-                    if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
-                        embed_dict["description"] += "\n**GIF output:**"
-                        embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
-                        file = discord.File(f"temp{tstamp}.gif")
-                    else:
-                        exc = ("Unable to send gif", "Gif size is above 4mib")
-            else:
-                exc = (
-                    "An exception occured:",
-                    utils.code_block(", ".join(map(str, returned.exc.args))),
-                )
+            elif returned.imgs:
+                embed_dict["description"] += "\n**GIF output:**"
+                if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
+                    embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
+                    file = discord.File(f"temp{tstamp}.gif")
+                else:
+                    embed_dict["description"] += (
+                        "\n```GIF could not be sent.\n"
+                        "The GIF file size is above 4MiB```"
+                    )
 
         try:
             await self.response_msg.delete()
@@ -518,17 +565,7 @@ class UserCommand(BaseCommand):
             # Message already deleted
             pass
 
-        if exc is not None:
-            embed = await embed_utils.send(
-                self.channel,
-                exc[0],
-                exc[1],
-                color=0xFF0000,
-                do_return=True,
-            )
-        else:
-            embed = await embed_utils.send_2(None, **embed_dict)
-
+        embed = await embed_utils.send_2(None, **embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         if file:
@@ -540,6 +577,7 @@ class UserCommand(BaseCommand):
         if os.path.isfile(f"temp{tstamp}.png"):
             os.remove(f"temp{tstamp}.png")
 
+    @no_dm
     async def cmd_help(self, *names: str, page: HiddenArg = 0, msg: HiddenArg = None):
         """
         ->type Get help
@@ -612,7 +650,7 @@ class UserCommand(BaseCommand):
                     f"The snek is happi right now!\n"
                     f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
                     f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
-                    f"The snek's happiness level is {all_emotions['happy']}, don't let it go to zero!"
+                    f"The snek's happiness level is `{all_emotions['happy']}`, don't let it go to zero!"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1"
@@ -622,7 +660,7 @@ class UserCommand(BaseCommand):
                 msg = (
                     f"The snek is sad right now!\n"
                     f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
-                    f"The snek's happiness level is {all_emotions['happy']}, pet me to increase "
+                    f"The snek's happiness level is `{all_emotions['happy']}`, pet me to increase "
                     f"my happiness!"
                 )
                 emoji_link = (
@@ -638,21 +676,36 @@ class UserCommand(BaseCommand):
                     f"The snek is exhausted!\nI ran too many commands, "
                     f"so I shall take a break real quick\n"
                     f"While I am resting, fun commands would sometimes not work, so be careful!\n"
-                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
-                    f"{abs((all_emotions['bored'] + 600) // 15)} more command(s) to be happi."
+                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
+                    f"`{abs((all_emotions['bored'] + 600) // 15)}` more command(s) to be happi."
                 )
                 bot_emotion = "exhausted"
             elif all_emotions["bored"] > 600:
                 msg = (
                     f"The snek is bored!\nNo one has interacted with me in a while, "
                     f"and I feel lonely!\n"
-                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
-                    f"{abs((all_emotions['bored'] - 600) // 15)} more command(s) to be happi."
+                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
+                    f"`{abs((all_emotions['bored'] - 600) // 15)}` more command(s) to be happi."
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1"
                 )
                 bot_emotion = "bored"
+        except KeyError:
+            pass
+
+        try:
+            if all_emotions["confused"] >= 300:
+                msg = (
+                    f"The snek is confused!\nEither there were too many exceptions in my code, "
+                    f"or too many commands were used wrongly!\nThe snek's confused level is "
+                    f"`{all_emotions['confused']}`.\nTo lower my confused level, use commands "
+                    f"on me the right way."
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1"
+                )
+                bot_emotion = "confused"
         except KeyError:
             pass
 
@@ -719,6 +772,7 @@ class UserCommand(BaseCommand):
                 + f"Anger level is {anger}",
             )
 
+    @no_dm
     async def cmd_refresh(self, msg: discord.Message):
         """
         ->type Other commands
@@ -753,12 +807,14 @@ class UserCommand(BaseCommand):
         elif command[0] == "doc":
             await self.cmd_doc(command[1], page=int(page) - 1, msg=msg)
 
+    @no_dm
     @add_group("poll")
     async def cmd_poll(
         self,
         desc: String,
         *emojis: String,
-        admin_embed: HiddenArg = {},
+        destination: HiddenArg = None,
+        admin_embed_dict: HiddenArg = {},
     ):
         """
         ->type Other commands
@@ -770,15 +826,12 @@ class UserCommand(BaseCommand):
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
-        if self.is_dm:
-            raise BotException(
-                "Cannot run poll commands on DM",
-                "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!",
-            )
+
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
 
         newline = "\n"
-        base_embed = {
+        base_embed_dict = {
             "title": "Voting in progress",
             "fields": [
                 {
@@ -803,7 +856,7 @@ class UserCommand(BaseCommand):
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string,
         }
-        base_embed.update(admin_embed)
+        base_embed_dict.update(admin_embed_dict)
 
         if emojis:
             if len(emojis) <= 3 or len(emojis) % 2:
@@ -815,10 +868,10 @@ class UserCommand(BaseCommand):
                     " information, see `pg!help poll`",
                 )
 
-            base_embed["fields"] = []
+            base_embed_dict["fields"] = []
             for i, substr in enumerate(emojis):
                 if not i % 2:
-                    base_embed["fields"].append(
+                    base_embed_dict["fields"].append(
                         {
                             "name": substr.string.strip(),
                             "value": common.ZERO_SPACE,
@@ -826,11 +879,13 @@ class UserCommand(BaseCommand):
                         }
                     )
                 else:
-                    base_embed["fields"][i // 2]["value"] = substr.string.strip()
+                    base_embed_dict["fields"][i // 2]["value"] = substr.string.strip()
 
-        await embed_utils.replace_from_dict(self.response_msg, base_embed)
+        final_embed = discord.Embed.from_dict(base_embed_dict)
+        poll_msg = await destination.send(embed=final_embed)
+        await self.response_msg.delete()
 
-        for field in base_embed["fields"]:
+        for field in base_embed_dict["fields"]:
             try:
                 emoji_id = utils.filter_emoji_id(field["name"].strip())
                 emoji = common.bot.get_emoji(emoji_id)
@@ -840,20 +895,20 @@ class UserCommand(BaseCommand):
                 emoji = field["name"]
 
             try:
-                await self.response_msg.add_reaction(emoji)
+                await poll_msg.add_reaction(emoji)
             except (discord.errors.HTTPException, discord.errors.NotFound):
                 # Either a custom emoji was used (which could not be added by
                 # our beloved snek) or some other error happened. Clear the
                 # reactions and prompt the user to make sure it is the currect
                 # emoji.
-                await self.response_msg.clear_reactions()
+                await poll_msg.clear_reactions()
                 raise BotException(
                     "Invalid emoji",
                     "The emoji could not be added as a reaction. Make sure it is"
                     " the correct emoji and that it is not from another server",
                 )
 
-    async def cmd_close_poll(self, msg):
+    async def cmd_close_poll(self, msg=None):
         """
         ->skip
         Stub for old function
@@ -863,6 +918,7 @@ class UserCommand(BaseCommand):
             "Perhaps you meant, 'pg!poll close'",
         )
 
+    @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
         self,
@@ -877,12 +933,6 @@ class UserCommand(BaseCommand):
         The poll can only be closed by the person who started it or by mods.
         """
         newline = "\n"
-        if self.is_dm:
-            raise BotException(
-                "Cannot run poll commands on DM",
-                "Who are you trying to poll? Yourself? :smiley: \n"
-                + "Please run your poll on the Pygame Community Server!",
-            )
 
         if not msg.embeds:
             raise BotException(
@@ -906,7 +956,7 @@ class UserCommand(BaseCommand):
 
         if color is None and self.author.id != poll_owner:
             raise BotException(
-                "You cant stop this vote",
+                "You can't stop this vote",
                 "The vote was not started by you."
                 " Ask the person who started it to close it.",
             )
@@ -965,6 +1015,7 @@ class UserCommand(BaseCommand):
         )
         await self.response_msg.delete()
 
+    @no_dm
     async def cmd_resources(
         self,
         limit: Optional[int] = None,
