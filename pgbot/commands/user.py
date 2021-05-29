@@ -72,9 +72,10 @@ class UserCommand(BaseCommand):
         )
 
     @fun_command
+    @add_group("fontify")
     async def cmd_fontify(self, msg: String):
         """
-        ->type Other commands
+        ->type Play With Me :snake:
         ->signature pg!fontify <msg>
         ->description Display message in pygame font
         """
@@ -117,41 +118,28 @@ class UserCommand(BaseCommand):
 
         await self.response_msg.edit(content=fontified)
 
-    async def cmd_remove_fontify(self):
+    @fun_command
+    @add_group("fontify", "remove")
+    async def cmd_fontify_remove(self, reply: discord.Message):
         """
-        ->type Other commands
-        ->signature pg!remove_fontify
+        ->type Play With Me :snake:
+        ->signature pg!fontify remove
         ->description Delete your fontified message by replying to it
         """
-        channel = self.invoke_msg.channel
-        reply_ref = self.invoke_msg.reference
 
-        if reply_ref != None:
-            reply = await channel.fetch_message(reply_ref.message_id)
-
-        else:
-            raise BotException(
-                "Could not execute comamnd", "Please reply to a fontified message"
-            )
-
-        if reply.embeds[0].author.name != self.author.display_name:
-            raise BotException(
-                "Could not execute comamnd",
-                "Please reply to a fontified message you evoked",
-            )
-
-        elif (
-            reply.embeds[0].description
-            == f"pygame font message invoked by {self.author.mention}"
+        if (
+            reply.author.id != common.bot.user.id
+            or not reply.embeds
+            or reply.embeds[0].description
+            != f"pygame font message invoked by {self.author.mention}"
         ):
-            await reply.delete()
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
-
-        else:
             raise BotException(
                 "Could not execute comamnd", "Please reply to a fontified message"
             )
+
+        await reply.delete()
+        await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
     async def cmd_rules(self, *rules: int):
         """
