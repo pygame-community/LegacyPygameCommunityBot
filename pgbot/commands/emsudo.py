@@ -1310,8 +1310,6 @@ class EmsudoCommand(BaseCommand):
                             bottom_dict = embed_mask_dict[attr[i - 1]][attr[i]]
 
             elif attr in embed_attr_order_dict:
-                # if attr in attribs_with_sub_attribs:
-
                 if attribs_tuple.count(attr) > 1:
                     raise BotException(
                         "Cannot execute command:",
