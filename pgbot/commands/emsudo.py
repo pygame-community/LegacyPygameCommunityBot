@@ -1226,7 +1226,7 @@ class EmsudoCommand(BaseCommand):
             attr_str for attr_str in attribs_tuple if isinstance(attr_str, str)
         }
 
-        input_attribs_set = set(attr for sub_attr in attribs_tuple for attr in sub_attr)
+        input_attribs_set = {attr for sub_attr in attribs_tuple for attr in sub_attr}
 
         all_attribs_set = {
             "provider",
@@ -1267,7 +1267,7 @@ class EmsudoCommand(BaseCommand):
                         "Invalid embed attribute filter string!"
                         " Sub-attributes do not propagate beyond 3 levels.",
                     )
-                bottom_dict: dict = None
+                bottom_dict = {}
                 for i in range(len(attr)):
                     if attr[i] not in all_attribs_set:
                         raise BotException(
@@ -1295,12 +1295,34 @@ class EmsudoCommand(BaseCommand):
                             )
 
                         if attr[i] not in embed_mask_dict:
-                            bottom_dict = {}
                             embed_mask_dict[attr[i]] = bottom_dict
                         else:
                             bottom_dict = embed_mask_dict[attr[i]]
 
                     elif i == len(attr) - 1:
+                        if i == 1 and attr[i - 1] == "fields":
+                            if not attr[i].isnumeric():
+                                for sub_attr in ("name", "value", "inline"):
+                                    if attr[i] == sub_attr:
+                                        for j in range(25):
+                                            str_idx = str(j)
+                                            if str_idx not in embed_mask_dict["fields"]:
+                                                embed_mask_dict["fields"][str_idx] = {
+                                                    sub_attr: None
+                                                }
+                                            else:
+                                                embed_mask_dict["fields"][str_idx][
+                                                    sub_attr
+                                                ] = None
+                                        break
+                                else:
+                                    raise BotException(
+                                        "Cannot execute command:",
+                                        "Invalid embed attribute filter string!"
+                                        f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
+                                    )
+                                continue
+
                         if attr[i] not in bottom_dict:
                             bottom_dict[attr[i]] = None
                     else:
@@ -1390,9 +1412,16 @@ class EmsudoCommand(BaseCommand):
                     if not system_attributes:
                         embed_utils.recursive_delete(embed_dict, system_attribs_dict)
 
-                for k in tuple(embed_dict.keys()):
-                    if not embed_dict[k]:
-                        del embed_dict[k]
+                if embed_dict:
+                    for k in tuple(embed_dict.keys()):
+                        if not embed_dict[k]:
+                            del embed_dict[k]
+                else:
+                    raise BotException(
+                        "Cannot execute command:",
+                        "Could not find data that matches"
+                        " the pattern of the given embed attribute filter string.",
+                    )
 
                 with io.StringIO() as fobj:
                     # final_embed_dict = {k: embed_dict[k] for k in embed_attr_order_dict if k in embed_dict}
