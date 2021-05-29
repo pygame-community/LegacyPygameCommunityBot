@@ -14,7 +14,7 @@ import json
 import re
 from ast import literal_eval
 from collections.abc import Mapping
-from typing import Union
+from typing import Union, Iterable
 
 import black
 import discord
@@ -34,12 +34,48 @@ def recursive_update(old_dict, update_dict, skip_value="\0"):
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
             new_value = recursive_update(old_dict.get(k, {}), v, skip_value=skip_value)
-            if new_value != skip_value:
+            if new_value != skip_value and k in old_dict:
                 old_dict[k] = new_value
         else:
-            if v != skip_value:
+            if v != skip_value and k in old_dict:
                 old_dict[k] = v
 
+    return old_dict
+
+
+def recursive_delete(old_dict, update_dict, skip_value="\0", inverse=False):
+    """
+    Delete embed dictionary attributes present in another,
+    But recursively do the same dictionary values that are dictionaries as well.
+    based on the answers in
+    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    """
+    if inverse:
+        for k, v in tuple(old_dict.items()):
+            if isinstance(v, Mapping):
+                lower_update_dict = None
+                if isinstance(update_dict, dict):
+                    lower_update_dict = update_dict.get(k, {})
+                
+                new_value = recursive_delete(v, lower_update_dict, skip_value=skip_value, inverse=inverse)
+                if new_value != skip_value and isinstance(update_dict, dict) and k not in update_dict:
+                    old_dict[k] = new_value
+                    if not new_value:
+                        del old_dict[k]
+            else:
+                if v != skip_value and isinstance(update_dict, dict) and k not in update_dict:
+                    del old_dict[k]
+    else:
+        for k, v in update_dict.items():
+            if isinstance(v, Mapping):
+                new_value = recursive_delete(old_dict.get(k, {}), v, skip_value=skip_value)
+                if new_value != skip_value and k in old_dict:
+                    old_dict[k] = new_value
+                    if not new_value:
+                        del old_dict[k]
+            else:
+                if v != skip_value and k in old_dict:
+                    del old_dict[k]
     return old_dict
 
 

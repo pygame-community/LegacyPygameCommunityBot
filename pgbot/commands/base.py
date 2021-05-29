@@ -344,6 +344,8 @@ class BaseCommand:
                 if not isinstance(args[i], str):
                     args.insert(i, msg)
                     break
+            else:
+                args.append(msg)
 
         return cmd, args, kwargs
 

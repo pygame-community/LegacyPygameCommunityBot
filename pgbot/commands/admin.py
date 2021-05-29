@@ -739,7 +739,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
             if not i % 50:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
 
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
@@ -835,7 +835,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
             if not i % 50:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
 
         if not objs:
             obj = self.author
