@@ -38,34 +38,16 @@ class Output:
         self.img = None
 
         # internal
-        self.exc = None
+        self.exc = ""
         self.duration = -1  # The script execution time
 
         # gif related
-        self._delay = 200
         self.loops = 0
-        self.imgs = []
-        self.delays = []
+        self._imgs = []
+        self._delays = []
 
-    @property
-    def delay(self):
-        return self._delay
-
-    @delay.setter
-    def delay(self, value):
-        if not isinstance(value, (int, float)):
-            lineno = getframeinfo(stack()[1][0]).lineno
-            self.exc = PgExecBot(
-                f"TypeError at line {lineno}: "
-                f"delay must be must be int not '{value.__class__.__name__}'"
-            )
-
-        self._delay = int(value)
-
-    def add_frame(self, image, delay=None):
+    def add_frame(self, image, delay=200):
         lineno = getframeinfo(stack()[1][0]).lineno
-        if delay is None:
-            delay = self._delay
 
         if isinstance(delay, (int, float)):
             try:
@@ -74,36 +56,36 @@ class Output:
                 delay = 65536
 
             if 65535 < delay:
-                self.exc = PgExecBot(
+                self.exc = (
                     "That would take a lot of time."
                     f" Please choose a number between 0 and 65535. (line {lineno})"
                 )
                 return
             if 0 > delay:
-                self.exc = PgExecBot(
+                self.exc = (
                     "Negative time? That does not make sense..."
                     f" Please choose between 0 and 65535. (line {lineno})"
                 )
                 return
         else:
-            self.exc = PgExecBot(
+            self.exc = (
                 f"TypeError at line {lineno}: "
                 f"Argument delay must be int not '{delay.__class__.__name__}'"
             )
             return
 
         if not isinstance(image, pygame.Surface):
-            self.exc = PgExecBot(
+            self.exc = (
                 f"TypeError at line {lineno}: "
                 "Argument image must be type of pygame.Surface"
             )
             return
 
-        self.delays.append(delay)
-        self.imgs.append(image.copy())
+        self._imgs.append(image.copy())
+        self._delays.append(delay)
 
     def _get_kwargs(self, tstamp, images):
-        if len(self.delays) != len(self.imgs):
+        if len(self._delays) != len(self._imgs):
             return "Length of delays must be the same as the length of imgs"
 
         try:
@@ -118,7 +100,7 @@ class Output:
             "format": "GIF",
             "append_images": images[1:],
             "save_all": True,
-            "duration": self.delays,
+            "duration": self._delays,
         }
 
         if loops != 1:
@@ -285,7 +267,6 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     script_start = time.perf_counter()
     try:
         exec(code + "\n", allowed_globals)
-        output.exc = ""
 
     except ImportError:
         output.exc = (
@@ -319,11 +300,13 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         sanitized_output.img = True
         pygame.image.save(output.img, f"temp{tstamp}.png")
 
-    if getattr(output, "imgs", None):
+    if getattr(output, "_imgs", None):
         i = 0
         images = []
-        if isinstance(output.imgs, list):
-            for surf in output.imgs:
+        if isinstance(output._imgs, list):
+            for surf in output._imgs:
+                if not isinstance(surf, pygame.Surface):
+                    continue
                 if i == 0:
                     pygame.image.save(surf, f"temp{tstamp}.png")
 
@@ -338,10 +321,10 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
                 img = Image.open(f"temp{tstamp}.png")
                 kwargs = output._get_kwargs(tstamp, images)
                 if isinstance(kwargs, str):
-                    sanitized_output.exc = PgExecBot(kwargs)
+                    sanitized_output.exc = kwargs
                 else:
                     img.save(**kwargs)
-                    sanitized_output.imgs = True
+                    sanitized_output._imgs = True
 
     q.put(sanitized_output)
 
