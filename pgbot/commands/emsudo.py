@@ -1404,7 +1404,7 @@ class EmsudoCommand(BaseCommand):
                         },
                         fp=fobj,
                         indent=4,
-                        as_json=as_json,
+                        as_json= True if as_json and not as_python else False,
                     )
                     fobj.seek(0)
                     await self.channel.send(
@@ -1430,9 +1430,9 @@ class EmsudoCommand(BaseCommand):
                             fobj,
                             filename=(
                                 "embeddata.json"
-                                if as_json
-                                else "embeddata.py"
                                 if as_python
+                                else "embeddata.json"
+                                if as_json
                                 else "embeddata.txt"
                             ),
                         ),
