@@ -1319,7 +1319,7 @@ class EmsudoCommand(BaseCommand):
                                     raise BotException(
                                         "Cannot execute command:",
                                         "Invalid embed attribute filter string!"
-                                        f" The embed attribute `{attr[i]}` does not have any sub-attributes!",
+                                        f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
                                     )
                                 continue
 
