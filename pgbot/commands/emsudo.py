@@ -1127,20 +1127,21 @@ class EmsudoCommand(BaseCommand):
         attributes: String = String(""),
         name: String = String("(add a title by editing this embed)"),
         system_attributes: bool = False,
-        json: bool = True,
-        py: bool = False,
+        as_json: bool = True,
+        as_python: bool = False,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_get <message> [<message>...] [attributes=""]
+        ->signature pg!emsudo_get <message> [<message>...] [a/attributes=""] [name=""] [system_attributes=False] [as_json=True]
+        [as_python=False]
         ->description Get the embed data of a message
         ->extended description
         Get the contents of the embed of a message from the given arguments and send it as another message
         (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
         ->example command pg!emsudo_get 98765432198765444321
-        pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields author"
-        pg!emsudo_get 123456789123456789/98765432198765444321 attributes="fields 2 3 7 author"
+        pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo_get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
@@ -1403,7 +1404,7 @@ class EmsudoCommand(BaseCommand):
                         },
                         fp=fobj,
                         indent=4,
-                        as_json=json,
+                        as_json=as_json,
                     )
                     fobj.seek(0)
                     await self.channel.send(
@@ -1428,10 +1429,10 @@ class EmsudoCommand(BaseCommand):
                         file=discord.File(
                             fobj,
                             filename=(
-                                "embeddata.py"
-                                if py
-                                else "embeddata.json"
-                                if json
+                                "embeddata.json"
+                                if as_json
+                                else "embeddata.py"
+                                if as_python
                                 else "embeddata.txt"
                             ),
                         ),
