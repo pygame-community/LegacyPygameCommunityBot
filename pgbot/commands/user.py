@@ -116,7 +116,7 @@ class UserCommand(BaseCommand):
         )
 
         await self.response_msg.edit(content=fontified)
-    
+
     async def cmd_remove_fontify(self):
         """
         ->type Other commands
@@ -127,23 +127,31 @@ class UserCommand(BaseCommand):
         reply_ref = self.invoke_msg.reference
 
         if reply_ref != None:
-            reply =  await channel.fetch_message(reply_ref.message_id)
-            
-        else:
-            raise BotException("Could not execute comamnd","Please reply to a fontified message")
-        
-        if reply.embeds[0].author.name != self.author.display_name:
-            raise BotException("Could not execute comamnd","Please reply to a fontified message you evoked")
+            reply = await channel.fetch_message(reply_ref.message_id)
 
-        elif reply.embeds[0].description == f"pygame font message invoked by {self.author.mention}":
+        else:
+            raise BotException(
+                "Could not execute comamnd", "Please reply to a fontified message"
+            )
+
+        if reply.embeds[0].author.name != self.author.display_name:
+            raise BotException(
+                "Could not execute comamnd",
+                "Please reply to a fontified message you evoked",
+            )
+
+        elif (
+            reply.embeds[0].description
+            == f"pygame font message invoked by {self.author.mention}"
+        ):
             await reply.delete()
             await self.invoke_msg.delete()
             await self.response_msg.delete()
 
-        else:  
-            raise BotException("Could not execute comamnd","Please reply to a fontified message")
-
-
+        else:
+            raise BotException(
+                "Could not execute comamnd", "Please reply to a fontified message"
+            )
 
     async def cmd_rules(self, *rules: int):
         """
