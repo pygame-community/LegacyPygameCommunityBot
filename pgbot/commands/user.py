@@ -116,6 +116,34 @@ class UserCommand(BaseCommand):
         )
 
         await self.response_msg.edit(content=fontified)
+    
+    async def cmd_remove_fontify(self):
+        """
+        ->type Other commands
+        ->signature pg!remove_fontify
+        ->description Delete your fontified message by replying to it
+        """
+        channel = self.invoke_msg.channel
+        reply_ref = self.invoke_msg.reference
+
+        if reply_ref != None:
+            reply =  await channel.fetch_message(reply_ref.message_id)
+            
+        else:
+            raise BotException("Could not execute comamnd","Please reply to a fontified message")
+        
+        if reply.embeds[0].author.name != self.author.display_name:
+            raise BotException("Could not execute comamnd","Please reply to a fontified message you evoked")
+
+        elif reply.embeds[0].description == f"pygame font message invoked by {self.author.mention}":
+            await reply.delete()
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+
+        else:  
+            raise BotException("Could not execute comamnd","Please reply to a fontified message")
+
+
 
     async def cmd_rules(self, *rules: int):
         """
@@ -409,7 +437,7 @@ class UserCommand(BaseCommand):
         """
         ->type Get help
         ->signature pg!clock
-        ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
+        ->description 24 Hour Clock showing <@&778205389942030377> s who are available to help
         -> Extended description
         People on the clock can run the clock with more arguments, to update their data.
         `pg!clock update [timezone in hours] [color as hex string]`
