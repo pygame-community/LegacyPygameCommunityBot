@@ -695,11 +695,11 @@ class UserCommand(BaseCommand):
             pass
 
         try:
-            if all_emotions["confused"]["value"] >= 100:
+            if all_emotions["confused"] >= 300:
                 msg = (
                     f"The snek is confused!\nEither there were too many exceptions in my code, "
                     f"or too many commands were used wrongly!\nThe snek's confused level is "
-                    f"`{all_emotions['confused']['value']}`.\nTo lower my confused level, use commands "
+                    f"`{all_emotions['confused']}`.\nTo lower my confused level, use commands "
                     f"on me the right way."
                 )
                 emoji_link = (
@@ -908,7 +908,7 @@ class UserCommand(BaseCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-    async def cmd_close_poll(self, msg):
+    async def cmd_close_poll(self, msg=None):
         """
         ->skip
         Stub for old function

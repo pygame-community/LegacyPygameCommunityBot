@@ -6,7 +6,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some utitities and functions for the bots emotion system
 """
 import random
-import time
 
 import discord
 import unidecode

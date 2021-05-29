@@ -14,7 +14,6 @@ import datetime
 import inspect
 import io
 import random
-import time
 from typing import TypeVar
 
 import discord
@@ -717,7 +716,9 @@ class BaseCommand:
                         file=discord.File(fobj, filename="exception.txt"),
                     )
 
-            emotion.update("confused", len(formatted_exception) // 50 + random.randint(60, 110))
+            emotion.update(
+                "confused", len(formatted_exception) // 50 + random.randint(50, 100)
+            )
 
         await embed_utils.replace_2(
             self.response_msg,

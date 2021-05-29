@@ -1404,7 +1404,7 @@ class EmsudoCommand(BaseCommand):
                         },
                         fp=fobj,
                         indent=4,
-                        as_json= True if as_json and not as_python else False,
+                        as_json=True if as_json and not as_python else False,
                     )
                     fobj.seek(0)
                     await self.channel.send(
