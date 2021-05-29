@@ -299,7 +299,9 @@ class EmsudoCommand(BaseCommand):
 
                 output_embeds.append(embed_utils.create(**util_send_embed_args))
             else:
-                output_embeds.append(embed_utils.create(description=util_send_embed_args["description"]))
+                output_embeds.append(
+                    embed_utils.create(description=util_send_embed_args["description"])
+                )
 
             await asyncio.sleep(0)
 
@@ -1008,7 +1010,10 @@ class EmsudoCommand(BaseCommand):
                 )
             else:
                 msg_embed = await embed_utils.edit_2(
-                    None, msg_embed, description=util_edit_embed_args["description"], color=-1
+                    None,
+                    msg_embed,
+                    description=util_edit_embed_args["description"],
+                    color=-1,
                 )
 
             await asyncio.sleep(0)
@@ -1123,7 +1128,7 @@ class EmsudoCommand(BaseCommand):
         name: String = String("(add a title by editing this embed)"),
         system_attributes: bool = False,
         json: bool = True,
-        py: bool = False
+        py: bool = False,
     ):
         """
         ->type emsudo commands
@@ -1158,7 +1163,7 @@ class EmsudoCommand(BaseCommand):
                 "No message IDs given as input.",
             )
 
-        embed_attr_order_dict = {     # a dictionary will maintain this order when exported
+        embed_attr_order_dict = {  # a dictionary will maintain this order when exported
             "provider": None,
             "type": None,
             "title": None,
@@ -1201,21 +1206,26 @@ class EmsudoCommand(BaseCommand):
             "provider",
             "proxy_url",
             "proxy_icon_url",
-            "width", 
+            "width",
             "height",
         }
 
-        embed_mask_dict = {} 
+        embed_mask_dict = {}
 
         attribs = (
             a.string if a.string else attributes.string if attributes.string else ""
         )
 
-        attribs_tuple = tuple( attr_str.split(sep=".") if "." in attr_str else attr_str for attr_str in attribs.split() )
+        attribs_tuple = tuple(
+            attr_str.split(sep=".") if "." in attr_str else attr_str
+            for attr_str in attribs.split()
+        )
 
-        top_attribs = { attr_str for attr_str in attribs_tuple if isinstance(attr_str, str) }
+        top_attribs = {
+            attr_str for attr_str in attribs_tuple if isinstance(attr_str, str)
+        }
 
-        input_attribs_set = set( attr for sub_attr in attribs_tuple for attr in sub_attr )
+        input_attribs_set = set(attr for sub_attr in attribs_tuple for attr in sub_attr)
 
         all_attribs_set = {
             "provider",
@@ -1237,9 +1247,16 @@ class EmsudoCommand(BaseCommand):
             "proxy_icon_url",
             "author",
             "fields",
-        } | set( str(i) for i in range(25) )
+        } | set(str(i) for i in range(25))
 
-        attribs_with_sub_attribs = {"author", "thumbnail", "image", "fields", "footer", "provider"}   # 'fields' is a special case
+        attribs_with_sub_attribs = {
+            "author",
+            "thumbnail",
+            "image",
+            "fields",
+            "footer",
+            "provider",
+        }  # 'fields' is a special case
 
         for attr in attribs_tuple:
             if isinstance(attr, list):
@@ -1252,7 +1269,7 @@ class EmsudoCommand(BaseCommand):
                 bottom_dict: dict = None
                 for i in range(len(attr)):
                     if attr[i] not in all_attribs_set:
-                            raise BotException(
+                        raise BotException(
                             "Cannot execute command:",
                             f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
                         )
@@ -1281,19 +1298,19 @@ class EmsudoCommand(BaseCommand):
                             embed_mask_dict[attr[i]] = bottom_dict
                         else:
                             bottom_dict = embed_mask_dict[attr[i]]
-                    
-                    elif i == len(attr)-1:
+
+                    elif i == len(attr) - 1:
                         if attr[i] not in bottom_dict:
                             bottom_dict[attr[i]] = None
                     else:
-                        if attr[i] not in embed_mask_dict[attr[i-1]]:
+                        if attr[i] not in embed_mask_dict[attr[i - 1]]:
                             bottom_dict = {}
-                            embed_mask_dict[attr[i-1]][attr[i]] = bottom_dict
+                            embed_mask_dict[attr[i - 1]][attr[i]] = bottom_dict
                         else:
-                            bottom_dict = embed_mask_dict[attr[i-1]][attr[i]]
+                            bottom_dict = embed_mask_dict[attr[i - 1]][attr[i]]
 
             elif attr in embed_attr_order_dict:
-                #if attr in attribs_with_sub_attribs:
+                # if attr in attribs_with_sub_attribs:
 
                 if attribs_tuple.count(attr) > 1:
                     raise BotException(
@@ -1302,11 +1319,11 @@ class EmsudoCommand(BaseCommand):
                         f" Do not specify upper level embed attributes twice: `{attr}`",
                     )
                 elif attr in all_system_attribs_set and not system_attributes:
-                        raise BotException(
-                            "Cannot execute command:",
-                            f"The given attribute `{attr}` cannot be retrieved when `system_attributes=`"
-                            " is set to `False`.",
-                        )
+                    raise BotException(
+                        "Cannot execute command:",
+                        f"The given attribute `{attr}` cannot be retrieved when `system_attributes=`"
+                        " is set to `False`.",
+                    )
 
                 if attr not in embed_mask_dict:
                     embed_mask_dict[attr] = None
@@ -1346,30 +1363,46 @@ class EmsudoCommand(BaseCommand):
                 if embed_mask_dict:
                     if "fields" in embed_dict and "fields" in embed_mask_dict:
                         field_list = embed_dict["fields"]
-                        embed_dict["fields"] = {str(i): field_list[i] for i in range(len(field_list))}
+                        embed_dict["fields"] = {
+                            str(i): field_list[i] for i in range(len(field_list))
+                        }
 
                         if not system_attributes:
-                            embed_utils.recursive_delete(embed_dict, system_attribs_dict)
-                        embed_utils.recursive_delete(embed_dict, embed_mask_dict, inverse=True)
+                            embed_utils.recursive_delete(
+                                embed_dict, system_attribs_dict
+                            )
+                        embed_utils.recursive_delete(
+                            embed_dict, embed_mask_dict, inverse=True
+                        )
 
                         field_dict = embed_dict["fields"]
-                        embed_dict["fields"] = [ field_dict[i] for i in sorted(field_dict.keys()) ]
+                        embed_dict["fields"] = [
+                            field_dict[i] for i in sorted(field_dict.keys())
+                        ]
                     else:
                         if not system_attributes:
-                            embed_utils.recursive_delete(embed_dict, system_attribs_dict)
-                        embed_utils.recursive_delete(embed_dict, embed_mask_dict, inverse=True)
+                            embed_utils.recursive_delete(
+                                embed_dict, system_attribs_dict
+                            )
+                        embed_utils.recursive_delete(
+                            embed_dict, embed_mask_dict, inverse=True
+                        )
                 else:
                     if not system_attributes:
                         embed_utils.recursive_delete(embed_dict, system_attribs_dict)
-                
+
                 for k in tuple(embed_dict.keys()):
                     if not embed_dict[k]:
-                        del embed_dict[k] 
+                        del embed_dict[k]
 
                 with io.StringIO() as fobj:
-                    #final_embed_dict = {k: embed_dict[k] for k in embed_attr_order_dict if k in embed_dict}
+                    # final_embed_dict = {k: embed_dict[k] for k in embed_attr_order_dict if k in embed_dict}
                     embed_utils.export_embed_data(
-                        {k: embed_dict[k] for k in embed_attr_order_dict if k in embed_dict},
+                        {
+                            k: embed_dict[k]
+                            for k in embed_attr_order_dict
+                            if k in embed_dict
+                        },
                         fp=fobj,
                         indent=4,
                         as_json=json,

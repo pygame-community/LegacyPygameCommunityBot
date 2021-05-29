@@ -56,19 +56,31 @@ def recursive_delete(old_dict, update_dict, skip_value="\0", inverse=False):
                 lower_update_dict = None
                 if isinstance(update_dict, dict):
                     lower_update_dict = update_dict.get(k, {})
-                
-                new_value = recursive_delete(v, lower_update_dict, skip_value=skip_value, inverse=inverse)
-                if new_value != skip_value and isinstance(update_dict, dict) and k not in update_dict:
+
+                new_value = recursive_delete(
+                    v, lower_update_dict, skip_value=skip_value, inverse=inverse
+                )
+                if (
+                    new_value != skip_value
+                    and isinstance(update_dict, dict)
+                    and k not in update_dict
+                ):
                     old_dict[k] = new_value
                     if not new_value:
                         del old_dict[k]
             else:
-                if v != skip_value and isinstance(update_dict, dict) and k not in update_dict:
+                if (
+                    v != skip_value
+                    and isinstance(update_dict, dict)
+                    and k not in update_dict
+                ):
                     del old_dict[k]
     else:
         for k, v in update_dict.items():
             if isinstance(v, Mapping):
-                new_value = recursive_delete(old_dict.get(k, {}), v, skip_value=skip_value)
+                new_value = recursive_delete(
+                    old_dict.get(k, {}), v, skip_value=skip_value
+                )
                 if new_value != skip_value and k in old_dict:
                     old_dict[k] = new_value
                     if not new_value:
