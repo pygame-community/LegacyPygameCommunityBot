@@ -165,7 +165,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         ->type Get help
         ->signature pg!clock [action] [timezone] [color] [member]
-        ->description 24 Hour Clock showing <@&778205389942030377> 's who are available to help
+        ->description 24 Hour Clock showing <@&778205389942030377> s who are available to help
         ->extended description
         Admins can run clock with more arguments, to add/update/remove other members.
         `pg!clock update [timezone in hours] [color as hex string] [mention member]`
