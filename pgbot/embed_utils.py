@@ -23,14 +23,13 @@ from discord.embeds import EmptyEmbed
 from . import common
 
 
-def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
+def recursive_update(old_dict, update_dict, add_new_keys=False, skip_value="\0"):
     """
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
     based on the answers in
     https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
     """
-
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
             new_value = recursive_update(old_dict.get(k, {}), v, add_new_keys=add_new_keys, skip_value=skip_value)

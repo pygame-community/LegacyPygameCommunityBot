@@ -855,7 +855,7 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 msg_embed = await embed_utils.edit_from_dict(
-                    None, msg_embed, embed_dict
+                    None, msg_embed, embed_dict, add_attributes=add_attributes,
                 )
                 continue
 
@@ -883,7 +883,7 @@ class EmsudoCommand(BaseCommand):
 
                     if isinstance(args, dict):
                         msg_embed = await embed_utils.edit_from_dict(
-                            None, msg_embed, args
+                            None, msg_embed, args, add_attributes=add_attributes,
                         )
                         continue
                     elif not isinstance(args, (list, tuple)):
@@ -1007,7 +1007,7 @@ class EmsudoCommand(BaseCommand):
                         util_edit_embed_args.update(timestamp=args[6])
 
                 msg_embed = await embed_utils.edit_2(
-                    None, msg_embed, **util_edit_embed_args
+                    None, msg_embed, **util_edit_embed_args, add_attributes=add_attributes,
                 )
             else:
                 msg_embed = await embed_utils.edit_2(
