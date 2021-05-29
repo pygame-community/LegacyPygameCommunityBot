@@ -686,7 +686,7 @@ class UserCommand(BaseCommand):
                     f"The snek is happi right now!\n"
                     f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
                     f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
-                    f"The snek's happiness level is {all_emotions['happy']}, don't let it go to zero!"
+                    f"The snek's happiness level is `{all_emotions['happy']}`, don't let it go to zero!"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1"
@@ -696,7 +696,7 @@ class UserCommand(BaseCommand):
                 msg = (
                     f"The snek is sad right now!\n"
                     f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
-                    f"The snek's happiness level is {all_emotions['happy']}, pet me to increase "
+                    f"The snek's happiness level is `{all_emotions['happy']}`, pet me to increase "
                     f"my happiness!"
                 )
                 emoji_link = (
@@ -712,21 +712,36 @@ class UserCommand(BaseCommand):
                     f"The snek is exhausted!\nI ran too many commands, "
                     f"so I shall take a break real quick\n"
                     f"While I am resting, fun commands would sometimes not work, so be careful!\n"
-                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
-                    f"{abs((all_emotions['bored'] + 600) // 15)} more command(s) to be happi."
+                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
+                    f"`{abs((all_emotions['bored'] + 600) // 15)}` more command(s) to be happi."
                 )
                 bot_emotion = "exhausted"
             elif all_emotions["bored"] > 600:
                 msg = (
                     f"The snek is bored!\nNo one has interacted with me in a while, "
                     f"and I feel lonely!\n"
-                    f"The snek's boredom level is {all_emotions['bored']}, and would need about "
-                    f"{abs((all_emotions['bored'] - 600) // 15)} more command(s) to be happi."
+                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
+                    f"`{abs((all_emotions['bored'] - 600) // 15)}` more command(s) to be happi."
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1"
                 )
                 bot_emotion = "bored"
+        except KeyError:
+            pass
+
+        try:
+            if all_emotions["confused"] >= 300:
+                msg = (
+                    f"The snek is confused!\nEither there were too many exceptions in my code, "
+                    f"or too many commands were used wrongly!\nThe snek's confused level is "
+                    f"`{all_emotions['confused']}`.\nTo lower my confused level, use commands "
+                    f"on me the right way."
+                )
+                emoji_link = (
+                    "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1"
+                )
+                bot_emotion = "confused"
         except KeyError:
             pass
 
@@ -929,7 +944,7 @@ class UserCommand(BaseCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-    async def cmd_close_poll(self, msg):
+    async def cmd_close_poll(self, msg=None):
         """
         ->skip
         Stub for old function

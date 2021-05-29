@@ -16,6 +16,7 @@ EMOTION_CAPS = {
     "happy": (-100, 100),
     "anger": (0, 100),
     "bored": (-1000, 1000),
+    "confused": (0, 500),
 }
 
 
@@ -38,6 +39,15 @@ def update(emotion_name: str, value: int):
     if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
         emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
 
+    db_obj.write(emotions)
+
+
+def override(emotion_name: str, val_to_override):
+    """
+    Overrides emotion characteristic "emotion_name" with value "val_to_override" object
+    """
+    emotions = db_obj.get({})
+    emotions[emotion_name] = val_to_override
     db_obj.write(emotions)
 
 

@@ -203,6 +203,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 ),
             )
 
+    @add_group("sudo")
     async def cmd_sudo(
         self,
         *datas: Union[discord.Message, String],
@@ -355,6 +356,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
+    @add_group("sudo", "edit")
     async def cmd_sudo_edit(
         self,
         edit_msg: discord.Message,
@@ -452,6 +454,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         await self.response_msg.delete()
         return
 
+    @add_group("sudo", "get")
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
@@ -579,6 +582,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await self.response_msg.delete()
 
+    @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
         self,
         origin: discord.TextChannel,
@@ -710,6 +714,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         await self.response_msg.delete()
 
+    @add_group("sudo", "clone")
     async def cmd_sudo_clone(
         self,
         *msgs: discord.Message,
@@ -739,7 +744,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
 
             if not i % 50:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
 
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
@@ -835,7 +840,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
             if not i % 50:
-                asyncio.sleep(0)
+                await asyncio.sleep(0)
 
         if not objs:
             obj = self.author
