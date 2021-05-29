@@ -336,18 +336,6 @@ class BaseCommand:
         if not isinstance(cmd, str):
             raise BotException("Invalid Command name!", "Command name must be str")
 
-        if self.invoke_msg.reference is not None:
-            msg = str(self.invoke_msg.reference.message_id)
-            if self.invoke_msg.reference.channel_id != self.channel.id:
-                msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
-
-            for i in range(len(args)):
-                if not isinstance(args[i], str):
-                    args.insert(i, msg)
-                    break
-            else:
-                args.append(msg)
-
         return cmd, args, kwargs
 
     async def _cast_arg(self, anno, arg, cmd):
@@ -593,6 +581,13 @@ class BaseCommand:
                 "I have been running a lot of commands lately, and now I am tired.\n"
                 "Give me a bit of a break, and I will be back to normal!",
             )
+
+        if self.invoke_msg.reference is not None:
+            msg = str(self.invoke_msg.reference.message_id)
+            if self.invoke_msg.reference.channel_id != self.channel.id:
+                msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
+
+            args.insert(0, msg)
 
         sig = inspect.signature(func)
 
