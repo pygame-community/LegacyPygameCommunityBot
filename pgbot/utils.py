@@ -23,6 +23,10 @@ import pygame
 from . import common, embed_utils
 
 
+def clamp(value, min_, max_):
+    return max(min(value, max_), min_)
+
+
 def color_to_rgb_int(col: pygame.Color):
     """
     Get integer RGB representation of pygame color object. This does not include

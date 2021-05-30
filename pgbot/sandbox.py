@@ -17,6 +17,8 @@ import random
 import re
 import string
 import time
+from inspect import getframeinfo, stack
+
 
 import psutil
 import pygame.freetype
@@ -34,11 +36,77 @@ class Output:
     def __init__(self):
         self.text = ""
         self.img = None
-        self.imgs = []
-        self.delay = 200
-        self.loops = 0
+
+        # internal
         self.exc = ""
         self.duration = -1  # The script execution time
+
+        # gif related
+        self.loops = 0
+        self._imgs = []
+        self._delays = []
+
+    def add_frame(self, image, delay=200):
+        lineno = getframeinfo(stack()[1][0]).lineno
+
+        if isinstance(delay, (int, float)):
+            try:
+                delay = int(delay)
+            except OverflowError:
+                delay = 65536
+
+            if 65535 < delay:
+                self.exc = (
+                    "That would take a lot of time."
+                    f" Please choose a number between 0 and 65535. (line {lineno})"
+                )
+                return
+            if 0 > delay:
+                self.exc = (
+                    "Negative time? That does not make sense..."
+                    f" Please choose between 0 and 65535. (line {lineno})"
+                )
+                return
+        else:
+            self.exc = (
+                f"TypeError at line {lineno}: "
+                f"Argument delay must be int not '{delay.__class__.__name__}'"
+            )
+            return
+
+        if not isinstance(image, pygame.Surface):
+            self.exc = (
+                f"TypeError at line {lineno}: "
+                "Argument image must be type of pygame.Surface"
+            )
+            return
+
+        self._imgs.append(image.copy())
+        self._delays.append(delay)
+
+    def _get_kwargs(self, tstamp, images):
+        if len(self._delays) != len(self._imgs):
+            return "Length of delays must be the same as the length of imgs"
+
+        try:
+            loops = int(getattr(self, "loops", 0))
+        except OverflowError:
+            loops = 0
+        except (ValueError, TypeError):
+            return "Please set the loops to an integer value."
+
+        kwargs = {
+            "fp": f"temp{tstamp}.gif",
+            "format": "GIF",
+            "append_images": images[1:],
+            "save_all": True,
+            "duration": self._delays,
+        }
+
+        if loops != 1:
+            kwargs["loop"] = utils.clamp(loops - 1, 0, 100)
+
+        return kwargs
 
 
 class SandboxFunctionsObject:
@@ -199,7 +267,6 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     script_start = time.perf_counter()
     try:
         exec(code + "\n", allowed_globals)
-        output.exc = ""
 
     except ImportError:
         output.exc = (
@@ -233,75 +300,33 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         sanitized_output.img = True
         pygame.image.save(output.img, f"temp{tstamp}.png")
 
-    if getattr(output, "imgs", None):
+    if getattr(output, "_imgs", None):
         i = 0
         images = []
-        if isinstance(output.imgs, list):
-            for surf in output.imgs:
-                if isinstance(surf, pygame.Surface):
-                    if i == 0:
-                        pygame.image.save(surf, f"temp{tstamp}.png")
+        if isinstance(output._imgs, list):
+            for surf in output._imgs:
+                if not isinstance(surf, pygame.Surface):
+                    continue
+                if i == 0:
+                    pygame.image.save(surf, f"temp{tstamp}.png")
 
-                    image = Image.frombytes(
-                        "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
-                    )
-                    images.append(image)
+                image = Image.frombytes(
+                    "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
+                )
+                images.append(image)
 
-                    i += 1
+                i += 1
 
             if i > 0:
-                handle_gif(tstamp, output, sanitized_output, images)
+                img = Image.open(f"temp{tstamp}.png")
+                kwargs = output._get_kwargs(tstamp, images)
+                if isinstance(kwargs, str):
+                    sanitized_output.exc = kwargs
+                else:
+                    img.save(**kwargs)
+                    sanitized_output._imgs = True
 
     q.put(sanitized_output)
-
-
-def handle_gif(tstamp: int, output: Output, sanitized_output: Output, images: list):
-    """
-    Helper utility to handle GIFs
-    """
-    try:
-        duration = int(getattr(output, "delay", 200))
-    except OverflowError:
-        duration = 65536
-    except (ValueError, TypeError):
-        sanitized_output.exc = "Please set the duration to an integer value."
-        return
-
-    if 65535 < duration:
-        sanitized_output.exc = (
-            "That would take a lot of time. Please choose between 0 and 65535."
-        )
-        return
-
-    if 0 > duration:
-        sanitized_output.exc = (
-            "Negative time? That does not make sense..."
-            " Please choose between 0 and 65535."
-        )
-        return
-
-    try:
-        loops = int(getattr(output, "loops", 0))
-    except OverflowError:
-        loops = 0
-    except (ValueError, TypeError):
-        sanitized_output.exc = "Please set the loops to an integer value."
-        return
-
-    kwargs = {
-        "fp": f"temp{tstamp}.gif",
-        "format": "GIF",
-        "append_images": images[1:],
-        "save_all": True,
-        "duration": duration,
-    }
-    if loops != 1:
-        kwargs["loop"] = max(min(loops - 1, 100), 0)
-
-    img = Image.open(f"temp{tstamp}.png")
-    img.save(**kwargs)
-
-    sanitized_output.imgs = True
 
 
 async def exec_sandbox(

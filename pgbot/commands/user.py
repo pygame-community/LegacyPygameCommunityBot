@@ -555,11 +555,14 @@ class UserCommand(BaseCommand):
             }
 
             file = None
-            returned.text += "\n" + returned.exc
+            if returned.exc:
+                embed_dict["description"] += "**Exception output:**\n"
+                embed_dict["description"] += utils.code_block(returned.exc, 500)
+                embed_dict["description"] += "\n"
 
             if returned.text:
                 embed_dict["description"] += "**Text output:**\n"
-                embed_dict["description"] += utils.code_block(returned.text, 2000)
+                embed_dict["description"] += utils.code_block(returned.text, 1500)
 
             if returned.img:
                 embed_dict["description"] += "\n**Image output:**"
@@ -572,7 +575,7 @@ class UserCommand(BaseCommand):
                         "The GIF file size is above 4MiB```"
                     )
 
-            elif returned.imgs:
+            elif returned._imgs:
                 embed_dict["description"] += "\n**GIF output:**"
                 if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
@@ -595,11 +598,9 @@ class UserCommand(BaseCommand):
         if file:
             file.close()
 
-        if os.path.isfile(f"temp{tstamp}.gif"):
-            os.remove(f"temp{tstamp}.gif")
-
-        if os.path.isfile(f"temp{tstamp}.png"):
-            os.remove(f"temp{tstamp}.png")
+        for extension in ("gif", "png"):
+            if os.path.isfile(f"temp{tstamp}.{extension}"):
+                os.remove(f"temp{tstamp}.{extension}")
 
     @no_dm
     async def cmd_help(self, *names: str, page: HiddenArg = 0, msg: HiddenArg = None):
