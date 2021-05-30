@@ -35,7 +35,7 @@ guide_channel: discord.TextChannel
 entries_discussion_channel: discord.TextChannel
 entry_channels = {}
 
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
