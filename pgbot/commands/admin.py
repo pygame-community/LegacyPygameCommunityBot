@@ -648,7 +648,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             0,
         )
 
-        await self.response_msg.delete(10 if msg_count > 1 else 0)
+        await self.response_msg.delete(delay=10 if msg_count > 1 else 0)
 
     @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
@@ -926,6 +926,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
             embed = embed_utils.get_member_info_embed(obj)
             await self.channel.send(embed=embed)
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
         obj_count = len(objs)
         for i, obj in enumerate(objs):
             await embed_utils.edit_field_from_dict(
