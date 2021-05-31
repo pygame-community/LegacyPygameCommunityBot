@@ -359,7 +359,9 @@ def create(
 
     if timestamp:
         if isinstance(timestamp, str):
-            embed.timestamp = datetime.datetime.fromisoformat(timestamp[:-1] if timestamp.endswith("Z") else timestamp)
+            embed.timestamp = datetime.datetime.fromisoformat(
+                timestamp[:-1] if timestamp.endswith("Z") else timestamp
+            )
         else:
             embed.timestamp = timestamp
 

@@ -599,18 +599,13 @@ class BaseCommand:
         # kwargs in the order and format the function wants
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
 
         await embed_utils.edit_field_from_dict(
             self.response_msg,
             load_embed,
-            dict(
-                name="Casting Arguments",
-                value="Loading..."
-            ),
+            dict(name="Casting Arguments", value="Loading..."),
             0,
         )
         for i, key in enumerate(sig.parameters):

@@ -75,12 +75,9 @@ class EmsudoCommand(BaseCommand):
         output_embeds = []
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-                ("\u2800", "`...`", False)
-            )
+            fields=(("\u2800", "`...`", False), ("\u2800", "`...`", False)),
         )
-        
+
         for i, data in enumerate(datas):
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
@@ -311,7 +308,7 @@ class EmsudoCommand(BaseCommand):
                 output_embeds.append(
                     embed_utils.create(description=util_send_embed_args["description"])
                 )
-                
+
             await asyncio.sleep(0)
 
         if not datas:
@@ -361,7 +358,7 @@ class EmsudoCommand(BaseCommand):
                 ),
                 0,
             )
-    
+
         output_embed_count = len(output_embeds)
         for j, embed in enumerate(output_embeds):
             await embed_utils.edit_field_from_dict(
@@ -374,17 +371,16 @@ class EmsudoCommand(BaseCommand):
                     + utils.progress_bar(j / output_embed_count, divisions=30),
                 ),
                 1,
-            )    
+            )
             await self.invoke_msg.channel.send(embed=embed)
-        
+
         await embed_utils.edit_field_from_dict(
             self.response_msg,
             load_embed,
             dict(
                 name="Generation Completed",
                 value=f"`{output_embed_count}/{output_embed_count}` embeds generated\n"
-                f"100% | "
-                + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             1,
         )
@@ -529,7 +525,7 @@ class EmsudoCommand(BaseCommand):
                         " a Discord embed object, or JSON embed data (\n\\`\\`\\`json\n"
                         "data\n\\`\\`\\`\n)",
                     )
-                
+
                 else:
                     arg_count = len(args)
 
@@ -639,7 +635,7 @@ class EmsudoCommand(BaseCommand):
                         util_replace_embed_args.update(timestamp=args[6])
 
                     await embed_utils.replace_2(msg, **util_replace_embed_args)
-        
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
@@ -714,9 +710,7 @@ class EmsudoCommand(BaseCommand):
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
@@ -811,15 +805,13 @@ class EmsudoCommand(BaseCommand):
                 "Cannot execute command:",
                 "No embed data found in message.",
             )
-        
+
         msg_embed = msg.embeds[0]
         data_count = len(datas)
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
         for i, data in enumerate(datas):
             await embed_utils.edit_field_from_dict(
@@ -1119,7 +1111,7 @@ class EmsudoCommand(BaseCommand):
 
         else:
             await msg.edit(embed=msg_embed)
-           
+
         await embed_utils.edit_field_from_dict(
             self.response_msg,
             load_embed,
@@ -1170,7 +1162,7 @@ class EmsudoCommand(BaseCommand):
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
-            )
+            ),
         )
 
         msg_count = len(msgs)
@@ -1209,7 +1201,7 @@ class EmsudoCommand(BaseCommand):
                         1,
                     )
                     await self.channel.trigger_typing()
-                
+
                 await self.channel.send(embed=embed)
 
             await embed_utils.edit_field_from_dict(
@@ -1237,7 +1229,6 @@ class EmsudoCommand(BaseCommand):
         )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
-        
 
     @add_group("emsudo", "get")
     async def cmd_emsudo_get(
@@ -1475,15 +1466,14 @@ class EmsudoCommand(BaseCommand):
                     f"Invalid embed attribute name `{attr}`!",
                 )
 
-
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
-            )
+            ),
         )
-        
+
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             await embed_utils.edit_field_from_dict(

@@ -97,9 +97,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         response_msg = await embed_utils.send_2(
             invoke_msg.channel,
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`Loading...`", False),
-            )
+            fields=(("\u2800", "`Loading...`", False),),
         )
 
     if not common.TEST_MODE and not common.GENERIC:
@@ -107,7 +105,13 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             common.log_channel,
             title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
             description=discord.utils.escape_markdown(invoke_msg.content),
-            fields=(("\u200b", f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**", False),),
+            fields=(
+                (
+                    "\u200b",
+                    f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
+                    False,
+                ),
+            ),
         )
 
     cmd = (

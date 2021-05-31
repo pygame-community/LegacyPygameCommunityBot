@@ -244,15 +244,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
-
         output_strings = []
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
-
-            )
+            ),
         )
         data_count = len(datas)
         for i, data in enumerate(datas):
@@ -357,7 +355,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     f"Too little/many characters!",
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
-        
+
         await embed_utils.edit_field_from_dict(
             self.response_msg,
             load_embed,
@@ -384,7 +382,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
             )
             await destination.send(content=msg_txt)
 
-        
         await embed_utils.edit_field_from_dict(
             self.response_msg,
             load_embed,
@@ -531,14 +528,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 # update asyncio event loop stuff
                 await asyncio.sleep(0)
 
-        
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
-        
+
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             await embed_utils.edit_field_from_dict(
@@ -820,14 +814,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
-
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
-        
+
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
@@ -962,15 +953,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await asyncio.sleep(0)
 
         await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Complete",
-                    value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
-                ),
-                0,
-            )
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Complete",
+                value=f"`{obj_count}/{obj_count}` inputs processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            0,
+        )
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
@@ -1132,9 +1123,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
@@ -1317,8 +1306,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             dict(
                 name=f"Successfully archived {msg_count} message(s)",
                 value=f"`{msg_count}/{msg_count}` messages archived\n"
-                f"100% | "
-                + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -1378,12 +1366,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 except discord.HTTPException as e:
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
-
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
@@ -1419,8 +1404,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             dict(
                 name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
                 value=f"`{msg_count}/{msg_count}` messages pinned\n"
-                f"100% | "
-                + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -1473,9 +1457,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
 
         msg_count = len(input_msgs)
@@ -1573,11 +1555,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-            )
+            fields=(("\u2800", "`...`", False),),
         )
-        
+
         idx_count = len(indices_list)
         for i, unpin_index in enumerate(indices_list):
             if unpin_index < 0:
