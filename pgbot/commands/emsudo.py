@@ -73,14 +73,22 @@ class EmsudoCommand(BaseCommand):
 
         data_count = len(datas)
         output_embeds = []
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False), ("\u2800", "`...`", False)),
+        )
+
         for i, data in enumerate(datas):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{data_count}` inputs processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Inputs",
+                    value=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
                     + utils.progress_bar(i / data_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.invoke_msg.channel.trigger_typing()
 
@@ -101,7 +109,7 @@ class EmsudoCommand(BaseCommand):
                 timestamp=None,
             )
 
-            attachment_msg: discord.Message = None
+            attachment_msg = None
             only_description = False
 
             if data is False:
@@ -169,8 +177,6 @@ class EmsudoCommand(BaseCommand):
                         )
 
                     output_embeds.append(embed_utils.create_from_dict(embed_dict))
-                    continue
-
                 else:
                     try:
                         args = literal_eval(data.code)
@@ -297,7 +303,7 @@ class EmsudoCommand(BaseCommand):
                     if arg_count > 6:
                         util_send_embed_args.update(timestamp=args[6])
 
-                output_embeds.append(embed_utils.create(**util_send_embed_args))
+                    output_embeds.append(embed_utils.create(**util_send_embed_args))
             else:
                 output_embeds.append(
                     embed_utils.create(description=util_send_embed_args["description"])
@@ -305,16 +311,8 @@ class EmsudoCommand(BaseCommand):
 
             await asyncio.sleep(0)
 
-            if i + 1 == data_count:
-                await self.response_msg.edit(
-                    embed=embed_utils.create(
-                        title="Processing Complete",
-                        description=f"`{data_count}/{data_count}` inputs processed\n"
-                        f"100% | " + utils.progress_bar(1.0, divisions=30),
-                    )
-                )
-
         if not datas:
+            data_count = 1
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
@@ -349,9 +347,43 @@ class EmsudoCommand(BaseCommand):
 
             output_embeds.append(embed_utils.create_from_dict(embed_dict))
 
-        for embed in output_embeds:
+        else:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{data_count}/{data_count}` inputs processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
+
+        output_embed_count = len(output_embeds)
+        for j, embed in enumerate(output_embeds):
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Generating Embeds",
+                    value=f"`{j}/{output_embed_count}` embeds generated\n"
+                    f"{(j/output_embed_count)*100:.01f}% | "
+                    + utils.progress_bar(j / output_embed_count, divisions=30),
+                ),
+                1,
+            )
             await self.invoke_msg.channel.send(embed=embed)
 
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Generation Completed",
+                value=f"`{output_embed_count}/{output_embed_count}` embeds generated\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            1,
+        )
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if len(datas) > 1 else 0)
 
@@ -413,7 +445,7 @@ class EmsudoCommand(BaseCommand):
             timestamp=None,
         )
 
-        attachment_msg: discord.Message = None
+        attachment_msg = None
         only_description = False
 
         if data is None:
@@ -462,11 +494,8 @@ class EmsudoCommand(BaseCommand):
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
             await embed_utils.replace_from_dict(msg, embed_dict)
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
-            return
 
-        if not only_description:
+        elif not only_description:
             if data.lang == "json":
                 try:
                     embed_dict = embed_utils.import_embed_data(
@@ -478,10 +507,6 @@ class EmsudoCommand(BaseCommand):
                         f"```\n{j.args[0]}\n```",
                     )
                 await embed_utils.replace_from_dict(msg, embed_dict)
-                await self.invoke_msg.delete()
-                await self.response_msg.delete()
-                return
-
             else:
                 try:
                     args = literal_eval(data.code)
@@ -490,9 +515,7 @@ class EmsudoCommand(BaseCommand):
 
                 if isinstance(args, dict):
                     await embed_utils.replace_from_dict(msg, args)
-                    await self.invoke_msg.delete()
-                    await self.response_msg.delete()
-                    return
+
                 elif not isinstance(args, (list, tuple)):
                     raise BotException(
                         f"Invalid arguments!",
@@ -503,114 +526,116 @@ class EmsudoCommand(BaseCommand):
                         "data\n\\`\\`\\`\n)",
                     )
 
-                arg_count = len(args)
-
-                if arg_count > 0:
-                    if isinstance(args[0], (tuple, list)):
-                        if len(args[0]) == 3:
-                            util_replace_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                                author_icon_url=args[0][2],
-                            )
-                        elif len(args[0]) == 2:
-                            util_replace_embed_args.update(
-                                author_name=args[0][0],
-                                author_url=args[0][1],
-                            )
-                        elif len(args[0]) == 1:
-                            util_replace_embed_args.update(
-                                author_name=args[0][0],
-                            )
-
-                    else:
-                        util_replace_embed_args.update(
-                            author_name=args[0],
-                        )
                 else:
-                    raise BotException("Invalid arguments!", "")
+                    arg_count = len(args)
 
-                if arg_count > 1:
-                    if isinstance(args[1], (tuple, list)):
-                        if len(args[1]) == 3:
+                    if arg_count > 0:
+                        if isinstance(args[0], (tuple, list)):
+                            if len(args[0]) == 3:
+                                util_replace_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                    author_icon_url=args[0][2],
+                                )
+                            elif len(args[0]) == 2:
+                                util_replace_embed_args.update(
+                                    author_name=args[0][0],
+                                    author_url=args[0][1],
+                                )
+                            elif len(args[0]) == 1:
+                                util_replace_embed_args.update(
+                                    author_name=args[0][0],
+                                )
+
+                        else:
                             util_replace_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                                thumbnail_url=args[1][2],
+                                author_name=args[0],
                             )
-
-                        elif len(args[1]) == 2:
-                            util_replace_embed_args.update(
-                                title=args[1][0],
-                                url=args[1][1],
-                            )
-
-                        elif len(args[1]) == 1:
-                            util_replace_embed_args.update(
-                                title=args[1][0],
-                            )
-
                     else:
-                        util_replace_embed_args.update(
-                            title=args[1],
-                        )
+                        raise BotException("Invalid arguments!", "")
 
-                if arg_count > 2:
-                    if isinstance(args[2], (tuple, list)):
-                        if len(args[2]) == 2:
+                    if arg_count > 1:
+                        if isinstance(args[1], (tuple, list)):
+                            if len(args[1]) == 3:
+                                util_replace_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                    thumbnail_url=args[1][2],
+                                )
+
+                            elif len(args[1]) == 2:
+                                util_replace_embed_args.update(
+                                    title=args[1][0],
+                                    url=args[1][1],
+                                )
+
+                            elif len(args[1]) == 1:
+                                util_replace_embed_args.update(
+                                    title=args[1][0],
+                                )
+
+                        else:
                             util_replace_embed_args.update(
-                                description=args[2][0],
-                                image_url=args[2][1],
+                                title=args[1],
                             )
 
-                        elif len(args[2]) == 1:
+                    if arg_count > 2:
+                        if isinstance(args[2], (tuple, list)):
+                            if len(args[2]) == 2:
+                                util_replace_embed_args.update(
+                                    description=args[2][0],
+                                    image_url=args[2][1],
+                                )
+
+                            elif len(args[2]) == 1:
+                                util_replace_embed_args.update(
+                                    description=args[2][0],
+                                )
+
+                        else:
                             util_replace_embed_args.update(
-                                description=args[2][0],
+                                description=args[2],
                             )
 
-                    else:
-                        util_replace_embed_args.update(
-                            description=args[2],
-                        )
-
-                if arg_count > 3:
-                    if args[3] > -1:
-                        util_replace_embed_args.update(
-                            color=args[3],
-                        )
-
-                if arg_count > 4:
-                    try:
-                        fields = embed_utils.get_fields(*args[4])
-                        util_replace_embed_args.update(fields=fields)
-                    except TypeError:
-                        raise BotException(
-                            "Invalid format for field string(s)!",
-                            'The format should be `"<name|value|inline>"`',
-                        )
-
-                if arg_count > 5:
-                    if isinstance(args[5], (tuple, list)):
-                        if len(args[5]) == 2:
+                    if arg_count > 3:
+                        if args[3] > -1:
                             util_replace_embed_args.update(
-                                footer_text=args[5][0],
-                                footer_icon_url=args[5][1],
+                                color=args[3],
                             )
 
-                        elif len(args[5]) == 1:
-                            util_replace_embed_args.update(
-                                footer_text=args[5][0],
+                    if arg_count > 4:
+                        try:
+                            fields = embed_utils.get_fields(*args[4])
+                            util_replace_embed_args.update(fields=fields)
+                        except TypeError:
+                            raise BotException(
+                                "Invalid format for field string(s)!",
+                                'The format should be `"<name|value|inline>"`',
                             )
 
-                    else:
-                        util_replace_embed_args.update(
-                            footer_text=args[5],
-                        )
+                    if arg_count > 5:
+                        if isinstance(args[5], (tuple, list)):
+                            if len(args[5]) == 2:
+                                util_replace_embed_args.update(
+                                    footer_text=args[5][0],
+                                    footer_icon_url=args[5][1],
+                                )
 
-                if arg_count > 6:
-                    util_replace_embed_args.update(timestamp=args[6])
+                            elif len(args[5]) == 1:
+                                util_replace_embed_args.update(
+                                    footer_text=args[5][0],
+                                )
 
-        await embed_utils.replace_2(msg, **util_replace_embed_args)
+                        else:
+                            util_replace_embed_args.update(
+                                footer_text=args[5],
+                            )
+
+                    if arg_count > 6:
+                        util_replace_embed_args.update(timestamp=args[6])
+
+                    await embed_utils.replace_2(msg, **util_replace_embed_args)
+
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
@@ -683,15 +708,22 @@ class EmsudoCommand(BaseCommand):
                 "No message IDs given as input.",
             )
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
                     + utils.progress_bar(i / msg_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.channel.trigger_typing()
             if not msg.embeds:
@@ -702,12 +734,15 @@ class EmsudoCommand(BaseCommand):
             await msg.edit(embed=None)
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Your command is being processed:",
-                description=f"`{msg_count}/{msg_count}` messages processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Completed",
+                value=f"`{msg_count}/{msg_count}` messages processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
@@ -772,16 +807,23 @@ class EmsudoCommand(BaseCommand):
             )
 
         msg_embed = msg.embeds[0]
-
         data_count = len(datas)
+
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
         for i, data in enumerate(datas):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{data_count}` inputs processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Inputs",
+                    value=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
                     + utils.progress_bar(i / data_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.invoke_msg.channel.trigger_typing()
 
@@ -1030,6 +1072,7 @@ class EmsudoCommand(BaseCommand):
             await asyncio.sleep(0)
 
         if not datas:
+            data_count = 1
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
@@ -1068,14 +1111,17 @@ class EmsudoCommand(BaseCommand):
 
         else:
             await msg.edit(embed=msg_embed)
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title="Processing Complete",
-                    description=f"`{data_count}/{data_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
-                )
-            )
 
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Complete",
+                value=f"`{data_count}/{data_count}` inputs processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            0,
+        )
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
 
@@ -1111,26 +1157,78 @@ class EmsudoCommand(BaseCommand):
                 "No message IDs given as input.",
             )
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(
+                ("\u2800", "`...`", False),
+                ("\u2800", "`...`", False),
+            ),
+        )
+
+        msg_count = len(msgs)
         for i, msg in enumerate(msgs):
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i / msg_count, divisions=30),
+                ),
+                0,
+            )
             await self.channel.trigger_typing()
 
             if not msg.embeds:
-                await embed_utils.send_2(
-                    self.channel,
-                    title=f"Input {i}: Cannot execute command:",
-                    description="No embed data found in message.",
-                    color=0xFF0000,
+                raise BotException(
+                    f"Input {i}: Cannot execute command:",
+                    "No embed data found in message.",
                 )
-                continue
 
+            embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if not j % 3:
+                    await embed_utils.edit_field_from_dict(
+                        self.response_msg,
+                        load_embed,
+                        dict(
+                            name="Cloning Embeds",
+                            value=f"`{j}/{embed_count}` embeds cloned\n"
+                            f"{(i/embed_count)*100:.01f}% | "
+                            + utils.progress_bar(j / embed_count, divisions=30),
+                        ),
+                        1,
+                    )
                     await self.channel.trigger_typing()
+
                 await self.channel.send(embed=embed)
+
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Cloning Completed",
+                    value=f"`{embed_count}/{embed_count}` embeds cloned\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                1,
+            )
 
             await asyncio.sleep(0)
 
-        await self.response_msg.delete()
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Completed",
+                value=f"`{msg_count}/{msg_count}` messages processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            0,
+        )
+
+        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
     @add_group("emsudo", "get")
     async def cmd_emsudo_get(
@@ -1234,12 +1332,6 @@ class EmsudoCommand(BaseCommand):
             attr_str.split(sep=".") if "." in attr_str else attr_str
             for attr_str in attribs.split()
         )
-
-        top_attribs = {
-            attr_str for attr_str in attribs_tuple if isinstance(attr_str, str)
-        }
-
-        input_attribs_set = {attr for sub_attr in attribs_tuple for attr in sub_attr}
 
         all_attribs_set = {
             "provider",
@@ -1374,15 +1466,26 @@ class EmsudoCommand(BaseCommand):
                     f"Invalid embed attribute name `{attr}`!",
                 )
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(
+                ("\u2800", "`...`", False),
+                ("\u2800", "`...`", False),
+            ),
+        )
+
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
                     + utils.progress_bar(i / msg_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.channel.trigger_typing()
             if not msg.embeds:
@@ -1391,7 +1494,19 @@ class EmsudoCommand(BaseCommand):
                     "No embed data found in message.",
                 )
 
-            for embed in msg.embeds:
+            embed_count = len(msg.embeds)
+            for j, embed in enumerate(msg.embeds):
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Serializing Embeds",
+                        value=f"`{j}/{embed_count}` embeds serialized\n"
+                        f"{(j/embed_count)*100:.01f}% | "
+                        + utils.progress_bar(j / embed_count, divisions=30),
+                    ),
+                    1,
+                )
                 embed_dict = embed.to_dict()
 
                 if embed_mask_dict:
@@ -1479,14 +1594,28 @@ class EmsudoCommand(BaseCommand):
                             ),
                         ),
                     )
+
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Serialization Completed",
+                    value=f"`{embed_count}/{embed_count}` embeds serialized\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                1,
+            )
             await asyncio.sleep(0)
 
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title="Processing Complete",
-                    description=f"`{msg_count}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` inputs processed\n"
                     f"100% | " + utils.progress_bar(1.0, divisions=30),
-                )
+                ),
+                0,
             )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)

@@ -244,25 +244,35 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
+        output_strings = []
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(
+                ("\u2800", "`...`", False),
+                ("\u2800", "`...`", False),
+            ),
+        )
         data_count = len(datas)
         for i, data in enumerate(datas):
-
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{data_count}` inputs processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Inputs",
+                    value=f"`{i}/{data_count}` inputs processed\n"
                     f"{(i/data_count)*100:.01f}% | "
                     + utils.progress_bar(i / data_count, divisions=30),
-                )
+                ),
+                0,
             )
-            attachment_msg: discord.Message = None
+            attachment_msg = None
 
             if isinstance(data, String):
                 if not data.string:
                     attachment_msg = self.invoke_msg
                 else:
                     msg_text = data.string
-                    await self.channel.send(msg_text)
+                    output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
                 if from_attachment:
@@ -270,7 +280,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 else:
                     src_msg_txt = data.content
                     if src_msg_txt:
-                        await destination.send(src_msg_txt)
+                        output_strings.append(src_msg_txt)
                     else:
                         raise BotException(
                             f"Input {i}: No message text found!",
@@ -304,7 +314,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 msg_text = msg_text.decode()
 
                 if 0 < len(msg_text) <= 2000:
-                    await destination.send(msg_text)
+                    output_strings.append(msg_text)
                 else:
                     raise BotException(
                         f"Input {i}: Too little/many characters!",
@@ -314,6 +324,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
             await asyncio.sleep(0)
 
         if not datas:
+            data_count = 1
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
@@ -338,19 +349,48 @@ class AdminCommand(UserCommand, EmsudoCommand):
             msg_text = msg_text.decode()
 
             if 0 < len(msg_text) <= 2000:
-                await destination.send(msg_text)
+                output_strings.append(msg_text)
             else:
                 raise BotException(
                     f"Too little/many characters!",
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title="Processing Complete",
-                description=f"`{data_count}/{data_count}` inputs processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Completed",
+                value=f"`{data_count}/{data_count}` inputs processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            0,
+        )
+
+        output_count = len(output_strings)
+        for j, msg_txt in enumerate(output_strings):
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Creating Messages",
+                    value=f"`{j}/{output_count}` messages created\n"
+                    f"{(j/output_count)*100:.01f}% | "
+                    + utils.progress_bar(j / output_count, divisions=30),
+                ),
+                1,
             )
+            await destination.send(content=msg_txt)
+
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Creation Completed",
+                value=f"`{output_count}/{output_count}` messages created\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            1,
         )
 
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
@@ -488,7 +528,24 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 # update asyncio event loop stuff
                 await asyncio.sleep(0)
 
-        for msg in msgs:
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
+
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
+                    f"{(i/msg_count)*100:.01f}% | "
+                    + utils.progress_bar(i / msg_count, divisions=30),
+                ),
+                0,
+            )
             await self.channel.trigger_typing()
             attached_files = None
             if attachments:
@@ -516,14 +573,14 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 content_file = None
                 if as_attachment and msg.content:
                     with io.StringIO(msg.content) as fobj:
-                        content_file = discord.File(fobj, "get.txt")
+                        content_file = discord.File(fobj, "messagedata.txt")
 
                 await self.channel.send(embed=info_embed, file=content_file)
 
             elif as_attachment:
                 with io.StringIO(msg.content) as fobj:
                     await self.channel.send(
-                        file=discord.File(fobj, "get.txt"),
+                        file=discord.File(fobj, "messagedata.txt"),
                         embed=embed_utils.create(
                             author_name="Message data",
                             description=f"**[View Original Message]({msg.jump_url})**",
@@ -580,7 +637,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.delete()
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Completed",
+                value=f"`{msg_count}/{msg_count}` messages processed\n"
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
+            ),
+            0,
+        )
+
+        await self.response_msg.delete(10 if msg_count > 1 else 0)
 
     @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
@@ -746,16 +814,24 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
+
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
                     + utils.progress_bar(i / msg_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.channel.trigger_typing()
             cloned_msg = None
@@ -804,12 +880,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Processing Complete",
-                description=f"`{msg_count}/{msg_count}` messages processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Completed",
+                value=f"`{msg_count}/{msg_count}` messages processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
@@ -849,13 +928,16 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         obj_count = len(objs)
         for i, obj in enumerate(objs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{obj_count}` inputs processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Inputs",
+                    value=f"`{i}/{obj_count}` inputs processed\n"
                     f"{(i/obj_count)*100:.01f}% | "
                     + utils.progress_bar(i / obj_count, divisions=30),
-                )
+                ),
+                0,
             )
             await self.channel.trigger_typing()
             embed = None
@@ -870,12 +952,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title="Processing Complete",
-                description=f"`{obj_count}/{obj_count}` inputs processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Processing Complete",
+                value=f"`{obj_count}/{obj_count}` inputs processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
@@ -1036,18 +1121,25 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         no_mentions = discord.AllowedMentions.none()
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
-                await self.response_msg.edit(
-                    embed=embed_utils.create(
-                        title=f"Your command is being processed:",
-                        description=f"`{i}/{msg_count}` messages archived\n"
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Archiving Messages",
+                        value=f"`{i}/{msg_count}` messages archived\n"
                         f"{(i/msg_count)*100:.01f}% | "
                         + utils.progress_bar(i / msg_count, divisions=30),
-                    )
+                    ),
+                    0,
                 )
                 author = msg.author
                 await destination.trigger_typing()
@@ -1097,7 +1189,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         await destination.send(
                             content=msg.content,
                             embed=msg.embeds[0] if msg.embeds else None,
-                            files=attached_files[0] if attached_files else None,
+                            file=attached_files[0] if attached_files else None,
                             allowed_mentions=no_mentions,
                         )
                     elif msg.type == discord.MessageType.pins_add:
@@ -1208,12 +1300,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 archive_header_msg, archive_header_msg_embed.to_dict()
             )
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Successfully archived {msg_count} message(s)!",
-                description=f"`{msg_count}/{msg_count}` messages archived\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name=f"Successfully archived {msg_count} message(s)",
+                value=f"`{msg_count}/{msg_count}` messages archived\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
@@ -1271,15 +1366,22 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 except discord.HTTPException as e:
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
                     + utils.progress_bar(i / msg_count, divisions=30),
-                )
+                ),
+                0,
             )
             try:
                 await msg.pin()
@@ -1296,12 +1398,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Sucessfully pinned {len(input_msgs)} message(s)! ({unpin_count} removed)",
-                description=f"`{msg_count}/{msg_count}` messages processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
+                value=f"`{msg_count}/{msg_count}` messages pinned\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.invoke_msg.delete()
@@ -1350,15 +1455,23 @@ class AdminCommand(UserCommand, EmsudoCommand):
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
+
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{msg_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{msg_count}` messages processed\n"
                     f"{(i/msg_count)*100:.01f}% | "
                     + utils.progress_bar(i / msg_count, divisions=30),
-                )
+                ),
+                0,
             )
 
             if msg.id in pinned_msg_id_set:
@@ -1369,12 +1482,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Sucessfully unpinned {msg_count} message(s)!",
-                description=f"`{msg_count}/{msg_count}` messages processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name=f"Succesfully unpinned {msg_count} message(s)!",
+                value=f"`{msg_count}/{msg_count}` messages processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
@@ -1437,19 +1553,26 @@ class AdminCommand(UserCommand, EmsudoCommand):
         indices_list = sorted(set(indices_list))
         indices_list.reverse()
 
-        idx_count = len(indices_list)
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
 
+        idx_count = len(indices_list)
         for i, unpin_index in enumerate(indices_list):
             if unpin_index < 0:
                 unpin_index = pinned_msg_count + unpin_index
 
-            await self.response_msg.edit(
-                embed=embed_utils.create(
-                    title=f"Your command is being processed:",
-                    description=f"`{i}/{idx_count}` messages processed\n"
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Messages",
+                    value=f"`{i}/{idx_count}` messages processed\n"
                     f"{(i/idx_count)*100:.01f}% | "
                     + utils.progress_bar(i / idx_count, divisions=30),
-                )
+                ),
+                0,
             )
 
             if 0 <= unpin_index < pinned_msg_count:
@@ -1466,12 +1589,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await self.response_msg.edit(
-            embed=embed_utils.create(
-                title=f"Sucessfully unpinned {idx_count} message(s)!",
-                description=f"`{idx_count}/{idx_count}` messages processed\n"
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name=f"Succesfully unpinned {idx_count} message(s)!",
+                value=f"`{idx_count}/{idx_count}` messages processed\n"
                 f"100% | " + utils.progress_bar(1.0, divisions=30),
-            )
+            ),
+            0,
         )
 
         await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
