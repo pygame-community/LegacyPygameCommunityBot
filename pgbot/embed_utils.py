@@ -23,7 +23,7 @@ from discord.embeds import EmptyEmbed
 from . import common
 
 
-def recursive_update(old_dict, update_dict, add_new_keys=False, skip_value="\0"):
+def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
     """
     Update one embed dictionary with another, similar to dict.update(),
     But recursively update dictionary values that are dictionaries as well.
@@ -292,7 +292,7 @@ class PagedEmbed:
 
 
 async def replace(
-    message, title, description, color=0xFFFFAA, url_image=None, fields=[]
+    message, title="", description="", color=0xFFFFAA, url_image=None, fields=[]
 ):
     """
     Edits the embed of a message with a much more tight function
@@ -309,8 +309,8 @@ async def replace(
 
 async def send(
     channel,
-    title,
-    description,
+    title="",
+    description="",
     color=0xFFFFAA,
     url_image=None,
     fields=[],
@@ -326,7 +326,7 @@ async def send(
     for field in fields:
         embed.add_field(name=field[0], value=field[1], inline=field[2])
 
-    if do_return:
+    if do_return or channel == None:
         return embed
 
     return await channel.send(embed=embed)
@@ -343,7 +343,7 @@ def create(
     description=EmptyEmbed,
     image_url=EmptyEmbed,
     color=0xFFFFAA,
-    fields=[],
+    fields=(),
     footer_text=EmptyEmbed,
     footer_icon_url=EmptyEmbed,
     timestamp=EmptyEmbed,
@@ -357,7 +357,7 @@ def create(
 
     if timestamp:
         if isinstance(timestamp, str):
-            embed.timestamp = datetime.datetime.fromisoformat(timestamp)
+            embed.timestamp = datetime.datetime.fromisoformat(timestamp[:-1] if timestamp.endswith("Z") else timestamp)
         else:
             embed.timestamp = timestamp
 
@@ -380,7 +380,8 @@ def create(
         else:
             embed.add_field(name=field[0], value=field[1], inline=field[2])
 
-    embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+    if footer_text:
+        embed.set_footer(text=footer_text, icon_url=footer_icon_url)
 
     return embed
 
@@ -561,7 +562,7 @@ async def replace_from_dict(message, data):
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def edit_from_dict(message, embed, update_embed_dict, add_attributes=False):
+async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True):
     """
     Edits the changed attributes of the embed of a message from a
     dictionary with a much more tight function

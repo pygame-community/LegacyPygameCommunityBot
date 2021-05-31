@@ -210,10 +210,10 @@ class BaseCommand:
 
         self.cmds_and_funcs = {}
         self.groups = {}
-        for i in dir(self):
-            if i.startswith(common.CMD_FUNC_PREFIX):
-                func = self.__getattribute__(i)
-                name = i[len(common.CMD_FUNC_PREFIX) :]
+        for attr in dir(self):
+            if attr.startswith(common.CMD_FUNC_PREFIX):
+                func = self.__getattribute__(attr)
+                name = attr[len(common.CMD_FUNC_PREFIX) :]
                 self.cmds_and_funcs[name] = func
 
                 if hasattr(func, "groupname"):
@@ -597,6 +597,22 @@ class BaseCommand:
 
         # iterate through function parameters, arrange the given args and
         # kwargs in the order and format the function wants
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(
+                ("\u2800", "`...`", False),
+            )
+        )
+
+        await embed_utils.edit_field_from_dict(
+            self.response_msg,
+            load_embed,
+            dict(
+                name="Casting Arguments",
+                value="Loading..."
+            ),
+            0,
+        )
         for i, key in enumerate(sig.parameters):
             param = sig.parameters[key]
             iskw = False
@@ -704,7 +720,7 @@ class BaseCommand:
             )
             msg = utils.code_block(elog)
 
-            if len(elog) > 2048:
+            if len(elog) > 2000:
                 with io.StringIO(f"{title}\n{elog}") as fobj:
                     await self.response_msg.channel.send(
                         content="Here is the full error log",
