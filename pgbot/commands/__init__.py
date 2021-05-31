@@ -86,18 +86,11 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             )
         sys.exit(0)
 
-    if not common.TEST_MODE:
-        if not common.GENERIC:
-            await embed_utils.send_2(
-                common.log_channel,
-                title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-                description=discord.utils.escape_markdown(invoke_msg.content),
-                fields=(
-                    ("\u200b", f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**", False),
-                ),
-            )
-
-    elif common.TEST_USER_IDS and invoke_msg.author.id not in common.TEST_USER_IDS:
+    if (
+        common.TEST_MODE
+        and common.TEST_USER_IDS
+        and invoke_msg.author.id not in common.TEST_USER_IDS
+    ):
         return
 
     if response_msg is None:
@@ -107,6 +100,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             fields=(
                 ("\u2800", "`Loading...`", False),
             )
+        )
+
+    if not common.TEST_MODE and not common.GENERIC:
+        await embed_utils.send_2(
+            common.log_channel,
+            title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+            description=discord.utils.escape_markdown(invoke_msg.content),
+            fields=(("\u200b", f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**", False),),
         )
 
     cmd = (

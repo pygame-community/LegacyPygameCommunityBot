@@ -130,7 +130,10 @@ async def on_message(msg: discord.Message):
         return
 
     if msg.content.startswith(common.PREFIX):
-        common.cmd_logs[msg.id] = await commands.handle(msg)
+        ret = await commands.handle(msg)
+        if ret is not None:
+            common.cmd_logs[msg.id] = ret
+
         if len(common.cmd_logs) > 100:
             del common.cmd_logs[common.cmd_logs.keys()[0]]
 
