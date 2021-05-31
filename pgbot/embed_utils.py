@@ -32,7 +32,9 @@ def recursive_update(old_dict, update_dict, add_new_keys=False, skip_value="\0")
     """
     for k, v in update_dict.items():
         if isinstance(v, Mapping):
-            new_value = recursive_update(old_dict.get(k, {}), v, add_new_keys=add_new_keys, skip_value=skip_value)
+            new_value = recursive_update(
+                old_dict.get(k, {}), v, add_new_keys=add_new_keys, skip_value=skip_value
+            )
             if new_value != skip_value:
                 if k not in old_dict:
                     if not add_new_keys:
@@ -516,7 +518,9 @@ async def edit_2(
     old_embed_dict = embed.to_dict()
     update_embed_dict = update_embed.to_dict()
 
-    recursive_update(old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value="")
+    recursive_update(
+        old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
+    )
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
@@ -567,11 +571,11 @@ async def edit_from_dict(message, embed, update_embed_dict, add_attributes=False
     dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
-    recursive_update(old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value="")
+    recursive_update(
+        old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
+    )
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
-    
-    
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 

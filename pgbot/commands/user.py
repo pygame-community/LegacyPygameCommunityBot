@@ -81,10 +81,13 @@ class UserCommand(BaseCommand):
         """
         fontified = ""
 
-        for char in unidecode.unidecode(msg.string.lower()):
+        for char in unidecode.unidecode(msg.string):
             if char.isalnum():
-                for emoji in self.guild.emojis:
-                    if emoji.name == f"pg_char_{char}":
+                for emoji in sorted(self.guild.emojis, key=lambda x: x.name):
+                    if (
+                        emoji.name == f"pg_char_{char}"
+                        or emoji.name == f"pg_char_{char}".lower()
+                    ):
                         fontified += str(emoji)
                         break
                 else:
