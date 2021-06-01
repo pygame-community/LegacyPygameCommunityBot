@@ -79,7 +79,7 @@ class EmsudoCommand(BaseCommand):
         )
 
         for i, data in enumerate(datas):
-            if data_count > 2:
+            if data_count > 1 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
                     load_embed,
@@ -361,7 +361,7 @@ class EmsudoCommand(BaseCommand):
 
         output_embed_count = len(output_embeds)
         for j, embed in enumerate(output_embeds):
-            if data_count > 2:
+            if data_count > 2 and not j % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
                     load_embed,
@@ -816,17 +816,18 @@ class EmsudoCommand(BaseCommand):
             fields=(("\u2800", "`...`", False),),
         )
         for i, data in enumerate(datas):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Inputs",
-                    value=f"`{i}/{data_count}` inputs processed\n"
-                    f"{(i/data_count)*100:.01f}% | "
-                    + utils.progress_bar(i / data_count, divisions=30),
-                ),
-                0,
-            )
+            if data_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Inputs",
+                        value=f"`{i}/{data_count}` inputs processed\n"
+                        f"{(i/data_count)*100:.01f}% | "
+                        + utils.progress_bar(i / data_count, divisions=30),
+                    ),
+                    0,
+                )
             await self.invoke_msg.channel.trigger_typing()
 
             util_edit_embed_args = dict(
@@ -1123,16 +1124,17 @@ class EmsudoCommand(BaseCommand):
         else:
             await msg.edit(embed=discord.Embed.from_dict(edited_embed_dict))
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Complete",
-                value=f"`{data_count}/{data_count}` inputs processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
+        if data_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Complete",
+                    value=f"`{data_count}/{data_count}` inputs processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
 
@@ -1178,17 +1180,18 @@ class EmsudoCommand(BaseCommand):
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
             await self.channel.trigger_typing()
 
             if not msg.embeds:
@@ -1199,7 +1202,7 @@ class EmsudoCommand(BaseCommand):
 
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
-                if not j % 3:
+                if msg_count > 1 and not j % 3:
                     await embed_utils.edit_field_from_dict(
                         self.response_msg,
                         load_embed,
@@ -1228,16 +1231,17 @@ class EmsudoCommand(BaseCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Completed",
-                value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
+        if msg_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
@@ -1487,17 +1491,18 @@ class EmsudoCommand(BaseCommand):
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
             await self.channel.trigger_typing()
             if not msg.embeds:
                 raise BotException(
@@ -1507,17 +1512,18 @@ class EmsudoCommand(BaseCommand):
 
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
-                    load_embed,
-                    dict(
-                        name="Serializing Embeds",
-                        value=f"`{j}/{embed_count}` embeds serialized\n"
-                        f"{(j/embed_count)*100:.01f}% | "
-                        + utils.progress_bar(j / embed_count, divisions=30),
-                    ),
-                    1,
-                )
+                if embed_count > 2 and not j % 3:
+                    await embed_utils.edit_field_from_dict(
+                        self.response_msg,
+                        load_embed,
+                        dict(
+                            name="Serializing Embeds",
+                            value=f"`{j}/{embed_count}` embeds serialized\n"
+                            f"{(j/embed_count)*100:.01f}% | "
+                            + utils.progress_bar(j / embed_count, divisions=30),
+                        ),
+                        1,
+                    )
                 embed_dict = embed.to_dict()
 
                 if embed_mask_dict:
@@ -1606,18 +1612,21 @@ class EmsudoCommand(BaseCommand):
                         ),
                     )
 
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Serialization Completed",
-                    value=f"`{embed_count}/{embed_count}` embeds serialized\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
-                ),
-                1,
-            )
+            if embed_count > 2:
+                await embed_utils.edit_fields_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Serialization Completed",
+                        value=f"`{embed_count}/{embed_count}` embeds serialized\n"
+                        f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    ),
+                    1,
+                )
+            
             await asyncio.sleep(0)
 
+        if msg_count > 2:
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
                 load_embed,

@@ -254,17 +254,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
         data_count = len(datas)
         for i, data in enumerate(datas):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Inputs",
-                    value=f"`{i}/{data_count}` inputs processed\n"
-                    f"{(i/data_count)*100:.01f}% | "
-                    + utils.progress_bar(i / data_count, divisions=30),
-                ),
-                0,
-            )
+            if data_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Inputs",
+                        value=f"`{i}/{data_count}` inputs processed\n"
+                        f"{(i/data_count)*100:.01f}% | "
+                        + utils.progress_bar(i / data_count, divisions=30),
+                    ),
+                    0,
+                )
             attachment_msg = None
 
             if isinstance(data, String):
@@ -356,30 +357,32 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Completed",
-                value=f"`{data_count}/{data_count}` inputs processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
-
-        output_count = len(output_strings)
-        for j, msg_txt in enumerate(output_strings):
+        if data_count > 2:
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
                 load_embed,
                 dict(
-                    name="Creating Messages",
-                    value=f"`{j}/{output_count}` messages created\n"
-                    f"{(j/output_count)*100:.01f}% | "
-                    + utils.progress_bar(j / output_count, divisions=30),
+                    name="Processing Completed",
+                    value=f"`{data_count}/{data_count}` inputs processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
-                1,
+                0,
             )
+
+        output_count = len(output_strings)
+        for j, msg_txt in enumerate(output_strings):
+            if output_count > 2 and not j % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Creating Messages",
+                        value=f"`{j}/{output_count}` messages created\n"
+                        f"{(j/output_count)*100:.01f}% | "
+                        + utils.progress_bar(j / output_count, divisions=30),
+                    ),
+                    1,
+                )
             await destination.send(content=msg_txt)
 
         await embed_utils.edit_field_from_dict(
@@ -535,17 +538,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
             await self.channel.trigger_typing()
             attached_files = None
             if attachments:
@@ -637,16 +641,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Completed",
-                value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
+        if msg_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
 
         await self.response_msg.delete(delay=10 if msg_count > 1 else 0)
 
@@ -822,17 +827,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
+            
             await self.channel.trigger_typing()
             cloned_msg = None
             attached_files = []
@@ -880,16 +887,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Completed",
-                value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
+        if msg_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
 
         await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
 
@@ -932,17 +940,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
         obj_count = len(objs)
         for i, obj in enumerate(objs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Inputs",
-                    value=f"`{i}/{obj_count}` inputs processed\n"
-                    f"{(i/obj_count)*100:.01f}% | "
-                    + utils.progress_bar(i / obj_count, divisions=30),
-                ),
-                0,
-            )
+            if obj_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Inputs",
+                        value=f"`{i}/{obj_count}` inputs processed\n"
+                        f"{(i/obj_count)*100:.01f}% | "
+                        + utils.progress_bar(i / obj_count, divisions=30),
+                    ),
+                    0,
+                )
             await self.channel.trigger_typing()
             embed = None
             if isinstance(obj, discord.Message):
@@ -956,16 +965,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Complete",
-                value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
+        if obj_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Complete",
+                    value=f"`{obj_count}/{obj_count}` inputs processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
@@ -1133,18 +1143,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
         with io.StringIO("This file was too large to be archived.") as fobj:
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
-            ):
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
-                    load_embed,
-                    dict(
-                        name="Archiving Messages",
-                        value=f"`{i}/{msg_count}` messages archived\n"
-                        f"{(i/msg_count)*100:.01f}% | "
-                        + utils.progress_bar(i / msg_count, divisions=30),
-                    ),
-                    0,
-                )
+            ):  
+                if msg_count > 2 and not i % 2:
+                    await embed_utils.edit_field_from_dict(
+                        self.response_msg,
+                        load_embed,
+                        dict(
+                            name="Archiving Messages",
+                            value=f"`{i}/{msg_count}` messages archived\n"
+                            f"{(i/msg_count)*100:.01f}% | "
+                            + utils.progress_bar(i / msg_count, divisions=30),
+                        ),
+                        0,
+                    )
                 author = msg.author
                 await destination.trigger_typing()
 
@@ -1376,17 +1387,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
         )
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
             try:
                 await msg.pin()
             except discord.HTTPException as e:
@@ -1466,17 +1478,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         msg_count = len(input_msgs)
         for i, msg in enumerate(input_msgs):
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
-                ),
-                0,
-            )
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
 
             if msg.id in pinned_msg_id_set:
                 try:
@@ -1567,17 +1580,18 @@ class AdminCommand(UserCommand, EmsudoCommand):
             if unpin_index < 0:
                 unpin_index = pinned_msg_count + unpin_index
 
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
-                load_embed,
-                dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{idx_count}` messages processed\n"
-                    f"{(i/idx_count)*100:.01f}% | "
-                    + utils.progress_bar(i / idx_count, divisions=30),
-                ),
-                0,
-            )
+            if idx_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{idx_count}` messages processed\n"
+                        f"{(i/idx_count)*100:.01f}% | "
+                        + utils.progress_bar(i / idx_count, divisions=30),
+                    ),
+                    0,
+                )
 
             if 0 <= unpin_index < pinned_msg_count:
                 msg = pinned_msgs[unpin_index]
