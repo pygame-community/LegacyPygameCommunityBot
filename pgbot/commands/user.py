@@ -72,6 +72,28 @@ class UserCommand(BaseCommand):
         )
 
     @fun_command
+    async def cmd_pong(self):
+        """
+        ->type Other commands
+        ->signature pg!pong
+        ->description Get the ping of the bot
+        -----
+        Implement pg!ping, to get ping
+        """
+        timedelta = self.response_msg.created_at - self.invoke_msg.created_at
+        sec = timedelta.total_seconds()
+        sec2 = common.bot.latency  # This does not refresh that often
+        if sec < sec2:
+            sec2 = sec
+
+        await embed_utils.replace(
+            self.response_msg,
+            random.choice(("Pongy Pingy", "Ping!")),
+            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+            f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
+        )
+
+    @fun_command
     @add_group("fontify")
     async def cmd_fontify(self, msg: String):
         """
