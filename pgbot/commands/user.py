@@ -67,7 +67,7 @@ class UserCommand(BaseCommand):
         await embed_utils.replace(
             self.response_msg,
             random.choice(("Pingy Pongy", "Pong!")),
-            f"The bots ping is `{utils.format_time(sec, 0)}`\n"
+            f"The bot's ping is `{utils.format_time(sec, 0)}`\n"
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
 
