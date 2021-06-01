@@ -134,6 +134,7 @@ EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET = {
     "provider",
 }  # 'fields' is a special case
 
+
 def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
     """
     Update one embed dictionary with another, similar to dict.update(),
@@ -208,6 +209,7 @@ def recursive_delete(old_dict, update_dict, skip_value="\0", inverse=False):
                     del old_dict[k]
     return old_dict
 
+
 def create_embed_mask_dict(
     attributes="",
     allow_system_attributes=False,
@@ -215,12 +217,18 @@ def create_embed_mask_dict(
 ):
     embed_top_level_attrib_dict = EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
     embed_top_level_attrib_dict = {
-        k: embed_top_level_attrib_dict[k].copy() if isinstance(embed_top_level_attrib_dict[k], dict) else embed_top_level_attrib_dict[k] for k in embed_top_level_attrib_dict
+        k: embed_top_level_attrib_dict[k].copy()
+        if isinstance(embed_top_level_attrib_dict[k], dict)
+        else embed_top_level_attrib_dict[k]
+        for k in embed_top_level_attrib_dict
     }
 
     system_attribs_dict = EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
     system_attribs_dict = {
-        k: system_attribs_dict[k].copy() if isinstance(system_attribs_dict[k], dict) else system_attribs_dict[k] for k in system_attribs_dict
+        k: system_attribs_dict[k].copy()
+        if isinstance(system_attribs_dict[k], dict)
+        else system_attribs_dict[k]
+        for k in system_attribs_dict
     }
 
     all_system_attribs_set = EMBED_SYSTEM_ATTRIBUTES_SET
@@ -331,13 +339,17 @@ def create_embed_mask_dict(
             )
 
     if not fields_as_field_dict and "fields" in embed_mask_dict:
-        embed_mask_dict["fields"] = [ embed_mask_dict["fields"][i] for i in sorted(embed_mask_dict["fields"].keys()) ]
+        embed_mask_dict["fields"] = [
+            embed_mask_dict["fields"][i]
+            for i in sorted(embed_mask_dict["fields"].keys())
+        ]
 
-    
     return embed_mask_dict
+
 
 def copy_embed(embed):
     return discord.Embed.from_dict(embed.to_dict())
+
 
 def get_fields(*strings):
     """
