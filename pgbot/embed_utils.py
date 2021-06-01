@@ -22,6 +22,117 @@ from discord.embeds import EmptyEmbed
 
 from . import common
 
+EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
+    "provider": None,
+    "type": None,
+    "title": None,
+    "description": None,
+    "url": None,
+    "color": None,
+    "timestamp": None,
+    "footer": None,
+    "thumbnail": None,
+    "image": None,
+    "author": None,
+    "fields": None,
+}
+
+EMBED_TOP_LEVEL_ATTRIBUTES_SET = {
+    "provider",
+    "type",
+    "title",
+    "description",
+    "url",
+    "color",
+    "timestamp",
+    "footer",
+    "thumbnail",
+    "image",
+    "author",
+    "fields",
+}
+
+EMBED_SYSTEM_ATTRIBUTES_MASK_DICT = {
+    "provider": {
+        "name": None,
+        "url": None,
+    },
+    "type": None,
+    "footer": {
+        "proxy_icon_url": None,
+    },
+    "thumbnail": {
+        "proxy_url": None,
+        "width": None,
+        "height": None,
+    },
+    "image": {
+        "proxy_url": None,
+        "width": None,
+        "height": None,
+    },
+    "author": {
+        "proxy_icon_url": None,
+    },
+}
+
+EMBED_SYSTEM_ATTRIBUTES_SET = {
+    "provider",
+    "proxy_url",
+    "proxy_icon_url",
+    "width",
+    "height",
+    "type",
+}
+
+EMBED_NON_SYSTEM_ATTRIBUTES_SET = {
+    "name",
+    "value",
+    "inline",
+    "url",
+    "image",
+    "thumbnail",
+    "title",
+    "description",
+    "color",
+    "timestamp",
+    "footer",
+    "text",
+    "icon_url",
+    "author",
+    "fields",
+}
+
+EMBED_ATTRIBUTES_SET = {
+    "provider",
+    "name",
+    "value",
+    "inline",
+    "url",
+    "image",
+    "thumbnail",
+    "proxy_url",
+    "type",
+    "title",
+    "description",
+    "color",
+    "timestamp",
+    "footer",
+    "text",
+    "icon_url",
+    "proxy_icon_url",
+    "author",
+    "fields",
+}
+
+EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET = {
+    "author",
+    "thumbnail",
+    "image",
+    "fields",
+    "footer",
+    "provider",
+}  # 'fields' is a special case
 
 def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
     """
@@ -97,10 +208,136 @@ def recursive_delete(old_dict, update_dict, skip_value="\0", inverse=False):
                     del old_dict[k]
     return old_dict
 
+def create_embed_mask_dict(
+    attributes="",
+    allow_system_attributes=False,
+    fields_as_field_dict=False,
+):
+    embed_top_level_attrib_dict = EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
+    embed_top_level_attrib_dict = {
+        k: embed_top_level_attrib_dict[k].copy() if isinstance(embed_top_level_attrib_dict[k], dict) else embed_top_level_attrib_dict[k] for k in embed_top_level_attrib_dict
+    }
+
+    system_attribs_dict = EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
+    system_attribs_dict = {
+        k: system_attribs_dict[k].copy() if isinstance(system_attribs_dict[k], dict) else system_attribs_dict[k] for k in system_attribs_dict
+    }
+
+    all_system_attribs_set = EMBED_SYSTEM_ATTRIBUTES_SET
+
+    embed_mask_dict = {}
+
+    attribs = attributes
+
+    attribs_tuple = tuple(
+        attr_str.split(sep=".") if "." in attr_str else attr_str
+        for attr_str in attribs.split()
+    )
+
+    all_attribs_set = EMBED_ATTRIBUTES_SET | set(str(i) for i in range(25))
+
+    attribs_with_sub_attribs = EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET
+
+    for attr in attribs_tuple:
+        if isinstance(attr, list):
+            if len(attr) > 3:
+                raise ValueError(
+                    "Invalid embed attribute filter string!"
+                    " Sub-attributes do not propagate beyond 3 levels.",
+                )
+            bottom_dict = {}
+            for i in range(len(attr)):
+                if attr[i] not in all_attribs_set:
+                    raise ValueError(
+                        f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
+                    )
+                elif attr[i] in all_system_attribs_set and not allow_system_attributes:
+                    raise ValueError(
+                        f"The given attribute `{attr[i]}` cannot be retrieved when `system_attributes=`"
+                        " is set to `False`.",
+                    )
+                if not i:
+                    if attribs_tuple.count(attr[i]):
+                        raise ValueError(
+                            "Invalid embed attribute filter string!"
+                            f" Do not specify upper level embed attributes twice! {attr[i]}",
+                        )
+                    elif attr[i] not in attribs_with_sub_attribs:
+                        raise ValueError(
+                            "Invalid embed attribute filter string!"
+                            f" The embed attribute `{attr[i]}` does not have any sub-attributes!",
+                        )
+
+                    if attr[i] not in embed_mask_dict:
+                        embed_mask_dict[attr[i]] = bottom_dict
+                    else:
+                        bottom_dict = embed_mask_dict[attr[i]]
+
+                elif i == len(attr) - 1:
+                    if i == 1 and attr[i - 1] == "fields":
+                        if not attr[i].isnumeric():
+                            for sub_attr in ("name", "value", "inline"):
+                                if attr[i] == sub_attr:
+                                    for j in range(25):
+                                        str_idx = str(j)
+                                        if str_idx not in embed_mask_dict["fields"]:
+                                            embed_mask_dict["fields"][str_idx] = {
+                                                sub_attr: None
+                                            }
+                                        else:
+                                            embed_mask_dict["fields"][str_idx][
+                                                sub_attr
+                                            ] = None
+                                    break
+                            else:
+                                raise ValueError(
+                                    "Invalid embed attribute filter string!"
+                                    f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
+                                )
+                            continue
+
+                    if attr[i] not in bottom_dict:
+                        bottom_dict[attr[i]] = None
+                else:
+                    if attr[i] not in embed_mask_dict[attr[i - 1]]:
+                        bottom_dict = {}
+                        embed_mask_dict[attr[i - 1]][attr[i]] = bottom_dict
+                    else:
+                        bottom_dict = embed_mask_dict[attr[i - 1]][attr[i]]
+
+        elif attr in embed_top_level_attrib_dict:
+            if attribs_tuple.count(attr) > 1:
+                raise ValueError(
+                    "Invalid embed attribute filter string!"
+                    f" Do not specify upper level embed attributes twice: `{attr}`",
+                )
+            elif attr in all_system_attribs_set and not allow_system_attributes:
+                raise ValueError(
+                    f"The given attribute `{attr}` cannot be retrieved when `system_attributes=`"
+                    " is set to `False`.",
+                )
+
+            if attr not in embed_mask_dict:
+                embed_mask_dict[attr] = None
+            else:
+                raise ValueError(
+                    "Invalid embed attribute filter string!"
+                    " Do not specify upper level embed attributes twice!",
+                )
+
+        else:
+            raise ValueError(
+                f"Invalid embed attribute name `{attr}`!",
+            )
+
+    if not fields_as_field_dict and "fields" in embed_mask_dict:
+        embed_mask_dict["fields"] = [ embed_mask_dict["fields"][i] for i in sorted(embed_mask_dict["fields"].keys()) ]
+
+    
+    return embed_mask_dict
 
 def copy_embed(embed):
     return discord.Embed.from_dict(embed.to_dict())
-
 
 def get_fields(*strings):
     """

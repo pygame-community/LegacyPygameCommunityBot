@@ -681,11 +681,15 @@ class EmsudoCommand(BaseCommand):
             )
 
     @add_group("emsudo", "remove")
-    async def cmd_emsudo_remove(self, *msgs: discord.Message):
+    async def cmd_emsudo_remove(
+        self, *msgs: discord.Message,
+        a: String = String(""),
+        attributes: String = String(""),
+    ):
         """
         ->type emsudo commands
         ->signature pg!emsudo_remove <message> [<message>...]
-        ->description Remove an embed through the bot
+        ->description Remove an embed (or its attributes) through the bot
         -----
         Implement pg!emsudo_remove, for admins to remove embeds from messages via the bot
         """
@@ -705,45 +709,131 @@ class EmsudoCommand(BaseCommand):
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
-                "No message IDs given as input.",
+                "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
+        
+
+        attribs = (
+            a.string if a.string else attributes.string if attributes.string else ""
+        )
+
+        try:
+            embed_mask_dict = embed_utils.create_embed_mask_dict(
+                attributes=attribs,
+                allow_system_attributes=True,
+                fields_as_field_dict=True
+            )
+        except ValueError as v:
+            raise BotException(
+                "An error occured while handling the command:",
+                v.args[0]
+            )
         msg_count = len(msgs)
-        for i, msg in enumerate(msgs):
+
+        if attribs:
+            for i, msg in enumerate(msgs):
+                if msg_count > 2 and not i % 3:
+                    await embed_utils.edit_field_from_dict(
+                        self.response_msg,
+                        load_embed,
+                        dict(
+                            name="Processing Messages",
+                            value=f"`{i}/{msg_count}` messages processed\n"
+                            f"{(i/msg_count)*100:.01f}% | "
+                            + utils.progress_bar(i / msg_count, divisions=30),
+                        ),
+                        0,
+                    )
+                await self.channel.trigger_typing()
+                if not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed data found in message.",
+                    )
+                
+                msg_embed = msg.embeds[0]
+                embed_dict = msg_embed.to_dict()
+
+                if embed_mask_dict:
+                    if "fields" in embed_dict and "fields" in embed_mask_dict:
+                        field_list = embed_dict["fields"]
+                        embed_dict["fields"] = {
+                            str(i): field_list[i] for i in range(len(field_list))
+                        }
+
+                        embed_utils.recursive_delete(
+                            embed_dict, embed_mask_dict
+                        )
+                        
+                        if "fields" in embed_dict:
+                            field_dict = embed_dict["fields"]
+                            embed_dict["fields"] = [
+                                field_dict[i] for i in sorted(field_dict.keys())
+                            ]
+                    else:
+                        embed_utils.recursive_delete(
+                            embed_dict, embed_mask_dict
+                        )
+                else:
+                    embed_utils.recursive_delete(
+                        embed_dict, embed_mask_dict
+                    )
+
+                if embed_dict:
+                    for k in tuple(embed_dict.keys()):
+                        if not embed_dict[k] or k == "footer" and "text" not in embed_dict[k] or k == "author" and "name" not in embed_dict[k] or k in ("thumbnail", "image") and "url" not in embed_dict[k]:
+                            del embed_dict[k]
+                        
+                        elif k == "fields":
+                            for i in reversed(range(len(embed_dict["fields"]))):
+                                if "name" not in embed_dict["fields"][i] or "value" not in embed_dict["fields"][i]:
+                                    embed_dict["fields"].pop(i)
+
+                    final_embed = discord.Embed.from_dict(embed_dict)
+                else:
+                    final_embed = None
+
+                await msg.edit(embed=final_embed)
+                await asyncio.sleep(0)
+        else:
+            for i, msg in enumerate(msgs):
+                if msg_count > 2 and not i % 3:
+                    await embed_utils.edit_field_from_dict(
+                        self.response_msg,
+                        load_embed,
+                        dict(
+                            name="Processing Messages",
+                            value=f"`{i}/{msg_count}` messages processed\n"
+                            f"{(i/msg_count)*100:.01f}% | "
+                            + utils.progress_bar(i / msg_count, divisions=30),
+                        ),
+                        0,
+                    )
+                    await self.channel.trigger_typing()
+                    if not msg.embeds:
+                        raise BotException(
+                            f"Input {i}: Cannot execute command:",
+                            "No embed data found in message.",
+                        )
+                await msg.edit(embed=None)
+                await asyncio.sleep(0)
+
+        if msg_count > 2:
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
                 load_embed,
                 dict(
-                    name="Processing Messages",
-                    value=f"`{i}/{msg_count}` messages processed\n"
-                    f"{(i/msg_count)*100:.01f}% | "
-                    + utils.progress_bar(i / msg_count, divisions=30),
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
-            await self.channel.trigger_typing()
-            if not msg.embeds:
-                raise BotException(
-                    f"Input {i}: Cannot execute command:",
-                    "No embed data found in message.",
-                )
-            await msg.edit(embed=None)
-            await asyncio.sleep(0)
-
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Processing Completed",
-                value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            0,
-        )
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
         await self.invoke_msg.delete()
@@ -1170,7 +1260,7 @@ class EmsudoCommand(BaseCommand):
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
-                "No message IDs given as input.",
+                "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
@@ -1254,6 +1344,7 @@ class EmsudoCommand(BaseCommand):
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
+        mode: int = 0,
         name: String = String("(add a title by editing this embed)"),
         system_attributes: bool = False,
         as_json: bool = True,
@@ -1290,200 +1381,31 @@ class EmsudoCommand(BaseCommand):
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
-                "No message IDs given as input.",
+                "No messages given as input.",
             )
 
-        embed_attr_order_dict = {  # a dictionary will maintain this order when exported
-            "provider": None,
-            "type": None,
-            "title": None,
-            "description": None,
-            "url": None,
-            "color": None,
-            "timestamp": None,
-            "footer": None,
-            "thumbnail": None,
-            "image": None,
-            "author": None,
-            "fields": None,
-        }
-
-        system_attribs_dict = {
-            "provider": {
-                "name": None,
-                "url": None,
-            },
-            "type": None,
-            "footer": {
-                "proxy_icon_url": None,
-            },
-            "thumbnail": {
-                "proxy_url": None,
-                "width": None,
-                "height": None,
-            },
-            "image": {
-                "proxy_url": None,
-                "width": None,
-                "height": None,
-            },
-            "author": {
-                "proxy_icon_url": None,
-            },
-        }
-
-        all_system_attribs_set = {
-            "provider",
-            "proxy_url",
-            "proxy_icon_url",
-            "width",
-            "height",
-        }
-
-        embed_mask_dict = {}
-
+        if not 0 <= mode < 1:
+            raise BotException(
+                f"Invalid arguments!",
+                "`mode=` must be either `0` or `1`",
+            )
+        
         attribs = (
             a.string if a.string else attributes.string if attributes.string else ""
         )
 
-        attribs_tuple = tuple(
-            attr_str.split(sep=".") if "." in attr_str else attr_str
-            for attr_str in attribs.split()
-        )
-
-        all_attribs_set = {
-            "provider",
-            "name",
-            "value",
-            "inline",
-            "url",
-            "image",
-            "thumbnail",
-            "proxy_url",
-            "type",
-            "title",
-            "description",
-            "color",
-            "timestamp",
-            "footer",
-            "text",
-            "icon_url",
-            "proxy_icon_url",
-            "author",
-            "fields",
-        } | set(str(i) for i in range(25))
-
-        attribs_with_sub_attribs = {
-            "author",
-            "thumbnail",
-            "image",
-            "fields",
-            "footer",
-            "provider",
-        }  # 'fields' is a special case
-
-        for attr in attribs_tuple:
-            if isinstance(attr, list):
-                if len(attr) > 3:
-                    raise BotException(
-                        "Cannot execute command:",
-                        "Invalid embed attribute filter string!"
-                        " Sub-attributes do not propagate beyond 3 levels.",
-                    )
-                bottom_dict = {}
-                for i in range(len(attr)):
-                    if attr[i] not in all_attribs_set:
-                        raise BotException(
-                            "Cannot execute command:",
-                            f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
-                        )
-                    elif attr[i] in all_system_attribs_set and not system_attributes:
-                        raise BotException(
-                            "Cannot execute command:",
-                            f"The given attribute `{attr[i]}` cannot be retrieved when `system_attributes=`"
-                            " is set to `False`.",
-                        )
-                    if not i:
-                        if attribs_tuple.count(attr[i]):
-                            raise BotException(
-                                "Cannot execute command:",
-                                "Invalid embed attribute filter string!"
-                                f" Do not specify upper level embed attributes twice! {attr[i]}",
-                            )
-                        elif attr[i] not in attribs_with_sub_attribs:
-                            raise BotException(
-                                "Cannot execute command:",
-                                "Invalid embed attribute filter string!"
-                                f" The embed attribute `{attr[i]}` does not have any sub-attributes!",
-                            )
-
-                        if attr[i] not in embed_mask_dict:
-                            embed_mask_dict[attr[i]] = bottom_dict
-                        else:
-                            bottom_dict = embed_mask_dict[attr[i]]
-
-                    elif i == len(attr) - 1:
-                        if i == 1 and attr[i - 1] == "fields":
-                            if not attr[i].isnumeric():
-                                for sub_attr in ("name", "value", "inline"):
-                                    if attr[i] == sub_attr:
-                                        for j in range(25):
-                                            str_idx = str(j)
-                                            if str_idx not in embed_mask_dict["fields"]:
-                                                embed_mask_dict["fields"][str_idx] = {
-                                                    sub_attr: None
-                                                }
-                                            else:
-                                                embed_mask_dict["fields"][str_idx][
-                                                    sub_attr
-                                                ] = None
-                                        break
-                                else:
-                                    raise BotException(
-                                        "Cannot execute command:",
-                                        "Invalid embed attribute filter string!"
-                                        f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
-                                    )
-                                continue
-
-                        if attr[i] not in bottom_dict:
-                            bottom_dict[attr[i]] = None
-                    else:
-                        if attr[i] not in embed_mask_dict[attr[i - 1]]:
-                            bottom_dict = {}
-                            embed_mask_dict[attr[i - 1]][attr[i]] = bottom_dict
-                        else:
-                            bottom_dict = embed_mask_dict[attr[i - 1]][attr[i]]
-
-            elif attr in embed_attr_order_dict:
-                if attribs_tuple.count(attr) > 1:
-                    raise BotException(
-                        "Cannot execute command:",
-                        "Invalid embed attribute filter string!"
-                        f" Do not specify upper level embed attributes twice: `{attr}`",
-                    )
-                elif attr in all_system_attribs_set and not system_attributes:
-                    raise BotException(
-                        "Cannot execute command:",
-                        f"The given attribute `{attr}` cannot be retrieved when `system_attributes=`"
-                        " is set to `False`.",
-                    )
-
-                if attr not in embed_mask_dict:
-                    embed_mask_dict[attr] = None
-                else:
-                    raise BotException(
-                        "Cannot execute command:",
-                        "Invalid embed attribute filter string!"
-                        " Do not specify upper level embed attributes twice!",
-                    )
-
-            else:
-                raise BotException(
-                    "Cannot execute command:",
-                    f"Invalid embed attribute name `{attr}`!",
-                )
-
+        try:
+            embed_mask_dict = embed_utils.create_embed_mask_dict(
+                attributes=attribs,
+                allow_system_attributes=system_attributes,
+                fields_as_field_dict=True
+            )
+        except ValueError as v:
+            raise BotException(
+                "An error occured while handling the command:",
+                v.args[0]
+            )
+        
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(
@@ -1538,82 +1460,95 @@ class EmsudoCommand(BaseCommand):
 
                         if not system_attributes:
                             embed_utils.recursive_delete(
-                                embed_dict, system_attribs_dict
+                                embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                             )
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
-
-                        field_dict = embed_dict["fields"]
-                        embed_dict["fields"] = [
-                            field_dict[i] for i in sorted(field_dict.keys())
-                        ]
+                        if "fields" in embed_dict:
+                            field_dict = embed_dict["fields"]
+                            embed_dict["fields"] = [
+                                field_dict[i] for i in sorted(field_dict.keys())
+                            ]
                     else:
                         if not system_attributes:
                             embed_utils.recursive_delete(
-                                embed_dict, system_attribs_dict
+                                embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                             )
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
                 else:
                     if not system_attributes:
-                        embed_utils.recursive_delete(embed_dict, system_attribs_dict)
+                        embed_utils.recursive_delete(embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT)
 
                 if embed_dict:
-                    for k in tuple(embed_dict.keys()):
-                        if not embed_dict[k]:
-                            del embed_dict[k]
+                    if mode == 0:
+                        for k in tuple(embed_dict.keys()):
+                            if not embed_dict[k]:
+                                del embed_dict[k]
+                    elif mode == 1:
+                        for k in tuple(embed_dict.keys()):
+                            if not embed_dict[k] or k == "footer" and "text" not in embed_dict[k] or k == "author" and "name" not in embed_dict[k] or k in ("thumbnail", "image") and "url" not in embed_dict[k]:
+                                del embed_dict[k]
+                            elif k == "fields":
+                                for i in reversed(range(len(embed_dict["fields"]))):
+                                    if "name" not in embed_dict["fields"][i] or "value" not in embed_dict["fields"][i]:
+                                        embed_dict["fields"].pop(i)
+
                 else:
                     raise BotException(
                         "Cannot execute command:",
                         "Could not find data that matches"
                         " the pattern of the given embed attribute filter string.",
                     )
-
-                with io.StringIO() as fobj:
-                    # final_embed_dict = {k: embed_dict[k] for k in embed_attr_order_dict if k in embed_dict}
-                    embed_utils.export_embed_data(
-                        {
-                            k: embed_dict[k]
-                            for k in embed_attr_order_dict
-                            if k in embed_dict
-                        },
-                        fp=fobj,
-                        indent=4,
-                        as_json=True if as_json and not as_python else False,
-                    )
-                    fobj.seek(0)
-                    await self.channel.send(
-                        embed=await embed_utils.send_2(
-                            None,
-                            author_name="Embed Data",
-                            title=(
-                                embed_dict.get(
-                                    "title", "(add a title by editing this embed)"
+                
+                if mode == 0:
+                    with io.StringIO() as fobj:
+                        embed_utils.export_embed_data(
+                            {
+                                k: embed_dict[k]
+                                for k in embed_utils.EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
+                                if k in embed_dict
+                            },
+                            fp=fobj,
+                            indent=4,
+                            as_json=True if as_json and not as_python else False,
+                        )
+                        fobj.seek(0)
+                        await self.channel.send(
+                            embed=await embed_utils.send_2(
+                                None,
+                                author_name="Embed Data",
+                                title=(
+                                    embed_dict.get(
+                                        "title", "(add a title by editing this embed)"
+                                    )
                                 )
-                            )
-                            if len(msgs) < 2
-                            else "(add a title by editing this embed)",
-                            fields=(
-                                (
-                                    "\u2800",
-                                    f"**[View Original Message]({msg.jump_url})**",
-                                    True,
+                                if len(msgs) < 2
+                                else "(add a title by editing this embed)",
+                                fields=(
+                                    (
+                                        "\u2800",
+                                        f"**[View Original Message]({msg.jump_url})**",
+                                        True,
+                                    ),
                                 ),
                             ),
-                        ),
-                        file=discord.File(
-                            fobj,
-                            filename=(
-                                "embeddata.json"
-                                if as_python
-                                else "embeddata.json"
-                                if as_json
-                                else "embeddata.txt"
+                            file=discord.File(
+                                fobj,
+                                filename=(
+                                    "embeddata.json"
+                                    if as_python
+                                    else "embeddata.json"
+                                    if as_json
+                                    else "embeddata.txt"
+                                ),
                             ),
-                        ),
-                    )
+                        )
+
+                elif mode == 1:
+                    await self.channel.send(embed=discord.Embed.from_dict(embed_dict))
 
             if embed_count > 2:
                 await embed_utils.edit_fields_from_dict(
