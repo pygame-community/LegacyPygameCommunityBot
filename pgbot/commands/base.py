@@ -314,7 +314,6 @@ class BaseCommand:
                         prevkey = a
 
         if prevkey:
-
             raise KwargError("Did not specify argument after '='")
 
         # If user has put an attachment, check whether it's a text file, and
@@ -565,7 +564,6 @@ class BaseCommand:
             func = self.cmds_and_funcs[cmd]
 
         if hasattr(func, "no_dm") and self.is_dm:
-
             raise BotException(
                 "Cannot run this commands on DM",
                 "This command is not supported on DMs",
@@ -597,17 +595,6 @@ class BaseCommand:
 
         # iterate through function parameters, arrange the given args and
         # kwargs in the order and format the function wants
-        load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
-        )
-
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(name="Casting Arguments", value="Loading..."),
-            0,
-        )
         for i, key in enumerate(sig.parameters):
             param = sig.parameters[key]
             iskw = False
