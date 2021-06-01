@@ -9,10 +9,12 @@ This file exports a handle function, to handle commands posted by the users
 
 from __future__ import annotations
 
+import asyncio
+import random
 import sys
 import discord
 
-from pgbot import common, embed_utils, utils
+from pgbot import common, embed_utils, utils, emotion
 from pgbot.commands import admin, user
 
 
@@ -94,11 +96,29 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         return
 
     if response_msg is None:
-        response_msg = await embed_utils.send_2(
-            invoke_msg.channel,
-            title=f"Your command is being processed:",
-            fields=(("\u2800", "`Loading...`", False),),
-        )
+        confused = emotion.get("confused")
+        if confused > 300 and random.random() < confused / 6000:
+            response_msg = await embed_utils.send_2(
+                invoke_msg.channel,
+                title=f"I am confused...",
+                description="Hang on, give me a sec...",
+            )
+
+            await asyncio.sleep(random.random() * 4)
+
+            await embed_utils.replace_2(
+                response_msg,
+                title="Oh, never mind...",
+                description="Sorry, I was confused for a sec there",
+            )
+
+            await asyncio.sleep(0.5)
+        else:
+            response_msg = await embed_utils.send_2(
+                invoke_msg.channel,
+                title=f"Your command is being processed:",
+                fields=(("\u2800", "`Loading...`", False),),
+            )
 
     if not common.TEST_MODE and not common.GENERIC:
         await embed_utils.send_2(

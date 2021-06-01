@@ -107,6 +107,7 @@ def euphoria():
             "happy": EMOTION_CAPS["happy"][1],
             "anger": EMOTION_CAPS["anger"][0],
             "bored": 0,
+            "confused": 0
         }
     )
 
