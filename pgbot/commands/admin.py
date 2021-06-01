@@ -839,7 +839,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ),
                     0,
                 )
-            
+
             await self.channel.trigger_typing()
             cloned_msg = None
             attached_files = []
@@ -1143,7 +1143,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         with io.StringIO("This file was too large to be archived.") as fobj:
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
-            ):  
+            ):
                 if msg_count > 2 and not i % 2:
                     await embed_utils.edit_field_from_dict(
                         self.response_msg,

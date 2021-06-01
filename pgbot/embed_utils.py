@@ -333,6 +333,7 @@ async def send(
 
     return await channel.send(embed=embed)
 
+
 def create_as_dict(
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
@@ -366,16 +367,15 @@ def create_as_dict(
         if footer_icon_url:
             embed_dict["footer"]["icon_url"] = footer_icon_url
 
-
     if title:
         embed_dict["title"] = title
 
     if url:
         embed_dict["url"] = url
-    
+
     if description:
         embed_dict["description"] = description
-    
+
     if color >= 0:
         embed_dict["color"] = color
 
@@ -389,10 +389,10 @@ def create_as_dict(
 
     if image_url:
         embed_dict["image"] = {"url": image_url}
-    
+
     if thumbnail_url:
         embed_dict["thumbnail"] = {"url": thumbnail_url}
-    
+
     if fields:
         fields_list = []
         embed_dict["fields"] = fields_list
@@ -401,13 +401,13 @@ def create_as_dict(
             if isinstance(field, dict):
                 if field.get("name", ""):
                     field_dict["name"] = field["name"]
-                
+
                 if field.get("value", ""):
                     field_dict["value"] = field["value"]
-                
+
                 if field.get("inline", "") in (False, True):
                     field_dict["name"] = field["name"]
-            
+
             elif isinstance(field, (list, tuple)):
                 name = None
                 value = None
@@ -417,10 +417,10 @@ def create_as_dict(
                     name, value, inline = field
                     if name:
                         field_dict["name"] = name
-                    
+
                     if value:
                         field_dict["value"] = value
-                    
+
                     if inline in (False, True):
                         field_dict["inline"] = field["inline"]
 
@@ -428,6 +428,7 @@ def create_as_dict(
                 fields_list.append(field_dict)
 
     return embed_dict
+
 
 def create(
     author_name=EmptyEmbed,
@@ -447,9 +448,7 @@ def create(
     """
     Creates an embed with a much more tight function.
     """
-    embed = discord.Embed(
-        title=title, url=url, description=description, color=color
-    )
+    embed = discord.Embed(title=title, url=url, description=description, color=color)
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -606,9 +605,15 @@ async def edit_2(
 
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+            old_embed_dict["fields"] = {
+                str(i): old_embed_dict["fields"][i]
+                for i in range(len(old_embed_dict["fields"]))
+            }
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
+            update_embed_dict["fields"] = {
+                str(i): update_embed_dict["fields"][i]
+                for i in range(len(update_embed_dict["fields"]))
+            }
 
     recursive_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
@@ -616,9 +621,15 @@ async def edit_2(
 
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+            old_embed_dict["fields"] = [
+                old_embed_dict["fields"][i]
+                for i in sorted(old_embed_dict["fields"].keys())
+            ]
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
+            update_embed_dict["fields"] = [
+                update_embed_dict["fields"][i]
+                for i in sorted(update_embed_dict["fields"].keys())
+            ]
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
@@ -665,7 +676,9 @@ async def replace_from_dict(message, data):
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True, inner_fields=False):
+async def edit_from_dict(
+    message, embed, update_embed_dict, add_attributes=True, inner_fields=False
+):
     """
     Edits the changed attributes of the embed of a message from a
     dictionary with a much more tight function
@@ -674,9 +687,15 @@ async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True,
 
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+            old_embed_dict["fields"] = {
+                str(i): old_embed_dict["fields"][i]
+                for i in range(len(old_embed_dict["fields"]))
+            }
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
+            update_embed_dict["fields"] = {
+                str(i): update_embed_dict["fields"][i]
+                for i in range(len(update_embed_dict["fields"]))
+            }
 
     recursive_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
@@ -684,26 +703,40 @@ async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True,
 
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+            old_embed_dict["fields"] = [
+                old_embed_dict["fields"][i]
+                for i in sorted(old_embed_dict["fields"].keys())
+            ]
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
-    
+            update_embed_dict["fields"] = [
+                update_embed_dict["fields"][i]
+                for i in sorted(update_embed_dict["fields"].keys())
+            ]
+
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
-def edit_dict_from_dict(old_embed_dict, update_embed_dict, add_attributes=True, inner_fields=False):
+def edit_dict_from_dict(
+    old_embed_dict, update_embed_dict, add_attributes=True, inner_fields=False
+):
     """
     Edits the changed attributes of an embed dictionary using another
     dictionary
     """
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+            old_embed_dict["fields"] = {
+                str(i): old_embed_dict["fields"][i]
+                for i in range(len(old_embed_dict["fields"]))
+            }
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
+            update_embed_dict["fields"] = {
+                str(i): update_embed_dict["fields"][i]
+                for i in range(len(update_embed_dict["fields"]))
+            }
 
     recursive_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
@@ -711,9 +744,15 @@ def edit_dict_from_dict(old_embed_dict, update_embed_dict, add_attributes=True, 
 
     if inner_fields:
         if "fields" in old_embed_dict:
-            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+            old_embed_dict["fields"] = [
+                old_embed_dict["fields"][i]
+                for i in sorted(old_embed_dict["fields"].keys())
+            ]
         if "fields" in update_embed_dict:
-            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
+            update_embed_dict["fields"] = [
+                update_embed_dict["fields"][i]
+                for i in sorted(update_embed_dict["fields"].keys())
+            ]
 
     return old_embed_dict
 

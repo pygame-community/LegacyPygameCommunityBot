@@ -184,7 +184,7 @@ class EmsudoCommand(BaseCommand):
 
                     if isinstance(args, dict):
                         output_embeds.append(embed_utils.create_from_dict(args))
-                    
+
                     elif not isinstance(args, (list, tuple)):
                         arg_count = len(args)
 
@@ -624,7 +624,7 @@ class EmsudoCommand(BaseCommand):
 
                     if arg_count > 6:
                         util_replace_embed_args.update(timestamp=args[6])
-                        
+
                     await embed_utils.replace_2(msg, **util_replace_embed_args)
                 else:
                     raise BotException(
@@ -754,7 +754,7 @@ class EmsudoCommand(BaseCommand):
         msg: discord.Message,
         *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
         add_attributes: bool = True,
-        inner_fields: bool = False
+        inner_fields: bool = False,
     ):
         """
         ->type emsudo commands
@@ -897,12 +897,12 @@ class EmsudoCommand(BaseCommand):
                     embed_dict = embed_utils.import_embed_data(
                         embed_data, from_string=True
                     )
-                
+
                 edited_embed_dict = embed_utils.edit_dict_from_dict(
                     edited_embed_dict,
                     embed_dict,
                     add_attributes=add_attributes,
-                    inner_fields=inner_fields
+                    inner_fields=inner_fields,
                 )
 
             elif not only_description:
@@ -920,7 +920,7 @@ class EmsudoCommand(BaseCommand):
                         edited_embed_dict,
                         embed_dict,
                         add_attributes=add_attributes,
-                        inner_fields=inner_fields
+                        inner_fields=inner_fields,
                     )
                 else:
                     try:
@@ -933,7 +933,7 @@ class EmsudoCommand(BaseCommand):
                             edited_embed_dict,
                             args,
                             add_attributes=add_attributes,
-                            inner_fields=inner_fields
+                            inner_fields=inner_fields,
                         )
                     elif isinstance(args, (list, tuple)):
                         arg_count = len(args)
@@ -1010,7 +1010,7 @@ class EmsudoCommand(BaseCommand):
                             util_edit_embed_args.update(
                                 color=args[3],
                             )
-                        
+
                         if arg_count > 4:
                             try:
                                 fields = embed_utils.get_fields(*args[4])
@@ -1042,7 +1042,6 @@ class EmsudoCommand(BaseCommand):
                         if arg_count > 6:
                             util_edit_embed_args.update(timestamp=args[6])
 
-
                         embed_dict = embed_utils.create_as_dict(
                             **util_edit_embed_args,
                         )
@@ -1050,7 +1049,7 @@ class EmsudoCommand(BaseCommand):
                             edited_embed_dict,
                             embed_dict,
                             add_attributes=add_attributes,
-                            inner_fields=inner_fields
+                            inner_fields=inner_fields,
                         )
 
                     else:
@@ -1071,7 +1070,7 @@ class EmsudoCommand(BaseCommand):
                     edited_embed_dict,
                     embed_dict,
                     add_attributes=add_attributes,
-                    inner_fields=inner_fields
+                    inner_fields=inner_fields,
                 )
 
             await asyncio.sleep(0)
@@ -1114,11 +1113,15 @@ class EmsudoCommand(BaseCommand):
                 edited_embed_dict,
                 embed_dict,
                 add_attributes=add_attributes,
-                inner_fields=inner_fields
+                inner_fields=inner_fields,
             )
 
             await embed_utils.edit_from_dict(
-                msg, msg_embed, edited_embed_dict, add_attributes=add_attributes, inner_fields=inner_fields
+                msg,
+                msg_embed,
+                edited_embed_dict,
+                add_attributes=add_attributes,
+                inner_fields=inner_fields,
             )
 
         else:
@@ -1623,7 +1626,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                     1,
                 )
-            
+
             await asyncio.sleep(0)
 
         if msg_count > 2:
