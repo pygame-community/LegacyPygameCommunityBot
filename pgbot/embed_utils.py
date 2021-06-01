@@ -333,9 +333,103 @@ async def send(
 
     return await channel.send(embed=embed)
 
+def create_as_dict(
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=(),
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
+):
+    embed_dict = {}
+
+    if author_name or author_url or author_icon_url:
+        embed_dict["author"] = {}
+        if author_name:
+            embed_dict["author"]["name"] = author_name
+        if author_url:
+            embed_dict["author"]["url"] = author_url
+        if author_icon_url:
+            embed_dict["author"]["icon_url"] = author_icon_url
+
+    if footer_text or footer_icon_url:
+        embed_dict["footer"] = {}
+        if footer_text:
+            embed_dict["footer"]["text"] = footer_text
+        if footer_icon_url:
+            embed_dict["footer"]["icon_url"] = footer_icon_url
+
+
+    if title:
+        embed_dict["title"] = title
+
+    if url:
+        embed_dict["url"] = url
+    
+    if description:
+        embed_dict["description"] = description
+    
+    if color >= 0:
+        embed_dict["color"] = color
+
+    if timestamp:
+        if isinstance(timestamp, str):
+            embed_dict["timestamp"] = datetime.datetime.fromisoformat(
+                timestamp[:-1] if timestamp.endswith("Z") else timestamp
+            )
+        else:
+            embed_dict["timestamp"] = timestamp
+
+    if image_url:
+        embed_dict["image"] = {"url": image_url}
+    
+    if thumbnail_url:
+        embed_dict["thumbnail"] = {"url": thumbnail_url}
+    
+    if fields:
+        fields_list = []
+        embed_dict["fields"] = fields_list
+        for field in fields:
+            field_dict = {}
+            if isinstance(field, dict):
+                if field.get("name", ""):
+                    field_dict["name"] = field["name"]
+                
+                if field.get("value", ""):
+                    field_dict["value"] = field["value"]
+                
+                if field.get("inline", "") in (False, True):
+                    field_dict["name"] = field["name"]
+            
+            elif isinstance(field, (list, tuple)):
+                name = None
+                value = None
+                inline = None
+                field_len = len(field)
+                if field_len == 3:
+                    name, value, inline = field
+                    if name:
+                        field_dict["name"] = name
+                    
+                    if value:
+                        field_dict["value"] = value
+                    
+                    if inline in (False, True):
+                        field_dict["inline"] = field["inline"]
+
+            if field_dict:
+                fields_list.append(field_dict)
+
+    return embed_dict
 
 def create(
-    embed_type="rich",
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
     author_icon_url=EmptyEmbed,
@@ -354,7 +448,7 @@ def create(
     Creates an embed with a much more tight function.
     """
     embed = discord.Embed(
-        title=title, type=embed_type, url=url, description=description, color=color
+        title=title, url=url, description=description, color=color
     )
 
     if timestamp:
@@ -392,7 +486,6 @@ def create(
 
 async def send_2(
     channel,
-    embed_type="rich",
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
     author_icon_url=EmptyEmbed,
@@ -413,7 +506,6 @@ async def send_2(
     """
 
     embed = create(
-        embed_type=embed_type,
         author_name=author_name,
         author_url=author_url,
         author_icon_url=author_icon_url,
@@ -437,7 +529,6 @@ async def send_2(
 
 async def replace_2(
     message,
-    embed_type="rich",
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
     author_icon_url=EmptyEmbed,
@@ -456,7 +547,48 @@ async def replace_2(
     Replaces the embed of a message with a much more tight function
     """
     embed = create(
-        embed_type=embed_type,
+        author_name=author_name,
+        author_url=author_url,
+        author_icon_url=author_icon_url,
+        title=title,
+        url=url,
+        thumbnail_url=thumbnail_url,
+        description=description,
+        image_url=image_url,
+        color=color,
+        fields=fields,
+        footer_text=footer_text,
+        footer_icon_url=footer_icon_url,
+        timestamp=timestamp,
+    )
+    return await message.edit(embed=embed)
+
+
+async def edit_2(
+    message,
+    embed,
+    author_name=EmptyEmbed,
+    author_url=EmptyEmbed,
+    author_icon_url=EmptyEmbed,
+    title=EmptyEmbed,
+    url=EmptyEmbed,
+    thumbnail_url=EmptyEmbed,
+    description=EmptyEmbed,
+    image_url=EmptyEmbed,
+    color=0xFFFFAA,
+    fields=[],
+    footer_text=EmptyEmbed,
+    footer_icon_url=EmptyEmbed,
+    timestamp=EmptyEmbed,
+    add_attributes=False,
+    inner_fields: bool = False,
+):
+    """
+    Updates the changed attributes of the embed of a message with a
+    much more tight function
+    """
+    old_embed_dict = embed.to_dict()
+    update_embed_dict = create_as_dict(
         author_name=author_name,
         author_url=author_url,
         author_icon_url=author_icon_url,
@@ -472,58 +604,21 @@ async def replace_2(
         timestamp=timestamp,
     )
 
-    if message is None:
-        return embed
-
-    return await message.edit(embed=embed)
-
-
-async def edit_2(
-    message,
-    embed,
-    embed_type="rich",
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
-    color=0xFFFFAA,
-    fields=[],
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
-    add_attributes=False,
-):
-    """
-    Updates the changed attributes of the embed of a message with a
-    much more tight function
-    """
-    update_embed = create(
-        embed_type=embed_type,
-        author_name=author_name,
-        author_url=author_url,
-        author_icon_url=author_icon_url,
-        title=title,
-        url=url,
-        thumbnail_url=thumbnail_url,
-        description=description,
-        image_url=image_url,
-        color=(color if color >= 0 else EmptyEmbed),
-        fields=fields,
-        footer_text=footer_text,
-        footer_icon_url=footer_icon_url,
-        timestamp=timestamp,
-    )
-
-    old_embed_dict = embed.to_dict()
-    update_embed_dict = update_embed.to_dict()
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
 
     recursive_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
+
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
@@ -561,6 +656,8 @@ async def replace_from_dict(message, data):
     Replaces the embed of a message from a dictionary with a much more
     tight function
     """
+    if data.get("timestamp") and data["timestamp"].endswith("Z"):
+        data["timestamp"] = data["timestamp"][:-1]
 
     if message is None:
         return discord.Embed.from_dict(data)
@@ -568,25 +665,62 @@ async def replace_from_dict(message, data):
     return await message.edit(embed=discord.Embed.from_dict(data))
 
 
-async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True):
+async def edit_from_dict(message, embed, update_embed_dict, add_attributes=True, inner_fields=False):
     """
     Edits the changed attributes of the embed of a message from a
     dictionary with a much more tight function
     """
     old_embed_dict = embed.to_dict()
+
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
+
     recursive_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
+
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
+    
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
 
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
+def edit_dict_from_dict(old_embed_dict, update_embed_dict, add_attributes=True, inner_fields=False):
+    """
+    Edits the changed attributes of an embed dictionary using another
+    dictionary
+    """
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = {str(i): old_embed_dict["fields"][i] for i in range(len(old_embed_dict["fields"]))}
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = {str(i): update_embed_dict["fields"][i] for i in range(len(update_embed_dict["fields"]))}
+
+    recursive_update(
+        old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
+    )
+
+    if inner_fields:
+        if "fields" in old_embed_dict:
+            old_embed_dict["fields"] = [old_embed_dict["fields"][i] for i in sorted(old_embed_dict["fields"].keys())]
+        if "fields" in update_embed_dict:
+            update_embed_dict["fields"] = [update_embed_dict["fields"][i] for i in sorted(update_embed_dict["fields"].keys())]
+
+    return old_embed_dict
+
+
 async def replace_field_from_dict(message, embed, field_dict, index):
     """
     Replaces an embed field of the embed of a message from a dictionary
-    with a much more tight function
     """
 
     fields_count = len(embed.fields)
@@ -608,7 +742,7 @@ async def replace_field_from_dict(message, embed, field_dict, index):
 async def edit_field_from_dict(message, embed, field_dict, index):
     """
     Edits parts of an embed field of the embed of a message from a
-    dictionary with a much more tight function
+    dictionary
     """
 
     fields_count = len(embed.fields)
@@ -637,7 +771,6 @@ async def edit_field_from_dict(message, embed, field_dict, index):
 async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
     """
     Edits embed fields in the embed of a message from dictionaries
-    with a much more tight function
     """
 
     embed_dict = embed.to_dict()
@@ -672,7 +805,6 @@ async def edit_fields_from_dicts(message, embed: discord.Embed, field_dicts):
 async def add_field_from_dict(message, embed, field_dict):
     """
     Adds an embed field to the embed of a message from a dictionary
-    with a much more tight function
     """
 
     embed.add_field(
@@ -689,7 +821,6 @@ async def add_field_from_dict(message, embed, field_dict):
 async def add_fields_from_dicts(message, embed: discord.Embed, field_dicts):
     """
     Adds embed fields to the embed of a message from dictionaries
-    with a much more tight function
     """
 
     for field_dict in field_dicts:
@@ -707,7 +838,6 @@ async def add_fields_from_dicts(message, embed: discord.Embed, field_dicts):
 async def insert_field_from_dict(message, embed, field_dict, index):
     """
     Inserts an embed field of the embed of a message from a
-    dictionary with a much more tight function
     """
 
     fields_count = len(embed.fields)
@@ -727,7 +857,7 @@ async def insert_field_from_dict(message, embed, field_dict, index):
 async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, index):
     """
     Inserts embed fields to the embed of a message from dictionaries
-    at a specified index with a much more tight function
+    at a specified index
     """
     fields_count = len(embed.fields)
     index = fields_count + index if index < 0 else index
@@ -747,7 +877,6 @@ async def insert_fields_from_dicts(message, embed: discord.Embed, field_dicts, i
 async def remove_field(message, embed, index):
     """
     Removes an embed field of the embed of a message from a dictionary
-    with a much more tight function
     """
 
     fields_count = len(embed.fields)
@@ -762,7 +891,7 @@ async def remove_field(message, embed, index):
 async def remove_fields(message, embed, field_indices):
     """
     Removes multiple embed fields of the embed of a message from a
-    dictionary with a much more tight function
+    dictionary
     """
 
     fields_count = len(embed.fields)
@@ -784,7 +913,7 @@ async def remove_fields(message, embed, field_indices):
 async def swap_fields(message, embed, index_a, index_b):
     """
     Swaps two embed fields of the embed of a message from a
-    dictionary with a much more tight function
+    dictionary
     """
 
     fields_count = len(embed.fields)
@@ -806,7 +935,7 @@ async def swap_fields(message, embed, index_a, index_b):
 async def clone_field(message, embed, index):
     """
     Duplicates an embed field of the embed of a message from a
-    dictionary with a much more tight function
+    dictionary
     """
     fields_count = len(embed.fields)
     index = fields_count + index if index < 0 else index
@@ -823,7 +952,7 @@ async def clone_field(message, embed, index):
 async def clone_fields(message, embed, field_indices, insertion_index=None):
     """
     Duplicates multiple embed fields of the embed of a message
-    from a dictionary with a much more tight function
+    from a dictionary
     """
 
     fields_count = len(embed.fields)
@@ -860,7 +989,7 @@ async def clone_fields(message, embed, field_indices, insertion_index=None):
 async def clear_fields(message, embed):
     """
     Removes all embed fields of the embed of a message from a
-    dictionary with a much more tight function
+    dictionary
     """
     embed.clear_fields()
     if message is None:
