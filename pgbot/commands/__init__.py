@@ -97,14 +97,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
 
     if response_msg is None:
         confused = emotion.get("confused")
-        if confused > 300 and random.random() < confused / 2000:
+        if confused > 300 and random.random() < confused / 2000 and random.randrange(2):
             response_msg = await embed_utils.send_2(
                 invoke_msg.channel,
                 title=f"I am confused...",
                 description="Hang on, give me a sec...",
             )
 
-            await asyncio.sleep(random.random() * random.randrange(1))
+            await asyncio.sleep(random.random() * random.randrange(4))
             
             if random.randrange(2):
                 await embed_utils.replace_2(
@@ -112,6 +112,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                     title="Oh, never mind...",
                     description="Sorry, I was confused for a sec there",
                 )
+            await asyncio.sleep(0)
         else:
             response_msg = await embed_utils.send_2(
                 invoke_msg.channel,
