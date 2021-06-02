@@ -21,10 +21,11 @@ import discord
 import psutil
 import pygame
 
-from pgbot import common, db, embed_utils, utils
-from pgbot.commands.base import BotException, CodeBlock, String, add_group
+from pgbot import common, db, embed_utils, utils, ui_utils
+from pgbot.commands.base import BotException, CodeBlock, String, add_group, no_dm
 from pgbot.commands.emsudo import EmsudoCommand
 from pgbot.commands.user import UserCommand
+from pgbot.minigames import tic_tac_toe
 
 process = psutil.Process(os.getpid())
 
@@ -1719,6 +1720,25 @@ class AdminCommand(UserCommand, EmsudoCommand):
         if not members:
             members = None
         await super().cmd_stream_del(members)
+
+    @no_dm
+    @add_group("challenge")
+    async def cmd_challenge(self):
+        """
+        ->skip
+        Challenge base command. TODO
+        """
+        await embed_utils.replace_2(
+            self.response_msg,
+            description="Todo",
+        )
+
+    @add_group("challenge", "tic-tac-toe")
+    async def cmd_tic_tac_toe(self, mem: discord.Member):
+        """->skip"""
+        title = f"Tic-tac-toe game between {self.author.mention} and {mem.mention}"
+        game = tic_tac_toe.TicTacToe(self.response_msg, self.author, mem, title)
+        await game.setup()
 
 
 # monkey-patch admin command names into tuple
