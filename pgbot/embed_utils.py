@@ -350,6 +350,18 @@ def create_embed_mask_dict(
 def copy_embed(embed):
     return discord.Embed.from_dict(embed.to_dict())
 
+def copy_embed_dict(embed_dict):
+    copied_embed_dict = {
+        k: embed_dict[k].copy()
+        if isinstance(embed_dict[k], dict)
+        else embed_dict[k]
+        for k in embed_dict
+    }
+
+    if "fields" in embed_dict:
+        copied_embed_dict["fields"] = [field_dict.copy() for field_dict in embed_dict["fields"]]
+    return copied_embed_dict
+
 
 def get_fields(*strings):
     """

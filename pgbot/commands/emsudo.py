@@ -1388,7 +1388,7 @@ class EmsudoCommand(BaseCommand):
                 "No messages given as input.",
             )
 
-        if mode not in (0, 1):
+        if mode < 0 or mode > 2:
             raise BotException(
                 f"Invalid arguments!",
                 "`mode=` must be either `0` or `1`",
@@ -1489,30 +1489,32 @@ class EmsudoCommand(BaseCommand):
                             embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                         )
 
+                validated_embed_dict = embed_utils.copy_embed_dict(embed_dict)
                 if embed_dict:
-                    if mode == 0:
+                    if mode == 0 or mode == 2:
                         for k in tuple(embed_dict.keys()):
                             if not embed_dict[k]:
                                 del embed_dict[k]
-                    elif mode == 1:
-                        for k in tuple(embed_dict.keys()):
+
+                    if mode == 1 or mode == 2:
+                        for k in tuple(validated_embed_dict.keys()):
                             if (
-                                not embed_dict[k]
+                                not validated_embed_dict[k]
                                 or k == "footer"
-                                and "text" not in embed_dict[k]
+                                and "text" not in validated_embed_dict[k]
                                 or k == "author"
-                                and "name" not in embed_dict[k]
+                                and "name" not in validated_embed_dict[k]
                                 or k in ("thumbnail", "image")
-                                and "url" not in embed_dict[k]
+                                and "url" not in validated_embed_dict[k]
                             ):
-                                del embed_dict[k]
+                                del validated_embed_dict[k]
                             elif k == "fields":
-                                for i in reversed(range(len(embed_dict["fields"]))):
+                                for i in reversed(range(len(validated_embed_dict["fields"]))):
                                     if (
-                                        "name" not in embed_dict["fields"][i]
-                                        or "value" not in embed_dict["fields"][i]
+                                        "name" not in validated_embed_dict["fields"][i]
+                                        or "value" not in validated_embed_dict["fields"][i]
                                     ):
-                                        embed_dict["fields"].pop(i)
+                                        validated_embed_dict["fields"].pop(i)
 
                 else:
                     raise BotException(
@@ -1521,7 +1523,9 @@ class EmsudoCommand(BaseCommand):
                         " the pattern of the given embed attribute filter string.",
                     )
 
-                if mode == 0:
+                if mode == 0 or mode == 2:
+                    if mode == 2:
+                        await self.channel.send(embed=discord.Embed.from_dict(validated_embed_dict))
                     with io.StringIO() as fobj:
                         embed_utils.export_embed_data(
                             {
@@ -1566,7 +1570,7 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 elif mode == 1:
-                    await self.channel.send(embed=discord.Embed.from_dict(embed_dict))
+                    await self.channel.send(embed=discord.Embed.from_dict(validated_embed_dict))
 
             if embed_count > 2:
                 await embed_utils.edit_fields_from_dict(
