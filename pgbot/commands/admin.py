@@ -538,6 +538,13 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
+            if not utils.check_channel_permissions(
+                self.author, msg.channel, permissions=("view_channel",)
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -1201,9 +1208,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
                 if not mode:
                     if msg.content or msg.embeds or attached_files:
+                        msg_embed = msg.embeds[0] if msg.embeds else None
+                        msg_embed_dict = msg_embed.to_dict() if msg_embed is not None else None
+                        
+                        if (
+                            msg_embed_dict
+                            and "type" in msg_embed_dict
+                            and msg_embed_dict["type"] == "gifv"
+                        ):
+                            msg_embed = None
+
                         await destination.send(
                             content=msg.content,
-                            embed=msg.embeds[0] if msg.embeds else None,
+                            embed=msg_embed,
                             file=attached_files[0] if attached_files else None,
                             allowed_mentions=no_mentions,
                         )
