@@ -682,7 +682,8 @@ class EmsudoCommand(BaseCommand):
 
     @add_group("emsudo", "remove")
     async def cmd_emsudo_remove(
-        self, *msgs: discord.Message,
+        self,
+        *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
     ):
@@ -716,7 +717,6 @@ class EmsudoCommand(BaseCommand):
             title=f"Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
-        
 
         attribs = (
             a.string if a.string else attributes.string if attributes.string else ""
@@ -726,12 +726,11 @@ class EmsudoCommand(BaseCommand):
             embed_mask_dict = embed_utils.create_embed_mask_dict(
                 attributes=attribs,
                 allow_system_attributes=True,
-                fields_as_field_dict=True
+                fields_as_field_dict=True,
             )
         except ValueError as v:
             raise BotException(
-                "An error occured while handling the command:",
-                v.args[0]
+                "An error occured while handling the command:", v.args[0]
             )
         msg_count = len(msgs)
 
@@ -755,7 +754,7 @@ class EmsudoCommand(BaseCommand):
                         f"Input {i}: Cannot execute command:",
                         "No embed data found in message.",
                     )
-                
+
                 msg_embed = msg.embeds[0]
                 embed_dict = msg_embed.to_dict()
 
@@ -766,32 +765,37 @@ class EmsudoCommand(BaseCommand):
                             str(i): field_list[i] for i in range(len(field_list))
                         }
 
-                        embed_utils.recursive_delete(
-                            embed_dict, embed_mask_dict
-                        )
-                        
+                        embed_utils.recursive_delete(embed_dict, embed_mask_dict)
+
                         if "fields" in embed_dict:
                             field_dict = embed_dict["fields"]
                             embed_dict["fields"] = [
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
                     else:
-                        embed_utils.recursive_delete(
-                            embed_dict, embed_mask_dict
-                        )
+                        embed_utils.recursive_delete(embed_dict, embed_mask_dict)
                 else:
-                    embed_utils.recursive_delete(
-                        embed_dict, embed_mask_dict
-                    )
+                    embed_utils.recursive_delete(embed_dict, embed_mask_dict)
 
                 if embed_dict:
                     for k in tuple(embed_dict.keys()):
-                        if not embed_dict[k] or k == "footer" and "text" not in embed_dict[k] or k == "author" and "name" not in embed_dict[k] or k in ("thumbnail", "image") and "url" not in embed_dict[k]:
+                        if (
+                            not embed_dict[k]
+                            or k == "footer"
+                            and "text" not in embed_dict[k]
+                            or k == "author"
+                            and "name" not in embed_dict[k]
+                            or k in ("thumbnail", "image")
+                            and "url" not in embed_dict[k]
+                        ):
                             del embed_dict[k]
-                        
+
                         elif k == "fields":
                             for i in reversed(range(len(embed_dict["fields"]))):
-                                if "name" not in embed_dict["fields"][i] or "value" not in embed_dict["fields"][i]:
+                                if (
+                                    "name" not in embed_dict["fields"][i]
+                                    or "value" not in embed_dict["fields"][i]
+                                ):
                                     embed_dict["fields"].pop(i)
 
                     final_embed = discord.Embed.from_dict(embed_dict)
@@ -1384,12 +1388,12 @@ class EmsudoCommand(BaseCommand):
                 "No messages given as input.",
             )
 
-        if not 0 <= mode < 1:
+        if mode not in (0, 1):
             raise BotException(
                 f"Invalid arguments!",
                 "`mode=` must be either `0` or `1`",
             )
-        
+
         attribs = (
             a.string if a.string else attributes.string if attributes.string else ""
         )
@@ -1398,14 +1402,13 @@ class EmsudoCommand(BaseCommand):
             embed_mask_dict = embed_utils.create_embed_mask_dict(
                 attributes=attribs,
                 allow_system_attributes=system_attributes,
-                fields_as_field_dict=True
+                fields_as_field_dict=True,
             )
         except ValueError as v:
             raise BotException(
-                "An error occured while handling the command:",
-                v.args[0]
+                "An error occured while handling the command:", v.args[0]
             )
-        
+
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(
@@ -1460,7 +1463,8 @@ class EmsudoCommand(BaseCommand):
 
                         if not system_attributes:
                             embed_utils.recursive_delete(
-                                embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
+                                embed_dict,
+                                embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
@@ -1473,14 +1477,17 @@ class EmsudoCommand(BaseCommand):
                     else:
                         if not system_attributes:
                             embed_utils.recursive_delete(
-                                embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
+                                embed_dict,
+                                embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
                 else:
                     if not system_attributes:
-                        embed_utils.recursive_delete(embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT)
+                        embed_utils.recursive_delete(
+                            embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
+                        )
 
                 if embed_dict:
                     if mode == 0:
@@ -1489,11 +1496,22 @@ class EmsudoCommand(BaseCommand):
                                 del embed_dict[k]
                     elif mode == 1:
                         for k in tuple(embed_dict.keys()):
-                            if not embed_dict[k] or k == "footer" and "text" not in embed_dict[k] or k == "author" and "name" not in embed_dict[k] or k in ("thumbnail", "image") and "url" not in embed_dict[k]:
+                            if (
+                                not embed_dict[k]
+                                or k == "footer"
+                                and "text" not in embed_dict[k]
+                                or k == "author"
+                                and "name" not in embed_dict[k]
+                                or k in ("thumbnail", "image")
+                                and "url" not in embed_dict[k]
+                            ):
                                 del embed_dict[k]
                             elif k == "fields":
                                 for i in reversed(range(len(embed_dict["fields"]))):
-                                    if "name" not in embed_dict["fields"][i] or "value" not in embed_dict["fields"][i]:
+                                    if (
+                                        "name" not in embed_dict["fields"][i]
+                                        or "value" not in embed_dict["fields"][i]
+                                    ):
                                         embed_dict["fields"].pop(i)
 
                 else:
@@ -1502,7 +1520,7 @@ class EmsudoCommand(BaseCommand):
                         "Could not find data that matches"
                         " the pattern of the given embed attribute filter string.",
                     )
-                
+
                 if mode == 0:
                     with io.StringIO() as fobj:
                         embed_utils.export_embed_data(
