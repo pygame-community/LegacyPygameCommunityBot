@@ -134,6 +134,33 @@ EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET = {
     "provider",
 }  # 'fields' is a special case
 
+DEFAULT_EMBED_COLOR = 0xFFFFAA
+
+CONDENSED_EMBED_SYNTAX_STRUCTURE = """
+# Condensed embed data list syntax. String elements that are empty "" will be ignored.
+[
+    'author_name' or ('author_name', 'author_url') or ('author_name', 'author_url', 'icon_url'),   # embed author
+
+    'title' or ('title', 'title_url') or ('title', 'title_url', 'thumbnail_url'),  #embed title, url, thumbnail
+
+    '''desc.''' or ('''desc.''', 'image_url'),  # embed description, image
+
+    0xabcdef, # or -1 for default embed color
+
+    (   # embed fields
+    '''
+    <field_name|
+    ...field_value....
+    |inline_bool>
+    ''',
+    ),
+
+    'footer_text' or ('footer_text', 'footer_icon_url'),   # embed footer
+
+    datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
+]
+"""
+
 
 def recursive_update(old_dict, update_dict, add_new_keys=True, skip_value="\0"):
     """
@@ -561,7 +588,11 @@ async def replace(
     """
     Edits the embed of a message with a much more tight function
     """
-    embed = discord.Embed(title=title, description=description, color=color)
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
+    )
     if url_image:
         embed.set_image(url=url_image)
 
@@ -583,7 +614,11 @@ async def send(
     """
     Sends an embed with a much more tight function
     """
-    embed = discord.Embed(title=title, description=description, color=color)
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
+    )
     if url_image:
         embed.set_image(url=url_image)
 
@@ -594,6 +629,166 @@ async def send(
         return embed
 
     return await channel.send(embed=embed)
+
+
+def parse_condensed_embed_list(embed_list: Union[list, tuple]):
+    """
+    Parse the condensed embed list syntax used in some embed creation
+    comnands. The syntax is:
+    [
+        'author_name' or ('author_name', 'author_url') or ('author_name', 'author_url', 'icon_url'),   # embed author
+
+        'title' or ('title', 'title_url') or ('title', 'title_url', 'thumbnail_url'),  #embed title, url, thumbnail
+
+        '''desc.''' or ('''desc.''', 'image_url'),  # embed description, image
+
+        0xabcdef, # or -1 for default embed color
+
+        (   # embed fields
+        '''
+        <field_name|
+        ...field_value....
+        |inline_bool>
+        ''',
+        ),
+
+        'footer_text' or ('footer_text', 'footer_icon_url'),   # embed footer
+
+        datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
+    ]
+
+    The list must contain at least 1 element.
+    """
+    arg_count = len(embed_list)
+
+    embed_args = dict(
+        author_name=EmptyEmbed,
+        author_url=EmptyEmbed,
+        author_icon_url=EmptyEmbed,
+        title=EmptyEmbed,
+        url=EmptyEmbed,
+        thumbnail_url=EmptyEmbed,
+        description=EmptyEmbed,
+        image_url=EmptyEmbed,
+        color=0xFFFFAA,
+        fields=(),
+        footer_text=EmptyEmbed,
+        footer_icon_url=EmptyEmbed,
+        timestamp=None,
+    )
+
+    if arg_count > 0:
+        if isinstance(embed_list[0], (tuple, list)):
+            if len(embed_list[0]) == 3:
+                embed_args.update(
+                    author_name=embed_list[0][0] + "",
+                    author_url=embed_list[0][0] + "",
+                    author_icon_url=embed_list[0][2] + "",
+                )
+            elif len(embed_list[0]) == 2:
+                embed_args.update(
+                    author_name=embed_list[0][0] + "",
+                    author_url=embed_list[0][1] + "",
+                )
+            elif len(embed_list[0]) == 1:
+                embed_args.update(
+                    author_name=embed_list[0][0] + "",
+                )
+
+        else:
+            embed_args.update(
+                author_name=embed_list[0] + "",
+            )
+    else:
+        raise ValueError(
+            f"Invalid arguments! The condensed embed syntax is: ```\n{CONDENSED_EMBED_SYNTAX_STRUCTURE}\n```"
+        )
+
+    if arg_count > 1:
+        if isinstance(embed_list[1], (tuple, list)):
+            if len(embed_list[1]) == 3:
+                embed_args.update(
+                    title=embed_list[1][0] + "",
+                    url=embed_list[1][1] + "",
+                    thumbnail_url=embed_list[1][2] + "",
+                )
+
+            elif len(embed_list[1]) == 2:
+                embed_args.update(
+                    title=embed_list[1][0] + "",
+                    url=embed_list[1][1] + "",
+                )
+
+            elif len(embed_list[1]) == 1:
+                embed_args.update(
+                    title=embed_list[1][0] + "",
+                )
+
+        else:
+            embed_args.update(
+                title=embed_list[1] + "",
+            )
+
+    if arg_count > 2:
+        if isinstance(embed_list[2], (tuple, list)):
+            if len(embed_list[2]) == 2:
+                embed_args.update(
+                    description=embed_list[2][0] + "",
+                    image_url=embed_list[2][1] + "",
+                )
+
+            elif len(embed_list[2]) == 1:
+                embed_args.update(
+                    description=embed_list[2][0] + "",
+                )
+
+        else:
+            embed_args.update(
+                description=embed_list[2] + "",
+            )
+
+    if arg_count > 3:
+        if embed_list[3] > -1:
+            embed_args.update(
+                color=embed_list[3] + 0,
+            )
+        else:
+            embed_args.update(
+                color=-1,
+            )
+
+    if arg_count > 4:
+        try:
+            fields = get_fields(*embed_list[4])
+            embed_args.update(fields=fields)
+        except TypeError:
+            raise ValueError(
+                "Invalid format for field string(s) in the condensed embed syntax!"
+                'The format should be `"<name|value|inline>"`'
+            )
+
+    if arg_count > 5:
+        if isinstance(embed_list[5], (tuple, list)):
+            if len(embed_list[5]) == 2:
+                embed_args.update(
+                    footer_text=embed_list[5][0] + "",
+                    footer_icon_url=embed_list[5][1] + "",
+                )
+
+            elif len(embed_list[5]) == 1:
+                embed_args.update(
+                    footer_text=embed_list[5][0] + "",
+                )
+
+        else:
+            embed_args.update(
+                footer_text=embed_list[5] + "",
+            )
+
+    if arg_count > 6:
+        embed_args.update(timestamp=embed_list[6] + "")
+
+    return embed_args
 
 
 def create_as_dict(
@@ -638,8 +833,7 @@ def create_as_dict(
     if description:
         embed_dict["description"] = description
 
-    if color >= 0:
-        embed_dict["color"] = color
+    embed_dict["color"] = color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR
 
     if timestamp:
         if isinstance(timestamp, str):
@@ -710,7 +904,12 @@ def create(
     """
     Creates an embed with a much more tight function.
     """
-    embed = discord.Embed(title=title, url=url, description=description, color=color)
+    embed = discord.Embed(
+        title=title,
+        url=url,
+        description=description,
+        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
+    )
 
     if timestamp:
         if isinstance(timestamp, str):

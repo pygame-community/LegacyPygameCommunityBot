@@ -348,16 +348,21 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
             ext_desc = doc.get("extended description")
             if ext_desc:
-                desc += " " + ext_desc
+                desc = f"> *{desc}*\n\n{ext_desc}"
 
             body += f"**Description:**{newline}{desc}"
 
+            embed_fields = []
+
             example_cmd = doc.get("example command")
             if example_cmd:
-                body += f"{newline * 2}**Example command(s):**{newline}{example_cmd}"
-
-            await embed_utils.replace(
-                original_msg, f"Help for `{func_name}`", body, 0xFFFF00
+                embed_fields.append(["Example command(s):", example_cmd, True])
+            await embed_utils.replace_2(
+                original_msg,
+                title=f"Help for `{func_name}`",
+                description=body,
+                color=0xFFFF00,
+                fields=embed_fields,
             )
             return
 
