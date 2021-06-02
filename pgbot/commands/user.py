@@ -962,6 +962,13 @@ class UserCommand(BaseCommand):
         ->extended description
         The poll can only be closed by the person who started it or by mods.
         """
+        if not utils.check_channel_permissions(
+            self.author, msg.channel, permissions=("view_channel",)
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
         newline = "\n"
 
         if not msg.embeds:

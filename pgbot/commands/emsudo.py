@@ -30,10 +30,11 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo(
         self,
         *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
+        destination: Optional[discord.TextChannel] = None,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo [data] [data]...
+        ->signature pg!emsudo [data] [data] [destination=]...
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments and send them with a message
@@ -54,22 +55,19 @@ class EmsudoCommand(BaseCommand):
         }
         \\`\\`\\`
         -----
-        Implement pg!emsudos, for admins to send multiple embeds via the bot
+        Implement pg!emsudo, for admins to send multiple embeds via the bot
         """
 
-        for i, data in enumerate(datas):
-            if isinstance(data, discord.Message):
-                if not utils.check_channel_permissions(
-                    self.author,
-                    data.channel,
-                    permissions=("view_channel",),
-                ):
-                    raise BotException(
-                        f"Not enough permissions",
-                        "You do not have enough permissions to run this command with the specified arguments.",
-                    )
-            if not i % 50:
-                await asyncio.sleep(0)
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
 
         data_count = len(datas)
         output_embeds = []
@@ -79,6 +77,7 @@ class EmsudoCommand(BaseCommand):
         )
 
         for i, data in enumerate(datas):
+
             if data_count > 1 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -123,6 +122,15 @@ class EmsudoCommand(BaseCommand):
                     util_send_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
                 attachment_msg = data
 
             if attachment_msg:
@@ -373,7 +381,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                     1,
                 )
-            await self.invoke_msg.channel.send(embed=embed)
+            await destination.send(embed=embed)
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
