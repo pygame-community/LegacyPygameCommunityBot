@@ -666,7 +666,7 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
-            emotion.update("confused", random.randint(4, 8))
+            emotion.update("confused", -random.randint(4, 8))
             return await self.call_cmd()
 
         except ArgError as exc:
