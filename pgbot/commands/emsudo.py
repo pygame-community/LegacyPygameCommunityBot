@@ -55,7 +55,7 @@ class EmsudoCommand(BaseCommand):
         }
         \\`\\`\\`
         -----
-        Implement pg!emsudos, for admins to send multiple embeds via the bot
+        Implement pg!emsudo, for admins to send multiple embeds via the bot
         """
 
         if not isinstance(destination, discord.TextChannel):
