@@ -1509,10 +1509,13 @@ class EmsudoCommand(BaseCommand):
                             ):
                                 del validated_embed_dict[k]
                             elif k == "fields":
-                                for i in reversed(range(len(validated_embed_dict["fields"]))):
+                                for i in reversed(
+                                    range(len(validated_embed_dict["fields"]))
+                                ):
                                     if (
                                         "name" not in validated_embed_dict["fields"][i]
-                                        or "value" not in validated_embed_dict["fields"][i]
+                                        or "value"
+                                        not in validated_embed_dict["fields"][i]
                                     ):
                                         validated_embed_dict["fields"].pop(i)
 
@@ -1525,7 +1528,9 @@ class EmsudoCommand(BaseCommand):
 
                 if mode == 0 or mode == 2:
                     if mode == 2:
-                        await self.channel.send(embed=discord.Embed.from_dict(validated_embed_dict))
+                        await self.channel.send(
+                            embed=discord.Embed.from_dict(validated_embed_dict)
+                        )
                     with io.StringIO() as fobj:
                         embed_utils.export_embed_data(
                             {
@@ -1570,7 +1575,9 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 elif mode == 1:
-                    await self.channel.send(embed=discord.Embed.from_dict(validated_embed_dict))
+                    await self.channel.send(
+                        embed=discord.Embed.from_dict(validated_embed_dict)
+                    )
 
             if embed_count > 2:
                 await embed_utils.edit_fields_from_dict(
