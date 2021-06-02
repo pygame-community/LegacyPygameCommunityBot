@@ -664,7 +664,7 @@ class UserCommand(BaseCommand):
         db_obj = db.DiscordDB("emotions")
         all_emotions = db_obj.get({})
 
-        # NOTE: Users shouldn't see this often, as there are a lot of emotions that can override it
+        # NOTE: Users shouldn't see this too often, as there are a lot of emotions that can override it
         msg = (
             f"The snek feels no emotion right now.\n"
             f"There's nothing going on, I'm not bored, happy, sad, or angry, I'm just neutral\n"
@@ -672,6 +672,8 @@ class UserCommand(BaseCommand):
         )
         emoji_link = "https://cdn.discordapp.com/emojis/772643407326740531.png?v=1"
         bot_emotion = "not feeling anything"
+        # A bunch of try-except blocks for when there is a KeyError whilst
+        # Trying to find the emotion
         try:
             if all_emotions["happy"] >= 0:
                 msg = (
@@ -743,8 +745,8 @@ class UserCommand(BaseCommand):
                     f"The snek is angry!\nI've been bonked too many times, you'll also be "
                     f"angry if someone bonked you 50 times :unamused:\n"
                     f"While I am angry, I would replace the classic dario quote with something else, "
-                    f"and give you a slight surprise when you pet me :wink:\n"
-                    f"The snek's anger level is {all_emotions['anger']}, ask for forgiveness from me "
+                    f"and give you a *slight* surprise :wink:\n"
+                    f"The snek's anger level is `{all_emotions['anger']}`, ask for forgiveness from me "
                     f"to lower the anger level!"
                 )
                 emoji_link = (
@@ -1087,11 +1089,13 @@ class UserCommand(BaseCommand):
 
         resource_entries_channel = common.entry_channels["resource"]
 
+        # Retrieves all messages inside resource entries channel
         msgs = await resource_entries_channel.history(
             oldest_first=oldest_first
         ).flatten()
 
-        # Filters any messages that have the same ID as the ones provided in msgs_to_filter
+        # Filters any messages that have the same ID as the ones provided
+        # in msgs_to_filter
         for msg_to_filter in msgs_to_filter:
             msgs = list(filter(filter_func, msgs))
 
@@ -1154,6 +1158,7 @@ class UserCommand(BaseCommand):
                 )
             current_embed = discord.Embed(title=title)
 
+            # Cycles through the top 6 messages
             for msg in top_msg:
                 try:
                     name = msg.content.split("\n")[1].strip().replace("**", "")
