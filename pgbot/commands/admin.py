@@ -1209,8 +1209,10 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 if not mode:
                     if msg.content or msg.embeds or attached_files:
                         msg_embed = msg.embeds[0] if msg.embeds else None
-                        msg_embed_dict = msg_embed.to_dict() if msg_embed is not None else None
-                        
+                        msg_embed_dict = (
+                            msg_embed.to_dict() if msg_embed is not None else None
+                        )
+
                         if (
                             msg_embed_dict
                             and "type" in msg_embed_dict
