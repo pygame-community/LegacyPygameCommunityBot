@@ -33,14 +33,6 @@ class EmsudoCommand(BaseCommand):
         destination: Optional[discord.TextChannel] = None,
     ):
         """
-        ->type More admin commands
-        ->signature pg!sudo <msg>
-        ->description Send a message trough the bot
-        -----
-        Implement pg!sudo, for admins to send messages via the bot
-        """
-
-        """
         ->type emsudo commands
         ->signature pg!emsudo [data] [data] [destination=]...
         ->description Send embeds through the bot
