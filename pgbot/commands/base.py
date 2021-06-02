@@ -666,17 +666,17 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
-            emotion.update("confused", -2)
+            emotion.update("confused", -10)
             return await self.call_cmd()
 
         except ArgError as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", 2 + random.randint(5, 8))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", 2 + random.randint(5, 8))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -685,11 +685,11 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", 2 + random.randint(5, 8))
             title, msg = exc.args
 
         except discord.HTTPException as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", 2 + random.randint(5, 8))
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
@@ -710,7 +710,7 @@ class BaseCommand:
                     )
 
             emotion.update(
-                "confused", len(formatted_exception) // 50 + random.randint(50, 100)
+                "confused", len(formatted_exception) // 50 + random.randint(5, 10)
             )
 
         await embed_utils.replace_2(
