@@ -71,8 +71,8 @@ class EmsudoCommand(BaseCommand):
             > One or more generated embeds based on the given input.
 
         __Raises__:
-            `BotException`: One or more given arguments are invalid.
-            `HTTPException`: An invalid operation was blocked by Discord.
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
         pg!emsudo "This is one embed" "This is another"
@@ -362,8 +362,8 @@ class EmsudoCommand(BaseCommand):
             > is contained in the invocation message.
 
         __Raises__:
-            `BotException`: One or more given arguments are invalid.
-            `HTTPException`: An invalid operation was blocked by Discord.
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
         pg!emsudo_replace 987654321987654321 "Whoops the embed is boring now"
@@ -536,8 +536,8 @@ class EmsudoCommand(BaseCommand):
             > `False` will trigger a `BotException`.
 
         __Raises__:
-            `BotException`: One or more given arguments are invalid.
-            `HTTPException`: An invalid operation was blocked by Discord.
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
         pg!emsudo_add 987654321987654321 "A wild __Embed__ appeared!"
@@ -575,13 +575,13 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_remove <message> [<message>...]
+        ->signature pg!emsudo remove <*messages> [a|attributes=""]
         ->description Remove embeds (or their attributes) through the bot
         ->extended description
         Remove an embed or only their specified attributes from several messages.
 
         __Args__:
-            `*datas: (Message)`
+            `*messages: (Message)`
             > A sequence of messages with an embed.
 
             `a|attributes: (String) =`
@@ -591,13 +591,22 @@ class EmsudoCommand(BaseCommand):
             > (e.g. `author`, `fields`, `footer`),
             > then those can be specified using the dot `.`
             > operator inside this string.
-            >
             > If omitted or empty, all target message
             > embeds will be deleted as a whole.
+            > Embed attributes that become invalid
+            > upon the deletion of their sub-attributes
+            > (if present) will be deleted as a whole, and
+            > the deletion of too many attributes might lead
+            > to the complete deletion of a target embed.
 
         __Raises__:
-            `BotException`: One or more given arguments are invalid.
-            `HTTPException`: An invalid operation was blocked by Discord.
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        
+        ->example command
+        pg!emsudo remove 98765432198765444321
+        pg!emsudo remove 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo remove 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         Implement pg!emsudo_remove, for admins to remove embeds from messages via the bot
         """
@@ -637,7 +646,7 @@ class EmsudoCommand(BaseCommand):
             )
         except ValueError as v:
             raise BotException(
-                "An error occured while handling the command:", v.args[0]
+                "An attribute string parsing error occured:", v.args[0]
             )
         msg_count = len(msgs)
 
@@ -759,7 +768,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_edit <message> <*datas>...
+        ->signature pg!emsudo_edit <message> <*datas> [add_atributes=True] [inner_fields=False]
         ->description Edit an embed through the bot
         ->extended description
         Update the embed of a message using the given inputs.
@@ -794,6 +803,10 @@ class EmsudoCommand(BaseCommand):
             > individually modified by the given input
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
+        
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command pg!emsudo_edit 987654321987654321 "Lol only the embed description changed"
         pg!emsudo_edit 987654321987654321 123456789012345678 251613726327333621
@@ -1075,7 +1088,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_clone(self, *msgs: discord.Message):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_clone <message> [<message>...]
+        ->signature pg!emsudo_clone <*messages>
         ->description Clone all embeds.
         ->extended description
         Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
@@ -1192,14 +1205,15 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_get <message> [<message>...] [a/attributes=""] [name=""] [system_attributes=False] [as_json=True]
+        ->signature pg!emsudo_get <*messages> [a|attributes=""] [name=""] [system_attributes=False] [as_json=True]
         [as_python=False]
         ->description Get the embed data of a message
         ->extended description
         Get the contents of the embed of a message from the given arguments and send it as another message
         (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
         If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
-        ->example command pg!emsudo_get 98765432198765444321
+        ->example command
+        pg!emsudo_get 98765432198765444321
         pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
         pg!emsudo_get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
@@ -1242,7 +1256,7 @@ class EmsudoCommand(BaseCommand):
             )
         except ValueError as v:
             raise BotException(
-                "An error occured while handling the command:", v.args[0]
+                "An attribute string parsing error occured:", v.args[0]
             )
 
         load_embed = embed_utils.create(
@@ -2630,7 +2644,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_clone_fields <message> <index> [<index>...] [clone_to=None]
+        ->signature pg!emsudo_clone_fields <message> <*indices> [clone_to=]
         ->description Clone multiple embed fields through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
@@ -2695,7 +2709,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_remove_fields <message> <index> [<index>...]
+        ->signature pg!emsudo_remove_fields <message> <*indices>
         ->description Remove an embed field through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
