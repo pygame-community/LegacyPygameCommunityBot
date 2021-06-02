@@ -710,7 +710,7 @@ class BaseCommand:
                     )
 
             emotion.update(
-                "confused", len(formatted_exception) // 50 + random.randint(5, 10)
+                "confused", len(formatted_exception) // 50 + random.randint(5, 8)
             )
 
         await embed_utils.replace_2(
