@@ -10,6 +10,7 @@ argument parsing and casting utilities
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import inspect
 import io
@@ -569,16 +570,29 @@ class BaseCommand:
                 "This command is not supported on DMs",
             )
 
-        if (
-            hasattr(func, "fun_cmd")
-            and random.randint(0, 1)
-            and emotion.get("bored") < -600
-        ):
-            raise BotException(
-                "I am Exhausted!",
-                "I have been running a lot of commands lately, and now I am tired.\n"
-                "Give me a bit of a break, and I will be back to normal!",
-            )
+        if hasattr(func, "fun_cmd"):
+            if random.randint(0, 1) and emotion.get("bored") < -600:
+                raise BotException(
+                    "I am Exhausted!",
+                    "I have been running a lot of commands lately, and now I am tired.\n"
+                    "Give me a bit of a break, and I will be back to normal!",
+                )
+
+            confused = emotion.get("confused")
+            if confused > 300 and random.random() < confused / 2000:
+                await embed_utils.replace_2(
+                    self.response_msg,
+                    title=f"I am confused...",
+                    description="Hang on, give me a sec...",
+                )
+
+                await asyncio.sleep(random.randint(3, 5))
+                await embed_utils.replace_2(
+                    self.response_msg,
+                    title="Oh, never mind...",
+                    description="Sorry, I was confused for a sec there",
+                )
+                await asyncio.sleep(0.5)
 
         if self.invoke_msg.reference is not None:
             msg = str(self.invoke_msg.reference.message_id)
@@ -666,17 +680,17 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
-            emotion.update("confused", -2)
+            emotion.update("confused", -random.randint(6, 12))
             return await self.call_cmd()
 
         except ArgError as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", random.randint(2, 6))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", random.randint(2, 6))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -685,11 +699,11 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", random.randint(4, 8))
             title, msg = exc.args
 
         except discord.HTTPException as exc:
-            emotion.update("confused", 2 + random.randint(10, 15))
+            emotion.update("confused", random.randint(5, 10))
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
@@ -710,7 +724,7 @@ class BaseCommand:
                     )
 
             emotion.update(
-                "confused", len(formatted_exception) // 50 + random.randint(50, 100)
+                "confused", len(formatted_exception) // 50 + random.randint(12, 20)
             )
 
         await embed_utils.replace_2(
