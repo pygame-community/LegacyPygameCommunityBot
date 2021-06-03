@@ -421,16 +421,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
                 )
             await destination.send(content=msg_txt)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
-            load_embed,
-            dict(
-                name="Creation Completed",
-                value=f"`{output_count}/{output_count}` messages created\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
-            ),
-            1,
-        )
+        if data_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Creation Completed",
+                    value=f"`{output_count}/{output_count}` messages created\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                1,
+            )
 
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
         await self.invoke_msg.delete()
@@ -588,13 +589,6 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
