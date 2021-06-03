@@ -214,6 +214,33 @@ class AdminCommand(UserCommand, EmsudoCommand):
         ->type More admin commands
         ->signature pg!sudo <msg>
         ->description Send a message through the bot
+        ->extended description
+        Send a sequence of messages contain text from the given
+        data using the specified arguments.
+
+        __Args__:
+            `*datas: (Message|String)`
+            > A sequence of discord messages whose text
+            > or text attachment should be used as input,
+            > or strings.
+
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
+            `from_attachment (bool) = True`
+            > Whether the attachment of an input message should be
+            > used to create a message.
+
+        __Returns__:
+            > One or more generated messages based on the given input.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command
+        pg!sudo "lol" "that" "was" "funny /s" destination=#general
+        pg!sudo 987654321987654321 "Additionally, ..." 123456739242423 from_attachment=True
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
