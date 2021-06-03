@@ -2413,7 +2413,7 @@ class EmsudoCommand(BaseCommand):
         """
         ->type More emsudo commands
         ->signature pg!emsudo edit field <message> <index> <data>
-        ->description Replace an embed field through the bot
+        ->description Edit an embed field through the bot
         ->extended description
         Edit an embed field of the embed of the given message at the specified index.
 
