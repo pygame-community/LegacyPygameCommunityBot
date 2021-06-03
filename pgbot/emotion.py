@@ -10,7 +10,7 @@ import random
 import discord
 import unidecode
 
-from . import common, db, embed_utils
+from . import common, db, embed_utils, utils
 
 EMOTION_CAPS = {
     "happy": (-100, 100),
@@ -33,12 +33,9 @@ def update(emotion_name: str, value: int):
     except KeyError:
         emotions[emotion_name] = value
 
-    if emotions[emotion_name] < EMOTION_CAPS[emotion_name][0]:
-        emotions[emotion_name] = EMOTION_CAPS[emotion_name][0]
-
-    if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
-        emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
-
+    emotions[emotion_name] = utils.clamp(
+        emotions[emotion_name], *EMOTION_CAPS[emotion_name]
+    )
     db_obj.write(emotions)
 
 

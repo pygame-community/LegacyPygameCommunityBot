@@ -618,18 +618,9 @@ class UserCommand(BaseCommand):
         if not msg:
             msg = self.response_msg
 
-        name = " ".join(names)
-        functions = {}
-        for key, func in self.cmds_and_funcs.items():
-            if hasattr(func, "groupname"):
-                functions[f"{func.groupname} {' '.join(func.subcmds)}"] = func
-            else:
-                functions[key] = func
-
-        if name:
-            await utils.send_help_message(msg, self.author, functions, name)
-        else:
-            await utils.send_help_message(msg, self.author, functions, page=page)
+        await utils.send_help_message(
+            msg, self.author, names, self.cmds_and_funcs, self.groups, page
+        )
 
     @fun_command
     async def cmd_pet(self):
