@@ -42,15 +42,6 @@ def update(emotion_name: str, value: int):
     db_obj.write(emotions)
 
 
-def override(emotion_name: str, val_to_override):
-    """
-    Overrides emotion characteristic "emotion_name" with value "val_to_override" object
-    """
-    emotions = db_obj.get({})
-    emotions[emotion_name] = val_to_override
-    db_obj.write(emotions)
-
-
 def get(emotion_name: str):
     """
     Get emotion characteristic 'emotion_name'

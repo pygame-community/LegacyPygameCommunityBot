@@ -349,17 +349,18 @@ async def exec_sandbox(
     start = time.perf_counter()
     while proc.is_alive():
         if start + timeout < time.perf_counter():
+            proc.kill()
             output = Output()
             output.exc = f"Hit timeout of {timeout} seconds!"
-            output.duration = timeout
-            proc.kill()
+            output.duration = time.perf_counter() - start
             return output
 
         try:
             if psproc.memory_info().rss > max_memory:
+                proc.kill()
                 output = Output()
                 output.exc = f"The bot's memory has taken up to {max_memory} bytes!"
-                proc.kill()
+                output.duration = time.perf_counter() - start
                 return output
         except psutil.NoSuchProcess:
             # The process finished but it tried to check it's memory usage
