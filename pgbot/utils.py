@@ -358,11 +358,15 @@ async def send_help_message(
 
             desc = doc["description"]
 
+            desc_list = None
+
             ext_desc = doc.get("extended description")
             if ext_desc:
                 desc = f"> *{desc}*\n\n{ext_desc}"
 
-            body += f"**Description:**\n{desc}"
+            desc_list = desc.split(sep="+===+")
+
+            body += f"**Description:**\n{desc_list[0]}"
 
             embed_fields = []
 
@@ -370,15 +374,26 @@ async def send_help_message(
             if example_cmd:
                 embed_fields.append(["Example command(s):", example_cmd, True])
 
-            embeds.append(
-                await embed_utils.send_2(
-                    None,
-                    title=f"Help for `{func_name}`",
-                    description=body,
-                    color=common.BOT_HELP_PROMPT["color"],
-                    fields=embed_fields,
+            if len(desc_list) == 1:
+                embeds.append(
+                    embed_utils.create(
+                        title=f"Help for `{func_name}`",
+                        description=body,
+                        color=common.BOT_HELP_PROMPT["color"],
+                        fields=embed_fields,
+                    )
                 )
-            )
+            else:
+                desc_list_len = len(desc_list)
+                for i in range(len(desc_list)):
+                    embeds.append(
+                        embed_utils.create(
+                            title=f"Help for `{func_name}`",
+                            description=desc_list[i],
+                            color=common.BOT_HELP_PROMPT["color"],
+                            fields=embed_fields if i == desc_list_len - 1 else (),
+                        )
+                    )
 
     if not embeds:
         return await embed_utils.replace(

@@ -276,6 +276,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
                 if from_attachment:
                     attachment_msg = data
                 else:
@@ -501,6 +510,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
+        destination: Optional[discord.TextChannel] = None,
         as_attachment: bool = False,
         info: bool = False,
         attachments: bool = True,
@@ -508,7 +518,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <message> <message>... [as_attachment] [info] [attachments] [embeds]
+        ->signature pg!sudo_get <*messages> [destination=] [as_attachment] [info] [attachments] [embeds]
         ->description Get the text of messages through the bot
         ->extended description
         Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
@@ -517,18 +527,31 @@ class AdminCommand(UserCommand, EmsudoCommand):
         -----
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
 
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
 
             if not i % 50:
-                # update asyncio event loop stuff
                 await asyncio.sleep(0)
 
         load_embed = embed_utils.create(
@@ -557,7 +580,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ),
                     0,
                 )
-            await self.channel.trigger_typing()
+            await destination.trigger_typing()
             attached_files = None
             if attachments:
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
@@ -586,11 +609,11 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     with io.StringIO(msg.content) as fobj:
                         content_file = discord.File(fobj, "messagedata.txt")
 
-                await self.channel.send(embed=info_embed, file=content_file)
+                await destination.send(embed=info_embed, file=content_file)
 
             elif as_attachment:
                 with io.StringIO(msg.content) as fobj:
-                    await self.channel.send(
+                    await destination.send(
                         file=discord.File(fobj, "messagedata.txt"),
                         embed=embed_utils.create(
                             author_name="Message data",
@@ -798,15 +821,17 @@ class AdminCommand(UserCommand, EmsudoCommand):
     async def cmd_sudo_clone(
         self,
         *msgs: discord.Message,
+        destination: Optional[discord.TextChannel] = None,
         embeds: bool = True,
         attachments: bool = True,
-        spoiler: bool = False,
+        as_spoiler: bool = False,
         info: bool = False,
-        author: bool = True,
+        author_info: bool = False,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone <msg> <msg>... [embeds] [attachments] [spoiler] [info] [author]
+        ->signature pg!sudo_clone <*messages> [destination=] [embeds=True] [attachments=True]
+        [as_spoiler=False] [info=False] [author_info=False]
         ->description Clone a message through the bot
         ->extended description
         Get a message from the given arguments and send it as another message to the channel where this command was invoked.
@@ -814,14 +839,29 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
 
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
 
             if not i % 50:
                 await asyncio.sleep(0)
@@ -847,7 +887,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     0,
                 )
 
-            await self.channel.trigger_typing()
+            await destination.trigger_typing()
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
@@ -859,7 +899,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                     attached_files = [
                         (
-                            await a.to_file(spoiler=a.is_spoiler() or spoiler)
+                            await a.to_file(spoiler=a.is_spoiler() or as_spoiler)
                             if a.size <= file_size_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
@@ -867,7 +907,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     ]
 
             if msg.content or msg.embeds or attached_files:
-                cloned_msg = await self.channel.send(
+                cloned_msg = await destination.send(
                     content=msg.content,
                     embed=msg.embeds[0] if msg.embeds and embeds else None,
                     file=attached_files[0] if attached_files else None,
@@ -888,7 +928,12 @@ class AdminCommand(UserCommand, EmsudoCommand):
 
             if info:
                 await self.channel.send(
-                    embed=embed_utils.get_msg_info_embed(msg, author=author),
+                    embed=embed_utils.get_msg_info_embed(msg, author=author_info),
+                    reference=cloned_msg,
+                )
+            elif author_info:
+                await self.channel.send(
+                    embed=embed_utils.get_member_info_embed(msg.author),
                     reference=cloned_msg,
                 )
 
@@ -922,6 +967,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!info, to get information about a message/member
         """
 
+        checked_channels = set()
         for i, obj in enumerate(objs):
             if isinstance(obj, discord.Message):
                 if not utils.check_channel_permissions(
@@ -933,6 +979,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         f"Not enough permissions",
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
+                else:
+                    checked_channels.add(obj.channel)
+
             if not i % 50:
                 await asyncio.sleep(0)
 
