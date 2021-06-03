@@ -731,11 +731,11 @@ class EmsudoCommand(BaseCommand):
                         0,
                     )
                     await self.channel.trigger_typing()
-                    if not msg.embeds:
-                        raise BotException(
-                            f"Input {i}: Cannot execute command:",
-                            "No embed data found in message.",
-                        )
+                if not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed data found in message.",
+                    )
                 await msg.edit(embed=None)
                 await asyncio.sleep(0)
 
@@ -1188,7 +1188,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                     0,
                 )
-            await self.channel.trigger_typing()
+            await destination.trigger_typing()
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if msg_count > 2 and not j % 3:
@@ -1203,7 +1203,7 @@ class EmsudoCommand(BaseCommand):
                         ),
                         1,
                     )
-                    await self.channel.trigger_typing()
+                    await destination.trigger_typing()
 
                 await destination.send(embed=embed)
 
@@ -1391,7 +1391,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                     0,
                 )
-            await self.channel.trigger_typing()
+            await destination.trigger_typing()
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if embed_count > 2 and not j % 3:
@@ -2097,7 +2097,7 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         index: int,
-        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
@@ -2176,7 +2176,7 @@ class EmsudoCommand(BaseCommand):
             )
         msg_embed = msg.embeds[0]
 
-        if data is None:
+        if data is None or data is False:
             attachment_msg = self.invoke_msg
 
         elif isinstance(data, String):
@@ -2951,12 +2951,12 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *indices: Union[range, int],
-        double_indices: bool = False,
+        multi_indices: bool = False,
         clone_to: Optional[int] = None,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_clone_fields <message> <*indices> [double_indices=False] [clone_to=]
+        ->signature pg!emsudo_clone_fields <message> <*indices> [multi_indices=False] [clone_to=]
         ->description Clone multiple embed fields through the bot
         ->extended description
         Clone embed fields at the given indices of the embed of a message using the specified arguments.
@@ -2972,7 +2972,7 @@ class EmsudoCommand(BaseCommand):
             > `range(start, stop[, step])` objects matching those
             > found in Python.
 
-            `double_indices: (bool) = False`
+            `multi_indices: (bool) = False`
             > Whether indices are allowed to be specified
             > twice in the `*indices` argument. If set to `False`,
             > all duplicate indices will be ignored.
@@ -3026,7 +3026,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 field_indices.append(idx)
 
-        field_indices = field_indices if double_indices else list(set(field_indices))
+        field_indices = field_indices if multi_indices else list(set(field_indices))
         try:
             await embed_utils.clone_fields(
                 msg, msg_embed, field_indices, insertion_index=clone_to
@@ -3042,11 +3042,11 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *indices: Union[range, int],
-        double_indices: bool = False,
+        multi_indices: bool = False,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_remove_fields <message> <*indices>
+        ->signature pg!emsudo_remove_fields <message> <*indices> [multi_indices=False]
         ->description Remove an embed field through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message using the given arguments.
@@ -3062,7 +3062,7 @@ class EmsudoCommand(BaseCommand):
             > `range(start, stop[, step])` objects matching those
             > found in Python.
 
-            `double_indices: (bool) = False`
+            `multi_indices: (bool) = False`
             > Whether indices are allowed to be specified
             > twice in the `*indices` argument. If set to `False`,
             > all duplicate indices will be ignored.
@@ -3112,7 +3112,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 field_indices.append(idx)
 
-        field_indices = field_indices if double_indices else list(set(field_indices))
+        field_indices = field_indices if multi_indices else list(set(field_indices))
         try:
             await embed_utils.remove_fields(msg, msg_embed, field_indices)
         except IndexError:
