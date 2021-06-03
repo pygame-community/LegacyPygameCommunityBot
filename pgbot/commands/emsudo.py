@@ -417,14 +417,14 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not utils.check_channel_permissions(
-                    self.author,
-                    data.channel,
-                    permissions=("view_channel",),
-                ):
-                    raise BotException(
-                        f"Not enough permissions",
-                        "You do not have enough permissions to run this command with the specified arguments.",
-                    )
+                self.author,
+                data.channel,
+                permissions=("view_channel",),
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
             attachment_msg = data
 
         if attachment_msg:
@@ -611,7 +611,7 @@ class EmsudoCommand(BaseCommand):
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
-        
+
         ->example command
         pg!emsudo remove 98765432198765444321
         pg!emsudo remove 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
@@ -624,7 +624,9 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if not msg.channel in checked_channels:
                 if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel", "send_messages")
+                    self.author,
+                    msg.channel,
+                    permissions=("view_channel", "send_messages"),
                 ):
                     raise BotException(
                         f"Not enough permissions",
@@ -663,9 +665,7 @@ class EmsudoCommand(BaseCommand):
                 fields_as_field_dict=True,
             )
         except ValueError as v:
-            raise BotException(
-                "An attribute string parsing error occured:", v.args[0]
-            )
+            raise BotException("An attribute string parsing error occured:", v.args[0])
         msg_count = len(msgs)
 
         if attribs:
@@ -799,7 +799,7 @@ class EmsudoCommand(BaseCommand):
             > individually modified by the given input
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
-        
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
@@ -1090,7 +1090,9 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
 
     @add_group("emsudo", "clone")
-    async def cmd_emsudo_clone(self, *msgs: discord.Message, destination: Optional[discord.TextChannel] = None):
+    async def cmd_emsudo_clone(
+        self, *msgs: discord.Message, destination: Optional[discord.TextChannel] = None
+    ):
         """
         ->type emsudo commands
         ->signature pg!emsudo_clone <*messages>
@@ -1115,7 +1117,7 @@ class EmsudoCommand(BaseCommand):
             > individually modified by the given input
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
-        
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
@@ -1153,7 +1155,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 else:
                     checked_channels.add(msg.channel)
-            
+
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -1256,7 +1258,7 @@ class EmsudoCommand(BaseCommand):
         __Args__:
             `*messages: (Message)`
             > A sequence of discord messages whose embeds should
-            > be serialized into a JSON or Python format. 
+            > be serialized into a JSON or Python format.
 
             `a|attributes: (String) =`
             > A string containing the attributes to extract
@@ -1283,7 +1285,7 @@ class EmsudoCommand(BaseCommand):
             > A destination channel to send the output to.
 
             >+++<
-            
+
             `output_name (String) =`
             > A name for the first output data.
 
@@ -1296,7 +1298,6 @@ class EmsudoCommand(BaseCommand):
             > else if `as_json=` is `True` send `.json` output,
             > otherwise send `.txt` output.
 
-        
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
@@ -1337,7 +1338,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 else:
                     checked_channels.add(msg.channel)
-            
+
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -1364,9 +1365,7 @@ class EmsudoCommand(BaseCommand):
                 fields_as_field_dict=True,
             )
         except ValueError as v:
-            raise BotException(
-                "An attribute string parsing error occured:", v.args[0]
-            )
+            raise BotException("An attribute string parsing error occured:", v.args[0])
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
@@ -1445,7 +1444,9 @@ class EmsudoCommand(BaseCommand):
                 corrected_embed_dict = embed_utils.copy_embed_dict(embed_dict)
                 if embed_dict:
                     if mode == 1 or mode == 2:
-                        corrected_embed_dict = embed_utils.correct_embed_dict(corrected_embed_dict)
+                        corrected_embed_dict = embed_utils.correct_embed_dict(
+                            corrected_embed_dict
+                        )
 
                 else:
                     raise BotException(
@@ -1455,7 +1456,9 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 if mode == 0 or mode == 2:
-                    if mode == 2 and embed_utils.validate_embed_dict(corrected_embed_dict):
+                    if mode == 2 and embed_utils.validate_embed_dict(
+                        corrected_embed_dict
+                    ):
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1474,9 +1477,7 @@ class EmsudoCommand(BaseCommand):
                         await destination.send(
                             embed=embed_utils.create(
                                 author_name="Embed Data",
-                                title=(
-                                    output_name
-                                )
+                                title=(output_name)
                                 if len(msgs) < 2
                                 else "(add a title by editing this embed)",
                                 fields=(
@@ -1486,7 +1487,12 @@ class EmsudoCommand(BaseCommand):
                                         True,
                                     ),
                                 ),
-                                footer_text="Structural validity: "+( "Valid." if embed_utils.validate_embed_dict(embed_dict) else "Invalid.\nMight lead to embed creation errors when used alone.")
+                                footer_text="Structural validity: "
+                                + (
+                                    "Valid."
+                                    if embed_utils.validate_embed_dict(embed_dict)
+                                    else "Invalid.\nMight lead to embed creation errors when used alone."
+                                ),
                             ),
                             file=discord.File(
                                 fobj,
@@ -1508,7 +1514,7 @@ class EmsudoCommand(BaseCommand):
                     else:
                         raise BotException(
                             "Invalid Embed data",
-                            "Could not generate a valid embed from the extracted embed attributes."
+                            "Could not generate a valid embed from the extracted embed attributes.",
                         )
 
             if embed_count > 2:
@@ -1739,14 +1745,14 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not utils.check_channel_permissions(
-                    self.author,
-                    data.channel,
-                    permissions=("view_channel",),
-                ):
-                    raise BotException(
-                        f"Not enough permissions",
-                        "You do not have enough permissions to run this command with the specified arguments.",
-                    )
+                self.author,
+                data.channel,
+                permissions=("view_channel",),
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
             attachment_msg = data
 
         if attachment_msg:
@@ -2087,14 +2093,14 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not utils.check_channel_permissions(
-                    self.author,
-                    data.channel,
-                    permissions=("view_channel",),
-                ):
-                    raise BotException(
-                        f"Not enough permissions",
-                        "You do not have enough permissions to run this command with the specified arguments.",
-                    )
+                self.author,
+                data.channel,
+                permissions=("view_channel",),
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
             attachment_msg = data
 
         if attachment_msg:
@@ -2431,14 +2437,14 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not utils.check_channel_permissions(
-                    self.author,
-                    data.channel,
-                    permissions=("view_channel",),
-                ):
-                    raise BotException(
-                        f"Not enough permissions",
-                        "You do not have enough permissions to run this command with the specified arguments.",
-                    )
+                self.author,
+                data.channel,
+                permissions=("view_channel",),
+            ):
+                raise BotException(
+                    f"Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
             attachment_msg = data
 
         if attachment_msg:

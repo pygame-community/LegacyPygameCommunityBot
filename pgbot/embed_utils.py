@@ -654,7 +654,7 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
 
         'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
-        datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
+        datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
     ]
 
     The list must contain at least 1 element.
@@ -889,14 +889,16 @@ def create_as_dict(
 def validate_embed_dict(embed_dict):
     if not embed_dict:
         return False
-    
+
     valid = True
     embed_dict_len = len(embed_dict)
     for k in tuple(embed_dict.keys()):
         if (
-            embed_dict_len == 1 and (k == "color" or k == "timestamp")
-            or embed_dict_len == 2 and ("color" in embed_dict and "timestamp" in embed_dict)
-            ):
+            embed_dict_len == 1
+            and (k == "color" or k == "timestamp")
+            or embed_dict_len == 2
+            and ("color" in embed_dict and "timestamp" in embed_dict)
+        ):
             valid = False
         elif (
             not embed_dict[k]
@@ -917,8 +919,9 @@ def validate_embed_dict(embed_dict):
                 ):
                     valid = False
                     break
-    
+
     return valid
+
 
 def correct_embed_dict(embed_dict):
     for k in tuple(embed_dict.keys()):
@@ -940,8 +943,9 @@ def correct_embed_dict(embed_dict):
                     or "value" not in embed_dict["fields"][i]
                 ):
                     embed_dict["fields"].pop(i)
-    
+
     return embed_dict
+
 
 def create(
     author_name=EmptyEmbed,

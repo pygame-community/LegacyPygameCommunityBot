@@ -539,7 +539,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                 else:
                     checked_channels.add(msg.channel)
-            
+
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -838,7 +838,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     )
                 else:
                     checked_channels.add(msg.channel)
-            
+
             if not i % 50:
                 await asyncio.sleep(0)
 
