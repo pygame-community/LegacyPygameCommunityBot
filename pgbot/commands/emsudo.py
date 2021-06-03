@@ -574,7 +574,6 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
         await self.invoke_msg.delete()
 
-
     @add_group("emsudo", "replace")
     async def cmd_emsudo_replace(
         self,
@@ -1088,7 +1087,9 @@ class EmsudoCommand(BaseCommand):
 
     @add_group("emsudo", "swap")
     async def cmd_emsudo_swap(
-        self, msg_a: discord.Message, msg_b: discord.Message,
+        self,
+        msg_a: discord.Message,
+        msg_b: discord.Message,
     ):
         """
         ->type More emsudo commands
@@ -1127,7 +1128,7 @@ class EmsudoCommand(BaseCommand):
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
-        
+
         bot_member_or_user = None
         bot_id = None
         if self.guild is not None:
@@ -1138,13 +1139,13 @@ class EmsudoCommand(BaseCommand):
         else:
             bot_member_or_user = common.bot.user
             bot_id = bot_member_or_user.id
-        
+
         if not msg_a.embeds or not msg_b.embeds:
             raise BotException(
                 "Cannot execute command:",
                 "No embed data found in on of the given messages.",
             )
-        
+
         elif bot_id not in (msg_a.author.id, msg_b.author.id):
             raise BotException(
                 "Cannot execute command:",
