@@ -350,13 +350,15 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
 
             ext_desc = doc.get("extended description")
             if ext_desc:
-                desc += " " + ext_desc
+                desc = f"> *{desc}*\n\n{ext_desc}"
 
             body += f"**Description:**\n{desc}"
 
+            embed_fields = []
+
             example_cmd = doc.get("example command")
             if example_cmd:
-                body += f"\n\n**Example command(s):**\n{example_cmd}"
+                embed_fields.append(["Example command(s):", example_cmd, True])
 
             # TODO
             # if hasattr(func, "subcmds"):
@@ -366,8 +368,12 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             #         body += f"{i}. `{subcmd_doc['signature']}`\n" \
             #                 f"{subcmd_doc['description']}\n\n"
 
-            await embed_utils.replace(
-                original_msg, f"Help for `{func_name}`", body, 0xFFFF00
+            await embed_utils.replace_2(
+                original_msg,
+                title=f"Help for `{func_name}`",
+                description=body,
+                color=0xFFFF00,
+                fields=embed_fields,
             )
             return
 
