@@ -1578,7 +1578,7 @@ class EmsudoCommand(BaseCommand):
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
-        
+
         ->example command
         pg!emsudo_add_field 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -1733,7 +1733,7 @@ class EmsudoCommand(BaseCommand):
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
-        
+
         ->example command
         pg!emsudo_add_fields 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -2373,7 +2373,7 @@ class EmsudoCommand(BaseCommand):
             > Note that the given embed field data musn't
             > represent a valid embed field, as only the
             > attributes that should change need to be
-            > specified. 
+            > specified.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
@@ -2536,7 +2536,7 @@ class EmsudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
 
-        
+
         ->example command
         pg!emsudo_edit_fields 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -2910,7 +2910,7 @@ class EmsudoCommand(BaseCommand):
 
             `index_a: (int)`
             > An index of an existing embed field.
-            
+
             `index_b: (int)`
             > An index of another existing embed field.
 
@@ -3137,7 +3137,7 @@ class EmsudoCommand(BaseCommand):
             `message: (Message)`
             > A discord message whose embed fields
             > should be deleted.
-        
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
