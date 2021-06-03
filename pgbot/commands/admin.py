@@ -276,6 +276,15 @@ class AdminCommand(UserCommand, EmsudoCommand):
                     output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
                 if from_attachment:
                     attachment_msg = data
                 else:
@@ -518,17 +527,20 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
 
+        checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
-
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
+            
             if not i % 50:
-                # update asyncio event loop stuff
                 await asyncio.sleep(0)
 
         load_embed = embed_utils.create(
@@ -814,15 +826,19 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
 
+        checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
-
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
+            
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -922,6 +938,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         Implement pg!info, to get information about a message/member
         """
 
+        checked_channels = set()
         for i, obj in enumerate(objs):
             if isinstance(obj, discord.Message):
                 if not utils.check_channel_permissions(
@@ -933,6 +950,9 @@ class AdminCommand(UserCommand, EmsudoCommand):
                         f"Not enough permissions",
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
+                else:
+                    checked_channels.add(obj.channel)
+
             if not i % 50:
                 await asyncio.sleep(0)
 

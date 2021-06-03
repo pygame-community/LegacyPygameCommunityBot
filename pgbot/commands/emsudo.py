@@ -62,7 +62,7 @@ class EmsudoCommand(BaseCommand):
             > assume that embed data (Python or JSON embed data)
             > is contained in the invocation message.
 
-            `destination: Channel =`
+            `destination: (Channel) =`
             > A destination channel to send the generated outputs to.
             > If omitted, the destination will be the channel where
             > this command was invoked.
@@ -416,6 +416,15 @@ class EmsudoCommand(BaseCommand):
                 replace_embed_args.update(description=data.string)
 
         elif isinstance(data, discord.Message):
+            if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
             attachment_msg = data
 
         if attachment_msg:
@@ -530,7 +539,7 @@ class EmsudoCommand(BaseCommand):
             > assume that embed data (Python or JSON embed data)
             > is contained in the invocation message.
 
-            `overwrite: bool = False`
+            `overwrite: (bool) = False`
             > If set to `True`, replace the previously
             > existing embed of the target message.
             > `False` will trigger a `BotException`.
@@ -611,14 +620,23 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_remove, for admins to remove embeds from messages via the bot
         """
 
+        checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel", "send_messages")
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                elif not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed data found in message.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
 
             if not i % 50:
                 await asyncio.sleep(0)
@@ -665,12 +683,6 @@ class EmsudoCommand(BaseCommand):
                         0,
                     )
                 await self.channel.trigger_typing()
-                if not msg.embeds:
-                    raise BotException(
-                        f"Input {i}: Cannot execute command:",
-                        "No embed data found in message.",
-                    )
-
                 msg_embed = msg.embeds[0]
                 embed_dict = msg_embed.to_dict()
 
@@ -694,27 +706,11 @@ class EmsudoCommand(BaseCommand):
                     embed_utils.recursive_delete(embed_dict, embed_mask_dict)
 
                 if embed_dict:
-                    for k in tuple(embed_dict.keys()):
-                        if (
-                            not embed_dict[k]
-                            or k == "footer"
-                            and "text" not in embed_dict[k]
-                            or k == "author"
-                            and "name" not in embed_dict[k]
-                            or k in ("thumbnail", "image")
-                            and "url" not in embed_dict[k]
-                        ):
-                            del embed_dict[k]
-
-                        elif k == "fields":
-                            for i in reversed(range(len(embed_dict["fields"]))):
-                                if (
-                                    "name" not in embed_dict["fields"][i]
-                                    or "value" not in embed_dict["fields"][i]
-                                ):
-                                    embed_dict["fields"].pop(i)
-
-                    final_embed = discord.Embed.from_dict(embed_dict)
+                    embed_dict = embed_utils.correct_embed_dict(embed_dict)
+                    if embed_dict:
+                        final_embed = discord.Embed.from_dict(embed_dict)
+                    else:
+                        final_embed = None
                 else:
                     final_embed = None
 
@@ -791,13 +787,13 @@ class EmsudoCommand(BaseCommand):
             > attributes that are meant to change
             > need to be supplied.
 
-            `add_attributes: bool = True`
+            `add_attributes: (bool) = True`
             > Whether the input embed data should add new
             > attributes to the embed in the target message.
             > If set to `False`, only the attributes present
             > in the target embed will be changed.
 
-            `inner_fields: bool = False`
+            `inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
             > embed (if present) also will be able to be
             > individually modified by the given input
@@ -894,6 +890,15 @@ class EmsudoCommand(BaseCommand):
                     edit_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
                 attachment_msg = data
 
             if attachment_msg:
@@ -1085,28 +1090,70 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
 
     @add_group("emsudo", "clone")
-    async def cmd_emsudo_clone(self, *msgs: discord.Message):
+    async def cmd_emsudo_clone(self, *msgs: discord.Message, destination: Optional[discord.TextChannel] = None):
         """
         ->type emsudo commands
         ->signature pg!emsudo_clone <*messages>
         ->description Clone all embeds.
         ->extended description
-        Get a message from the given arguments and send it as another message (only containing its embed) to the channel where this command was invoked.
+        Get a message's embeds from the given arguments and send them
+        as another message (each only containing embeds) to the specified destination channel.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose embeds should be cloned
+
+            `add_attributes: (bool) = True`
+            > Whether the input embed data should add new
+            > attributes to the embed in the target message.
+            > If set to `False`, only the attributes present
+            > in the target embed will be changed.
+
+            `inner_fields: (bool) = False`
+            > If set to `True`, the embed fields of the target
+            > embed (if present) also will be able to be
+            > individually modified by the given input
+            > embed data. If `False`, all embed fields will
+            > be modified as a single embed attribute.
+        
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         ->example command
         pg!emsudo_clone 987654321987654321 123456789123456789 https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
 
-        for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
 
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        checked_channels = set()
+        for i, msg in enumerate(msgs):
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                elif not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed data found in message.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
+            
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -1139,16 +1186,9 @@ class EmsudoCommand(BaseCommand):
                     0,
                 )
             await self.channel.trigger_typing()
-
-            if not msg.embeds:
-                raise BotException(
-                    f"Input {i}: Cannot execute command:",
-                    "No embed data found in message.",
-                )
-
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
-                if msg_count > 1 and not j % 3:
+                if msg_count > 2 and not j % 3:
                     await embed_utils.edit_field_from_dict(
                         self.response_msg,
                         load_embed,
@@ -1162,7 +1202,7 @@ class EmsudoCommand(BaseCommand):
                     )
                     await self.channel.trigger_typing()
 
-                await self.channel.send(embed=embed)
+                await destination.send(embed=embed)
 
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
@@ -1198,20 +1238,68 @@ class EmsudoCommand(BaseCommand):
         a: String = String(""),
         attributes: String = String(""),
         mode: int = 0,
-        name: String = String("(add a title by editing this embed)"),
+        destination: Optional[discord.TextChannel] = None,
+        output_name: String = String("(add a title by editing this embed)"),
         system_attributes: bool = False,
         as_json: bool = True,
         as_python: bool = False,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_get <*messages> [a|attributes=""] [name=""] [system_attributes=False] [as_json=True]
+        ->signature pg!emsudo_get <*messages> [a|attributes=""] [mode=0] [destination=] [output_name=""] [system_attributes=False] [as_json=True]
         [as_python=False]
         ->description Get the embed data of a message
         ->extended description
         Get the contents of the embed of a message from the given arguments and send it as another message
-        (with a `.txt` file attachment containing the embed data as a Python dictionary) to the channel where this command was invoked.
-        If specific embed attributes are specified, then only those will be fetched from the embed of the given message, otherwise all attributes will be fetched.
+        to a given destination channel in a serialized form.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose embeds should
+            > be serialized into a JSON or Python format. 
+
+            `a|attributes: (String) =`
+            > A string containing the attributes to extract
+            > from the target embeds. If those attributes
+            > have attributes themselves
+            > (e.g. `author`, `fields`, `footer`),
+            > then those can be specified using the dot `.`
+            > operator inside this string.
+            > If omitted or empty, the attributes of
+            > all target message embeds will be serialized.
+            > Embed attributes that become invalid
+            > upon their extraction (missing required sub-attributes, etc.)
+            > will still be included in the serialized output,
+            > but that output might not be enough
+            > to successfully generate embeds anymore.
+
+            `mode: (bool) = 0`
+            > `0`: Embed serialization only.
+            > `1`: Embed creation from the selected
+            > attributes (when possible).
+            > `2`: `0` and `1` together.
+
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
+            >+++<
+            
+            `output_name (String) =`
+            > A name for the first output data.
+
+            `system_attributes: (bool) = True`
+            > Whether to include Discord generated embed
+            > attributes in the serialized output.
+
+            `as_python (bool) = False``as_json (bool) = True`
+            > If `as_python=` is `True` send `.py` output,
+            > else if `as_json=` is `True` send `.json` output,
+            > otherwise send `.txt` output.
+
+        
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         ->example command
         pg!emsudo_get 98765432198765444321
         pg!emsudo_get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
@@ -1220,15 +1308,36 @@ class EmsudoCommand(BaseCommand):
         Implement pg!emsudo_get, to return the embed of a message as a dictionary in a text file.
         """
 
-        for i, msg in enumerate(msgs):
-            if not utils.check_channel_permissions(
-                self.author, msg.channel, permissions=("view_channel",)
-            ):
-                raise BotException(
-                    f"Not enough permissions",
-                    "You do not have enough permissions to run this command with the specified arguments.",
-                )
+        output_name = output_name.string
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
 
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        checked_channels = set()
+        for i, msg in enumerate(msgs):
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author, msg.channel, permissions=("view_channel",)
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                elif not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed data found in message.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
+            
             if not i % 50:
                 await asyncio.sleep(0)
 
@@ -1282,12 +1391,6 @@ class EmsudoCommand(BaseCommand):
                     0,
                 )
             await self.channel.trigger_typing()
-            if not msg.embeds:
-                raise BotException(
-                    f"Input {i}: Cannot execute command:",
-                    "No embed data found in message.",
-                )
-
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if embed_count > 2 and not j % 3:
@@ -1339,35 +1442,10 @@ class EmsudoCommand(BaseCommand):
                             embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                         )
 
-                validated_embed_dict = embed_utils.copy_embed_dict(embed_dict)
+                corrected_embed_dict = embed_utils.copy_embed_dict(embed_dict)
                 if embed_dict:
-                    if mode == 0 or mode == 2:
-                        for k in tuple(embed_dict.keys()):
-                            if not embed_dict[k]:
-                                del embed_dict[k]
-
                     if mode == 1 or mode == 2:
-                        for k in tuple(validated_embed_dict.keys()):
-                            if (
-                                not validated_embed_dict[k]
-                                or k == "footer"
-                                and "text" not in validated_embed_dict[k]
-                                or k == "author"
-                                and "name" not in validated_embed_dict[k]
-                                or k in ("thumbnail", "image")
-                                and "url" not in validated_embed_dict[k]
-                            ):
-                                del validated_embed_dict[k]
-                            elif k == "fields":
-                                for i in reversed(
-                                    range(len(validated_embed_dict["fields"]))
-                                ):
-                                    if (
-                                        "name" not in validated_embed_dict["fields"][i]
-                                        or "value"
-                                        not in validated_embed_dict["fields"][i]
-                                    ):
-                                        validated_embed_dict["fields"].pop(i)
+                        corrected_embed_dict = embed_utils.correct_embed_dict(corrected_embed_dict)
 
                 else:
                     raise BotException(
@@ -1377,9 +1455,9 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 if mode == 0 or mode == 2:
-                    if mode == 2:
-                        await self.channel.send(
-                            embed=discord.Embed.from_dict(validated_embed_dict)
+                    if mode == 2 and embed_utils.validate_embed_dict(corrected_embed_dict):
+                        await destination.send(
+                            embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
                     with io.StringIO() as fobj:
                         embed_utils.export_embed_data(
@@ -1393,14 +1471,11 @@ class EmsudoCommand(BaseCommand):
                             as_json=True if as_json and not as_python else False,
                         )
                         fobj.seek(0)
-                        await self.channel.send(
-                            embed=await embed_utils.send_2(
-                                None,
+                        await destination.send(
+                            embed=embed_utils.create(
                                 author_name="Embed Data",
                                 title=(
-                                    embed_dict.get(
-                                        "title", "(add a title by editing this embed)"
-                                    )
+                                    output_name
                                 )
                                 if len(msgs) < 2
                                 else "(add a title by editing this embed)",
@@ -1411,11 +1486,12 @@ class EmsudoCommand(BaseCommand):
                                         True,
                                     ),
                                 ),
+                                footer_text="Structural validity: "+( "Valid." if embed_utils.validate_embed_dict(embed_dict) else "Invalid.\nMight lead to embed creation errors when used alone.")
                             ),
                             file=discord.File(
                                 fobj,
                                 filename=(
-                                    "embeddata.json"
+                                    "embeddata.py"
                                     if as_python
                                     else "embeddata.json"
                                     if as_json
@@ -1425,9 +1501,15 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 elif mode == 1:
-                    await self.channel.send(
-                        embed=discord.Embed.from_dict(validated_embed_dict)
-                    )
+                    if embed_utils.validate_embed_dict(corrected_embed_dict):
+                        await destination.send(
+                            embed=discord.Embed.from_dict(corrected_embed_dict)
+                        )
+                    else:
+                        raise BotException(
+                            "Invalid Embed data",
+                            "Could not generate a valid embed from the extracted embed attributes."
+                        )
 
             if embed_count > 2:
                 await embed_utils.edit_fields_from_dict(
@@ -1656,6 +1738,15 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, discord.Message):
+            if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
             attachment_msg = data
 
         if attachment_msg:
@@ -1995,6 +2086,15 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, discord.Message):
+            if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
             attachment_msg = data
 
         if attachment_msg:
@@ -2330,6 +2430,15 @@ class EmsudoCommand(BaseCommand):
                 )
 
         elif isinstance(data, discord.Message):
+            if not utils.check_channel_permissions(
+                    self.author,
+                    data.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
             attachment_msg = data
 
         if attachment_msg:

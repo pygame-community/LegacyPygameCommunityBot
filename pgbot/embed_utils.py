@@ -139,23 +139,23 @@ DEFAULT_EMBED_COLOR = 0xFFFFAA
 CONDENSED_EMBED_SYNTAX_STRUCTURE = """
 # Condensed embed data list syntax. String elements that are empty "" will be ignored.
 [
-    'author_name' or ('author_name', 'author_url') or ('author_name', 'author_url', 'icon_url'),   # embed author
+    'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'icon.url'),   # embed author
 
-    'title' or ('title', 'title_url') or ('title', 'title_url', 'thumbnail_url'),  #embed title, url, thumbnail
+    'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
 
-    '''desc.''' or ('''desc.''', 'image_url'),  # embed description, image
+    '''desc.''' or ('''desc.''', 'image.url'),  # embed description, image
 
     0xabcdef, # or -1 for default embed color
 
-    (   # embed fields
+    [   # embed fields
     '''
-    <field_name|
-    ...field_value....
-    |inline_bool>
+    <field.name|
+    ...field.value....
+    |field.inline>
     ''',
-    ),
+    ],
 
-    'footer_text' or ('footer_text', 'footer_icon_url'),   # embed footer
+    'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
     datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
 ]
@@ -636,25 +636,25 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
     Parse the condensed embed list syntax used in some embed creation
     comnands. The syntax is:
     [
-        'author_name' or ('author_name', 'author_url') or ('author_name', 'author_url', 'icon_url'),   # embed author
+        'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'icon.url'),   # embed author
 
-        'title' or ('title', 'title_url') or ('title', 'title_url', 'thumbnail_url'),  #embed title, url, thumbnail
+        'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
 
-        '''desc.''' or ('''desc.''', 'image_url'),  # embed description, image
+        '''desc.''' or ('''desc.''', 'image.url'),  # embed description, image
 
         0xabcdef, # or -1 for default embed color
 
-        (   # embed fields
+        [   # embed fields
         '''
-        <field_name|
-        ...field_value....
-        |inline_bool>
+        <field.name|
+        ...field.value....
+        |field.inline>
         ''',
-        ),
+        ],
 
-        'footer_text' or ('footer_text', 'footer_icon_url'),   # embed footer
+        'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
-        datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
+        datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
     ]
 
     The list must contain at least 1 element.
@@ -885,6 +885,63 @@ def create_as_dict(
 
     return embed_dict
 
+
+def validate_embed_dict(embed_dict):
+    if not embed_dict:
+        return False
+    
+    valid = True
+    embed_dict_len = len(embed_dict)
+    for k in tuple(embed_dict.keys()):
+        if (
+            embed_dict_len == 1 and (k == "color" or k == "timestamp")
+            or embed_dict_len == 2 and ("color" in embed_dict and "timestamp" in embed_dict)
+            ):
+            valid = False
+        elif (
+            not embed_dict[k]
+            or k == "footer"
+            and "text" not in embed_dict[k]
+            or k == "author"
+            and "name" not in embed_dict[k]
+            or k in ("thumbnail", "image")
+            and "url" not in embed_dict[k]
+        ):
+            valid = False
+            break
+        elif k == "fields":
+            for i in reversed(range(len(embed_dict["fields"]))):
+                if (
+                    "name" not in embed_dict["fields"][i]
+                    or "value" not in embed_dict["fields"][i]
+                ):
+                    valid = False
+                    break
+    
+    return valid
+
+def correct_embed_dict(embed_dict):
+    for k in tuple(embed_dict.keys()):
+        if (
+            not embed_dict[k]
+            or k == "footer"
+            and "text" not in embed_dict[k]
+            or k == "author"
+            and "name" not in embed_dict[k]
+            or k in ("thumbnail", "image")
+            and "url" not in embed_dict[k]
+        ):
+            del embed_dict[k]
+
+        elif k == "fields":
+            for i in reversed(range(len(embed_dict["fields"]))):
+                if (
+                    "name" not in embed_dict["fields"][i]
+                    or "value" not in embed_dict["fields"][i]
+                ):
+                    embed_dict["fields"].pop(i)
+    
+    return embed_dict
 
 def create(
     author_name=EmptyEmbed,
