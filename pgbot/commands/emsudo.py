@@ -41,7 +41,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo <*datas> [destination=]...
+        ->signature pg!emsudo <*datas> [destination=]
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments
@@ -69,6 +69,8 @@ class EmsudoCommand(BaseCommand):
 
         __Returns__:
             > One or more generated embeds based on the given input.
+
+        +===+
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
@@ -1095,7 +1097,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo_clone <*messages>
+        ->signature pg!emsudo_clone <*messages> [destina]
         ->description Clone all embeds.
         ->extended description
         Get a message's embeds from the given arguments and send them
@@ -1105,12 +1107,6 @@ class EmsudoCommand(BaseCommand):
             `*messages: (Message)`
             > A sequence of discord messages whose embeds should be cloned
 
-            `add_attributes: (bool) = True`
-            > Whether the input embed data should add new
-            > attributes to the embed in the target message.
-            > If set to `False`, only the attributes present
-            > in the target embed will be changed.
-
             `inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
             > embed (if present) also will be able to be
@@ -1118,9 +1114,13 @@ class EmsudoCommand(BaseCommand):
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
 
+        __Returns__:
+            > One or more clones of embeds in messages based on the given input.
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_clone 987654321987654321 123456789123456789
         https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
@@ -1261,6 +1261,9 @@ class EmsudoCommand(BaseCommand):
             > A sequence of discord messages whose embeds should
             > be serialized into a JSON or Python format.
 
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
             `a|attributes: (String) =`
             > A string containing the attributes to extract
             > from the target embeds. If those attributes
@@ -1281,9 +1284,6 @@ class EmsudoCommand(BaseCommand):
             > `1`: Embed creation from the selected
             > attributes (when possible).
             > `2`: `0` and `1` together.
-
-            `destination (TextChannel) = `
-            > A destination channel to send the output to.
 
             +===+
 
