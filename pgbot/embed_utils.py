@@ -912,7 +912,7 @@ def validate_embed_dict(embed_dict):
             valid = False
             break
         elif k == "fields":
-            for i in reversed(range(len(embed_dict["fields"]))):
+            for i in range(len(embed_dict["fields"])):
                 if (
                     "name" not in embed_dict["fields"][i]
                     or "value" not in embed_dict["fields"][i]
