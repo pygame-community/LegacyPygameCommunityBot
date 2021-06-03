@@ -319,7 +319,7 @@ class EmsudoCommand(BaseCommand):
                 )
             await destination.send(embed=embed)
 
-        if msg_count > 2:
+        if data_count > 2:
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
                 load_embed,
@@ -1094,7 +1094,7 @@ class EmsudoCommand(BaseCommand):
         """
         ->type More emsudo commands
         ->signature pg!emsudo swap <message> <message>
-        ->description Swap embed fields through the bot
+        ->description Swap embeds between messages through the bot
         ->extended description
         Swap the embeds of two given messages.
 
