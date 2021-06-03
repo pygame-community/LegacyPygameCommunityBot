@@ -1122,7 +1122,8 @@ class EmsudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
         ->example command
-        pg!emsudo_clone 987654321987654321 123456789123456789 https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
+        pg!emsudo_clone 987654321987654321 123456789123456789
+        https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         Implement pg!_emsudo_clone, to get the embed of a message and send it.
         """
@@ -1284,7 +1285,7 @@ class EmsudoCommand(BaseCommand):
             `destination (TextChannel) = `
             > A destination channel to send the output to.
 
-            >+++<
+            +===+
 
             `output_name (String) =`
             > A name for the first output data.
@@ -1297,6 +1298,7 @@ class EmsudoCommand(BaseCommand):
             > If `as_python=` is `True` send `.py` output,
             > else if `as_json=` is `True` send `.json` output,
             > otherwise send `.txt` output.
+
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
@@ -1556,7 +1558,27 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_add_field <message> <data>
         ->description Add an embed field through the bot
         ->extended description
-        Add an embed field to the embed of a message in the channel where this command was invoked using the given arguments.
+        Add an embed field to the embed of the given message.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `data: (CodeBlock|String)`
+            > Data to modify the target embed with.
+            > Can be a string matching the 'condensed
+            > embed data list' syntax for an embed field
+            > `"<name|value[|inline]>"`, or a code block
+            > containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary, or a condensed embed data list.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        
         ->example command
         pg!emsudo_add_field 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -1678,14 +1700,40 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_add_fields(
         self,
         msg: discord.Message,
-        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
         ->signature pg!emsudo_add_fields <message> [data]
         ->description Add embed fields through the bot
         ->extended description
-        Add multiple embed fields to the embed of a message in the channel where this command was invoked using the given arguments.
+        Add multiple embed fields to the embed of a message using the given arguments.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `data: (Message|CodeBlock|String|bool) =`
+            > Data to modify the target embed with.
+            > Can be a discord message whose first attachment contains
+            > JSON or Python embed field data, an empty string
+            > (retrieves embed data from to the
+            > invocation message of this command),
+            > a code block containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary or the 'condensed embed data list'
+            > syntax for multiuple embed fields
+            > `["<name|value[|inline]>",...]`.
+            > If omitted or the only input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        
         ->example command
         pg!emsudo_add_fields 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -1728,7 +1776,7 @@ class EmsudoCommand(BaseCommand):
             )
         msg_embed = msg.embeds[0]
 
-        if data is None:
+        if data is None or data is False:
             attachment_msg = self.invoke_msg
 
         elif isinstance(data, String):
@@ -1903,7 +1951,30 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_insert_field <message> <index> <data>
         ->description Insert an embed field through the bot
         ->extended description
-        Insert an embed field at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
+        Insert an embed field to the embed of the given message at the specified index.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `index: (int)`
+            > The index to insert the input embed field at.
+
+            `data: (CodeBlock|String)`
+            > Data to modify the target embed with.
+            > Can be a string matching the 'condensed
+            > embed data list' syntax for an embed field
+            > `"<name|value[|inline]>"`, or a code block
+            > containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary, or a condensed embed data list.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_insert_field https://discord.com/channels/772505616680878080/775317562715406336/846955385688031282 2
         \\`\\`\\`json
@@ -2033,7 +2104,36 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_insert_fields <message> <index> [data]
         ->description Insert embed fields through the bot
         ->extended description
-        Insert multiple embed fields at the given index into the embed of a message in the channel where this command was invoked using the given arguments.
+        Insert several embed fields into the embed of the given message at the specified index.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `index: (int)`
+            > The index to insert the input embed field at.
+
+            `data: (Message|CodeBlock|String|bool) =`
+            > Data to modify the target embed with.
+            > Can be a discord message whose first attachment contains
+            > JSON or Python embed field data, an empty string
+            > (retrieves embed data from to the
+            > invocation message of this command),
+            > a code block containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary or the 'condensed embed data list'
+            > syntax for multiuple embed fields
+            > `["<name|value[|inline]>",...]`.
+            > If omitted or the only input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_insert_fields 2 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -2251,8 +2351,34 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_edit_field <message> <index> <data>
         ->description Replace an embed field through the bot
         ->extended description
-        Edit parts of an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
-        ->example command
+        Edit an embed field of the embed of the given message at the specified index.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `index: (int)`
+            > The index to insert the input embed field at.
+
+            `data: (CodeBlock|String)`
+            > Data to modify the target embed with.
+            > Can be a string matching the 'condensed
+            > embed data list' syntax for an embed field
+            > `"<name|value[|inline]>"`, or a code block
+            > containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary, or a condensed embed data list.
+            > Note that the given embed field data musn't
+            > represent a valid embed field, as only the
+            > attributes that should change need to be
+            > specified. 
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         pg!emsudo_edit_field 7 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
@@ -2372,16 +2498,45 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_edit_fields(
         self,
         msg: discord.Message,
-        data: Optional[Union[discord.Message, CodeBlock, String]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
         ->signature pg!emsudo_edit_fields <message> [data]
         ->description Edit multiple embed fields through the bot
         ->extended description
-        Edit multiple embed fields in the embed of a message in the channel where this command was invoked using the given arguments.
-        Combining the new fields with the old fields works like a bitwise OR operation from the first to the last embed field, where any embed field argument that is passed
-        to this command that is empty (empty `dict` `{}` or empty `str` `''`) will not modify the embed field at its index when passed to this command.
+        Edit multiple embed fields in the embed of the given message using the specified arguments.
+        Combining the new fields with the old fields works like a bitwise OR operation from the
+        first to the last embed field, where any embed field argument that is passed
+        to this command that is empty (empty `dict` `{}` or empty `str` `''`)
+        will not modify the embed field at its index when passed to this command.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `data: (Message|CodeBlock|String|bool) =`
+            > Data to modify the target embed with.
+            > Can be a discord message whose first attachment contains
+            > JSON or Python embed field data, an empty string
+            > (retrieves embed data from to the
+            > invocation message of this command),
+            > a code block containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary or the 'condensed embed data list'
+            > syntax for multiuple embed fields
+            > `["<name|value[|inline]>",...]`.
+            > If omitted or the only input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        
         ->example command
         pg!emsudo_edit_fields 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -2420,7 +2575,7 @@ class EmsudoCommand(BaseCommand):
             )
         msg_embed = msg.embeds[0]
 
-        if data is None:
+        if data is None or data is False:
             attachment_msg = self.invoke_msg
 
         elif isinstance(data, String):
@@ -2595,6 +2750,30 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_replace_field <message> <index> <data>
         ->description Replace an embed field through the bot
         ->extended description
+        Replace an embed field of the embed of the given message at the specified index.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `index: (int)`
+            > The index to insert the input embed field at.
+
+            `data: (CodeBlock|String)`
+            > Data to modify the target embed with.
+            > Can be a string matching the 'condensed
+            > embed data list' syntax for an embed field
+            > `"<name|value[|inline]>"`, or a code block
+            > containing JSON embed field data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed field data as a
+            > dictionary, or a condensed embed data list.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_replace_field 2 987654321987654321/123456789123456789
         \\`\\`\\`json
@@ -2721,7 +2900,24 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_swap_fields <message> <index_a> <index_b>
         ->description Swap embed fields through the bot
         ->extended description
-        Swap the positions of embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        Swap the positions of embed fields at the given indices of
+        the embed of a message, using the given arguments.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `index_a: (int)`
+            > An index of an existing embed field.
+            
+            `index_b: (int)`
+            > An index of another existing embed field.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command pg!emsudo_swap_fields 123456789123456789 6 9
         -----
         Implement pg!emsudo_swap_fields, for admins to swap fields in embeds sent via the bot
@@ -2755,15 +2951,41 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *indices: Union[range, int],
+        double_indices: bool = False,
         clone_to: Optional[int] = None,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo_clone_fields <message> <*indices> [clone_to=]
+        ->signature pg!emsudo_clone_fields <message> <*indices> [double_indices=False] [clone_to=]
         ->description Clone multiple embed fields through the bot
         ->extended description
-        Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
-        If `clone_to` is excluded, the cloned fields will be inserted at the index where they were cloned from.
+        Clone embed fields at the given indices of the embed of a message using the specified arguments.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `*indices: (int|range)`
+            > The indices of the embed fields that should be cloned.
+            > Can either be a sequence of `int`egers or
+            > `range(start, stop[, step])` objects matching those
+            > found in Python.
+
+            `double_indices: (bool) = False`
+            > Whether indices are allowed to be specified
+            > twice in the `*indices` argument. If set to `False`,
+            > all duplicate indices will be ignored.
+
+            `clone_to: (int)=`
+            > The index that all embed field clones should be inserted at.
+            > If excluded, all embed field clones will be inserted at
+            > the index where they were cloned from.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_clone_fields 987654321987654321 range(4, 10, 2) clone_to=1
         pg!emsudo_clone_fields 987654321987654321 3 6 9 12 clone_to=8
@@ -2789,9 +3011,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         msg_embed = msg.embeds[0]
-
         field_indices = []
-
         for idx in indices:
             if isinstance(idx, range):
                 range_obj = idx
@@ -2806,6 +3026,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 field_indices.append(idx)
 
+        field_indices = field_indices if double_indices else list(set(field_indices))
         try:
             await embed_utils.clone_fields(
                 msg, msg_embed, field_indices, insertion_index=clone_to
@@ -2821,13 +3042,35 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         *indices: Union[range, int],
+        double_indices: bool = False,
     ):
         """
         ->type More emsudo commands
         ->signature pg!emsudo_remove_fields <message> <*indices>
         ->description Remove an embed field through the bot
         ->extended description
-        Remove embed fields at the given indices of the embed of a message in the channel where this command was invoked using the given arguments.
+        Remove embed fields at the given indices of the embed of a message using the given arguments.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed
+            > should be modified.
+
+            `*indices: (int|range)`
+            > The indices of the embed fields that should be removed.
+            > Can either be a sequence of `int`egers or
+            > `range(start, stop[, step])` objects matching those
+            > found in Python.
+
+            `double_indices: (bool) = False`
+            > Whether indices are allowed to be specified
+            > twice in the `*indices` argument. If set to `False`,
+            > all duplicate indices will be ignored.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
         ->example command
         pg!emsudo_remove_fields 987654321987654321/123456789123456789 range(0, 10, 2)
         pg!emsudo_remove_fields 987654321987654321 5
@@ -2869,6 +3112,7 @@ class EmsudoCommand(BaseCommand):
             else:
                 field_indices.append(idx)
 
+        field_indices = field_indices if double_indices else list(set(field_indices))
         try:
             await embed_utils.remove_fields(msg, msg_embed, field_indices)
         except IndexError:
@@ -2887,7 +3131,16 @@ class EmsudoCommand(BaseCommand):
         ->signature pg!emsudo_clear_fields <message>
         ->description Remove all embed fields through the bot
         ->extended description
-        Remove all embed fields of the embed of a message in the channel where this command was invoked using the given arguments.
+        Remove all embed fields of the embed of a message.
+
+        __Args__:
+            `message: (Message)`
+            > A discord message whose embed fields
+            > should be deleted.
+        
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         Implement pg!emsudo_clear_fields, for admins to remove fields in embeds sent via the bot
         """
