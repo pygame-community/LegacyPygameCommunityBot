@@ -10,7 +10,7 @@ import random
 import discord
 import unidecode
 
-from . import common, db, embed_utils
+from . import common, db, embed_utils, utils
 
 EMOTION_CAPS = {
     "happy": (-100, 100),
@@ -33,21 +33,9 @@ def update(emotion_name: str, value: int):
     except KeyError:
         emotions[emotion_name] = value
 
-    if emotions[emotion_name] < EMOTION_CAPS[emotion_name][0]:
-        emotions[emotion_name] = EMOTION_CAPS[emotion_name][0]
-
-    if emotions[emotion_name] > EMOTION_CAPS[emotion_name][1]:
-        emotions[emotion_name] = EMOTION_CAPS[emotion_name][1]
-
-    db_obj.write(emotions)
-
-
-def override(emotion_name: str, val_to_override):
-    """
-    Overrides emotion characteristic "emotion_name" with value "val_to_override" object
-    """
-    emotions = db_obj.get({})
-    emotions[emotion_name] = val_to_override
+    emotions[emotion_name] = utils.clamp(
+        emotions[emotion_name], *EMOTION_CAPS[emotion_name]
+    )
     db_obj.write(emotions)
 
 

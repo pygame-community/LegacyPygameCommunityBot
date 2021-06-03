@@ -22,8 +22,23 @@ import pygame
 
 from . import common, embed_utils
 
+# regex for doc string
+regex = re.compile(
+    # If you add a new "section" to this regex dont forget the "|" at the end
+    # Does not have to be in the same order in the docs as in here.
+    r"(->type|"
+    r"->signature|"
+    r"->description|"
+    r"->example command|"
+    r"->extended description\n|"
+    r"\Z)|(((?!->).|\n)*)"
+)
+
 
 def clamp(value, min_, max_):
+    """
+    Returns the value clamped between a maximum and a minumum
+    """
     return max(min(value, max_), min_)
 
 
@@ -215,33 +230,29 @@ def filter_emoji_id(name: str):
         return name
 
 
-def get_doc_from_docstr(string: str, regex: re.Pattern):
+def get_doc_from_func(func: typing.Callable):
     """
-    Get the type, signature, description and other information
-    from docstrings.
+    Get the type, signature, description and other information from docstrings.
 
     Args:
-        string (str): The string to check
-        regex (re.Pattern): The pattern to use
+        func (typing.Callable): The function to get formatted docs for
 
     Returns:
         Dict[str] or Dict[]: The type, signature and description of
         the string. An empty dict will be returned if the string begins
         with "->skip" or there was no information found
     """
-    data = {}
+    string = func.__doc__
     if not string:
         return {}
 
     string = string.strip()
-
     if string.startswith("->skip"):
         return {}
 
-    string = string.split("-----")[0]
-
-    finds = regex.findall(string)
+    finds = regex.findall(string.split("-----")[0])
     current_key = ""
+    data = {}
     if finds:
         for find in finds:
             if find[0].startswith("->"):
@@ -259,59 +270,60 @@ def get_doc_from_docstr(string: str, regex: re.Pattern):
     return data
 
 
-async def send_help_message(original_msg, invoker, functions, command=None, page=0):
+async def send_help_message(
+    original_msg: discord.Message,
+    invoker: discord.Member,
+    commands: tuple[str, ...],
+    cmds_and_funcs: dict[str, typing.Callable],
+    groups: dict[str, list],
+    page: int = 0,
+):
     """
     Edit original_msg to a help message. If command is supplied it will
     only show information about that specific command. Otherwise sends
     the general help embed.
 
     Args:
-        original_msg (discord.Message): The message to edit
-
-        functions (dict[str, callable]): The name-function pairs to get
-        the docstrings from
-
-        command (str, optional): The command to send the description about.
-        Defaults to None.
+        original_msg: The message to edit
+        invoker: The member who requested the help command
+        commands: A tuple of command names passed by user for help.
+        cmds_and_funcs: The name-function pairs to get the docstrings from
+        groups: The name-list pairs of group commands
+        page: The page of the embed, 0 by default
     """
-    regex = re.compile(
-        # If you add a new "section" to this regex dont forget the "|" at the end
-        # Does not have to be in the same order in the docs as in here.
-        r"(->type|"
-        r"->signature|"
-        r"->description|"
-        r"->example command|"
-        r"->extended description\n|"
-        r"\Z)|(((?!->).|\n)*)"
-    )
-    newline = "\n"
-    fields = {}
 
-    if not command:
-        for func_name in functions:
-            docstring = functions[func_name].__doc__
-            data = get_doc_from_docstr(docstring, regex)
+    fields = {}
+    embeds = []
+
+    if not commands:
+        functions = {}
+        for key, func in cmds_and_funcs.items():
+            if hasattr(func, "groupname"):
+                key = f"{func.groupname} {' '.join(func.subcmds)}"
+            functions[key] = func
+
+        for func in functions.values():
+            data = get_doc_from_func(func)
             if not data:
                 continue
 
             if not fields.get(data["type"]):
                 fields[data["type"]] = ["", "", True]
 
-            fields[data["type"]][0] += f"{data['signature'][2:]}{newline}"
+            fields[data["type"]][0] += f"{data['signature'][2:]}\n"
             fields[data["type"]][1] += (
-                f"`{data['signature']}`{newline}" f"{data['description']}{newline * 2}"
+                f"`{data['signature']}`\n" f"{data['description']}\n\n"
             )
 
         fields_cpy = fields.copy()
 
         for field_name in fields:
             value = fields[field_name]
-            value[1] = f"```\n{value[0]}\n```{newline * 2}{value[1]}"
+            value[1] = f"```\n{value[0]}\n```\n\n{value[1]}"
             value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy
 
-        embeds = []
         for field in list(fields.values()):
             body = f"{common.BOT_HELP_PROMPT['body']}\n{field[0]}\n\n{field[1]}"
             embeds.append(
@@ -323,26 +335,26 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
                 )
             )
 
-        page_system = embed_utils.PagedEmbed(
-            original_msg, embeds, invoker, "help", page
-        )
+    elif commands[0] in cmds_and_funcs:
+        func_name = commands[0]
+        funcs = groups[func_name] if func_name in groups else []
+        funcs.insert(0, cmds_and_funcs[func_name])
 
-        await page_system.mainloop()
-        return
-
-    else:
-        for func_name in functions:
-            if func_name != command:
+        for func in funcs:
+            if commands[1:] and commands[1:] != getattr(func, "subcmds", None):
                 continue
 
-            doc = get_doc_from_docstr(functions[func_name].__doc__, regex)
-
+            doc = get_doc_from_func(func)
             if not doc:
                 # function found, but does not have help.
-                break
+                return await embed_utils.replace(
+                    original_msg,
+                    "Could not get docs",
+                    f"Command has no documentation",
+                    0xFF0000,
+                )
 
-            body = f"`{doc['signature']}`{newline}"
-            body += f"`Category: {doc['type']}`{newline * 2}"
+            body = f"`{doc['signature']}`\n`Category: {doc['type']}`\n\n"
 
             desc = doc["description"]
 
@@ -350,27 +362,33 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             if ext_desc:
                 desc = f"> *{desc}*\n\n{ext_desc}"
 
-            body += f"**Description:**{newline}{desc}"
+            body += f"**Description:**\n{desc}"
 
             embed_fields = []
 
             example_cmd = doc.get("example command")
             if example_cmd:
                 embed_fields.append(["Example command(s):", example_cmd, True])
-            await embed_utils.replace_2(
-                original_msg,
-                title=f"Help for `{func_name}`",
-                description=body,
-                color=0xFFFF00,
-                fields=embed_fields,
-            )
-            return
 
-    await embed_utils.replace(
-        original_msg,
-        "Command not found",
-        f"Help message for command {command} was not found or has no documentation.",
-    )
+            embeds.append(
+                await embed_utils.send_2(
+                    None,
+                    title=f"Help for `{func_name}`",
+                    description=body,
+                    color=common.BOT_HELP_PROMPT["color"],
+                    fields=embed_fields,
+                )
+            )
+
+    if not embeds:
+        return await embed_utils.replace(
+            original_msg,
+            "Command not found",
+            f"No such command exists",
+            0xFF0000,
+        )
+
+    await embed_utils.PagedEmbed(original_msg, embeds, invoker, "help", page).mainloop()
 
 
 def format_entries_message(msg: discord.Message, entry_type: str):
@@ -413,7 +431,7 @@ def code_block(string: str, max_characters=2048):
 def check_channel_permissions(
     member: discord.Member,
     channel: discord.TextChannel,
-    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    bool_func: typing.Callable[[typing.Iterable], bool] = all,
     permissions: typing.Iterable[str] = (
         "view_channel",
         "send_messages",
@@ -431,7 +449,7 @@ def check_channel_permissions(
 def check_channels_permissions(
     member: discord.Member,
     *channels: discord.TextChannel,
-    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    bool_func: typing.Callable[[typing.Iterable], bool] = all,
     skip_invalid_channels: bool = False,
     permissions: typing.Iterable[str] = (
         "view_channel",
@@ -465,7 +483,7 @@ def check_channels_permissions(
 async def coro_check_channels_permissions(
     member: discord.Member,
     *channels: discord.TextChannel,
-    bool_func: typing.Callable[typing.Iterable, bool] = all,
+    bool_func: typing.Callable[[typing.Iterable], bool] = all,
     skip_invalid_channels: bool = False,
     permissions: typing.Iterable[str] = (
         "view_channel",

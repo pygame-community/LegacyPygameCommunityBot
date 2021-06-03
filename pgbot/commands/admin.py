@@ -213,7 +213,7 @@ class AdminCommand(UserCommand, EmsudoCommand):
         """
         ->type More admin commands
         ->signature pg!sudo <msg>
-        ->description Send a message trough the bot
+        ->description Send a message through the bot
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
