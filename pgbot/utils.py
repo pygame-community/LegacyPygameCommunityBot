@@ -284,7 +284,6 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
         r"->extended description\n|"
         r"\Z)|(((?!->).|\n)*)"
     )
-    newline = "\n"
     fields = {}
 
     if not command:
@@ -297,16 +296,16 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             if not fields.get(data["type"]):
                 fields[data["type"]] = ["", "", True]
 
-            fields[data["type"]][0] += f"{data['signature'][2:]}{newline}"
+            fields[data["type"]][0] += f"{data['signature'][2:]}\n"
             fields[data["type"]][1] += (
-                f"`{data['signature']}`{newline}" f"{data['description']}{newline * 2}"
+                f"`{data['signature']}`\n" f"{data['description']}\n\n"
             )
 
         fields_cpy = fields.copy()
 
         for field_name in fields:
             value = fields[field_name]
-            value[1] = f"```\n{value[0]}\n```{newline * 2}{value[1]}"
+            value[1] = f"```\n{value[0]}\n```\n\n{value[1]}"
             value[0] = f"__**{field_name}**__"
 
         fields = fields_cpy
@@ -331,18 +330,21 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
         return
 
     else:
-        for func_name in functions:
+        for func_name, func in functions.items():
+            # TODO: AAAAAAAAAAAAA add help for subcommands, it'd make it easier to look them up
+            #       Snek would try to reattempt this after recharging his brain juice
             if func_name != command:
                 continue
 
-            doc = get_doc_from_docstr(functions[func_name].__doc__, regex)
+            # func = functions[func_name]
+            doc = get_doc_from_docstr(func.__doc__, regex)
 
             if not doc:
                 # function found, but does not have help.
                 break
 
-            body = f"`{doc['signature']}`{newline}"
-            body += f"`Category: {doc['type']}`{newline * 2}"
+            body = f"`{doc['signature']}`\n"
+            body += f"`Category: {doc['type']}`\n\n"
 
             desc = doc["description"]
 
@@ -350,13 +352,22 @@ async def send_help_message(original_msg, invoker, functions, command=None, page
             if ext_desc:
                 desc = f"> *{desc}*\n\n{ext_desc}"
 
-            body += f"**Description:**{newline}{desc}"
+            body += f"**Description:**\n{desc}"
 
             embed_fields = []
 
             example_cmd = doc.get("example command")
             if example_cmd:
                 embed_fields.append(["Example command(s):", example_cmd, True])
+
+            # TODO
+            # if hasattr(func, "subcmds"):
+            #     body += f"\n\n**Subcommand(s):**\n"
+            #     for i, subcmd in enumerate(func.subcmds, 1):
+            #         subcmd_doc = get_doc_from_docstr(subcmd.__doc__, regex)
+            #         body += f"{i}. `{subcmd_doc['signature']}`\n" \
+            #                 f"{subcmd_doc['description']}\n\n"
+
             await embed_utils.replace_2(
                 original_msg,
                 title=f"Help for `{func_name}`",
