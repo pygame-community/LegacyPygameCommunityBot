@@ -351,6 +351,7 @@ async def exec_sandbox(
         if start + timeout < time.perf_counter():
             output = Output()
             output.exc = f"Hit timeout of {timeout} seconds!"
+            output.duration = timeout
             proc.kill()
             return output
 
