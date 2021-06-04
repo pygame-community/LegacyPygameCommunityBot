@@ -76,7 +76,7 @@ class EmsudoCommand(BaseCommand):
 
         +===+
 
-        Syntax for a condensed embed data list:
+        Syntax for a condensed embed data list (only works inside of Discord):
         \\`\\`\\`py
         ```py
         # Condensed embed data list syntax. String elements that are empty "" will be ignored.
@@ -105,6 +105,63 @@ class EmsudoCommand(BaseCommand):
         ```
         \\`\\`\\`
 
+        +===+
+        Syntax for a Python dictionary embed:
+        \\`\\`\\`py
+        ```py
+        {
+            "title": "title `(<= 256 chars.)`",
+            "description":  "this supports [named links](https://discordapp.com) on top of the previously shown subset of markdown."
+            "An embed cannot exceed the character count of 6000. (<=2048 chars)",
+            "url": "https://discordapp.com",
+            "color": 0xABCDEF,    # must be between [0, 0xFFFFFF)
+            "timestamp": "1970-01-01T00:00:00.000",  # please use UTC
+            "footer": {
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+            "text": "footer text `(<= 256 chars)` (No markdown support here sorry)"
+            },
+            "thumbnail": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "image": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "author": {
+            "name": "author name `(<= 256 chars)` (No markdown support here sorry)",
+            "url": "https://discordapp.com",
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "fields": [
+            {
+                "name": ":thinking:",
+                "value": "some of these properties have certain limits..."
+            },
+            {
+                "name": ":scream: `(<=256 chars)`",
+                "value": "try exceeding some of them! (spoiler: embed fields can't contain more than 1024 chars.)"
+            },
+            {
+                "name": ":rolling_eyes:",
+                "value": "Discord will show you a big fat error. :smirk:"
+            },
+            {
+                "name": " :snake: ",
+                "value": "these last two",
+                "inline": True
+            },
+            {
+                "name": " :pensive: ",
+                "value": "are inline fields",
+                "inline": True
+            }
+            ]
+        }
+        ```
+        \\`\\`\\`
+        
+        Note: The JSON embed syntax is very similar, however multiline strings,
+        and hexadecimal integers and other Python features aren't supported,
+        since they would be seen as invalid JSON syntax.
         +===+
 
         ->example command
