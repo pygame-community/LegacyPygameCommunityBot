@@ -863,7 +863,7 @@ def create_as_dict(
                     field_dict["value"] = field["value"]
 
                 if field.get("inline", "") in (False, True):
-                    field_dict["name"] = field["name"]
+                    field_dict["inline"] = field["inline"]
 
             elif isinstance(field, (list, tuple)):
                 name = None
@@ -879,7 +879,7 @@ def create_as_dict(
                         field_dict["value"] = value
 
                     if inline in (False, True):
-                        field_dict["inline"] = field["inline"]
+                        field_dict["inline"] = inline
 
             if field_dict:
                 fields_list.append(field_dict)
