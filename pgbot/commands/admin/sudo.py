@@ -266,24 +266,45 @@ class SudoCommand(BaseCommand):
     @add_group("sudo", "edit")
     async def cmd_sudo_edit(
         self,
-        edit_msg: discord.Message,
+        msg: discord.Message,
         data: Union[discord.Message, String],
         from_attachment: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit <edit_msg> <data> [from_attachment=True]
-        ->description Edit a message that the bot sent.
+        ->signature pg!sudo_edit <msg> <data> [from_attachment=True]
+        ->description Replace a message that the bot sent
         ->extended description
-        If `from_attachment=` is set to `True`, the attachment of the given message
-        will be used for editing the target message.
+        Replace the text content of a message using the given attributes.
+
+        __Args__:
+            `msg: (Message)`
+            > A discord message whose text content
+            > should be replaced.
+
+            `data: (Message|String)`
+            > The text data that should be used to replace
+            > the input message text.
+
+            `from_attachment (bool) = True`
+            > Whether the attachment of the input message in `data`
+            > should be used to edit the target message. If set to
+            > `False`, the text content of the input message in
+            > `data` will be used.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command
+        pg!sudo edit 9876543211234676789 "bruh"
+        pg!sudo edit 1234567890876543345/9876543211234676789 2345678427483744843
         -----
-        Implement pg!sudo_edit, for admins to edit messages via the bot
         """
 
         if not utils.check_channel_permissions(
             self.author,
-            edit_msg.channel,
+            msg.channel,
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
@@ -352,7 +373,7 @@ class SudoCommand(BaseCommand):
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
         try:
-            await edit_msg.edit(content=msg_text)
+            await msg.edit(content=msg_text)
         except discord.HTTPException as e:
             raise BotException(
                 "An exception occured while handling the command!", e.args[0]
@@ -367,20 +388,62 @@ class SudoCommand(BaseCommand):
         *msgs: discord.Message,
         destination: Optional[discord.TextChannel] = None,
         as_attachment: bool = False,
-        info: bool = False,
         attachments: bool = True,
         embeds: bool = True,
+        info: bool = False,
+        author_info: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <*messages> [destination=] [as_attachment] [info] [attachments] [embeds]
+        ->signature pg!sudo_get <*messages> [destination=] [as_attachment=False] [attachments=True]
+        [embeds=True] [info=False] [author_info=False]
         ->description Get the text of messages through the bot
         ->extended description
-        Get the contents, attachments and embeds of messages from the given arguments and send it in multiple message attachments
-        to the channel where this command was invoked. If `as_attachment=` is set to `True`, the message data will
-        be returned in `.txt` files.
+        Get the contents, attachments and serialized embeds of the given messages and send them to the given destination channel.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose text,
+            contents, attachments or embeds should be retrieved.
+
+            `destination: (Channel) =`
+            > A destination channel to send the generated outputs to.
+            > If omitted, the destination will be the channel where
+            > this command was invoked.
+
+            `as_attachment: (bool) = False`
+            > Whether the text content (if present) of the given
+            > messages should be sent as an attachment (`.txt`)
+            > or as embed containing it inside a code block in its
+            > description.
+
+            `attachments: (bool) = True`
+            > Whether the attachments of the given messages
+            > should be retrieved (when possible).
+
+            `embeds: (bool) = True`
+            > Whether the embeds of the given messages
+            > should be retrieved (as serialized JSON data).
+
+            `info: (bool) = False`
+            > If set to `True`, an embed containing info
+            > about each message will be sent along with
+            > the message data output.
+
+            `author_info: (bool) = True`
+            > If set to `True`, extra information about
+            > the message authors will be added to the
+            > info embed which is sent if `info` is set
+            > to `True`.
+
+        __Returns__:
+            > One or more messages with attachents or embeds
+            > based on the given input.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         -----
-        Implement pg!sudo_get, to return the the contents of a message as an embed or in a text file.
         """
         if not isinstance(destination, discord.TextChannel):
             destination = self.channel
@@ -553,7 +616,7 @@ class SudoCommand(BaseCommand):
         ->type More admin commands
         ->signature pg!sudo_fetch <origin channel> <quantity> [urls=False] [pinned=False] [before=None]
         [after=None] [around=None] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
-        ->description Fetch messages IDs or URLs
+        ->description Fetch message IDs or URLs
         -----
         Implement pg!sudo_fetch, for admins to fetch several message IDs and links at once
         """
@@ -674,15 +737,64 @@ class SudoCommand(BaseCommand):
         attachments: bool = True,
         as_spoiler: bool = False,
         info: bool = False,
-        author_info: bool = False,
+        author_info: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone <*messages> [destination=] [embeds=True] [attachments=True]
-        [as_spoiler=False] [info=False] [author_info=False]
+        ->signature pg!sudo_clone <*messages> [destination=] [embeds=True] [attachments=True] [as_spoiler=False]
+        [info=False] [author_info=True]
         ->description Clone a message through the bot
         ->extended description
-        Get a message from the given arguments and send it as another message to the channel where this command was invoked.
+        Clone the given messages and send them to the given destination channel.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose text,
+            contents, attachments or embeds should be cloned.
+
+            `destination: (Channel) =`
+            > A destination channel to send the cloned outputs to.
+            > If omitted, the destination will be the channel where
+            > this command was invoked.
+
+            `as_attachment: (bool) = False`
+            > Whether the text content (if present) of the given
+            > messages should be sent as an attachment (`.txt`)
+            > or as embed containing it inside a code block in its
+            > description.
+
+            `attachments: (bool) = True`
+            > Whether the attachments of the given messages
+            > should be cloned as well (if possible).
+
+            `embeds: (bool) = True`
+            > Whether the embeds of the given messages
+            > should be cloned along with the outut messages.
+
+            `as_spoiler: (bool) = False`
+            > If set to `True`, the attachments of the input messages
+            > will be explicitly marked as spoilers when sent to the
+            > destination channel.
+
+            `info: (bool) = False`
+            > If set to `True`, an embed containing info
+            > about each message will be sent along with
+            > the message data output.
+
+            `author_info: (bool) = True`
+            > If set to `True`, extra information about
+            > the message authors will be added to the
+            > info embed which is sent if `info` is set
+            > to `True`.
+
+        __Returns__:
+            > One or more cloned messages
+            > with attachents or embeds
+            > based on the given input.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         Implement pg!sudo_clone, to get the content of a message and send it.
         """
@@ -779,11 +891,6 @@ class SudoCommand(BaseCommand):
                     embed=embed_utils.get_msg_info_embed(msg, author=author_info),
                     reference=cloned_msg,
                 )
-            elif author_info:
-                await self.channel.send(
-                    embed=embed_utils.get_member_info_embed(msg.author),
-                    reference=cloned_msg,
-                )
 
             await asyncio.sleep(0)
 
@@ -808,11 +915,31 @@ class SudoCommand(BaseCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!info <message or member> [author_bool]
-        ->description Get information about a message/member
+        ->signature pg!info <*objects> [author=True]
+        ->description Get information about a Discord message/user/member
 
+        ->extended description
+        Return an information embed for the given Discord objects.
+
+        __Args__:
+            `*objects: (Message|User|Member)`
+            > A sequence of Discord ojbects whose info
+            > should be retrieved. If no input is given,
+            > an information embed on the
+
+            `author_info: (bool) = True`
+            > If set to `True`, extra information about
+            > the authors of any message given as input
+            > will be added to their info embeds.
+
+        __Returns__:
+            > One or more embeds containing information about
+            > the given inputs. 
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
         -----
-        Implement pg!info, to get information about a message/member
         """
 
         checked_channels = set()
