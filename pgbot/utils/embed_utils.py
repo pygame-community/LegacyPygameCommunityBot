@@ -138,8 +138,9 @@ DEFAULT_EMBED_COLOR = 0xFFFFAA
 
 CONDENSED_EMBED_SYNTAX_STRUCTURE = """
 # Condensed embed data list syntax. String elements that are empty "" will be ignored.
+# The list must contain at least one argument.
 [
-    'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'icon.url'),   # embed author
+    'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'author.icon_url'),   # embed author
 
     'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
 
@@ -862,7 +863,7 @@ def create_as_dict(
                     field_dict["value"] = field["value"]
 
                 if field.get("inline", "") in (False, True):
-                    field_dict["name"] = field["name"]
+                    field_dict["inline"] = field["inline"]
 
             elif isinstance(field, (list, tuple)):
                 name = None
@@ -878,7 +879,7 @@ def create_as_dict(
                         field_dict["value"] = value
 
                     if inline in (False, True):
-                        field_dict["inline"] = field["inline"]
+                        field_dict["inline"] = inline
 
             if field_dict:
                 fields_list.append(field_dict)

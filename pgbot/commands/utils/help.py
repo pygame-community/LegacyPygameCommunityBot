@@ -92,7 +92,7 @@ async def send_help_message(
         page: The page of the embed, 0 by default
     """
 
-    fields = {}
+    doc_fields = {}
     embeds = []
 
     if not commands:
@@ -107,28 +107,34 @@ async def send_help_message(
             if not data:
                 continue
 
-            if not fields.get(data["type"]):
-                fields[data["type"]] = ["", "", True]
+            if not doc_fields.get(data["type"]):
+                doc_fields[data["type"]] = ["", "", True]
 
-            fields[data["type"]][0] += f"{data['signature'][2:]}\n"
-            fields[data["type"]][1] += (
+            doc_fields[data["type"]][0] += f"{data['signature'][2:]}\n"
+            doc_fields[data["type"]][1] += (
                 f"`{data['signature']}`\n" f"{data['description']}\n\n"
             )
 
-        fields_cpy = fields.copy()
+        doc_fields_cpy = doc_fields.copy()
 
-        for field_name in fields:
-            value = fields[field_name]
-            value[1] = f"```\n{value[0]}\n```\n\n{value[1]}"
-            value[0] = f"__**{field_name}**__"
+        for doc_field_name in doc_fields:
+            doc_field_list = doc_fields[doc_field_name]
+            doc_field_list[1] = f"```\n{doc_field_list[0]}\n```\n\n{doc_field_list[1]}"
+            doc_field_list[0] = f"__**{doc_field_name}**__"
 
-        fields = fields_cpy
+        doc_fields = doc_fields_cpy
 
-        for field in list(fields.values()):
-            body = f"{common.BOT_HELP_PROMPT['body']}\n{field[0]}\n\n{field[1]}"
+        embeds.append(
+            discord.Embed(
+                title=common.BOT_HELP_PROMPT["title"],
+                description=common.BOT_HELP_PROMPT["description"],
+                color=common.BOT_HELP_PROMPT["color"],
+            )
+        )
+        for doc_field in list(doc_fields.values()):
+            body = f"{doc_field[0]}\n\n{doc_field[1]}"
             embeds.append(
-                await embed_utils.send_2(
-                    None,
+                embed_utils.create(
                     title=common.BOT_HELP_PROMPT["title"],
                     description=body,
                     color=common.BOT_HELP_PROMPT["color"],
@@ -161,8 +167,6 @@ async def send_help_message(
 
             desc = doc["description"]
 
-            desc_list = None
-
             ext_desc = doc.get("extended description")
             if ext_desc:
                 desc = f"> *{desc}*\n\n{ext_desc}"
@@ -187,8 +191,15 @@ async def send_help_message(
                     )
                 )
             else:
+                embeds.append(
+                    embed_utils.create(
+                        title=f"Help for `{func_name}`",
+                        description=body,
+                        color=common.BOT_HELP_PROMPT["color"],
+                    )
+                )
                 desc_list_len = len(desc_list)
-                for i in range(len(desc_list)):
+                for i in range(1, desc_list_len):
                     embeds.append(
                         embed_utils.create(
                             title=f"Help for `{func_name}`",

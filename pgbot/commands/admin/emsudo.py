@@ -71,11 +71,42 @@ class EmsudoCommand(BaseCommand):
         __Returns__:
             > One or more generated embeds based on the given input.
 
-        +===+
-
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
+
+        +===+
+
+        Syntax for a condensed embed data list:
+        \\`\\`\\`py
+        ```py
+        # Condensed embed data list syntax. String elements that are empty "" will be ignored.
+        # The list must contain at least one argument.
+        [
+            'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'author.icon_url'),   # embed author
+
+            'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
+
+            '''desc.''' or ('''desc.''', 'image.url'),  # embed description, image
+
+            0xabcdef, # or -1 for default embed color
+
+            [   # embed fields
+            '''
+            <field.name|
+            ...field.value....
+            |field.inline>
+            ''',
+            ],
+
+            'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
+
+            datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
+        ]
+        ```
+        \\`\\`\\`
+
+        +===+
 
         ->example command
         pg!emsudo "This is one embed" "This is another"
@@ -798,6 +829,8 @@ class EmsudoCommand(BaseCommand):
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
 
+        +===+
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
@@ -1168,7 +1201,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo clone <*messages> [destina]
+        ->signature pg!emsudo clone <*messages> [destination]
         ->description Clone all embeds.
         ->extended description
         Get a message's embeds from the given arguments and send them
@@ -1319,8 +1352,8 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=] [output_name=""] [system_attributes=False] [as_json=True]
-        [as_python=False]
+        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=] [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
+
         ->description Get the embed data of a message
         ->extended description
         Get the contents of the embed of a message from the given arguments and send it as another message
@@ -1589,7 +1622,7 @@ class EmsudoCommand(BaseCommand):
                         )
 
             if embed_count > 2:
-                await embed_utils.edit_fields_from_dict(
+                await embed_utils.edit_field_from_dict(
                     self.response_msg,
                     load_embed,
                     dict(
@@ -2007,7 +2040,7 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete()
 
     @add_group("emsudo", "add", "field", "at")
-    async def cmd_emsudo_insert_field(
+    async def cmd_emsudo_add_field_at(
         self,
         msg: discord.Message,
         index: int,
@@ -2159,7 +2192,7 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete()
 
     @add_group("emsudo", "add", "fields", "at")
-    async def cmd_emsudo_insert_fields(
+    async def cmd_emsudo_add_fields_at(
         self,
         msg: discord.Message,
         index: int,
@@ -3181,7 +3214,7 @@ class EmsudoCommand(BaseCommand):
         await self.response_msg.delete()
 
     @add_group("emsudo", "remove", "fields", "all")
-    async def cmd_emsudo_clear_fields(
+    async def cmd_emsudo_remove_fields_all(
         self,
         msg: discord.Message,
     ):
