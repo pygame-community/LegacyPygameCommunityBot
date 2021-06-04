@@ -141,7 +141,10 @@ async def send_help_message(
         funcs.insert(0, cmds_and_funcs[func_name])
 
         for func in funcs:
-            if commands[1:] and commands[1:] != getattr(func, "subcmds", None):
+            if (
+                commands[1:]
+                and commands[1:] != getattr(func, "subcmds", ())[: len(commands[1:])]
+            ):
                 continue
 
             doc = get_doc_from_func(func)

@@ -580,7 +580,7 @@ class BaseCommand:
                 )
 
             confused = emotion.get("confused")
-            if confused > 300 and random.random() < confused / 2000:
+            if confused > 60 and random.random() < confused / 400:
                 await embed_utils.replace_2(
                     self.response_msg,
                     title=f"I am confused...",
@@ -682,17 +682,17 @@ class BaseCommand:
         """
         try:
             await self.call_cmd()
-            emotion.update("confused", -random.randint(4, 8))
+            emotion.update("confused", -random.randint(2, 4))
             return
 
         except ArgError as exc:
-            emotion.update("confused", random.randint(2, 6))
+            emotion.update("confused", random.randint(1, 3))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
 
         except KwargError as exc:
-            emotion.update("confused", random.randint(2, 6))
+            emotion.update("confused", random.randint(1, 3))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -701,11 +701,11 @@ class BaseCommand:
                 msg = exc.args[0]
 
         except BotException as exc:
-            emotion.update("confused", random.randint(4, 8))
+            emotion.update("confused", random.randint(2, 4))
             title, msg = exc.args
 
         except discord.HTTPException as exc:
-            emotion.update("confused", random.randint(5, 10))
+            emotion.update("confused", random.randint(3, 6))
             title, msg = exc.__class__.__name__, exc.args[0]
 
         except Exception as exc:
@@ -726,7 +726,7 @@ class BaseCommand:
                     )
 
             emotion.update(
-                "confused", len(formatted_exception) // 50 + random.randint(12, 20)
+                "confused", len(formatted_exception) // 100 + random.randint(1, 3)
             )
 
         await embed_utils.replace_2(

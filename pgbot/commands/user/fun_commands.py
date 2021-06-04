@@ -231,7 +231,7 @@ class FunCommand(BaseCommand):
             pass
 
         try:
-            if all_emotions["confused"] >= 300:
+            if all_emotions["confused"] >= 60:
                 msg = (
                     f"The snek is confused!\nEither there were too many exceptions in my code, "
                     f"or too many commands were used wrongly!\nThe snek's confused level is "
