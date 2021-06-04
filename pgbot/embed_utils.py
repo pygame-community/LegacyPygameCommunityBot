@@ -138,8 +138,9 @@ DEFAULT_EMBED_COLOR = 0xFFFFAA
 
 CONDENSED_EMBED_SYNTAX_STRUCTURE = """
 # Condensed embed data list syntax. String elements that are empty "" will be ignored.
+# The list must contain at least one argument.
 [
-    'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'icon.url'),   # embed author
+    'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'author.icon_url'),   # embed author
 
     'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
 
