@@ -9,13 +9,13 @@ This file exports a handle function, to handle commands posted by the users
 
 from __future__ import annotations
 
-import asyncio
-import random
 import sys
+
 import discord
 
-from pgbot import common, embed_utils, utils, emotion
+from pgbot import common
 from pgbot.commands import admin, user
+from pgbot.utils import embed_utils, utils
 
 
 def get_perms(mem: discord.Member):

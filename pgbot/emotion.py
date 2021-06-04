@@ -10,7 +10,8 @@ import random
 import discord
 import unidecode
 
-from . import common, db, embed_utils, utils
+from pgbot import common, db
+from pgbot.utils import embed_utils, utils
 
 EMOTION_CAPS = {
     "happy": (-100, 100),
