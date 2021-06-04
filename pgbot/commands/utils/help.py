@@ -158,8 +158,6 @@ async def send_help_message(
 
             desc = doc["description"]
 
-            desc_list = None
-
             ext_desc = doc.get("extended description")
             if ext_desc:
                 desc = f"> *{desc}*\n\n{ext_desc}"
@@ -184,8 +182,16 @@ async def send_help_message(
                     )
                 )
             else:
+                embeds.append(
+                    embed_utils.create(
+                        title=f"Help for `{func_name}`",
+                        description=body,
+                        color=common.BOT_HELP_PROMPT["color"],
+                        fields=embed_fields if i == desc_list_len - 1 else (),
+                    )
+                )
                 desc_list_len = len(desc_list)
-                for i in range(len(desc_list)):
+                for i in range(1, desc_list_len):
                     embeds.append(
                         embed_utils.create(
                             title=f"Help for `{func_name}`",
