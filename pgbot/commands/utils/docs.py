@@ -35,7 +35,8 @@ import pygame._sdl2
 import pygame.gfxdraw
 import pygame_gui
 
-from . import common, embed_utils, utils
+from pgbot import common
+from pgbot.utils import utils, embed_utils
 
 doc_module_tuple = (
     asyncio,

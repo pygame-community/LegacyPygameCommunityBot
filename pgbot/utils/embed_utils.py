@@ -14,13 +14,13 @@ import json
 import re
 from ast import literal_eval
 from collections.abc import Mapping
-from typing import Union, Iterable
+from typing import Union
 
 import black
 import discord
 from discord.embeds import EmptyEmbed
 
-from . import common
+from pgbot import common
 
 EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
     "provider": None,

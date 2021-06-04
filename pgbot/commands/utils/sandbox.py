@@ -25,7 +25,8 @@ import pygame.freetype
 import pygame.gfxdraw
 from PIL import Image
 
-from . import common, utils
+from pgbot import common
+from pgbot.utils import utils
 
 
 class Output:
