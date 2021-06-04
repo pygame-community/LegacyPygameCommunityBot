@@ -212,9 +212,10 @@ class FunCommand(BaseCommand):
                     f"The snek is exhausted!\nI ran too many commands, "
                     f"so I shall take a break real quick\n"
                     f"While I am resting, fun commands would sometimes not work, so be careful!\n"
-                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
-                    f"`{abs((all_emotions['bored'] + 600) // 15)}` more command(s) to be happi."
+                    f"The snek's boredom level is `{all_emotions['bored']}`. To make my "
+                    f"boredom go down, let me rest for a bit before running another command."
                 )
+                emoji_link = None
                 bot_emotion = "exhausted"
             elif all_emotions["bored"] > 600:
                 msg = (
@@ -290,7 +291,7 @@ class FunCommand(BaseCommand):
             )
             return
 
-        num = random.randint(0, 7)
+        num = random.randint(0, 10)
         if num:
             await embed_utils.replace(
                 self.response_msg,
