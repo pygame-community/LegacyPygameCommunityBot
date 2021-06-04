@@ -19,7 +19,8 @@ from typing import TypeVar
 
 import discord
 import pygame
-from pgbot import common, db, embed_utils, emotion, utils
+from pgbot import common, db, emotion
+from pgbot.utils import embed_utils, utils
 
 ESCAPES = {
     "0": "\0",
