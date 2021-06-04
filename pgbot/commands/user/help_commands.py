@@ -17,9 +17,9 @@ import discord
 import pygame
 
 from pgbot import common, db
-from pgbot.commands.base import BaseCommand, BotException, HiddenArg, String, no_dm
+from pgbot.commands.base import BaseCommand, BotException, String, no_dm
 from pgbot.commands.utils import clock, docs, help
-from pgbot.utils import embed_utils
+from pgbot.utils import utils, embed_utils
 
 
 class HelpCommand(BaseCommand):
@@ -96,7 +96,8 @@ class HelpCommand(BaseCommand):
         action: str = "",
         timezone: float = 0,
         color: Optional[pygame.Color] = None,
-        member: HiddenArg = None,
+        *,
+        _member: Optional[discord.Member] = None,
     ):
         """
         ->type Get help
@@ -117,7 +118,7 @@ class HelpCommand(BaseCommand):
 
         timezones = db_obj.get({})
         if action:
-            if member is None:
+            if _member is None:
                 member = self.author
                 if member.id not in timezones:
                     raise BotException(
@@ -125,6 +126,8 @@ class HelpCommand(BaseCommand):
                         "You cannot run clock update commands because you are "
                         + "not on the clock",
                     )
+            else:
+                member = _member
 
             if action == "update":
                 if abs(timezone) > 12:
@@ -135,14 +138,14 @@ class HelpCommand(BaseCommand):
                 if member.id in timezones:
                     timezones[member.id][0] = timezone
                     if color is not None:
-                        timezones[member.id][1] = int(color)
+                        timezones[member.id][1] = utils.color_to_rgb_int(color)
                 else:
                     if color is None:
                         raise BotException(
                             "Failed to update clock!",
                             "Color argument is required when adding new people",
                         )
-                    timezones[member.id] = [timezone, int(color)]
+                    timezones[member.id] = [timezone, utils.color_to_rgb_int(color)]
 
                 # sort timezones dict after an update operation
                 timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
@@ -176,7 +179,9 @@ class HelpCommand(BaseCommand):
         await self.response_msg.delete()
 
     @no_dm
-    async def cmd_doc(self, name: str, page: HiddenArg = 0, msg: HiddenArg = None):
+    async def cmd_doc(
+        self, name: str, *, _page: int = 0, _msg: Optional[discord.Message] = None
+    ):
         """
         ->type Get help
         ->signature pg!doc <object name>
@@ -184,13 +189,13 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!doc, to view documentation
         """
-        if not msg:
-            msg = self.response_msg
-
-        await docs.put_doc(name, msg, self.author, page)
+        msg = _msg if _msg is not None else self.response_msg
+        await docs.put_doc(name, msg, self.author, _page)
 
     @no_dm
-    async def cmd_help(self, *names: str, page: HiddenArg = 0, msg: HiddenArg = None):
+    async def cmd_help(
+        self, *names: str, _page: int = 0, _msg: Optional[discord.Message] = None
+    ):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -199,11 +204,10 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!help, to display a help message
         """
-        if not msg:
-            msg = self.response_msg
+        msg = _msg if _msg is not None else self.response_msg
 
         await help.send_help_message(
-            msg, self.author, names, self.cmds_and_funcs, self.groups, page
+            msg, self.author, names, self.cmds_and_funcs, self.groups, _page
         )
 
     @no_dm
@@ -262,9 +266,7 @@ class HelpCommand(BaseCommand):
 
         if filter_tag:
             # Filter messages based on tag
-            filter_tag = filter_tag.string.split(",")
-            filter_tag = [tag.strip() for tag in filter_tag]
-            for tag in filter_tag:
+            for tag in map(str.strip, filter_tag.string.split(",")):
                 tag = tag.lower()
                 msgs = list(
                     filter(

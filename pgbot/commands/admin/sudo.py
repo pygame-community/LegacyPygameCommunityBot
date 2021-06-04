@@ -301,7 +301,7 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        attachment_msg: discord.Message = None
+        attachment_msg: Optional[discord.Message] = None
         msg_text = ""
 
         if isinstance(data, String):
@@ -601,19 +601,19 @@ class SudoCommand(BaseCommand):
                 )
 
         else:
-            if isinstance(before, discord.Message) and before.channel != origin:
+            if isinstance(before, discord.Message) and before.channel.id != origin.id:
                 raise BotException(
                     "Invalid `before` argument",
                     "`before` has to be an ID to a message from the origin channel",
                 )
 
-            if isinstance(after, discord.Message) and after.channel != origin:
+            if isinstance(after, discord.Message) and after.channel.id != origin.id:
                 raise BotException(
                     "Invalid `after` argument",
                     "`after` has to be an ID to a message from the origin channel",
                 )
 
-            if isinstance(around, discord.Message) and around.channel != origin:
+            if isinstance(around, discord.Message) and around.channel.id != origin.id:
                 raise BotException(
                     "Invalid `around` argument",
                     "`around` has to be an ID to a message from the origin channel",

@@ -174,7 +174,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        return await super().cmd_clock(action, timezone, color, member)
+        return await super().cmd_clock(action, timezone, color, _member=member)
 
     async def cmd_eval(self, code: CodeBlock):
         """
@@ -287,19 +287,19 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider_str.string
 
-        if isinstance(before, discord.Message) and before.channel != origin:
+        if isinstance(before, discord.Message) and before.channel.id != origin.id:
             raise BotException(
                 "Invalid `before` argument",
                 "`before` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(after, discord.Message) and after.channel != origin:
+        if isinstance(after, discord.Message) and after.channel.id != origin.id:
             raise BotException(
                 "Invalid `after` argument",
                 "`after` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(around, discord.Message) and around.channel != origin:
+        if isinstance(around, discord.Message) and around.channel.id != origin.id:
             raise BotException(
                 "Invalid `around` argument",
                 "`around` has to be an ID to a message from the origin channel",
@@ -599,7 +599,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Cannot pin more than 50 messages in a channel.",
             )
 
-        elif not all(msg.channel == channel for msg in msgs):
+        elif not all(msg.channel.id == channel.id for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
@@ -697,7 +697,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 f"Too many arguments!",
                 "No more than 50 messages can be pinned in a channel.",
             )
-        elif not all(msg.channel == channel for msg in msgs):
+        elif not all(msg.channel.id == channel.id for msg in msgs):
             raise BotException(
                 "Invalid message ID(s) given as input",
                 "Each ID must be from a message in the given target channel",
@@ -910,7 +910,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
         return await super().cmd_poll(
-            desc, *emojis, destination=destination, admin_embed_dict=embed_dict
+            desc, *emojis, _destination=destination, _admin_embed_dict=embed_dict
         )
 
     @add_group("poll", "close")
@@ -927,7 +927,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         The poll can only be closed by the person who started it or by mods.
         The color is the color of the closed poll embed
         """
-        return await super().cmd_poll_close(msg, color)
+        return await super().cmd_poll_close(msg, _color=color)
 
     @add_group("stream", "add")
     async def cmd_stream_add(self, *members: discord.Member):
@@ -939,9 +939,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         The command give mods the chance to add users to the ping list manually.
         Without arguments, equivalent to the "user" version of this command
         """
-        if not members:
-            members = None
-        await super().cmd_stream_add(members)
+        await super().cmd_stream_add(_members=members if members else None)
 
     @add_group("stream", "del")
     async def cmd_stream_del(self, *members: discord.Member):
@@ -953,9 +951,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         The command give mods the chance to remove users from the ping list manually.
         Without arguments, equivalent to the "user" version of this command
         """
-        if not members:
-            members = None
-        await super().cmd_stream_del(members)
+        await super().cmd_stream_del(_members=members if members else None)
 
 
 # monkey-patch admin command names into tuple

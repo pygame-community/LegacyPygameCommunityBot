@@ -1735,12 +1735,11 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     Get member info in a string, utility function for the embed functions
     """
     datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
-    is_member_obj = isinstance(member, discord.Member)
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
-    if hasattr(member, "nick") and member.nick:
+    if hasattr(member, "nick") and member.display_name:
         member_nick = (
-            member.nick.replace("\\", r"\\")
+            member.display_name.replace("\\", r"\\")
             .replace("*", r"\*")
             .replace("`", r"\`")
             .replace("_", r"\_")
@@ -1759,7 +1758,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
         + f"> {member_created_at_fdtime}\n\n"
     )
 
-    if is_member_obj and member.joined_at:
+    if isinstance(member, discord.Member) and member.joined_at:
         member_joined_at_fdtime = member.joined_at.astimezone(
             tz=datetime.timezone.utc
         ).strftime(datetime_format_str)
@@ -1783,11 +1782,11 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
             ),
             0,
         )
-        if is_member_obj
+        if isinstance(member, discord.Member)
         else ""
     )
 
-    if is_member_obj and member_func_role_count:
+    if isinstance(member, discord.Member) and member_func_role_count:
         member_top_role_info = f"*Highest Role*: \n> {member.roles[-1].mention}\n> `<@&{member.roles[-1].id}>`\n\n"
         if member_func_role_count != len(member.roles) - 1:
             member_role_count_info = f"*Role Count*: \n> `{member_func_role_count} ({len(member.roles) - 1})`\n\n"
@@ -1798,7 +1797,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
 
     member_id_info = f"*Member ID*: \n> <@!`{member.id}`>\n\n"
 
-    if is_member_obj:
+    if isinstance(member, discord.Member):
         member_stats = (
             f"*Is Pending Screening*: \n> `{member.pending}`\n\n"
             f"*Is Bot Account*: \n> `{member.bot}`\n\n"
@@ -1890,7 +1889,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
 
-    if hasattr(member, "nick") and member.nick:
+    if isinstance(member, discord.Member) and member.nick:
         member_nick = (
             member.nick.replace("\\", r"\\")
             .replace("*", r"\*")

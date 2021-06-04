@@ -178,7 +178,7 @@ async def handle_message(msg: discord.Message):
             common.cmd_logs[msg.id] = ret
 
         if len(common.cmd_logs) > 100:
-            del common.cmd_logs[common.cmd_logs.keys()[0]]
+            del common.cmd_logs[list(common.cmd_logs.keys())[0]]
 
         emotion.update("bored", -15)
 

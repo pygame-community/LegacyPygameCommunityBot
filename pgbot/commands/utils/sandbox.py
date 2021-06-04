@@ -40,7 +40,7 @@ class Output:
 
         # internal
         self.exc = ""
-        self.duration = -1  # The script execution time
+        self.duration = -1.0  # The script execution time
 
         # gif related
         self.loops = 0

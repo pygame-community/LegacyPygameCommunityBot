@@ -15,7 +15,7 @@ import datetime
 import inspect
 import io
 import random
-from typing import TypeVar
+from typing import TypeVar, Any
 
 import discord
 import pygame
@@ -135,10 +135,6 @@ class String:
 
         return newstr
 
-
-# Type hint for an argument that is "hidden", that is, it cannot be passed
-# from the discord end
-HiddenArg = TypeVar("HiddenArg")
 
 SPLIT_FLAGS = [
     ("```", CodeBlock, (True,)),
@@ -304,11 +300,9 @@ class BaseCommand:
                     if not a:
                         raise KwargError("Missing keyword before '=' symbol")
 
-                    if not a[0].isalpha() and not a.startswith("_"):
-                        raise KwargError(
-                            "Keyword argument must begin with an alphabet or "
-                            + "underscore"
-                        )
+                    # underscores not allowed at start of keyword names here
+                    if not a[0].isalpha():
+                        raise KwargError("Keyword argument must begin with an alphabet")
 
                     if c:
                         kwargs[a] = c
@@ -365,9 +359,6 @@ class BaseCommand:
         elif isinstance(arg, str):
             if anno in ["CodeBlock", "String", "datetime.datetime", "datetime"]:
                 raise ValueError()
-
-            elif anno == "HiddenArg":
-                raise ArgError("Hidden arguments cannot be explicitly passed", cmd)
 
             elif anno == "pygame.Color":
                 return pygame.Color(arg)
@@ -528,6 +519,7 @@ class BaseCommand:
         before calling the actual function. Relies on argument annotations to
         cast args/kwargs to the types required by the function
         """
+        args: list[Any]
         cmd, args, kwargs = await self.parse_args()
 
         # command has been blacklisted from running
@@ -541,6 +533,7 @@ class BaseCommand:
             )
 
         is_group = False
+        func = None
         if cmd in self.groups:
             for func in self.groups[cmd]:
                 n = len(func.subcmds)
@@ -601,6 +594,9 @@ class BaseCommand:
                 msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
 
             args.insert(0, msg)
+
+        if func is None:
+            raise BotException("Internal bot error", "This should never happen kek")
 
         sig = inspect.signature(func)
 

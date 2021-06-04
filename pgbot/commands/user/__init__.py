@@ -13,14 +13,15 @@ import datetime
 import os
 import re
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import discord
+import pygame
+
 from pgbot import common, db
 from pgbot.commands.base import (
     BotException,
     CodeBlock,
-    HiddenArg,
     String,
     add_group,
     no_dm,
@@ -40,7 +41,8 @@ class UserCommand(FunCommand, HelpCommand):
         self,
         msg: String,
         on: datetime.datetime,
-        delta: HiddenArg = None,
+        *,
+        _delta: Optional[datetime.timedelta] = None,
     ):
         """
         ->type Reminders
@@ -54,12 +56,13 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders_add, for users to set reminders for themselves
         """
-        now = datetime.datetime.utcnow()
 
-        if delta is None:
-            delta = on - now
+        if _delta is None:
+            now = datetime.datetime.utcnow()
+            _delta = on - now
         else:
-            on = now + delta
+            now = on
+            on = now + _delta
 
         if on < now:
             raise BotException(
@@ -68,7 +71,7 @@ class UserCommand(FunCommand, HelpCommand):
                 "\n Or does it? \\*vsauce music plays in the background\\*",
             )
 
-        elif delta <= datetime.timedelta(seconds=10):
+        elif _delta <= datetime.timedelta(seconds=10):
             raise BotException(
                 "Failed to set reminder!",
                 "Why do you want me to set a reminder for such a small duration?\n"
@@ -100,7 +103,7 @@ class UserCommand(FunCommand, HelpCommand):
         await embed_utils.replace(
             self.response_msg,
             "Reminder set!",
-            f"Gonna remind {self.author.name} in {utils.format_timedelta(delta)}\n"
+            f"Gonna remind {self.author.name} in {utils.format_timedelta(_delta)}\n"
             f"And that is on {on} UTC",
         )
 
@@ -108,7 +111,7 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_reminders_set(
         self,
         msg: String,
-        timestr: String = String(""),
+        timestr: Union[String, str] = String(""),
         weeks: int = 0,
         days: int = 0,
         hours: int = 0,
@@ -128,7 +131,10 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders_set, for users to set reminders for themselves
         """
-        timestr = timestr.string.strip()
+        timestr = (
+            timestr.string.strip() if isinstance(timestr, String) else timestr.strip()
+        )
+
         if timestr:
             time_formats = {
                 "w": 7 * 24 * 60 * 60,
@@ -174,7 +180,7 @@ class UserCommand(FunCommand, HelpCommand):
                 seconds=seconds,
             )
 
-        await self.cmd_reminders_add(msg, None, delta=delta)
+        await self.cmd_reminders_add(msg, datetime.datetime.utcnow(), _delta=delta)
 
     @add_group("reminders")
     async def cmd_reminders(self):
@@ -363,9 +369,9 @@ class UserCommand(FunCommand, HelpCommand):
 
         await self.response_msg.delete()
         if command[0] == "help":
-            await self.cmd_help(*command[1:], page=int(page) - 1, msg=msg)
+            await self.cmd_help(*command[1:], _page=int(page) - 1, _msg=msg)
         elif command[0] == "doc":
-            await self.cmd_doc(command[1], page=int(page) - 1, msg=msg)
+            await self.cmd_doc(command[1], _page=int(page) - 1, _msg=msg)
 
     @no_dm
     @add_group("poll")
@@ -373,8 +379,8 @@ class UserCommand(FunCommand, HelpCommand):
         self,
         desc: String,
         *emojis: String,
-        destination: HiddenArg = None,
-        admin_embed_dict: HiddenArg = {},
+        _destination: Optional[discord.TextChannel] = None,
+        _admin_embed_dict: dict = {},
     ):
         """
         ->type Other commands
@@ -387,8 +393,10 @@ class UserCommand(FunCommand, HelpCommand):
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
 
-        if not isinstance(destination, discord.TextChannel):
+        if not isinstance(_destination, discord.TextChannel):
             destination = self.channel
+        else:
+            destination = _destination
 
         newline = "\n"
         base_embed_dict = {
@@ -416,7 +424,7 @@ class UserCommand(FunCommand, HelpCommand):
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string,
         }
-        base_embed_dict.update(admin_embed_dict)
+        base_embed_dict.update(_admin_embed_dict)
 
         if emojis:
             if len(emojis) <= 3 or len(emojis) % 2:
@@ -483,7 +491,8 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_poll_close(
         self,
         msg: discord.Message,
-        color: HiddenArg = None,
+        *,
+        _color: Optional[pygame.Color] = None,
     ):
         """
         ->type Other commands
@@ -521,7 +530,7 @@ class UserCommand(FunCommand, HelpCommand):
                 " Please double-check the id.",
             )
 
-        if color is None and self.author.id != poll_owner:
+        if _color is None and self.author.id != poll_owner:
             raise BotException(
                 "You can't stop this vote",
                 "The vote was not started by you."
@@ -574,7 +583,7 @@ class UserCommand(FunCommand, HelpCommand):
         await embed_utils.edit_2(
             msg,
             embed,
-            color=0xA83232 if not color else utils.color_to_rgb_int(color),
+            color=0xA83232 if not _color else utils.color_to_rgb_int(_color),
             title=title,
             fields=fields,
             footer_text="Ended",
@@ -608,20 +617,22 @@ class UserCommand(FunCommand, HelpCommand):
         )
 
     @add_group("stream", "add")
-    async def cmd_stream_add(self, members: HiddenArg = None):
+    async def cmd_stream_add(
+        self, *, _members: Optional[tuple[discord.Member, ...]] = None
+    ):
         """
         ->type Reminders
         ->signature pg!stream add
         ->description Add yourself to the stream-ping-list
         ->extended description
-        Add yourself to the stream-ping-list. You can always delete \
-        you later with `pg!stream del`
+        Add yourself to the stream-ping-list. You can always delete you later
+        with `pg!stream del`
         """
         ping_db = db.DiscordDB("stream")
         data: list = ping_db.get([])
 
-        if members:
-            for mem in members:
+        if _members:
+            for mem in _members:
                 if mem.id not in data:
                     data.append(mem.id)
         elif self.author.id not in data:
@@ -631,21 +642,23 @@ class UserCommand(FunCommand, HelpCommand):
         await self.cmd_stream()
 
     @add_group("stream", "del")
-    async def cmd_stream_del(self, members: HiddenArg = None):
+    async def cmd_stream_del(
+        self, *, _members: Optional[tuple[discord.Member, ...]] = None
+    ):
         """
         ->type Reminders
         ->signature pg!stream del
         ->description Remove yourself from the stream-ping-list
         ->extended description
-        Remove yourself from the stream-ping-list. You can always add \
-        you later with `pg!stream add`
+        Remove yourself from the stream-ping-list. You can always add you later
+        with `pg!stream add`
         """
         ping_db = db.DiscordDB("stream")
         data: list = ping_db.get([])
 
         try:
-            if members:
-                for mem in members:
+            if _members:
+                for mem in _members:
                     data.remove(mem.id)
             else:
                 data.remove(self.author.id)

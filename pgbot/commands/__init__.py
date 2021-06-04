@@ -10,6 +10,7 @@ This file exports a handle function, to handle commands posted by the users
 from __future__ import annotations
 
 import sys
+from typing import Union
 
 import discord
 
@@ -18,7 +19,7 @@ from pgbot.commands import admin, user
 from pgbot.utils import embed_utils, utils
 
 
-def get_perms(mem: discord.Member):
+def get_perms(mem: Union[discord.Member, discord.User]):
     """
     Return a tuple (is_admin, is_priv) for a given user
     """

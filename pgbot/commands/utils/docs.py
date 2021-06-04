@@ -74,7 +74,7 @@ for module in sys.modules:
 
 for module in pkg_resources.working_set:  # pylint: disable=not-an-iterable
     try:
-        doc_module_dict[module] = __import__(module.replace("-", "_"))
+        doc_module_dict[module] = __import__(module.project_name.replace("-", "_"))
     except BaseException:
         pass
 

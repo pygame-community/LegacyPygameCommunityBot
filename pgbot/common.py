@@ -72,62 +72,61 @@ DOC_EMBED_LIMIT = 3
 # the bot that requires access to server specific stuff
 GENERIC = False
 
-if not GENERIC:
 
-    class ServerConstants:
-        """
-        Class of all server constants. If you ever want to make a copy of the bot
-        run on your own server on non-generic mode, replicate this class, but
-        with the constants from your server
-        """
+class ServerConstants:
+    """
+    Class of all server constants. If you ever want to make a copy of the bot
+    run on your own server on non-generic mode, replicate this class, but
+    with the constants from your server
+    """
 
-        BOT_ID = 772788653326860288
+    BOT_ID = 772788653326860288
 
-        SERVER_ID = 772505616680878080
+    SERVER_ID = 772505616680878080
 
-        RULES_CHANNEL_ID = 772509621747187712
-        ROLES_CHANNEL_ID = 772535163195228200
-        GUIDE_CHANNEL_ID = 772528306615615500
-        ARRIVALS_CHANNEL_ID = 774916117881159681
-        LOG_CHANNEL_ID = 793250875471822930
-        ENTRY_CHANNEL_IDS = {
-            "showcase": 772507247540437032,
-            "resource": 810516093273768016,
-        }
-        ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
+    RULES_CHANNEL_ID = 772509621747187712
+    ROLES_CHANNEL_ID = 772535163195228200
+    GUIDE_CHANNEL_ID = 772528306615615500
+    ARRIVALS_CHANNEL_ID = 774916117881159681
+    LOG_CHANNEL_ID = 793250875471822930
+    ENTRY_CHANNEL_IDS = {
+        "showcase": 772507247540437032,
+        "resource": 810516093273768016,
+    }
+    ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
 
-        # Admin, Moderator, Senior Mage, Wizards, Lead Forgers
-        ADMIN_ROLES = {
-            772521884373614603,
-            772508687256125440,
-            772849669591400501,
-            841338117968756766,
-            839869589343961099,
-        }
+    # Admin, Moderator, Senior Mage, Wizards, Lead Forgers
+    ADMIN_ROLES = {
+        772521884373614603,
+        772508687256125440,
+        772849669591400501,
+        841338117968756766,
+        839869589343961099,
+    }
 
-        # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
-        PRIV_ROLES = {
-            774473681325785098,
-            778205389942030377,
-            780440736457031702,
-            787473199088533504,
-        }
+    # Specialties, Helpfulies, Verified pygame contributors, Server Boosters
+    PRIV_ROLES = {
+        774473681325785098,
+        778205389942030377,
+        780440736457031702,
+        787473199088533504,
+    }
 
-        DIVIDER_ROLES = {836645525372665887, 836645368744771654, 842754237774692392}
+    DIVIDER_ROLES = {836645525372665887, 836645368744771654, 842754237774692392}
 
-        # IDs of rules messages, in the order from rule 1 to rule 7
-        RULES = (
-            799339450361577472,
-            799339479445405746,
-            799339501511639100,
-            799339582620827680,
-            799339603651067974,
-            799339620810358885,
-            819537779847200809,
-        )
+    # IDs of rules messages, in the order from rule 1 to rule 7
+    RULES = (
+        799339450361577472,
+        799339479445405746,
+        799339501511639100,
+        799339582620827680,
+        799339603651067974,
+        799339620810358885,
+        819537779847200809,
+    )
 
-        # Database channel
-        DB_CHANNEL_ID = 838090567682490458
+    # Database channel
+    DB_CHANNEL_ID = 838090567682490458
 
 
 # Link to pygame snake logo

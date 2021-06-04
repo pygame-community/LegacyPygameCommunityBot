@@ -22,7 +22,6 @@ from pgbot.commands.base import (
     BaseCommand,
     BotException,
     CodeBlock,
-    HiddenArg,
     String,
     add_group,
 )
@@ -420,7 +419,7 @@ class EmsudoCommand(BaseCommand):
         """
 
         if not msg.embeds or overwrite:
-            await self.cmd_emsudo_replace(msg=msg, data=data, add=True)
+            await self.cmd_emsudo_replace(msg=msg, data=data, _add=True)
         else:
             raise BotException(
                 "Cannot overwrite embed!",
@@ -611,7 +610,8 @@ class EmsudoCommand(BaseCommand):
         self,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
-        add: HiddenArg = False,
+        *,
+        _add: bool = False,
     ):
         """
         ->type emsudo commands
@@ -669,7 +669,7 @@ class EmsudoCommand(BaseCommand):
             description=EmptyEmbed,
         )
 
-        if not msg.embeds and not add:
+        if not msg.embeds and not _add:
             raise BotException(
                 "No embed data found", "No embed data to be replaced was found"
             )
@@ -906,7 +906,7 @@ class EmsudoCommand(BaseCommand):
                 description=EmptyEmbed,
             )
 
-            attachment_msg: discord.Message = None
+            attachment_msg: Optional[discord.Message] = None
             only_description = False
 
             if not data:
