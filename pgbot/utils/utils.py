@@ -14,7 +14,7 @@ import os
 import platform
 import sys
 import traceback
-from typing import Callable, Iterable, List, Tuple, Union
+from typing import Callable, Iterable, Union
 
 import discord
 import pygame
@@ -127,7 +127,7 @@ def format_timedelta(tdelta: datetime.timedelta):
     return format_long_time(int(tdelta.total_seconds()))
 
 
-def format_byte(size: int, decimal_places=3):
+def format_byte(size: int, decimal_places: int = 3):
     """
     Formats a given size and outputs a string equivalent to B, KB, MB, or GB
     """
@@ -216,7 +216,7 @@ def filter_emoji_id(name: str):
         return name
 
 
-def code_block(string: str, max_characters=2048):
+def code_block(string: str, max_characters: int = 2048):
     """
     Formats text into discord code blocks
     """
@@ -256,7 +256,7 @@ def check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> Tuple[bool, ...]:
+) -> tuple[bool, ...]:
 
     """
     Checks if the given permissions apply to the given member in the given channels.
@@ -290,7 +290,7 @@ async def coro_check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> List[bool]:
+) -> list[bool]:
 
     """
     Checks if the given permissions apply to the given member in the given channels.

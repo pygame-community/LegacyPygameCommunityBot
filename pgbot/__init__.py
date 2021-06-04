@@ -169,6 +169,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
 
 async def handle_message(msg: discord.Message):
+    """
+    Handle a message posted by user
+    """
     if msg.type == discord.MessageType.premium_guild_subscription:
         await emotion.server_boost(msg)
 

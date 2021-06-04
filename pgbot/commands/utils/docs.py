@@ -79,7 +79,7 @@ for module in pkg_resources.working_set:  # pylint: disable=not-an-iterable
         pass
 
 
-async def put_main_doc(name, original_msg):
+async def put_main_doc(name: str, original_msg: discord.Message):
     """
     Put main part of the doc into embed(s)
     """
@@ -178,7 +178,9 @@ async def put_main_doc(name, original_msg):
     return module_objs, name, embeds
 
 
-async def put_doc(name, original_msg, msg_invoker, page=0):
+async def put_doc(
+    name: str, original_msg: discord.Message, msg_invoker: discord.Member, page: int = 0
+):
     """
     Helper function to get docs
     """

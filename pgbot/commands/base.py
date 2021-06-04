@@ -15,7 +15,7 @@ import datetime
 import inspect
 import io
 import random
-from typing import TypeVar, Any
+from typing import Any
 
 import discord
 import pygame

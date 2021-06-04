@@ -398,10 +398,10 @@ def get_fields(*strings):
     Syntax of an embed field string: <name|value[|inline]>
 
     Args:
-        *messages (Union[str, List[str]]): The messages to get the fields from
+        *messages (Union[str, list[str]]): The messages to get the fields from
 
     Returns:
-        List[List[str, str, bool]]: The list of fields. if only one message is given as input, then only one field is returned.
+        list[list[str, str, bool]]: The list of fields. if only one message is given as input, then only one field is returned.
     """
     # syntax: <Title|desc.[|inline=False]>
     field_regex = r"(<.*\|.*(\|True|\|False|\|1|\|0|)>)"
