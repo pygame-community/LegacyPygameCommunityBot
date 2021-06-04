@@ -424,6 +424,8 @@ class SudoCommand(BaseCommand):
             `embeds: (bool) = True`
             > Whether the embeds of the given messages
             > should be retrieved (as serialized JSON data).
+        
+        +===+
 
             `info: (bool) = False`
             > If set to `True`, an embed containing info
@@ -771,6 +773,8 @@ class SudoCommand(BaseCommand):
             > Whether the embeds of the given messages
             > should be cloned along with the outut messages.
 
+        +===+
+
             `as_spoiler: (bool) = False`
             > If set to `True`, the attachments of the input messages
             > will be explicitly marked as spoilers when sent to the
@@ -788,9 +792,8 @@ class SudoCommand(BaseCommand):
             > to `True`.
 
         __Returns__:
-            > One or more cloned messages
-            > with attachents or embeds
-            > based on the given input.
+            > One or more cloned messages with attachents
+            > or embeds based on the given input.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
