@@ -101,7 +101,7 @@ class EmsudoCommand(BaseCommand):
 
             'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
-            datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
+            datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
         ]
         ```
         \\`\\`\\`
@@ -830,7 +830,7 @@ class EmsudoCommand(BaseCommand):
             > be modified as a single embed attribute.
 
         +===+
-        
+
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
@@ -1622,7 +1622,7 @@ class EmsudoCommand(BaseCommand):
                         )
 
             if embed_count > 2:
-                await embed_utils.edit_fields_from_dict(
+                await embed_utils.edit_field_from_dict(
                     self.response_msg,
                     load_embed,
                     dict(

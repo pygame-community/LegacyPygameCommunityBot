@@ -245,7 +245,7 @@ BOT_MENTION = "the bot" if GENERIC else f"<@!{ServerConstants.BOT_ID}>"
 BOT_HELP_PROMPT = {
     "title": "Help",
     "color": 0xFFFF00,
-    "body": f"""
+    "description": f"""
 Hey there, do you want to use {BOT_MENTION} ?
 My command prefix is `{PREFIX}`.
 If you want me to run your code, use Discord's code block syntax.

@@ -24,7 +24,7 @@ def clamp(value, min_, max_):
     """
     Returns the value clamped between a maximum and a minumum
     """
-    value = (value if value > min_ else min_)
+    value = value if value > min_ else min_
     return value if value < max_ else max_
 
 
