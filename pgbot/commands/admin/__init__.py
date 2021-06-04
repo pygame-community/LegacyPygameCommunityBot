@@ -251,8 +251,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!archive <origin channel> <quantity> [mode] [destination channel]
-        [before=None] [after=None] [around=None] [raw=False] [show_header=True] [show_author=True]
+        ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
+        [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
         [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
