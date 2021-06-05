@@ -616,8 +616,8 @@ class SudoCommand(BaseCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_fetch <origin channel> <quantity> [urls=False] [pinned=False] [before=None]
-        [after=None] [around=None] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
+        ->signature pg!sudo_fetch <origin channel> <quantity> [urls=False] [pinned=False] [pin_range=]
+        [before=None] [after=None] [around=None] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
         ->description Fetch message IDs or URLs
         -----
         Implement pg!sudo_fetch, for admins to fetch several message IDs and links at once
@@ -658,6 +658,9 @@ class SudoCommand(BaseCommand):
                     messages = messages[
                         pin_range.start : pin_range.stop : pin_range.step
                     ]
+
+                    if pin_range.step != -1 and oldest_first:
+                        messages.reverse()
 
             elif quantity < 0:
                 raise BotException(
@@ -721,13 +724,9 @@ class SudoCommand(BaseCommand):
             output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
 
         with io.StringIO(output_str) as fobj:
-            try:
-                await destination.send(
-                    file=discord.File(fobj, filename=output_filename)
-                )
-            except discord.HTTPException as e:
-                raise BotException("Something went wrong", e.args[0])
-
+            await destination.send(
+                file=discord.File(fobj, filename=output_filename)
+            )
         await self.response_msg.delete()
 
     @add_group("sudo", "clone")
