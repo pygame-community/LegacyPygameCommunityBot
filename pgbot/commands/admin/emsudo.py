@@ -614,7 +614,7 @@ class EmsudoCommand(BaseCommand):
                     embed_utils.recursive_delete(embed_dict, embed_mask_dict)
 
                 if embed_dict:
-                    embed_dict = embed_utils.correct_embed_dict(embed_dict)
+                    embed_dict = embed_utils.clean_embed_dict(embed_dict)
                     if embed_dict:
                         final_embed = discord.Embed.from_dict(embed_dict)
                     else:
@@ -1605,7 +1605,7 @@ class EmsudoCommand(BaseCommand):
                 corrected_embed_dict = embed_utils.copy_embed_dict(embed_dict)
                 if embed_dict:
                     if mode == 1 or mode == 2:
-                        corrected_embed_dict = embed_utils.correct_embed_dict(
+                        corrected_embed_dict = embed_utils.clean_embed_dict(
                             corrected_embed_dict
                         )
 

@@ -838,13 +838,14 @@ def create_as_dict(
     if timestamp:
         if isinstance(timestamp, str):
             try:
-                embed_dict["timestamp"] = datetime.datetime.fromisoformat(
+                datetime.datetime.fromisoformat(
                     timestamp[:-1] if timestamp.endswith("Z") else timestamp
                 )
+                embed_dict["timestamp"] = timestamp
             except ValueError:
                 pass
         elif isinstance(timestamp, datetime.datetime):
-            embed_dict["timestamp"] = timestamp
+            embed_dict["timestamp"] = timestamp.isoformat()
 
     if image_url:
         embed_dict["image"] = {"url": image_url}
@@ -903,6 +904,7 @@ def validate_embed_dict(embed_dict):
             and ("color" in embed_dict and "timestamp" in embed_dict)
         ):
             valid = False
+            break
         elif (
             not embed_dict[k]
             or k == "footer"
@@ -922,11 +924,17 @@ def validate_embed_dict(embed_dict):
                 ):
                     valid = False
                     break
+        elif k == "timestamp":
+            try:
+                datetime.datetime.fromisoformat(embed_dict[k])
+            except ValueError:
+                valid = False
+                break
 
     return valid
 
 
-def correct_embed_dict(embed_dict):
+def clean_embed_dict(embed_dict):
     for k in tuple(embed_dict.keys()):
         if (
             not embed_dict[k]
@@ -946,6 +954,13 @@ def correct_embed_dict(embed_dict):
                     or "value" not in embed_dict["fields"][i]
                 ):
                     embed_dict["fields"].pop(i)
+
+        elif k == "timestamp":
+            try:
+                datetime.datetime.fromisoformat(embed_dict[k])
+            except ValueError:
+                valid = False
+                break
 
     return embed_dict
 
@@ -1170,16 +1185,18 @@ def create_from_dict(data):
     Creates an embed from a dictionary with a much more tight function
     """
 
-    if "timestamp" in data and isinstance(data["timestamp"], str):
-        try:
-            data["timestamp"] = datetime.datetime.fromisoformat(
-                data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
-            )
-        except ValueError:
+    if "timestamp" in data:
+        if isinstance(data["timestamp"], str):
+            try:
+                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                datetime.datetime.fromisoformat(final_timestamp)
+                data["timestamp"] = final_timestamp
+            except ValueError:
+                del data["timestamp"]
+        elif isinstance(data["timestamp"], datetime.datetime):
+            data["timestamp"] = data["timestamp"].isoformat()
+        else:
             del data["timestamp"]
-
-    elif "timestamp" in data and not isinstance(data["timestamp"], datetime.datetime):
-        del data["timestamp"]
 
     return discord.Embed.from_dict(data)
 
@@ -1189,16 +1206,18 @@ async def send_from_dict(channel, data):
     Sends an embed from a dictionary with a much more tight function
     """
 
-    if "timestamp" in data and isinstance(data["timestamp"], str):
-        try:
-            data["timestamp"] = datetime.datetime.fromisoformat(
-                data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
-            )
-        except ValueError:
+    if "timestamp" in data:
+        if isinstance(data["timestamp"], str):
+            try:
+                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                datetime.datetime.fromisoformat(final_timestamp)
+                data["timestamp"] = final_timestamp
+            except ValueError:
+                del data["timestamp"]
+        elif isinstance(data["timestamp"], datetime.datetime):
+            data["timestamp"] = data["timestamp"].isoformat()
+        else:
             del data["timestamp"]
-
-    elif "timestamp" in data and not isinstance(data["timestamp"], datetime.datetime):
-        del data["timestamp"]
 
     if channel is None:
         return discord.Embed.from_dict(data)
@@ -1211,16 +1230,18 @@ async def replace_from_dict(message, data):
     Replaces the embed of a message from a dictionary with a much more
     tight function
     """
-    if "timestamp" in data and isinstance(data["timestamp"], str):
-        try:
-            data["timestamp"] = datetime.datetime.fromisoformat(
-                data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
-            )
-        except ValueError:
+    if "timestamp" in data:
+        if isinstance(data["timestamp"], str):
+            try:
+                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                datetime.datetime.fromisoformat(final_timestamp)
+                data["timestamp"] = final_timestamp
+            except ValueError:
+                del data["timestamp"]
+        elif isinstance(data["timestamp"], datetime.datetime):
+            data["timestamp"] = data["timestamp"].isoformat()
+        else:
             del data["timestamp"]
-
-    elif "timestamp" in data and not isinstance(data["timestamp"], datetime.datetime):
-        del data["timestamp"]
 
     if message is None:
         return discord.Embed.from_dict(data)
@@ -1265,16 +1286,18 @@ async def edit_from_dict(
                 for i in sorted(update_embed_dict["fields"].keys())
             ]
 
-    if "timestamp" in old_embed_dict and isinstance(old_embed_dict["timestamp"], str):
-        try:
-            old_embed_dict["timestamp"] = datetime.datetime.fromisoformat(
-                old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
-            )
-        except ValueError:
+    if "timestamp" in old_embed_dict:
+        if isinstance(old_embed_dict["timestamp"], str):
+            try:
+                final_timestamp = old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
+                datetime.datetime.fromisoformat(final_timestamp)
+                old_embed_dict["timestamp"] = final_timestamp
+            except ValueError:
+                del old_embed_dict["timestamp"]
+        elif isinstance(old_embed_dict["timestamp"], datetime.datetime):
+            old_embed_dict["timestamp"] = old_embed_dict["timestamp"].isoformat()
+        else:
             del old_embed_dict["timestamp"]
-
-    elif "timestamp" in old_embed_dict and not isinstance(old_embed_dict["timestamp"], datetime.datetime):
-        del old_embed_dict["timestamp"]
 
     if message is None:
         return discord.Embed.from_dict(old_embed_dict)
@@ -1316,17 +1339,19 @@ def edit_dict_from_dict(
                 update_embed_dict["fields"][i]
                 for i in sorted(update_embed_dict["fields"].keys())
             ]
-
-    if "timestamp" in old_embed_dict and isinstance(old_embed_dict["timestamp"], str):
-        try:
-            old_embed_dict["timestamp"] = datetime.datetime.fromisoformat(
-                old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
-            )
-        except ValueError:
+    
+    if "timestamp" in old_embed_dict:
+        if isinstance(old_embed_dict["timestamp"], str):
+            try:
+                final_timestamp = old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
+                datetime.datetime.fromisoformat(final_timestamp)
+                old_embed_dict["timestamp"] = final_timestamp
+            except ValueError:
+                del old_embed_dict["timestamp"]
+        elif isinstance(old_embed_dict["timestamp"], datetime.datetime):
+            old_embed_dict["timestamp"] = old_embed_dict["timestamp"].isoformat()
+        else:
             del old_embed_dict["timestamp"]
-
-    elif "timestamp" in old_embed_dict and not isinstance(old_embed_dict["timestamp"], datetime.datetime):
-        del old_embed_dict["timestamp"]
 
     return old_embed_dict
 
