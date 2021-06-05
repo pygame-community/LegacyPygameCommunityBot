@@ -217,4 +217,6 @@ async def send_help_message(
             0xFF0000,
         )
 
-    await embed_utils.PagedEmbed(original_msg, embeds, invoker, "help", page).mainloop()
+    await embed_utils.PagedEmbed(
+        original_msg, embeds, invoker, f"help {' '.join(commands)}", page
+    ).mainloop()

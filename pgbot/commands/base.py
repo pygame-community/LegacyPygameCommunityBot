@@ -222,6 +222,10 @@ class BaseCommand:
                     else:
                         self.groups[func.groupname] = [func]
 
+        # page number, useful for PagedEmbed commands. 0 by deafult, gets modified
+        # in pg!refresh command when invoked
+        self.page = 0
+
     def split_args(self, split_str, split_flags):
         """
         Utility function to do the first parsing step to recursively split

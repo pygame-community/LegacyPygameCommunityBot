@@ -541,11 +541,10 @@ class PagedEmbed:
 
     def get_footer_text(self, page_num):
         """Get the information footer text, which contains the current page."""
-        newline = "\n"
-        footer = f"Page {page_num + 1} of {len(self.pages)}.{newline}"
+        footer = f"Page {page_num + 1} of {len(self.pages)}.\n"
 
         if self.parent_command:
-            footer += f"Refresh with pg!refresh {self.message.id}{newline}"
+            footer += f"Refresh by replying to this message with `pg!refresh`\n"
             footer += f"Command: {self.parent_command}"
 
         return footer

@@ -351,16 +351,23 @@ class UserCommand(FunCommand, HelpCommand):
         if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
             raise BotException(
                 "Message does not support pages",
+                "The message specified does not support pages. Make sure you "
+                "have replied to the correct message",
+            )
+
+        data = msg.embeds[0].footer.text.splitlines()
+
+        if len(data) != 3 and not data[2].startswith("Command: "):
+            raise BotException(
+                "Message does not support pages",
                 "The message specified does not support pages. Make sure "
                 "the id of the message is correct.",
             )
 
-        data = msg.embeds[0].footer.text.split("\n")
-
         page = re.search(r"\d+", data[0]).group()
-        command = data[2].replace("Command: ", "").split()
+        cmd_str = data[2].replace("Command: ", "")
 
-        if not page or not command or not self.cmds_and_funcs.get(command[0]):
+        if not page.isdigit() or not cmd_str:
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
@@ -368,10 +375,12 @@ class UserCommand(FunCommand, HelpCommand):
             )
 
         await self.response_msg.delete()
-        if command[0] == "help":
-            await self.cmd_help(*command[1:], _page=int(page) - 1, _msg=msg)
-        elif command[0] == "doc":
-            await self.cmd_doc(command[1], _page=int(page) - 1, _msg=msg)
+
+        # Handle the new command, the one that pg!refresh is trying to refresh
+        self.response_msg = msg
+        self.cmd_str = cmd_str
+        self.page = int(page) - 1
+        await self.handle_cmd()
 
     @no_dm
     @add_group("poll")

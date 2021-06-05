@@ -179,9 +179,7 @@ class HelpCommand(BaseCommand):
         await self.response_msg.delete()
 
     @no_dm
-    async def cmd_doc(
-        self, name: str, *, _page: int = 0, _msg: Optional[discord.Message] = None
-    ):
+    async def cmd_doc(self, name: str):
         """
         ->type Get help
         ->signature pg!doc <object name>
@@ -189,13 +187,10 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!doc, to view documentation
         """
-        msg = _msg if _msg is not None else self.response_msg
-        await docs.put_doc(name, msg, self.author, _page)
+        await docs.put_doc(name, self.response_msg, self.author, self.page)
 
     @no_dm
-    async def cmd_help(
-        self, *names: str, _page: int = 0, _msg: Optional[discord.Message] = None
-    ):
+    async def cmd_help(self, *names: str):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -204,10 +199,14 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!help, to display a help message
         """
-        msg = _msg if _msg is not None else self.response_msg
 
         await help.send_help_message(
-            msg, self.author, names, self.cmds_and_funcs, self.groups, _page
+            self.response_msg,
+            self.author,
+            names,
+            self.cmds_and_funcs,
+            self.groups,
+            self.page,
         )
 
     @no_dm
@@ -369,7 +368,11 @@ class HelpCommand(BaseCommand):
 
         # Creates a paginator for the caller to use
         page_embed = embed_utils.PagedEmbed(
-            self.response_msg, pages, caller=self.author
+            self.response_msg,
+            pages,
+            self.author,
+            self.cmd_str,
+            self.page,
         )
 
         await page_embed.mainloop()
