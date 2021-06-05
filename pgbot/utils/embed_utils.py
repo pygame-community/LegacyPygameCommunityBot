@@ -916,6 +916,7 @@ def validate_embed_dict(embed_dict):
         ):
             valid = False
             break
+
         elif k == "fields":
             for i in range(len(embed_dict["fields"])):
                 if (
@@ -924,6 +925,11 @@ def validate_embed_dict(embed_dict):
                 ):
                     valid = False
                     break
+
+        elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
+            valid = False
+            break
+        
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])
