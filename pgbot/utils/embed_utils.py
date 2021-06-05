@@ -958,7 +958,6 @@ def clean_embed_dict(embed_dict):
         elif k == "color":
             embed_dict["color"] = min(max(0, embed_dict["color"]), 0xFFFFFF)
 
-
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])
@@ -1191,7 +1190,11 @@ def create_from_dict(data):
     if "timestamp" in data:
         if isinstance(data["timestamp"], str):
             try:
-                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                final_timestamp = (
+                    data["timestamp"][:-1]
+                    if data["timestamp"].endswith("Z")
+                    else data["timestamp"]
+                )
                 datetime.datetime.fromisoformat(final_timestamp)
                 data["timestamp"] = final_timestamp
             except ValueError:
@@ -1212,7 +1215,11 @@ async def send_from_dict(channel, data):
     if "timestamp" in data:
         if isinstance(data["timestamp"], str):
             try:
-                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                final_timestamp = (
+                    data["timestamp"][:-1]
+                    if data["timestamp"].endswith("Z")
+                    else data["timestamp"]
+                )
                 datetime.datetime.fromisoformat(final_timestamp)
                 data["timestamp"] = final_timestamp
             except ValueError:
@@ -1236,7 +1243,11 @@ async def replace_from_dict(message, data):
     if "timestamp" in data:
         if isinstance(data["timestamp"], str):
             try:
-                final_timestamp = data["timestamp"][:-1] if data["timestamp"].endswith("Z") else data["timestamp"]
+                final_timestamp = (
+                    data["timestamp"][:-1]
+                    if data["timestamp"].endswith("Z")
+                    else data["timestamp"]
+                )
                 datetime.datetime.fromisoformat(final_timestamp)
                 data["timestamp"] = final_timestamp
             except ValueError:
@@ -1292,7 +1303,11 @@ async def edit_from_dict(
     if "timestamp" in old_embed_dict:
         if isinstance(old_embed_dict["timestamp"], str):
             try:
-                final_timestamp = old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
+                final_timestamp = (
+                    old_embed_dict["timestamp"][:-1]
+                    if old_embed_dict["timestamp"].endswith("Z")
+                    else old_embed_dict["timestamp"]
+                )
                 datetime.datetime.fromisoformat(final_timestamp)
                 old_embed_dict["timestamp"] = final_timestamp
             except ValueError:
@@ -1342,11 +1357,15 @@ def edit_dict_from_dict(
                 update_embed_dict["fields"][i]
                 for i in sorted(update_embed_dict["fields"].keys())
             ]
-    
+
     if "timestamp" in old_embed_dict:
         if isinstance(old_embed_dict["timestamp"], str):
             try:
-                final_timestamp = old_embed_dict["timestamp"][:-1] if old_embed_dict["timestamp"].endswith("Z") else old_embed_dict["timestamp"]
+                final_timestamp = (
+                    old_embed_dict["timestamp"][:-1]
+                    if old_embed_dict["timestamp"].endswith("Z")
+                    else old_embed_dict["timestamp"]
+                )
                 datetime.datetime.fromisoformat(final_timestamp)
                 old_embed_dict["timestamp"] = final_timestamp
             except ValueError:
