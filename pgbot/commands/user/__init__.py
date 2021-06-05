@@ -587,7 +587,7 @@ class UserCommand(FunCommand, HelpCommand):
             title=title,
             fields=fields,
             footer_text="Ended",
-            timestamp=self.response_msg.created_at.isoformat(),
+            timestamp=self.response_msg.created_at,
         )
         await self.response_msg.delete()
 
