@@ -838,9 +838,7 @@ def create_as_dict(
 
     if timestamp:
         if isinstance(timestamp, str):
-            embed_dict["timestamp"] = datetime.datetime.fromisoformat(
-                timestamp[:-1] if timestamp.endswith("Z") else timestamp
-            )
+            embed_dict["timestamp"] = timestamp[:-1] if timestamp.endswith("Z") else timestamp
         else:
             embed_dict["timestamp"] = timestamp
 
