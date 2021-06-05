@@ -22,6 +22,7 @@ import pygame
 from pgbot import common, db, emotion
 from pgbot.utils import embed_utils, utils
 
+# mapping of all escape characters to their escaped values
 ESCAPES = {
     "0": "\0",
     "n": "\n",
@@ -206,8 +207,9 @@ class BaseCommand:
         if self.is_dm and not common.GENERIC:
             self.guild = common.bot.get_guild(common.ServerConstants.SERVER_ID)
 
-        self.cmds_and_funcs = {}
-        self.groups = {}
+        # build self.groups and self.cmds_and_functions from class functions
+        self.cmds_and_funcs = {}  # this is a mapping from funtion name to funtion
+        self.groups = {}  # This is a mapping from group name to list of sub functions
         for attr in dir(self):
             if attr.startswith(common.CMD_FUNC_PREFIX):
                 func = self.__getattribute__(attr)
@@ -225,6 +227,10 @@ class BaseCommand:
         Utility function to do the first parsing step to recursively split
         string based on seperators
         """
+        if not split_flags:
+            yield split_str
+            return
+
         splitchar, splitfunc, exargs = split_flags.pop(0)
 
         cnt = 0
@@ -232,16 +238,15 @@ class BaseCommand:
         for substr in split_str.split(splitchar):
             if cnt % 2:
                 if substr.endswith("\\"):
+                    # last split character escaped, do not split on it
                     prev += substr[:-1] + splitchar
                     continue
 
                 yield splitfunc(prev + substr, *exargs)
                 prev = ""
 
-            elif split_flags:
-                yield from self.split_args(substr, split_flags.copy())
             else:
-                yield substr
+                yield from self.split_args(substr, split_flags.copy())
 
             cnt += 1
 
@@ -266,6 +271,7 @@ class BaseCommand:
         for arg in self.split_args(self.cmd_str, SPLIT_FLAGS.copy()):
             if not isinstance(arg, str):
                 if prevkey is not None:
+                    # had a keyword, flush arg into keyword
                     kwargs[prevkey] = arg
                     prevkey = None
                 else:
@@ -278,9 +284,11 @@ class BaseCommand:
                 if not substr:
                     continue
 
-                a, b, c = substr.partition("=")
+                a, b, c = substr.partition("=")  # split based on = for keyword
                 if not b:
+                    # current token is not a keyword
                     if prevkey:
+                        # flush into keyword
                         kwargs[prevkey] = a
                         prevkey = None
                         continue
@@ -447,10 +455,14 @@ class BaseCommand:
             return arg
 
         if anno.startswith("Optional[") and anno.endswith("]"):
+            # got Optional[...] typehint, this is semantic, and has no parser effects,
+            # so ignore
             anno = anno[9:-1].strip()
 
         try:
             if anno.startswith("Union[") and anno.endswith("]"):
+                # got a union typehint, try to cast to each type one by one,
+                # fail at last
                 annos = [i.strip() for i in anno[6:-1].split(",")]
                 for cnt, anno in enumerate(annos):
                     try:
@@ -462,9 +474,10 @@ class BaseCommand:
             return await self._cast_arg(anno, arg, cmd)
 
         except ValueError:
+            # handle errors, give more user-friendly error messages
             if anno == "CodeBlock":
-                typ = "a codeblock, please surround your code in codeblocks,"
-                " and add a correct language specifier (e.g. \\`\\`\\`python) when needed"
+                typ = "a codeblock, please surround your code in codeblocks, and "
+                " add a correct language specifier (e.g. \\`\\`\\`python) when needed"
 
             elif anno == "String":
                 typ = 'a string, please surround it in quotes (`""`)'
@@ -495,8 +508,10 @@ class BaseCommand:
 
             elif anno == "discord.Message":
                 typ = (
-                    "a message id, or a 'channel_id/message_id' combo, or a [link](#) to a message\nPlease make "
-                    "sure that the given ID(s) is/are valid and that the message is accesible to the bot"
+                    "a message id, or a 'channel_id/message_id' combo, or a "
+                    "[link](#) to a message\nPlease make sure that the given "
+                    "ID(s) is/are valid and that the message is accesible to "
+                    "the bot"
                 )
 
             elif anno == "pygame.Color":
@@ -532,6 +547,8 @@ class BaseCommand:
                 "has been finished",
             )
 
+        # First check if it is a group command, and handle it.
+        # get the func object
         is_group = False
         func = None
         if cmd in self.groups:
@@ -588,13 +605,6 @@ class BaseCommand:
                 )
                 await asyncio.sleep(0.5)
 
-        if self.invoke_msg.reference is not None:
-            msg = str(self.invoke_msg.reference.message_id)
-            if self.invoke_msg.reference.channel_id != self.channel.id:
-                msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
-
-            args.insert(0, msg)
-
         if func is None:
             raise BotException("Internal bot error", "This should never happen kek")
 
@@ -609,6 +619,16 @@ class BaseCommand:
         for i, key in enumerate(sig.parameters):
             param = sig.parameters[key]
             iskw = False
+
+            if i == 0 and param.annotation == "discord.Message":
+                # first arg is expected to be a Message object, handle reply into
+                # the first argument
+                if self.invoke_msg.reference is not None:
+                    msg = str(self.invoke_msg.reference.message_id)
+                    if self.invoke_msg.reference.channel_id != self.channel.id:
+                        msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
+
+                    args.insert(0, msg)
 
             if param.kind == param.VAR_POSITIONAL:
                 is_var_pos = True
@@ -654,6 +674,7 @@ class BaseCommand:
                     "Positional cannot be passed again as a keyword argument", cmd
                 )
 
+            # cast the argument into the required type
             if iskw:
                 kwargs[key] = await self.cast_arg(param, kwargs[key], cmd, key)
             else:
@@ -725,6 +746,7 @@ class BaseCommand:
                 "confused", len(formatted_exception) // 100 + random.randint(1, 3)
             )
 
+        # display bot exception to user on discord
         await embed_utils.replace_2(
             self.response_msg,
             title=title,

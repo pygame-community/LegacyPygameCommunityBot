@@ -106,9 +106,7 @@ class FunCommand(BaseCommand):
 
         await embed_utils.replace_2(
             self.response_msg,
-            author_icon_url=self.author.avatar_url,
-            author_name=self.author.display_name,
-            description=f"pygame font message invoked by {self.author.mention}",
+            description=self.author.mention,
             color=0x40E32D,
         )
 
@@ -126,8 +124,7 @@ class FunCommand(BaseCommand):
         if (
             reply.author.id != common.bot.user.id
             or not reply.embeds
-            or reply.embeds[0].description
-            != f"pygame font message invoked by {self.author.mention}"
+            or reply.embeds[0].description != self.author.mention
         ):
             raise BotException(
                 "Could not execute comamnd", "Please reply to a fontified message"
