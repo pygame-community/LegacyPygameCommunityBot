@@ -424,7 +424,7 @@ class SudoCommand(BaseCommand):
             `embeds: (bool) = True`
             > Whether the embeds of the given messages
             > should be retrieved (as serialized JSON data).
-        
+
         +===+
 
             `info: (bool) = False`
@@ -937,7 +937,7 @@ class SudoCommand(BaseCommand):
 
         __Returns__:
             > One or more embeds containing information about
-            > the given inputs. 
+            > the given inputs.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
