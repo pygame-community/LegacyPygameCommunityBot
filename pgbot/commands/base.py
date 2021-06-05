@@ -624,7 +624,7 @@ class BaseCommand:
             param = sig.parameters[key]
             iskw = False
 
-            if i == 0 and param.annotation == "discord.Message":
+            if i == 0 and "discord.Message" in param.annotation:
                 # first arg is expected to be a Message object, handle reply into
                 # the first argument
                 if self.invoke_msg.reference is not None:
