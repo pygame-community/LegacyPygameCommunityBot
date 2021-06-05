@@ -652,6 +652,8 @@ class SudoCommand(BaseCommand):
 
             if quantity > 0:
                 messages = messages[: quantity + 1]
+                if oldest_first:
+                    messages.reverse()
 
             elif quantity == 0:
                 if pin_range:
