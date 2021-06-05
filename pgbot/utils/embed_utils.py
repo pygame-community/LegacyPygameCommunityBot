@@ -929,7 +929,7 @@ def validate_embed_dict(embed_dict):
         elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
             valid = False
             break
-        
+
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])

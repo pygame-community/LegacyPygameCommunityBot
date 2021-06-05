@@ -19,12 +19,14 @@ from typing import Callable, Iterable, Union
 import discord
 import pygame
 
+
 def clamp(value, min_, max_):
     """
     Returns the value clamped between a maximum and a minumum
     """
     value = value if value > min_ else min_
     return value if value < max_ else max_
+
 
 def color_to_rgb_int(col: pygame.Color):
     """
