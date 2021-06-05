@@ -726,9 +726,7 @@ class SudoCommand(BaseCommand):
             output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
 
         with io.StringIO(output_str) as fobj:
-            await destination.send(
-                file=discord.File(fobj, filename=output_filename)
-            )
+            await destination.send(file=discord.File(fobj, filename=output_filename))
         await self.response_msg.delete()
 
     @add_group("sudo", "clone")
