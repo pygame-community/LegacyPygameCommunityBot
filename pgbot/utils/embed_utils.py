@@ -955,12 +955,15 @@ def clean_embed_dict(embed_dict):
                 ):
                     embed_dict["fields"].pop(i)
 
+        elif k == "color":
+            embed_dict["color"] = min(max(0, embed_dict["color"]), 0xFFFFFF)
+
+
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])
             except ValueError:
-                valid = False
-                break
+                del embed_dict["timestamp"]
 
     return embed_dict
 
