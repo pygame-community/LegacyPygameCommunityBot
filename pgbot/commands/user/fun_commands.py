@@ -8,9 +8,12 @@ This file defines the command handler class for the "fun" commands of the bot
 
 from __future__ import annotations
 
+import os
 import random
+import time
 
 import discord
+import pygame
 import unidecode
 
 from pgbot import common, db, emotion
@@ -22,6 +25,7 @@ from pgbot.commands.base import (
     fun_command,
 )
 from pgbot.utils import embed_utils, utils
+from pgbot.commands.utils import vibecheck
 
 
 class FunCommand(BaseCommand):
@@ -167,107 +171,91 @@ class FunCommand(BaseCommand):
         db_obj = db.DiscordDB("emotions")
         all_emotions = db_obj.get({})
 
-        # NOTE: Users shouldn't see this too often, as there are a lot of emotions that can override it
-        msg = (
-            f"The snek feels no emotion right now.\n"
-            f"There's nothing going on, I'm not bored, happy, sad, or angry, I'm just neutral\n"
-            f"Interact with me to get a different response!"
+        emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
+
+        all_emotion_response = {
+            "happy": {
+                "msg": f"The snek is happi right now!\n"
+                f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
+                f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
+                f"The snek's happiness level is `{all_emotions.get('happy', '0')}`, "
+                f"don't let it go to zero!",
+                "emoji_link": "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1",
+            },
+            "sad": {
+                "msg": f"The snek is sad right now!\n"
+                f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
+                f"The snek's happiness level is `{all_emotions.get('happy', '0')}`, "
+                f"pet me to increase my happiness!",
+                "emoji_link": "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1",
+            },
+            "exhausted": {
+                "msg": f"The snek is exhausted!\nI ran too many commands, "
+                f"so I shall take a break real quick\n"
+                f"While I am resting, fun commands would sometimes not work, so be careful!\n"
+                f"The snek's boredom level is `{all_emotions.get('exhausted', '0')}`. "
+                f"To make my boredom go down, let me rest for a bit before running another command.",
+                "emoji_link": None,
+            },
+            "bored": {
+                "msg": f"The snek is bored!\nNo one has interacted with me in a while, "
+                f"and I feel lonely!\n"
+                f"The snek's boredom level is `{all_emotions.get('bored', '0')}`, "
+                f"and would need about "
+                f"`{abs((all_emotions.get('bored', 600) - 600 // 15))}` "
+                f"more command(s) to be happi.",
+                "emoji_link": "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1",
+            },
+            "confused": {
+                "msg": f"The snek is confused!\nEither there were too many exceptions in my code, "
+                f"or too many commands were used wrongly!\nThe snek's confused level is "
+                f"`{all_emotions.get('confused', '0')}`.\n"
+                f"To lower my confused level, use commands on me the right way.",
+                "emoji_link": "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1",
+            },
+            "anger": {
+                "msg": f"The snek is angry!\nI've been bonked too many times, you'll also be "
+                f"angry if someone bonked you 50 times :unamused:\n"
+                f"The snek's anger level is `{all_emotions.get('anger', '0')}`, "
+                f"ask for forgiveness from me to lower the anger level!",
+                "emoji_link": "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1",
+            },
+        }
+
+        bot_emotion = max(
+            emotion_percentage.keys(), key=lambda key: emotion_percentage[key]
         )
-        emoji_link = "https://cdn.discordapp.com/emojis/772643407326740531.png?v=1"
-        bot_emotion = "not feeling anything"
-        # A bunch of try-except blocks for when there is a KeyError whilst
-        # Trying to find the emotion
-        try:
-            if all_emotions["happy"] >= 0:
-                msg = (
-                    f"The snek is happi right now!\n"
-                    f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
-                    f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
-                    f"The snek's happiness level is `{all_emotions['happy']}`, don't let it go to zero!"
-                )
-                emoji_link = (
-                    "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1"
-                )
-                bot_emotion = "happy"
-            else:
-                msg = (
-                    f"The snek is sad right now!\n"
-                    f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
-                    f"The snek's happiness level is `{all_emotions['happy']}`, pet me to increase "
-                    f"my happiness!"
-                )
-                emoji_link = (
-                    "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1"
-                )
-                bot_emotion = "sad"
-        except KeyError:
-            pass
+        msg = all_emotion_response[bot_emotion]["msg"]
+        emoji_link = all_emotion_response[bot_emotion]["emoji_link"]
 
-        try:
-            if all_emotions["bored"] < -600:
-                msg = (
-                    f"The snek is exhausted!\nI ran too many commands, "
-                    f"so I shall take a break real quick\n"
-                    f"While I am resting, fun commands would sometimes not work, so be careful!\n"
-                    f"The snek's boredom level is `{all_emotions['bored']}`. To make my "
-                    f"boredom go down, let me rest for a bit before running another command."
-                )
-                emoji_link = None
-                bot_emotion = "exhausted"
-            elif all_emotions["bored"] > 600:
-                msg = (
-                    f"The snek is bored!\nNo one has interacted with me in a while, "
-                    f"and I feel lonely!\n"
-                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
-                    f"`{abs((all_emotions['bored'] - 600) // 15)}` more command(s) to be happi."
-                )
-                emoji_link = (
-                    "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1"
-                )
-                bot_emotion = "bored"
-        except KeyError:
-            pass
-
-        try:
-            if all_emotions["confused"] >= 60:
-                msg = (
-                    f"The snek is confused!\nEither there were too many exceptions in my code, "
-                    f"or too many commands were used wrongly!\nThe snek's confused level is "
-                    f"`{all_emotions['confused']}`.\nTo lower my confused level, use commands "
-                    f"on me the right way."
-                )
-                emoji_link = (
-                    "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1"
-                )
-                bot_emotion = "confused"
-        except KeyError:
-            pass
-
-        try:
-            if all_emotions["anger"] > 30:
-                msg = (
-                    f"The snek is angry!\nI've been bonked too many times, you'll also be "
-                    f"angry if someone bonked you 50 times :unamused:\n"
-                    f"While I am angry, I would replace the classic dario quote with something else, "
-                    f"and give you a *slight* surprise :wink:\n"
-                    f"The snek's anger level is `{all_emotions['anger']}`, ask for forgiveness from me "
-                    f"to lower the anger level!"
-                )
-                emoji_link = (
-                    "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1"
-                )
-                bot_emotion = "angry"
-        except KeyError:
-            pass
-
-        await embed_utils.replace_2(
-            self.response_msg,
-            title=f"The snek is {bot_emotion} right now!",
-            thumbnail_url=emoji_link,
-            description=msg,
-            footer_text="This is currently in beta version, so the end product may look different",
-            footer_icon_url="https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
+        t = time.time()
+        pygame.image.save(
+            vibecheck.emotion_pie_chart(all_emotions, 400), f"temp{t}.png"
         )
+        file = discord.File(f"temp{t}.png")
+
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            # Message already deleted
+            pass
+        embed_dict = {
+            "title": f"The snek is {bot_emotion} right now!",
+            "description": msg,
+            "thumbnail_url": emoji_link,
+            "footer_text": "This is currently in beta version, so the end product may look different",
+            "footer_icon_url": "https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
+            "image_url": f"attachment://temp{t}.png"
+        }
+        embed = await embed_utils.send_2(
+            None,
+            **embed_dict
+        )
+        await self.invoke_msg.reply(
+            file=file, embed=embed, mention_author=False
+        )
+
+        os.remove(f"temp{t}.png")
 
     @fun_command
     async def cmd_sorry(self):
