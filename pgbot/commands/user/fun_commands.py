@@ -169,7 +169,7 @@ class FunCommand(BaseCommand):
 
         # NOTE: Users shouldn't see this too often, as there are a lot of emotions that can override it
         msg = (
-            f"The snek feels no emotion right now.\n"
+            f"I'm emotionless\n"
             f"There's nothing going on, I'm not bored, happy, sad, or angry, I'm just neutral\n"
             f"Interact with me to get a different response!"
         )
@@ -180,10 +180,10 @@ class FunCommand(BaseCommand):
         try:
             if all_emotions["happy"] >= 0:
                 msg = (
-                    f"The snek is happi right now!\n"
+                    f"I feel... happi!\n"
                     f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
                     f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
-                    f"The snek's happiness level is `{all_emotions['happy']}`, don't let it go to zero!"
+                    f"*The snek's happiness level is `{all_emotions['happy']}`, don't let it go to zero!*"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1"
@@ -191,10 +191,10 @@ class FunCommand(BaseCommand):
                 bot_emotion = "happy"
             else:
                 msg = (
-                    f"The snek is sad right now!\n"
-                    f"While I am upset, I would make less dad jokes, so **don't make me sad.**\n"
-                    f"The snek's happiness level is `{all_emotions['happy']}`, pet me to increase "
-                    f"my happiness!"
+                    f"I'm sad...\n"
+                    f"I don't feel like making any jokes. This is your fault, **don't make me sad.**\n"
+                    f"Pet me pls :3\n*The snek's happiness level is `{all_emotions['happy']}`, play with"
+                    f" it to cheer it up*"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1"
@@ -206,20 +206,20 @@ class FunCommand(BaseCommand):
         try:
             if all_emotions["bored"] < -600:
                 msg = (
-                    f"The snek is exhausted!\nI ran too many commands, "
-                    f"so I shall take a break real quick\n"
-                    f"While I am resting, fun commands would sometimes not work, so be careful!\n"
-                    f"The snek's boredom level is `{all_emotions['bored']}`. To make my "
-                    f"boredom go down, let me rest for a bit before running another command."
+                    f"I'm exhausted. \nI ran too many commands, "
+                    f"so I'll be resting for a while..\n"
+                    f"Don't try to make me run commands for now, I'll most likely just ignore it..\n"
+                    f"*The snek's boredom level is `{all_emotions['bored']}`. To make its "
+                    f"boredom and exhaustion go down, let it rest for a bit.*"
                 )
                 emoji_link = None
                 bot_emotion = "exhausted"
             elif all_emotions["bored"] > 600:
                 msg = (
-                    f"The snek is bored!\nNo one has interacted with me in a while, "
-                    f"and I feel lonely!\n"
-                    f"The snek's boredom level is `{all_emotions['bored']}`, and would need about "
-                    f"`{abs((all_emotions['bored'] - 600) // 15)}` more command(s) to be happi."
+                    f"I'm booooooooored...\nNo one is spending time with me, "
+                    f"and I feel lonely :pg_depressed:\n"
+                    f"*The snek's boredom level is `{all_emotions['bored']}`, run about"
+                    f"`{abs((all_emotions['bored'] - 600) // 15)}` more command(s) to improve its mood.*"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1"
@@ -231,10 +231,10 @@ class FunCommand(BaseCommand):
         try:
             if all_emotions["confused"] >= 60:
                 msg = (
-                    f"The snek is confused!\nEither there were too many exceptions in my code, "
-                    f"or too many commands were used wrongly!\nThe snek's confused level is "
-                    f"`{all_emotions['confused']}`.\nTo lower my confused level, use commands "
-                    f"on me the right way."
+                    f"I'm confused!\nEither there were too many exceptions in my code, "
+                    f"or too many commands were used wrongly!\n*The snek's confusion level is "
+                    f"`{all_emotions['confused']}`.\nTo lower its level of confusion, use proper command "
+                    f"syntax.*"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1"

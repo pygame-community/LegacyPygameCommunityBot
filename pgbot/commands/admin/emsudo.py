@@ -322,7 +322,7 @@ class EmsudoCommand(BaseCommand):
                             raise BotException(
                                 f"Input {i}:",
                                 f"Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                                f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX_STRUCTURE}\n```\\`\\`\\`\n"
+                                f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             )
 
@@ -822,7 +822,7 @@ class EmsudoCommand(BaseCommand):
                         raise BotException(
                             "Invalid arguments!",
                             f"The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                            f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX_STRUCTURE}\n```\\`\\`\\`\n"
+                            f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                             "The input Python `list` or `tuple` must contain at least 1 element.",
                         )
 
@@ -1073,7 +1073,7 @@ class EmsudoCommand(BaseCommand):
                             raise BotException(
                                 f"Input {i}:",
                                 f"Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                                f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX_STRUCTURE}\n```\\`\\`\\`\n"
+                                f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             )
 
