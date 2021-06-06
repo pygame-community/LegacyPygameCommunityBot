@@ -564,6 +564,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
+    @add_group("pin")
     async def cmd_pin(
         self,
         channel: discord.TextChannel,
@@ -665,7 +666,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
-    async def cmd_unpin(
+    @add_group("pin", "remove")
+    async def cmd_pin_remove(
         self,
         channel: discord.TextChannel,
         *msgs: discord.Message,
@@ -749,7 +751,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
 
-    async def cmd_unpin_at(
+    @add_group("pin", "remove", "at")
+    async def cmd_pin_remove_at(
         self,
         channel: discord.TextChannel,
         *indices: Union[int, range],
@@ -953,6 +956,107 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         await super().cmd_stream_del(_members=members if members else None)
 
+    async def cmd_info(
+        self,
+        *objs: Union[discord.Message, discord.Member, discord.User],
+        author: bool = True,
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!info <*objects> [author=True]
+        ->description Get information about a Discord message/user/member
+
+        ->extended description
+        Return an information embed for the given Discord objects.
+
+        __Args__:
+            `*objects: (Message|User|Member)`
+            > A sequence of Discord ojbects whose info
+            > should be retrieved. If no input is given,
+            > an information embed on the
+
+            `author_info: (bool) = True`
+            > If set to `True`, extra information about
+            > the authors of any message given as input
+            > will be added to their info embeds.
+
+        __Returns__:
+            > One or more embeds containing information about
+            > the given inputs.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        -----
+        """
+
+        checked_channels = set()
+        for i, obj in enumerate(objs):
+            if isinstance(obj, discord.Message):
+                if not utils.check_channel_permissions(
+                    self.author,
+                    obj.channel,
+                    permissions=("view_channel",),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command on the specified channel.",
+                    )
+                else:
+                    checked_channels.add(obj.channel)
+
+            if not i % 50:
+                await asyncio.sleep(0)
+
+        if not objs:
+            obj = self.author
+            embed = embed_utils.get_member_info_embed(obj)
+            await self.channel.send(embed=embed)
+
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
+        obj_count = len(objs)
+        for i, obj in enumerate(objs):
+            if obj_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Inputs",
+                        value=f"`{i}/{obj_count}` inputs processed\n"
+                        f"{(i/obj_count)*100:.01f}% | "
+                        + utils.progress_bar(i / obj_count, divisions=30),
+                    ),
+                    0,
+                )
+            await self.channel.trigger_typing()
+            embed = None
+            if isinstance(obj, discord.Message):
+                embed = embed_utils.get_msg_info_embed(obj, author=author)
+
+            elif isinstance(obj, (discord.Member, discord.User)):
+                embed = embed_utils.get_member_info_embed(obj)
+
+            if embed is not None:
+                await self.channel.send(embed=embed)
+
+            await asyncio.sleep(0)
+
+        if obj_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Complete",
+                    value=f"`{obj_count}/{obj_count}` inputs processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
+
+        await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(

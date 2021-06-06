@@ -682,21 +682,7 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
     """
     arg_count = len(embed_list)
 
-    embed_args = dict(
-        author_name=EmptyEmbed,
-        author_url=EmptyEmbed,
-        author_icon_url=EmptyEmbed,
-        title=EmptyEmbed,
-        url=EmptyEmbed,
-        thumbnail_url=EmptyEmbed,
-        description=EmptyEmbed,
-        image_url=EmptyEmbed,
-        color=0xFFFFAA,
-        fields=(),
-        footer_text=EmptyEmbed,
-        footer_icon_url=EmptyEmbed,
-        timestamp=None,
-    )
+    embed_args = {}
 
     if arg_count > 0:
         if isinstance(embed_list[0], (tuple, list)):
