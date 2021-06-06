@@ -674,7 +674,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!unpin <channel> <message> <message>...
+        ->signature pg!pin remove <channel> <message> <message>...
         ->description Unpin a message in the specified channel.
         ->example command pg!unpin #general 23456234567834567 3456734523456734567...
         """
@@ -759,9 +759,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type Admin commands
-        ->signature pg!unpin_at <channel> <index/range> ...
+        ->signature pg!pin remove at <channel> <index/range> ...
         ->description Unpin a message in the specified channel.
-        ->example command pg!unpin_at #general 3.. range(9, 15)..
+        ->example command pg!pin remove at #general 3.. range(9, 15)..
         """
 
         if not utils.check_channel_permissions(
