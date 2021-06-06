@@ -136,7 +136,7 @@ EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET = {
 
 DEFAULT_EMBED_COLOR = 0xFFFFAA
 
-CONDENSED_EMBED_DATA_LIST_SYNTAX_STRUCTURE = """
+CONDENSED_EMBED_DATA_LIST_SYNTAX = """
 # Condensed embed data list syntax. String elements that are empty "" will be ignored.
 # The list must contain at least one argument.
 [
@@ -708,7 +708,7 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
             )
     else:
         raise ValueError(
-            f"Invalid arguments! The condensed embed syntax is: ```\n{CONDENSED_EMBED_DATA_LIST_SYNTAX_STRUCTURE}\n```"
+            f"Invalid arguments! The condensed embed syntax is: ```\n{CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```"
         )
 
     if arg_count > 1:
