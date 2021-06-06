@@ -136,7 +136,7 @@ EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET = {
 
 DEFAULT_EMBED_COLOR = 0xFFFFAA
 
-CONDENSED_EMBED_SYNTAX_STRUCTURE = """
+CONDENSED_EMBED_DATA_LIST_SYNTAX = """
 # Condensed embed data list syntax. String elements that are empty "" will be ignored.
 # The list must contain at least one argument.
 [
@@ -708,7 +708,7 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
             )
     else:
         raise ValueError(
-            f"Invalid arguments! The condensed embed syntax is: ```\n{CONDENSED_EMBED_SYNTAX_STRUCTURE}\n```"
+            f"Invalid arguments! The condensed embed syntax is: ```\n{CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```"
         )
 
     if arg_count > 1:
@@ -759,10 +759,6 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
             embed_args.update(
                 color=embed_list[3] + 0,
             )
-        else:
-            embed_args.update(
-                color=-1,
-            )
 
     if arg_count > 4:
         try:
@@ -807,7 +803,7 @@ def create_as_dict(
     thumbnail_url=EmptyEmbed,
     description=EmptyEmbed,
     image_url=EmptyEmbed,
-    color=0xFFFFAA,
+    color=-1,
     fields=(),
     footer_text=EmptyEmbed,
     footer_icon_url=EmptyEmbed,
@@ -840,7 +836,8 @@ def create_as_dict(
     if description:
         embed_dict["description"] = description
 
-    embed_dict["color"] = color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR
+    if color != -1:
+        embed_dict["color"] = int(color) if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR
 
     if timestamp:
         if isinstance(timestamp, str):
