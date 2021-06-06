@@ -158,7 +158,7 @@ class EmsudoCommand(BaseCommand):
         }
         ```
         \\`\\`\\`
-        
+
         Note: The JSON embed syntax is very similar, however multiline strings,
         and hexadecimal integers and other Python features aren't supported,
         since they would be seen as invalid JSON syntax.
