@@ -9,6 +9,7 @@ This file exports a handle function, to handle commands posted by the users
 
 from __future__ import annotations
 
+import io
 import sys
 from typing import Union
 
@@ -104,18 +105,25 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         )
 
     if not common.TEST_MODE and not common.GENERIC:
-        await embed_utils.send_2(
-            common.log_channel,
-            title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-            description=discord.utils.escape_markdown(invoke_msg.content),
-            fields=(
-                (
-                    "\u200b",
-                    f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
-                    False,
+        log_txt_file = None
+        escaped_cmd_text = discord.utils.escape_markdown(invoke_msg.content)
+        if len(escaped_cmd_text) > 2047:
+            with io.StringIO(invoke_msg.content) as log_buffer:
+                log_txt_file = discord.File(log_buffer, filename="command.txt")
+
+        await common.log_channel.send(
+            embed=embed_utils.create(
+                title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+                description=escaped_cmd_text if len(escaped_cmd_text) <= 2047 else escaped_cmd_text[:2048]+"...",
+                fields=(
+                    (
+                        "\u200b",
+                        f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
+                        False,
+                    ),
                 ),
             ),
-        )
+            file=log_txt_file)
 
     cmd = (
         admin.AdminCommand(invoke_msg, response_msg)

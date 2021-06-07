@@ -727,12 +727,12 @@ class BaseCommand:
         except BotException as exc:
             emotion.update("confused", random.randint(2, 4))
             title, msg = exc.args
-            excname = "Bot Exception"
+            excname = "BotException"
 
         except discord.HTTPException as exc:
             emotion.update("confused", random.randint(3, 6))
             title, msg = exc.__class__.__name__, exc.args[0]
-            excname = "Discord HTTP Exception"
+            excname = "discord.HTTPException"
 
         except:
             emotion.update("confused", random.randint(4, 8))

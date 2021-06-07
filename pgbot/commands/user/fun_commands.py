@@ -172,58 +172,7 @@ class FunCommand(BaseCommand):
         all_emotions = db_obj.get({})
 
         emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
-<<<<<<< HEAD
-
-        all_emotion_response = {
-            "happy": {
-                "msg": f"I feel... happi!\n"
-                       f"While I am happi, I'll make more dad jokes (Spot the dad joke in there?)\n"
-                       f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
-                       f"*The snek's happiness level is `{all_emotions.get('happy', '0')}`, don't let it go to zero!*",
-                "emoji_link": "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1",
-            },
-            "sad": {
-                "msg": f"I'm sad...\n"
-                       f"I don't feel like making any jokes. This is your fault, **don't make me sad.**\n"
-                       f"Pet me pls :3\n*The snek's happiness level is `{all_emotions.get('happy', '0')}`, play with"
-                       f" it to cheer it up*",
-                "emoji_link": "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1",
-            },
-            "exhausted": {
-                "msg": f"I'm exhausted. \nI ran too many commands, "
-                       f"so I'll be resting for a while..\n"
-                       f"Don't try to make me run commands for now, I'll most likely just ignore it..\n"
-                       f"*The snek's exhaustion level is `{all_emotions.get('exhausted', '0')}`. To make its "
-                       f"exhaustion go down, let it rest for a bit.*",
-                "emoji_link": None,
-            },
-            "bored": {
-                "msg": f"I'm booooooooored...\nNo one is spending time with me, "
-                       f"and I feel lonely :pg_depressed:\n"
-                       f"*The snek's boredom level is `{all_emotions.get('bored', '0')}`, run about"
-                       f"`{abs((all_emotions.get('bored', 600) - 600 // 15))}` more command(s) to improve its mood.*",
-                "emoji_link": "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1",
-            },
-            "confused": {
-                "msg": f"I'm confused!\nEither there were too many exceptions in my code, "
-                       f"or too many commands were used wrongly!\n*The snek's confusion level is "
-                       f"`{all_emotions.get('confused', '0')}`.\nTo lower its level of confusion, use proper command "
-                       f"syntax.*",
-                "emoji_link": "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1",
-            },
-            "anger": {
-                "msg": f"I'm angry!\nI've been bonked too many times, you'd be "
-                       f"angry too if someone bonked you 50+ times :unamused:\n"
-                       f"No jokes, no quotes. :pg_angry:. Don't you dare pet me!"
-                       f"*The snek's anger level is `{all_emotions.get('anger', '0')}`, ask for its forgiveness"
-                       f"to calm it down.*",
-                "emoji_link": "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1",
-                "override_emotion": "angry",
-            },
-        }
-=======
         all_emotion_response = vibecheck.get_emotion_desc_dict(all_emotions)
->>>>>>> ce2af103b3e226a5e330906399abc41e12966260
 
         bot_emotion = max(
             emotion_percentage.keys(), key=lambda key: emotion_percentage[key]
