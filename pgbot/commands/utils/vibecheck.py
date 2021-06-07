@@ -77,13 +77,13 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
             f"*The snek's anger level is `{emotions.get('anger', '0')}`, "
             "ask for its forgiveness to calm it down.*",
             "emoji_link": "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1",
-            "override_emotion": "angry",
+            "override_emotion": "anger",
         },
     }
 
 
 def generate_pie_slice(
-    center_x: int, center_y: int, radius: int, start_angle: float, end_angle: float
+    center_x: int, center_y: int, radius: int, start_angle: int, end_angle: int
 ):
     """
     Generate slice of the pie in the output
