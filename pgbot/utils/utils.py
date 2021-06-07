@@ -33,7 +33,7 @@ def color_to_rgb_int(col: pygame.Color):
     Get integer RGB representation of pygame color object. This does not include
     the alpha component of the color, which int(col) would give you
     """
-    return (((col.r << 8) + col.g) << 8) + col.b
+    return col.r << 16 | col.g << 8 | col.b
 
 
 def discordify(text: str):
@@ -94,19 +94,22 @@ def format_time(
     return f"very fast"
 
 
-def format_long_time(seconds: int):
-    """
-    Formats time into string, which is of the order of a few days
-    """
-    result = []
-
-    for name, count in (
+def format_long_time(
+    seconds: int,
+    unit_data=(
         ("weeks", 604800),
         ("days", 86400),
         ("hours", 3600),
         ("minutes", 60),
         ("seconds", 1),
-    ):
+    ),
+):
+    """
+    Formats time into string, which is of the order of a few days
+    """
+    result = []
+
+    for name, count in unit_data:
         value = seconds // count
         if value or (not result and count == 1):
             seconds -= value * count
@@ -256,7 +259,9 @@ def check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> Tuple[bool, ...]: #Deprecated since version 3.9: builtins.tuple now supports []. See PEP 585 and Generic Alias Type.
+) -> Tuple[
+    bool, ...
+]:  # Deprecated since version 3.9: builtins.tuple now supports []. See PEP 585 and Generic Alias Type.
 
     """
     Checks if the given permissions apply to the given member in the given channels.

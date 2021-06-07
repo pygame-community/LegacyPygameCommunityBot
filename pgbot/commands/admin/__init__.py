@@ -1058,6 +1058,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
+
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
     (
