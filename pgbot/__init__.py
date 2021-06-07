@@ -12,7 +12,8 @@ import asyncio
 import os
 import random
 import signal
-from typing import Optional
+import sys
+import io
 
 import discord
 import pygame
@@ -21,56 +22,75 @@ from pgbot import commands, common, db, emotion, routine
 from pgbot.utils import embed_utils
 
 
-async def init():
+async def _init():
     """
-    Startup call for pygame bot
+    Startup call helper for pygame bot
     """
-    print("The PygameCommunityBot is now online!")
-    print("The bot is present in these server(s):")
+    if not common.TEST_MODE:
+        # when we are not in test mode, we want stout/stderr to appear on a console
+        # in a discord channel
+        sys.stdout = sys.stderr = common.stdout = io.StringIO()
 
-    guild: Optional[discord.Guild] = None
+    print("The PygameCommunityBot is now online!")
+    print("Server(s):")
 
     for server in common.bot.guilds:
-        print("-", server.name)
-        if common.GENERIC or server.id == common.ServerConstants.SERVER_ID:
-            guild = server
+        prim = ""
+
+        if common.guild is None and (
+            common.GENERIC or server.id == common.ServerConstants.SERVER_ID
+        ):
+            prim = "| Primary Guild"
+            common.guild = server
+
+        print(" -", server.name, "| Number of channels:", len(server.channels), prim)
+        if common.GENERIC:
+            continue
 
         for channel in server.channels:
-            print(" +", channel.name)
-            if common.GENERIC:
-                continue
-
             if channel.id == common.ServerConstants.DB_CHANNEL_ID:
-                await db.init(channel)
-            if channel.id == common.ServerConstants.LOG_CHANNEL_ID:
+                common.db_channel = channel
+                await db.init()
+            elif channel.id == common.ServerConstants.LOG_CHANNEL_ID:
                 common.log_channel = channel
-            if channel.id == common.ServerConstants.ARRIVALS_CHANNEL_ID:
+            elif channel.id == common.ServerConstants.ARRIVALS_CHANNEL_ID:
                 common.arrivals_channel = channel
-            if channel.id == common.ServerConstants.GUIDE_CHANNEL_ID:
+            elif channel.id == common.ServerConstants.GUIDE_CHANNEL_ID:
                 common.guide_channel = channel
-            if channel.id == common.ServerConstants.ROLES_CHANNEL_ID:
+            elif channel.id == common.ServerConstants.ROLES_CHANNEL_ID:
                 common.roles_channel = channel
-            if channel.id == common.ServerConstants.ENTRIES_DISCUSSION_CHANNEL_ID:
+            elif channel.id == common.ServerConstants.ENTRIES_DISCUSSION_CHANNEL_ID:
                 common.entries_discussion_channel = channel
+            elif channel.id == common.ServerConstants.CONSOLE_CHANNEL_ID:
+                common.console_channel = channel
+            elif channel.id == common.ServerConstants.RULES_CHANNEL_ID:
+                common.rules_channel = channel
             for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    while True:
-        if guild is not None:
-            await routine.routine(guild)
-        await common.bot.change_presence(
-            activity=discord.Activity(
-                type=discord.ActivityType.watching, name="discord.io/pygame_community"
-            )
+
+async def init():
+    """
+    Startup call helper for pygame bot
+    """
+    try:
+        await _init()
+    except:
+        # error happened in the first init sequence. report error to stdout/stderr
+        # note that the chances of this happening are pretty slim, but you never know
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+        raise
+
+    routine.handle_console.start()
+    routine.routine.start()
+
+    if common.guild is None:
+        raise RuntimeWarning(
+            "Primary guild was not set. Some features of bot would not run as usual."
+            " This includes bot reminders and some commands on DM"
         )
-        await asyncio.sleep(2.5)
-        await common.bot.change_presence(
-            activity=discord.Activity(
-                type=discord.ActivityType.playing, name="in discord.io/pygame_community"
-            )
-        )
-        await asyncio.sleep(2.5)
 
 
 def format_entries_message(msg: discord.Message, entry_type: str):
@@ -224,6 +244,7 @@ def cleanup(*_):
     """
     Call cleanup functions
     """
+
     common.bot.loop.run_until_complete(db.quit())
     common.bot.loop.run_until_complete(common.bot.close())
     common.bot.loop.close()

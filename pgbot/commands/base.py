@@ -203,9 +203,9 @@ class BaseCommand:
         self.guild: discord.Guild = self.invoke_msg.guild
         self.is_dm = self.guild is None
 
-        # if someone is DMing, set guild to PG server
-        if self.is_dm and not common.GENERIC:
-            self.guild = common.bot.get_guild(common.ServerConstants.SERVER_ID)
+        # if someone is DMing, set guild to primary server (PGC server)
+        if self.is_dm:
+            self.guild = common.guild
 
         # build self.groups and self.cmds_and_functions from class functions
         self.cmds_and_funcs = {}  # this is a mapping from funtion name to funtion
@@ -711,6 +711,7 @@ class BaseCommand:
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
+            excname = "Arguments Error"
 
         except KwargError as exc:
             emotion.update("confused", random.randint(1, 3))
@@ -721,34 +722,27 @@ class BaseCommand:
             else:
                 msg = exc.args[0]
 
+            excname = "Keyword arguments Error"
+
         except BotException as exc:
             emotion.update("confused", random.randint(2, 4))
             title, msg = exc.args
+            excname = "Bot Exception"
 
         except discord.HTTPException as exc:
             emotion.update("confused", random.randint(3, 6))
             title, msg = exc.__class__.__name__, exc.args[0]
+            excname = "Discord HTTP Exception"
 
-        except Exception as exc:
-            title = "An exception occured while handling the command!"
-            formatted_exception = utils.format_code_exception(exc, 2)
-
-            elog = (
-                f"This error is most likely caused due to a bug in the bot "
-                f"itself. Here is the traceback:\n{formatted_exception}"
+        except:
+            emotion.update("confused", random.randint(4, 8))
+            await embed_utils.replace(
+                self.response_msg,
+                "Unknown Error!",
+                "An unhandled exception occured while running the command!",
+                0xFF0000,
             )
-            msg = utils.code_block(elog)
-
-            if len(elog) > 2000:
-                with io.StringIO(f"{title}\n{elog}") as fobj:
-                    await self.response_msg.channel.send(
-                        content="Here is the full error log",
-                        file=discord.File(fobj, filename="exception.txt"),
-                    )
-
-            emotion.update(
-                "confused", len(formatted_exception) // 100 + random.randint(1, 3)
-            )
+            raise
 
         # display bot exception to user on discord
         await embed_utils.replace_2(
@@ -756,5 +750,5 @@ class BaseCommand:
             title=title,
             description=msg,
             color=0xFF0000,
-            footer_text="BotException",
+            footer_text=excname,
         )

@@ -909,4 +909,3 @@ class SudoCommand(BaseCommand):
             )
 
         await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
-

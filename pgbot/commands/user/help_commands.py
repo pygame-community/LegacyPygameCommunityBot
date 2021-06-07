@@ -42,11 +42,10 @@ class HelpCommand(BaseCommand):
                 "This command cannot be exected when the bot is on generic mode",
             )
 
-        rule_chan = self.guild.get_channel(common.ServerConstants.RULES_CHANNEL_ID)
         fields = []
         for rule in sorted(set(rules)):
             if 0 < rule <= len(common.ServerConstants.RULES):
-                msg = await rule_chan.fetch_message(
+                msg = await common.rules_channel.fetch_message(
                     common.ServerConstants.RULES[rule - 1]
                 )
                 value = msg.content

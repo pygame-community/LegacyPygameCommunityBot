@@ -13,8 +13,6 @@ import discord
 
 from pgbot import common
 
-db_channel = None
-
 # Store "name: pickled data" pairs as cache. Do not store unpickled data
 db_obj_cache = {}
 
@@ -22,18 +20,16 @@ db_obj_cache = {}
 db_changed = {}
 
 
-async def init(db_chan: discord.TextChannel):
+async def init():
     """
     Initialise local cache and db channel. Call this function when the
     bot boots up
     """
-    global db_channel
-    db_channel = db_chan
 
-    if common.TEST_MODE:
+    if common.TEST_MODE or common.GENERIC:
         return
 
-    async for msg in db_channel.history():
+    async for msg in common.db_channel.history():
         if msg.attachments:
             db_obj_cache[msg.content] = await msg.attachments[0].read()
             db_changed[msg.content] = False
@@ -43,11 +39,11 @@ async def quit():
     """
     Flushes local cache for storage to the DB, and cleans up
     """
-    print("Calling cleanup functions!")
-    if common.TEST_MODE:
+    if common.TEST_MODE or common.GENERIC:
         return
 
-    async for msg in db_channel.history():
+    print("Calling cleanup functions!")
+    async for msg in common.db_channel.history():
         if msg.content in db_obj_cache and db_changed[msg.content]:
             await msg.delete()
 
@@ -56,7 +52,7 @@ async def quit():
             continue
 
         with io.BytesIO(picked) as fobj:
-            await db_channel.send(name, file=discord.File(fobj))
+            await common.db_channel.send(name, file=discord.File(fobj))
 
     print("Successfully called cleanup functions")
 

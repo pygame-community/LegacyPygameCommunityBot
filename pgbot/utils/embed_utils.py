@@ -837,7 +837,9 @@ def create_as_dict(
         embed_dict["description"] = description
 
     if color != -1:
-        embed_dict["color"] = int(color) if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR
+        embed_dict["color"] = (
+            int(color) if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR
+        )
 
     if timestamp:
         if isinstance(timestamp, str):
