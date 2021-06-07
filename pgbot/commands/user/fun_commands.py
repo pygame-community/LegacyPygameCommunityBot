@@ -246,12 +246,11 @@ class FunCommand(BaseCommand):
         try:
             if all_emotions["anger"] > 30:
                 msg = (
-                    f"The snek is angry!\nI've been bonked too many times, you'll also be "
-                    f"angry if someone bonked you 50 times :unamused:\n"
-                    f"While I am angry, I would replace the classic dario quote with something else, "
-                    f"and give you a *slight* surprise :wink:\n"
-                    f"The snek's anger level is `{all_emotions['anger']}`, ask for forgiveness from me "
-                    f"to lower the anger level!"
+                    f"I'm angry!\nI've been bonked too many times, you'll also be "
+                    f"angry if someone bonked you 50+ times :unamused:\n"
+                    f""
+                    f"*The snek's anger level is `{all_emotions['anger']}`, ask for its forgiveness"
+                    f"to lower it.*"
                 )
                 emoji_link = (
                     "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1"
