@@ -262,9 +262,7 @@ def check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> tuple[
-    bool, ...
-]:
+) -> tuple[bool, ...]:
 
     """
     Checks if the given permissions apply to the given member in the given channels.
