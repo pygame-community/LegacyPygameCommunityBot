@@ -141,7 +141,7 @@ def format_byte(size: int, decimal_places: int = 3):
     return f"{round(size / 1e9, decimal_places)} GB"
 
 
-def split_long_message(message: str):
+def split_long_message(message: str, limit=2000):
     """
     Splits message string by 2000 characters with safe newline splitting
     """
@@ -150,7 +150,7 @@ def split_long_message(message: str):
     temp = ""
 
     for line in lines:
-        if len(temp) + len(line) + 1 > 2000:
+        if len(temp) + len(line) + 1 > limit:
             split_output.append(temp[:-1])
             temp = line + "\n"
         else:
@@ -216,17 +216,17 @@ def filter_emoji_id(name: str):
         return name
 
 
-def code_block(string: str, max_characters: int = 2048):
+def code_block(string: str, max_characters: int = 2048, code_type: str = ""):
     """
     Formats text into discord code blocks
     """
     string = string.replace("```", "\u200b`\u200b`\u200b`\u200b")
-    max_characters -= 7
+    len_ticks = 7 + len(code_type)
 
-    if len(string) > max_characters:
-        return f"```\n{string[:max_characters - 7]} ...```"
+    if len(string) > max_characters - len_ticks:
+        return f"```{code_type}\n{string[:max_characters - len_ticks - 4]} ...```"
     else:
-        return f"```\n{string[:max_characters]}```"
+        return f"```{code_type}\n{string}```"
 
 
 def check_channel_permissions(

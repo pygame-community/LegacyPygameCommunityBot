@@ -6,20 +6,30 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines a "routine" function, that gets called on routine.
 It gets called every 5 seconds or so.
 """
+
+import asyncio
 import datetime
+import io
+import os
 import random
+import sys
 
 import discord
+from discord.ext import tasks
 
-from pgbot import db, emotion
+from pgbot import common, db, emotion
+from pgbot.utils import utils
 
 reminder_obj = db.DiscordDB("reminders")
 
 
-async def handle_reminders(guild: discord.Guild):
+async def handle_reminders():
     """
     Handle reminder routines
     """
+    if common.guild is None:
+        return
+
     reminders = reminder_obj.get({})
 
     new_reminders = {}
@@ -28,11 +38,11 @@ async def handle_reminders(guild: discord.Guild):
             if datetime.datetime.utcnow() >= dt:
                 content = f"__**Reminder for you:**__\n>>> {msg}"
 
-                channel = guild.get_channel(chan_id)
+                channel = common.guild.get_channel(chan_id)
                 if channel is None:
                     # Channel does not exist in the guild, DM the user
                     try:
-                        member = await guild.fetch_member(mem_id)
+                        member = await common.guild.fetch_member(mem_id)
                         if member.dm_channel is None:
                             await member.create_dm()
 
@@ -69,11 +79,61 @@ async def handle_reminders(guild: discord.Guild):
         reminder_obj.write(new_reminders)
 
 
-async def routine(guild: discord.Guild):
+@tasks.loop(seconds=5)
+async def handle_console():
+    """
+    Function for sending the console output to the bot-console channel.
+    """
+    if common.stdout is None:
+        return
+
+    contents = common.stdout.getvalue()
+    sys.stdout = sys.stderr = common.stdout = io.StringIO()
+
+    # hide path data
+    contents = contents.replace(os.getcwd(), "PgBot")
+    if os.name == "nt":
+        contents = contents.replace(os.path.dirname(sys.executable), "Python")
+
+    if common.GENERIC or common.console_channel is None:
+        # just print error to shell if we cannot sent it on discord
+        print(contents, file=sys.__stdout__)
+        return
+
+    # the actual message limit is 2000. But since the message is sent with
+    # code ticks, we need room for those, so 1980
+    for content in utils.split_long_message(contents, 1980):
+        content = content.strip()
+        if not content:
+            continue
+
+        await common.console_channel.send(
+            content=utils.code_block(content, code_type="fix")
+        )
+
+
+@tasks.loop(seconds=3)
+async def routine():
     """
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    await handle_reminders(guild)
+    if common.guild is not None:
+        await handle_reminders()
+
     if random.randint(0, 3) == 0:
         emotion.update("bored", 1)
+
+    await common.bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.watching,
+            name="discord.io/pygame_community",
+        )
+    )
+    await asyncio.sleep(3)
+    await common.bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.playing,
+            name="in discord.io/pygame_community",
+        )
+    )

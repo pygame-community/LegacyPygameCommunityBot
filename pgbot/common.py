@@ -6,8 +6,9 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some constants and variables used across the whole codebase
 """
 
-
+import io
 import os
+from typing import Optional
 
 import discord
 import pygame
@@ -25,6 +26,12 @@ window = pygame.Surface((1, 1))  # This will later be redefined
 
 cmd_logs = {}
 
+# pygame community guild, or whichever is the 'primary' guild for the bot
+guild: Optional[discord.Guild] = None
+
+# IO object to redirect output to discord, gets patched later
+stdout: Optional[io.StringIO] = None
+
 # Tuple containing all admin commands, gets monkey-patched later
 admin_commands = ()
 
@@ -33,6 +40,9 @@ arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
 guide_channel: discord.TextChannel
 entries_discussion_channel: discord.TextChannel
+console_channel: discord.TextChannel
+db_channel: discord.TextChannel
+rules_channel: discord.TextChannel
 entry_channels = {}
 
 VERSION = "1.5.2"
@@ -89,6 +99,7 @@ class ServerConstants:
     GUIDE_CHANNEL_ID = 772528306615615500
     ARRIVALS_CHANNEL_ID = 774916117881159681
     LOG_CHANNEL_ID = 793250875471822930
+    CONSOLE_CHANNEL_ID = 851123656880816138
     ENTRY_CHANNEL_IDS = {
         "showcase": 772507247540437032,
         "resource": 810516093273768016,
@@ -131,19 +142,6 @@ class ServerConstants:
 
 # Link to pygame snake logo
 GUILD_ICON = "https://media.discordapp.net/attachments/793272780987826197/836600713672523826/Discord_Server_Animated_Logo_V5_512x512.gif"
-
-ROLE_PROMPT = {
-    "title": [
-        "Get more roles",
-        "You need more roles for this channel (It's written everywhere!)",
-        "I won't stop until you get more roles",
-    ],
-    "message": [
-        "Hey there {0}, are you a @ Pygame Newbie, @ Pygame Regular or a "
-        "@ Pygame Pro, or even a @ Pygame Contributor?\n"
-        "Tell <@!235148962103951360> in <#772535163195228200>!",
-    ],
-}
 
 BOT_WELCOME_MSG = {
     "greet": (
