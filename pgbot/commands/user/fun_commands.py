@@ -176,7 +176,7 @@ class FunCommand(BaseCommand):
         all_emotion_response = {
             "happy": {
                 "msg": f"I feel... happi!\n"
-                       f"While I am happi, I would make more dad jokes (Spot the dad joke in there?)\n"
+                       f"While I am happi, I'll make more dad jokes (Spot the dad joke in there?)\n"
                        f'However, don\'t bonk me or say "ded chat", as that would make me sad.\n'
                        f"*The snek's happiness level is `{all_emotions.get('happy', '0')}`, don't let it go to zero!*",
                 "emoji_link": "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1",
