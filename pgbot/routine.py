@@ -108,7 +108,7 @@ async def handle_console():
             continue
 
         await common.console_channel.send(
-            content=utils.code_block(content, code_type="fix")
+            content=utils.code_block(content, code_type="cmd")
         )
 
 

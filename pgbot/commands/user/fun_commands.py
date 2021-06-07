@@ -172,6 +172,7 @@ class FunCommand(BaseCommand):
         all_emotions = db_obj.get({})
 
         emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
+<<<<<<< HEAD
 
         all_emotion_response = {
             "happy": {
@@ -220,6 +221,9 @@ class FunCommand(BaseCommand):
                 "override_emotion": "angry",
             },
         }
+=======
+        all_emotion_response = vibecheck.get_emotion_desc_dict(all_emotions)
+>>>>>>> ce2af103b3e226a5e330906399abc41e12966260
 
         bot_emotion = max(
             emotion_percentage.keys(), key=lambda key: emotion_percentage[key]
@@ -229,6 +233,8 @@ class FunCommand(BaseCommand):
 
         if all_emotion_response[bot_emotion].get("override_emotion", None):
             bot_emotion = all_emotion_response[bot_emotion]["override_emotion"]
+
+        color = pygame.Color(vibecheck.EMOTION_COLORS[bot_emotion])
 
         t = time.time()
         pygame.image.save(
@@ -241,21 +247,18 @@ class FunCommand(BaseCommand):
         except discord.errors.NotFound:
             # Message already deleted
             pass
+
         embed_dict = {
             "title": f"The snek is {bot_emotion} right now!",
             "description": msg,
             "thumbnail_url": emoji_link,
             "footer_text": "This is currently in beta version, so the end product may look different",
             "footer_icon_url": "https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
-            "image_url": f"attachment://temp{t}.png"
+            "image_url": f"attachment://temp{t}.png",
+            "color": utils.color_to_rgb_int(color),
         }
-        embed = await embed_utils.send_2(
-            None,
-            **embed_dict
-        )
-        await self.invoke_msg.reply(
-            file=file, embed=embed, mention_author=False
-        )
+        embed = embed_utils.create(**embed_dict)
+        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         os.remove(f"temp{t}.png")
 

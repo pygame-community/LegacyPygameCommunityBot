@@ -711,7 +711,7 @@ class BaseCommand:
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
-            excname = "Arguments Error"
+            excname = "Argument Error"
 
         except KwargError as exc:
             emotion.update("confused", random.randint(1, 3))
@@ -722,7 +722,7 @@ class BaseCommand:
             else:
                 msg = exc.args[0]
 
-            excname = "Keyword arguments Error"
+            excname = "Keyword argument Error"
 
         except BotException as exc:
             emotion.update("confused", random.randint(2, 4))
