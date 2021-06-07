@@ -603,6 +603,7 @@ class SudoCommand(BaseCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
+        channel_ids: bool = False,
         urls: bool = False,
         pinned: bool = False,
         pin_range: Optional[range] = None,
@@ -711,19 +712,56 @@ class SudoCommand(BaseCommand):
 
             if not messages:
                 raise BotException(
-                    "Invalid time range",
+                    "Invalid message/time range",
                     "No messages were found for the specified input values.",
                 )
 
             if not after and oldest_first:
                 messages.reverse()
 
+
+        msg_count = len(messages)
+        msgs_per_loop = 200
+
+        output_str = prefix
+
         if urls:
             output_filename = "message_urls.txt"
-            output_str = prefix + sep.join(msg.jump_url for msg in messages) + suffix
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count//msgs_per_loop):
+                start_idx = msgs_per_loop*i
+                end_idx = start_idx+msgs_per_loop-1
+                output_str += "".join( messages[j].jump_url for j in range(start_idx, start_idx+msgs_per_loop) )
+                await asyncio.sleep(0)
+            
+            output_str += "".join( messages[j].jump_url for j in range(end_idx+1, msg_count) ) + suffix
+
+        elif channel_ids:
+            output_filename = "message_and_channel_ids.txt"
+            output_str = prefix
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count//msgs_per_loop):
+                start_idx = msgs_per_loop*i
+                end_idx = start_idx+msgs_per_loop-1
+                output_str += "".join( f"{messages[j].channel.id}/{messages[j].id}" for j in range(start_idx, start_idx+msgs_per_loop) )
+                await asyncio.sleep(0)
+            
+            output_str += "".join( f"{messages[j].channel.id}/{messages[j].id}" for j in range(end_idx+1, msg_count) ) + suffix
+
         else:
-            output_filename = "message_ids.txt"
-            output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
+            output_filename = "message_and_channel_ids.txt"
+            output_str = prefix
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count//msgs_per_loop):
+                start_idx = msgs_per_loop*i
+                end_idx = start_idx+msgs_per_loop-1
+                output_str += "".join( f"{messages[j].id}" for j in range(start_idx, start_idx+msgs_per_loop) )
+                await asyncio.sleep(0)
+            
+            output_str += "".join( f"{messages[j].id}" for j in range(end_idx+1, msg_count) ) + suffix
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
