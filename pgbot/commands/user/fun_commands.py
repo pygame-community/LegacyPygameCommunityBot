@@ -193,7 +193,7 @@ class FunCommand(BaseCommand):
                        f"so I'll be resting for a while..\n"
                        f"Don't try to make me run commands for now, I'll most likely just ignore it..\n"
                        f"*The snek's boredom level is `{all_emotions.get('exhausted', '0')}`. To make its "
-                       f"boredom and exhaustion go down, let it rest for a bit.*",
+                       f"exhaustion go down, let it rest for a bit.*",
                 "emoji_link": None,
             },
             "bored": {
