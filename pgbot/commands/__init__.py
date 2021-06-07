@@ -114,7 +114,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         await common.log_channel.send(
             embed=embed_utils.create(
                 title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
-                description=escaped_cmd_text if len(escaped_cmd_text) <= 2047 else escaped_cmd_text[:2045]+"...",
+                description=escaped_cmd_text if len(escaped_cmd_text) <= 2047 else escaped_cmd_text[:2044]+"...",
                 fields=(
                     (
                         "\u200b",
