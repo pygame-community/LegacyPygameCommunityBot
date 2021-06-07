@@ -14,7 +14,7 @@ import os
 import platform
 import sys
 import traceback
-from typing import Callable, Iterable, Union, Tuple, List
+from typing import Callable, Iterable, Union
 
 import discord
 import pygame
@@ -262,9 +262,9 @@ def check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> Tuple[
+) -> tuple[
     bool, ...
-]:  # Deprecated since version 3.9: builtins.tuple now supports []. See PEP 585 and Generic Alias Type.
+]:
 
     """
     Checks if the given permissions apply to the given member in the given channels.
@@ -298,7 +298,7 @@ async def coro_check_channels_permissions(
         "view_channel",
         "send_messages",
     ),
-) -> List[bool]:
+) -> list[bool]:
 
     """
     Checks if the given permissions apply to the given member in the given channels.
