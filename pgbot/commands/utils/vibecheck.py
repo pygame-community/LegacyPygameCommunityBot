@@ -13,12 +13,9 @@ import pygame
 
 from pgbot import emotion
 
-emotions_per_row = 2
-negative_emotion = {
-    "bored": "exhausted",
-    "happy": "sad"
-}
-emotion_color = {
+EMOTIONS_PER_ROW = 2
+NEGATIVE_EMOTIONS = {"bored": "exhausted", "happy": "sad"}
+EMOTION_COLORS = {
     "happy": (230, 28, 226),
     "sad": (28, 28, 230),
     "anger": (230, 36, 18),
@@ -28,23 +25,90 @@ emotion_color = {
 }
 
 
-def generate_pie_slice(center_x, center_y, radius, start_angle, end_angle):
+def get_emotion_desc_dict(emotions: dict[str, int]):
+    """
+    Get emotion description dict from emotion dict
+    """
+    return {
+        "happy": {
+            "msg": f"I feel... happi!\n"
+            "While I am happi, I'll make more dad jokes (Spot the dad joke in there?)\n"
+            "However, don't bonk me or say 'ded chat', as that would make me sad.\n"
+            f"*The snek's happiness level is `{emotions.get('happy', '0')}`, "
+            "don't let it go to zero!*",
+            "emoji_link": "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1",
+        },
+        "sad": {
+            "msg": f"I'm sad...\n"
+            "I don't feel like making any jokes. This is your fault, "
+            "**don't make me sad.**\nPet me pls :3\n"
+            f"*The snek's sadness level is `{-emotions.get('happy', 0)}`, play with "
+            "it to cheer it up*",
+            "emoji_link": "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1",
+        },
+        "exhausted": {
+            "msg": f"I'm exhausted. \nI ran too many commands, "
+            "so I'll be resting for a while..\n"
+            "Don't try to make me run commands for now, I'll most likely "
+            "just ignore it..\n"
+            f"*The snek's exhaustion level is `{-emotions.get('bored', 0)}`. "
+            "To make its exhaustion go down, let it rest for a bit.*",
+            "emoji_link": None,
+        },
+        "bored": {
+            "msg": f"I'm booooooooored...\nNo one is spending time with me, "
+            "and I feel lonely :pg_depressed:\n"
+            f"*The snek's boredom level is `{emotions.get('bored', '0')}`, run about"
+            f"`{abs(emotions.get('bored', 0) // 15) + 1}` "
+            "more command(s) to improve its mood.*",
+            "emoji_link": "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1",
+        },
+        "confused": {
+            "msg": f"I'm confused!\nEither there were too many exceptions in my code, "
+            "or too many commands were used wrongly!\n"
+            f"*The snek's confusion level is `{emotions.get('confused', '0')}`, "
+            "to lower its level of confusion, use proper command syntax.*",
+            "emoji_link": "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1",
+        },
+        "anger": {
+            "msg": f"I'm angry!\nI've been bonked too many times, you'd be "
+            "angry too if someone bonked you 50+ times :unamused:\n"
+            "No jokes, no quotes. :pg_angry:. Don't you dare pet me!\n"
+            f"*The snek's anger level is `{emotions.get('anger', '0')}`, "
+            "ask for its forgiveness to calm it down.*",
+            "emoji_link": "https://cdn.discordapp.com/emojis/779775305224159232.gif?v=1",
+            "override_emotion": "angry",
+        },
+    }
+
+
+def generate_pie_slice(
+    center_x: int, center_y: int, radius: int, start_angle: float, end_angle: float
+):
+    """
+    Generate slice of the pie in the output
+    """
     p = [(center_x, center_y)]
 
-    for angle in range(start_angle - 90, end_angle - 90):
+    # cover a bit more angle so that the boundaries are fully covered
+    for angle in range(start_angle - 91, end_angle - 89):
         x = center_x + int(radius * math.cos(math.radians(angle)))
         y = center_y + int(radius * math.sin(math.radians(angle)))
         p.append((x, y))
     return p
 
 
-def get_emotion_percentage(emotions, round_by=1):
+def get_emotion_percentage(emotions: dict[str, int], round_by: int = 1):
+    """
+    Express emotions in terms of percentages, split complementary emotions into
+    their own emotions
+    """
     raw_emotion_percentage = {}
     for key, value in emotions.items():
         percentage = value / emotion.EMOTION_CAPS[key][1] * 100
         if percentage < 0:
             percentage = -percentage
-            key = negative_emotion[key]
+            key = NEGATIVE_EMOTIONS[key]
         raw_emotion_percentage[key] = percentage
 
     sum_of_emotions = sum([i for i in raw_emotion_percentage.values()])
@@ -60,10 +124,11 @@ def get_emotion_percentage(emotions, round_by=1):
     return emotion_percentage
 
 
-def emotion_pie_chart(emotions, pie_radius):
+def emotion_pie_chart(emotions: dict[str, int], pie_radius: int):
     """
     Generates a pie chart, given emotions and pie radius
-    Emotions must be in "raw form" (E.g {"happy": 34, "bored": -345, "anger": 89, "confused": 499})
+    Emotions must be in "raw form", like
+    {"happy": 34, "bored": -345, "anger": 89, "confused": 499}
     """
     font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 30)
     font.bold = True
@@ -72,16 +137,16 @@ def emotion_pie_chart(emotions, pie_radius):
     image.fill((0, 0, 0, 0))
 
     emotion_percentage = get_emotion_percentage(emotions)
-
     emotion_pie_angle = {
         key: percentage / 100 * 360 for key, percentage in emotion_percentage.items()
     }
+
     start_angle = 0
     for key, angle in emotion_pie_angle.items():
         if round(angle) != 0:
             pygame.draw.polygon(
                 image,
-                emotion_color[key],
+                EMOTION_COLORS[key],
                 generate_pie_slice(
                     pie_radius,
                     pie_radius,
@@ -101,19 +166,19 @@ def emotion_pie_chart(emotions, pie_radius):
     txt_y = pie_radius * 2
     for bot_emotion, percentage in emotion_percentage.items():
         txt = font.render(
-            f"{bot_emotion.title()} - {percentage}%", True, emotion_color[bot_emotion]
+            f"{bot_emotion.title()} - {percentage}%", True, EMOTION_COLORS[bot_emotion]
         )
         txt_rect = txt.get_rect(topleft=(txt_x, txt_y))
         image.blit(txt, txt_rect)
 
         pygame.draw.rect(
             image,
-            emotion_color[bot_emotion],
-            (txt_x + pie_radius * 1.8 / emotions_per_row, txt_y, 20, 40),
+            EMOTION_COLORS[bot_emotion],
+            (txt_x + pie_radius * 1.8 / EMOTIONS_PER_ROW, txt_y, 20, 40),
         )
 
-        if i % emotions_per_row != emotions_per_row - 1:
-            txt_x += pie_radius * 2 / emotions_per_row
+        if i % EMOTIONS_PER_ROW != EMOTIONS_PER_ROW - 1:
+            txt_x += pie_radius * 2 / EMOTIONS_PER_ROW
         else:
             txt_x = 0
             txt_y += 40
