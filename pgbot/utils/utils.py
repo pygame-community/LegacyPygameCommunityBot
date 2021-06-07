@@ -28,12 +28,11 @@ def clamp(value, min_, max_):
     return value if value < max_ else max_
 
 
-def color_to_rgb_int(col: pygame.Color):
+def color_to_rgb_int(col: pygame.Color, alpha=False):
     """
-    Get integer RGB representation of pygame color object. This does not include
-    the alpha component of the color, which int(col) would give you
+    Get integer RGB representation of pygame color object.
     """
-    return col.r << 16 | col.g << 8 | col.b
+    return col.r << 32 | col.g << 16 | col.b << 8| col.a if alpha else col.r << 16 | col.g << 8 | col.b
 
 
 def discordify(text: str):
