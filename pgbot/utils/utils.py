@@ -32,7 +32,11 @@ def color_to_rgb_int(col: pygame.Color, alpha=False):
     """
     Get integer RGB representation of pygame color object.
     """
-    return col.r << 32 | col.g << 16 | col.b << 8| col.a if alpha else col.r << 16 | col.g << 8 | col.b
+    return (
+        col.r << 32 | col.g << 16 | col.b << 8 | col.a
+        if alpha
+        else col.r << 16 | col.g << 8 | col.b
+    )
 
 
 def discordify(text: str):
