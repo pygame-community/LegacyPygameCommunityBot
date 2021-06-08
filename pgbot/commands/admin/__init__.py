@@ -1061,18 +1061,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_react(self, message: discord.Message, *emojis: str):
         """
         ->type More admin commands
-        ->signature pg!react <message> <emoji>
-        ->description React to a Discord message
+        ->signature pg!react <message> <emojis>
+        ->description Reacts to a Discord message
 
         ->extended description
-        Reacts to a Discord message with the given emoji.
+        Reacts to a Discord message with the given emojis.
 
         __Args__:
             `*objects: Message`
             > A Discord message to which react
 
-            `emoji: str`
-            > The emoji with which react
+            `emojis: str`
+            > The emojis to react with separated by spaces
 
         __Returns__:
             > It should delete the invoking and response messages after reacting
