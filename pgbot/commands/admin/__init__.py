@@ -1058,7 +1058,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
-    async def cmd_react(self, message: discord.Message, emoji: str):
+    async def cmd_react(self, message: discord.Message, *emojis: str):
         """
         ->type More admin commands
         ->signature pg!react <message> <emoji>
@@ -1082,7 +1082,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
-        await message.add_reaction(emoji)
+        for emoji in emojis:
+            await message.add_reaction(emoji)
         await self.invoke_msg.delete()
         await self.response_msg.delete()
 
