@@ -60,7 +60,7 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, text: str, no_backticks=False):
+    def __init__(self, text: str, no_backticks: bool = False):
         self.lang = None
         self.text = code = text
 
@@ -225,7 +225,7 @@ class BaseCommand:
         # in pg!refresh command when invoked
         self.page = 0
 
-    def split_args(self, split_str, split_flags):
+    def split_args(self, split_str: str, split_flags: list[tuple[str, Any, tuple]]):
         """
         Utility function to do the first parsing step to recursively split
         string based on seperators
@@ -344,7 +344,7 @@ class BaseCommand:
 
         return cmd, args, kwargs
 
-    async def _cast_arg(self, anno, arg, cmd):
+    async def _cast_arg(self, anno: str, arg: Union[CodeBlock, String, str]):
         """
         Helper to cast an argument to the type mentioned by the parameter
         annotation
@@ -396,7 +396,6 @@ class BaseCommand:
             elif anno == "discord.Object":
                 # Generic discord API Object that has an ID
                 return discord.Object(utils.filter_id(arg))
-
 
             elif anno == "discord.Role":
                 role = self.guild.get_role(utils.filter_id(arg))
@@ -455,7 +454,13 @@ class BaseCommand:
             "Internal Bot error", f"Invalid argument of type `{type(arg)}`"
         )
 
-    async def cast_arg(self, param, arg, cmd, key=None):
+    async def cast_arg(
+        self,
+        param: inspect.Parameter,
+        arg: Union[CodeBlock, String, str],
+        cmd: str,
+        key: Optional[str] = None,
+    ):
         """
         Cast an argument to the type mentioned by the paramenter annotation
         """
@@ -476,12 +481,12 @@ class BaseCommand:
                 annos = [i.strip() for i in anno[6:-1].split(",")]
                 for cnt, anno in enumerate(annos):
                     try:
-                        return await self._cast_arg(anno, arg, cmd)
+                        return await self._cast_arg(anno, arg)
                     except ValueError:
                         if cnt == len(annos) - 1:
                             raise
 
-            return await self._cast_arg(anno, arg, cmd)
+            return await self._cast_arg(anno, arg)
 
         except ValueError:
             # handle errors, give more user-friendly error messages
@@ -595,7 +600,8 @@ class BaseCommand:
             )
 
         if hasattr(func, "fun_cmd"):
-            if random.randint(0, 1) and emotion.get("bored") < -600:
+            bored = emotion.get("bored")
+            if bored < -60 and -bored / 100 >= random.random():
                 raise BotException(
                     "I am Exhausted!",
                     "I have been running a lot of commands lately, and now I am tired.\n"
@@ -712,18 +718,18 @@ class BaseCommand:
         """
         try:
             await self.call_cmd()
-            emotion.update("confused", -random.randint(2, 4))
+            emotion.update("confused", -random.randint(4, 8))
             return
 
         except ArgError as exc:
-            emotion.update("confused", random.randint(1, 3))
+            emotion.update("confused", random.randint(2, 6))
             title = "Invalid Arguments!"
             msg, cmd = exc.args
             msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
             excname = "Argument Error"
 
         except KwargError as exc:
-            emotion.update("confused", random.randint(1, 3))
+            emotion.update("confused", random.randint(2, 6))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -734,17 +740,17 @@ class BaseCommand:
             excname = "Keyword argument Error"
 
         except BotException as exc:
-            emotion.update("confused", random.randint(2, 4))
+            emotion.update("confused", random.randint(4, 8))
             title, msg = exc.args
             excname = "BotException"
 
         except discord.HTTPException as exc:
-            emotion.update("confused", random.randint(3, 6))
+            emotion.update("confused", random.randint(7, 13))
             title, msg = exc.__class__.__name__, exc.args[0]
             excname = "discord.HTTPException"
 
         except:
-            emotion.update("confused", random.randint(4, 8))
+            emotion.update("confused", random.randint(10, 22))
             await embed_utils.replace(
                 self.response_msg,
                 "Unknown Error!",
@@ -754,10 +760,20 @@ class BaseCommand:
             raise
 
         # display bot exception to user on discord
-        await embed_utils.replace_2(
-            self.response_msg,
-            title=title,
-            description=msg,
-            color=0xFF0000,
-            footer_text=excname,
-        )
+        try:
+            await embed_utils.replace_2(
+                self.response_msg,
+                title=title,
+                description=msg,
+                color=0xFF0000,
+                footer_text=excname,
+            )
+        except discord.NotFound:
+            # response message was deleted, send a new message
+            await embed_utils.send_2(
+                self.channel,
+                title=title,
+                description=msg,
+                color=0xFF0000,
+                footer_text=excname,
+            )

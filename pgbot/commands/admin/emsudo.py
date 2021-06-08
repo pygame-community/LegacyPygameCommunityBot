@@ -37,7 +37,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo(
         self,
         *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
     ):
         """
         ->type emsudo commands
@@ -189,7 +189,7 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
-        if not isinstance(destination, discord.TextChannel):
+        if destination is None:
             destination = self.channel
 
         if not utils.check_channel_permissions(
@@ -1245,7 +1245,7 @@ class EmsudoCommand(BaseCommand):
 
     @add_group("emsudo", "clone")
     async def cmd_emsudo_clone(
-        self, *msgs: discord.Message, destination: Optional[discord.TextChannel] = None
+        self, *msgs: discord.Message, destination: Optional[common.Channel] = None
     ):
         """
         ->type emsudo commands
@@ -1279,7 +1279,7 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
-        if not isinstance(destination, discord.TextChannel):
+        if destination is None:
             destination = self.channel
 
         if not utils.check_channel_permissions(
@@ -1392,7 +1392,7 @@ class EmsudoCommand(BaseCommand):
         a: String = String(""),
         attributes: String = String(""),
         mode: int = 0,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         output_name: String = String("(add a title by editing this embed)"),
         system_attributes: bool = False,
         as_json: bool = True,
@@ -1461,8 +1461,7 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
-        output_name = output_name.string
-        if not isinstance(destination, discord.TextChannel):
+        if destination is None:
             destination = self.channel
 
         if not utils.check_channel_permissions(
@@ -1629,7 +1628,7 @@ class EmsudoCommand(BaseCommand):
                         await destination.send(
                             embed=embed_utils.create(
                                 author_name="Embed Data",
-                                title=(output_name)
+                                title=(output_name.string)
                                 if len(msgs) < 2
                                 else "(add a title by editing this embed)",
                                 fields=(

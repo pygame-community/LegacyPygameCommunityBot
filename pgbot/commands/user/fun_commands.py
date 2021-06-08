@@ -157,7 +157,7 @@ class FunCommand(BaseCommand):
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
-        emotion.update("happy", 5)
+        emotion.update("happy", random.randint(10, 15))
 
     @fun_command
     async def cmd_vibecheck(self):
@@ -230,7 +230,7 @@ class FunCommand(BaseCommand):
             )
             return
 
-        num = random.randint(0, 10)
+        num = random.randint(0, 20)
         if num:
             await embed_utils.replace(
                 self.response_msg,

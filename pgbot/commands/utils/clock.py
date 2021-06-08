@@ -15,12 +15,12 @@ import pygame
 
 
 def generate_arrow_points(
-    position,
-    arrow_vector,
-    thickness=5.0,
-    size_multiplier=1.0,
-    arrow_head_width_mul=0.75,
-    tip_to_base_ratio=2.0 / 3.0,
+    position: tuple[int, int],
+    arrow_vector: tuple[float, float],
+    thickness: float = 5.0,
+    size_multiplier: float = 1.0,
+    arrow_head_width_mul: float = 0.75,
+    tip_to_base_ratio: float = 2.0 / 3.0,
 ):
     """
     Flexible function for calculating the coordinates

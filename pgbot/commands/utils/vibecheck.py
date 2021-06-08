@@ -58,8 +58,7 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
         "bored": {
             "msg": f"I'm booooooooored...\nNo one is spending time with me, "
             "and I feel lonely :pg_depressed:\n"
-            f"*The snek's boredom level is `{emotions.get('bored', '0')}`, run about"
-            f"`{abs(emotions.get('bored', 0) // 15) + 1}` "
+            f"*The snek's boredom level is `{emotions.get('bored', '0')}`, run "
             "more command(s) to improve its mood.*",
             "emoji_link": "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1",
         },
@@ -128,7 +127,7 @@ def emotion_pie_chart(emotions: dict[str, int], pie_radius: int):
     """
     Generates a pie chart, given emotions and pie radius
     Emotions must be in "raw form", like
-    {"happy": 34, "bored": -345, "anger": 89, "confused": 499}
+    {"happy": 34, "bored": -35, "anger": 89, "confused": 499}
     """
     font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 30)
     font.bold = True
