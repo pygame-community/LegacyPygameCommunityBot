@@ -1220,14 +1220,7 @@ class EmsudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        bot_id = None
-        if self.guild is not None:
-            bot_member = self.guild.get_member(common.bot.user.id)
-            if not bot_member:
-                bot_member = await self.guild.fetch_member(common.bot.user.id)
-            bot_id = bot_member.id
-        else:
-            bot_id = common.bot.user.id
+        bot_id = common.bot.user.id
 
         if not msg_a.embeds or not msg_b.embeds:
             raise BotException(
