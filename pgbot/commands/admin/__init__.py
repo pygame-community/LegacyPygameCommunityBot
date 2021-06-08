@@ -1058,6 +1058,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
+    async def cmd_react(self, message: discord.Message, emoji: str):
+        await message.add_reaction(emoji)
+        await self.invoke_msg.delete()
+        await self.response_msg.delete()
+
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
