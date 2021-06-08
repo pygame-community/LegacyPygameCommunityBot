@@ -36,6 +36,7 @@ class SudoCommand(BaseCommand):
         *datas: Union[discord.Message, String],
         destination: Optional[common.Channel] = None,
         from_attachment: bool = True,
+        mention: bool = False,
     ):
         """
         ->type More admin commands
@@ -57,6 +58,12 @@ class SudoCommand(BaseCommand):
             `from_attachment (bool) = True`
             > Whether the attachment of an input message should be
             > used to create a message.
+
+            `mention (bool) = False`
+            > Whether any mentions in the given input text
+            > should ping their target. If set to `True`,
+            > any role/user/member that the bot is allowed to ping will
+            > be pinged.
 
         __Returns__:
             > One or more generated messages based on the given input.
@@ -231,7 +238,8 @@ class SudoCommand(BaseCommand):
                 ),
                 0,
             )
-
+    	
+        allowed_mentions = discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
@@ -246,7 +254,7 @@ class SudoCommand(BaseCommand):
                     ),
                     1,
                 )
-            await destination.send(content=msg_txt)
+            await destination.send(content=msg_txt, allowed_mentions=allowed_mentions)
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
@@ -472,7 +480,6 @@ class SudoCommand(BaseCommand):
             await msg_a.edit(content=msg_content_b)
             await msg_b.edit(content=msg_content_a)
 
-        await self.invoke_msg.delete()
         await self.response_msg.delete()
 
     @add_group("sudo", "get")
