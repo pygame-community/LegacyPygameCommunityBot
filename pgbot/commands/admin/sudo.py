@@ -697,7 +697,7 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10 if msg_count > 1 else 0)
+        await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
 
     @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
@@ -1067,4 +1067,4 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
+        await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
