@@ -697,7 +697,11 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
@@ -1067,4 +1071,8 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        except discord.NotFound:
+            pass

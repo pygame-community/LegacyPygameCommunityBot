@@ -875,7 +875,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
 
         try:
-            await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
+            await self.response_msg.delete(delay=10.0 if idx_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
