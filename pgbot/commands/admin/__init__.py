@@ -1059,6 +1059,29 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
 
     async def cmd_react(self, message: discord.Message, emoji: str):
+        """
+        ->type More admin commands
+        ->signature pg!react <message> <emoji>
+        ->description React to a Discord message
+
+        ->extended description
+        Reacts to a Discord message with the given emoji.
+
+        __Args__:
+            `*objects: Message`
+            > A Discord message to which react
+
+            `emoji: str`
+            > The emoji with which react
+
+        __Returns__:
+            > It should delete the invoking and response messages after reacting
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        -----
+        """
         await message.add_reaction(emoji)
         await self.invoke_msg.delete()
         await self.response_msg.delete()
