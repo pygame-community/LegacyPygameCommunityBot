@@ -439,16 +439,14 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        bot_member_or_user = None
         bot_id = None
         if self.guild is not None:
             bot_member_or_user = self.guild.get_member(common.bot.user.id)
-            if not bot_member_or_user:
+            if bot_member_or_user is None:
                 bot_member_or_user = await self.guild.fetch_member(common.bot.user.id)
             bot_id = bot_member_or_user.id
         else:
-            bot_member_or_user = common.bot.user
-            bot_id = bot_member_or_user.id
+            bot_member_or_user = common.bot.user.id
 
         if (
             not msg_a.content
