@@ -1094,6 +1094,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 )
                 raise
         await self.invoke_msg.delete()
+        await self.response_msg.delete()
 
 
 # monkey-patch admin command names into tuple
