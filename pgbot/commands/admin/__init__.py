@@ -1075,17 +1075,29 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             > The emojis to react with separated by spaces
 
         __Returns__:
-            > It should delete the invoking and response messages after reacting
+            > It should delete the invoking and response messages after reacting.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
+        success = True
         for emoji in emojis:
-            await message.add_reaction(emoji)
+            try:
+                await message.add_reaction(emoji)
+            except discord.HTTPException:
+                success = False
         await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        if success:
+            await self.response_msg.delete()
+        else:
+            raise BotException(
+                "Invalid emojis",
+                ("You gave me some invalid emojis or I am unable to use them here. "
+                 "Remember the emojis have to be separated by spaces. Find help in "
+                 "`pg!help react`")
+            )
 
 
 # monkey-patch admin command names into tuple
