@@ -64,11 +64,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
 
         with io.StringIO(str_obj) as fobj:
-            await self.response_msg.delete()
             await self.channel.send(
                 f"Here are the contents of the table `{name}`:",
                 file=discord.File(fobj, filename=f"{name}_db.py"),
             )
+
+        try:
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("db", "write")
     async def cmd_db_write(self, name: str, data: CodeBlock):
@@ -563,7 +567,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             ),
             0,
         )
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
+
+        try:
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("pin")
     async def cmd_pin(
@@ -664,8 +672,12 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             0,
         )
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
+        try:
+            if not delete_system_messages:
+                await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("pin", "remove")
     async def cmd_pin_remove(
@@ -750,7 +762,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             0,
         )
 
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
+        try:
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("pin", "remove", "at")
     async def cmd_pin_remove_at(
@@ -859,7 +874,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             0,
         )
 
-        await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
+        try:
+            await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
+        except discord.NotFound:
+            pass
 
     @no_dm
     @add_group("poll")
@@ -1059,7 +1077,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
+        try:
+            await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
+        except discord.NotFound:
+            pass
 
     async def cmd_react(self, message: discord.Message, *emojis: str):
         """
@@ -1093,8 +1114,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     "`pg!help react`",
                 )
                 raise
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
 
 # monkey-patch admin command names into tuple
