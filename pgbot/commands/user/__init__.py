@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import io
 import os
 import re
 import time
@@ -286,8 +287,10 @@ class UserCommand(FunCommand, HelpCommand):
             dur = returned.duration  # the execution time of the script alone
             embed_dict = {
                 "description": "",
-                "author_name": f"Code executed in {utils.format_time(dur)}",
-                "author_url": self.invoke_msg.jump_url,
+                "author": {
+                    "name": f"Code executed in {utils.format_time(dur)}",
+                    "url": self.invoke_msg.jump_url,
+                },
             }
 
             file = None
@@ -328,8 +331,21 @@ class UserCommand(FunCommand, HelpCommand):
             # Message already deleted
             pass
 
-        embed = embed_utils.create(**embed_dict)
+        embed = embed_utils.create_from_dict(embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+
+        max_file_size = (
+            self.guild.filesize_limit
+            if self.guild is not None
+            else common.GUILD_MAX_FILE_SIZE
+        )
+        if len(returned.text) > 1500:
+            with io.StringIO(
+                returned.text
+                if len(returned.text) - 40 < max_file_size
+                else returned.text[: max_file_size - 40]
+            ) as fobj:
+                await self.channel.send(file=discord.File(fobj, filename="output.txt"))
 
         if file:
             file.close()
@@ -378,7 +394,10 @@ class UserCommand(FunCommand, HelpCommand):
                 "the id of the message is correct.",
             )
 
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            pass
 
         # Handle the new command, the one that pg!refresh is trying to refresh
         self.response_msg = msg
@@ -460,7 +479,10 @@ class UserCommand(FunCommand, HelpCommand):
 
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            pass
 
         for field in base_embed_dict["fields"]:
             try:
@@ -612,7 +634,10 @@ class UserCommand(FunCommand, HelpCommand):
             footer_text="Ended",
             timestamp=self.response_msg.created_at,
         )
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            pass
 
     @add_group("stream")
     async def cmd_stream(self):
@@ -716,5 +741,8 @@ class UserCommand(FunCommand, HelpCommand):
             else "No one is registered on the ping momento :/"
         )
 
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            pass
         await self.channel.send(f"<@!{self.author.id}> is gonna stream!\n{msg}\n{ping}")

@@ -418,8 +418,11 @@ class EmsudoCommand(BaseCommand):
                 ),
                 1,
             )
-        await self.invoke_msg.delete()
-        await self.response_msg.delete(delay=10.0 if data_count > 2 else 0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0)
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "add")
     async def cmd_emsudo_add(
@@ -659,8 +662,11 @@ class EmsudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
-        await self.invoke_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "replace")
     async def cmd_emsudo_replace(
@@ -837,8 +843,11 @@ class EmsudoCommand(BaseCommand):
                         "data\n\\`\\`\\`\n)",
                     )
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "edit")
     async def cmd_emsudo_edit(
@@ -1173,8 +1182,11 @@ class EmsudoCommand(BaseCommand):
                 ),
                 0,
             )
-        await self.invoke_msg.delete()
-        await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "swap")
     async def cmd_emsudo_swap(
@@ -1240,8 +1252,11 @@ class EmsudoCommand(BaseCommand):
         await msg_a.edit(embed=msg_embed_b)
         await msg_b.edit(embed=msg_embed_a)
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "clone")
     async def cmd_emsudo_clone(
@@ -1383,7 +1398,10 @@ class EmsudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
+        try:
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "get")
     async def cmd_emsudo_get(
@@ -1695,7 +1713,10 @@ class EmsudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10.0 if msg_count > 1 else 0.0)
+        try:
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "add", "field")
     async def cmd_emsudo_add_field(
@@ -1842,8 +1863,11 @@ class EmsudoCommand(BaseCommand):
                     )
 
         await embed_utils.add_field_from_dict(msg, msg_embed, field_dict)
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "add", "fields")
     async def cmd_emsudo_add_fields(
@@ -2084,8 +2108,11 @@ class EmsudoCommand(BaseCommand):
                     msg, msg_embed, field_dicts_list
                 )
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "add", "field", "at")
     async def cmd_emsudo_add_field_at(
@@ -2236,8 +2263,11 @@ class EmsudoCommand(BaseCommand):
                     )
 
         await embed_utils.insert_field_from_dict(msg, msg_embed, field_dict, index)
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "add", "fields", "at")
     async def cmd_emsudo_add_fields_at(
@@ -2482,8 +2512,11 @@ class EmsudoCommand(BaseCommand):
                     msg, msg_embed, reversed(field_dicts_list), index
                 )
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "edit", "field")
     async def cmd_emsudo_edit_field(
@@ -2636,8 +2669,11 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.edit_field_from_dict(msg, msg_embed, field_dict, index)
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "edit", "fields")
     async def cmd_emsudo_edit_fields(
@@ -2879,8 +2915,11 @@ class EmsudoCommand(BaseCommand):
                     msg, msg_embed, field_dicts_list
                 )
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "replace", "field")
     async def cmd_emsudo_replace_field(
@@ -3031,8 +3070,11 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.replace_field_from_dict(msg, msg_embed, field_dict, index)
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "swap", "fields")
     async def cmd_emsudo_swap_fields(
@@ -3085,8 +3127,11 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.swap_fields(msg, msg_embed, index_a, index_b)
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "clone", "fields")
     async def cmd_emsudo_clone_fields(
@@ -3175,8 +3220,11 @@ class EmsudoCommand(BaseCommand):
         except IndexError:
             raise BotException("Invalid field index/indices!", "")
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "remove", "fields")
     async def cmd_emsudo_remove_fields(
@@ -3258,8 +3306,11 @@ class EmsudoCommand(BaseCommand):
         except IndexError:
             raise BotException("Invalid field index/indices!", "")
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("emsudo", "remove", "fields", "all")
     async def cmd_emsudo_remove_fields_all(
@@ -3304,5 +3355,8 @@ class EmsudoCommand(BaseCommand):
 
         await embed_utils.clear_fields(msg, msg_embed)
 
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass

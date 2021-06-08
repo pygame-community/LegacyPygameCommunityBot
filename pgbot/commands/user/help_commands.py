@@ -179,7 +179,10 @@ class HelpCommand(BaseCommand):
         )
         os.remove(f"temp{t}.png")
 
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @no_dm
     async def cmd_doc(self, name: str):

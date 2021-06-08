@@ -238,8 +238,10 @@ class SudoCommand(BaseCommand):
                 ),
                 0,
             )
-    	
-        allowed_mentions = discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
+
+        allowed_mentions = (
+            discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
+        )
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
@@ -268,8 +270,11 @@ class SudoCommand(BaseCommand):
                 1,
             )
 
-        await self.response_msg.delete(delay=10.0 if data_count > 1 else 0.0)
-        await self.invoke_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "edit")
     async def cmd_sudo_edit(
@@ -386,9 +391,11 @@ class SudoCommand(BaseCommand):
             raise BotException(
                 "An exception occured while handling the command!", e.args[0]
             )
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
-        return
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "swap")
     async def cmd_sudo_swap(
@@ -471,7 +478,10 @@ class SudoCommand(BaseCommand):
             await msg_a.edit(content=msg_content_b)
             await msg_b.edit(content=msg_content_a)
 
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "get")
     async def cmd_sudo_get(
@@ -687,7 +697,11 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=10 if msg_count > 1 else 0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "fetch")
     async def cmd_sudo_fetch(
@@ -873,7 +887,10 @@ class SudoCommand(BaseCommand):
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
-        await self.response_msg.delete()
+        try:
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @add_group("sudo", "clone")
     async def cmd_sudo_clone(
@@ -1054,4 +1071,8 @@ class SudoCommand(BaseCommand):
                 0,
             )
 
-        await self.response_msg.delete(delay=8 if msg_count > 0 else 0)
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+        except discord.NotFound:
+            pass

@@ -397,7 +397,6 @@ class BaseCommand:
                 # Generic discord API Object that has an ID
                 return discord.Object(utils.filter_id(arg))
 
-
             elif anno == "discord.Role":
                 role = self.guild.get_role(utils.filter_id(arg))
                 if role is None:

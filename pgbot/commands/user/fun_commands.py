@@ -135,8 +135,11 @@ class FunCommand(BaseCommand):
             )
 
         await reply.delete()
-        await self.invoke_msg.delete()
-        await self.response_msg.delete()
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete()
+        except discord.NotFound:
+            pass
 
     @fun_command
     async def cmd_pet(self):
