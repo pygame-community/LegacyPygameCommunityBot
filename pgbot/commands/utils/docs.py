@@ -164,8 +164,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
         if text:
             embeds.append(
-                await embed_utils.send_2(
-                    None,
+                embed_utils.create(
                     title=f"Documentation for `{name}`",
                     description=header + utils.code_block(text),
                 )
@@ -225,8 +224,7 @@ async def put_doc(
             continue
 
         embeds.append(
-            await embed_utils.send_2(
-                None,
+            embed_utils.create(
                 title=f"{otype} in `{name}`",
                 description=utils.code_block("\n".join(olist)),
             )

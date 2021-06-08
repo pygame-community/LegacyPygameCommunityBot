@@ -19,6 +19,8 @@ from typing import Callable, Iterable, Union
 import discord
 import pygame
 
+from pgbot import common
+
 
 def clamp(value, min_, max_):
     """
@@ -236,8 +238,8 @@ def code_block(string: str, max_characters: int = 2048, code_type: str = ""):
 
 
 def check_channel_permissions(
-    member: discord.Member,
-    channel: Union[discord.TextChannel, discord.GroupChannel, discord.DMChannel],
+    member: Union[discord.Member, discord.User],
+    channel: common.Channel,
     bool_func: Callable[[Iterable], bool] = all,
     permissions: Iterable[str] = (
         "view_channel",
@@ -254,8 +256,8 @@ def check_channel_permissions(
 
 
 def check_channels_permissions(
-    member: discord.Member,
-    *channels: discord.TextChannel,
+    member: Union[discord.Member, discord.User],
+    *channels: common.Channel,
     bool_func: Callable[[Iterable], bool] = all,
     skip_invalid_channels: bool = False,
     permissions: Iterable[str] = (
@@ -288,8 +290,8 @@ def check_channels_permissions(
 
 
 async def coro_check_channels_permissions(
-    member: discord.Member,
-    *channels: discord.TextChannel,
+    member: Union[discord.Member, discord.User],
+    *channels: common.Channel,
     bool_func: Callable[[Iterable], bool] = all,
     skip_invalid_channels: bool = False,
     permissions: Iterable[str] = (

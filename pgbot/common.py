@@ -8,7 +8,7 @@ This file defines some constants and variables used across the whole codebase
 
 import io
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import discord
 import pygame
@@ -17,6 +17,9 @@ from dotenv import load_dotenv
 
 if os.path.isfile(".env"):
     load_dotenv()  # take environment variables from .env
+
+# declare type alias for any channel
+Channel = Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel]
 
 # For commonly used variables
 ints = discord.Intents.default()

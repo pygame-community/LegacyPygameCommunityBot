@@ -167,6 +167,10 @@ class HelpCommand(BaseCommand):
 
         t = time.time()
 
+        # needed for typecheckers to know that self.guild cannot be none
+        if self.guild is None:
+            return
+
         pygame.image.save(
             await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
         )
@@ -186,6 +190,10 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!doc, to view documentation
         """
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
+
         await docs.put_doc(name, self.response_msg, self.author, self.page)
 
     @no_dm
@@ -198,6 +206,10 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!help, to display a help message
         """
+
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
 
         await help.send_help_message(
             self.response_msg,
@@ -228,6 +240,11 @@ class HelpCommand(BaseCommand):
         `filter_member=[member]`: Includes only the resources posted by that user
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
+
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
+
         # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
         #       if you want to remove more, add the ID to the list below
         msgs_to_filter = {
