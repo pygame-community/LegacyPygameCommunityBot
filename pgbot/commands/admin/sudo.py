@@ -36,6 +36,7 @@ class SudoCommand(BaseCommand):
         *datas: Union[discord.Message, String],
         destination: Optional[common.Channel] = None,
         from_attachment: bool = True,
+        mention: bool = False,
     ):
         """
         ->type More admin commands
@@ -57,6 +58,12 @@ class SudoCommand(BaseCommand):
             `from_attachment (bool) = True`
             > Whether the attachment of an input message should be
             > used to create a message.
+
+            `mention (bool) = False`
+            > Whether any mentions in the given input text
+            > should ping their target. If set to `True`,
+            > any role/user/member that the bot is allowed to ping will
+            > be pinged.
 
         __Returns__:
             > One or more generated messages based on the given input.
@@ -231,7 +238,8 @@ class SudoCommand(BaseCommand):
                 ),
                 0,
             )
-
+    	
+        allowed_mentions = discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
@@ -246,7 +254,7 @@ class SudoCommand(BaseCommand):
                     ),
                     1,
                 )
-            await destination.send(content=msg_txt)
+            await destination.send(content=msg_txt, allowed_mentions=allowed_mentions)
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
@@ -381,6 +389,89 @@ class SudoCommand(BaseCommand):
         await self.invoke_msg.delete()
         await self.response_msg.delete()
         return
+
+    @add_group("sudo", "swap")
+    async def cmd_sudo_swap(
+        self,
+        msg_a: discord.Message,
+        msg_b: discord.Message,
+        embeds: bool = True,
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!sudo swap <message> <message>
+        ->description Swap message contents and embeds between messages through the bot
+        ->extended description
+        Swap message contents and embeds between the two given messages.
+
+        __Args__:
+            `message_a: (Message)`
+            > A discord message whose embed
+            > should be swapped with that of `message_b`.
+
+            `message_b: (Message)`
+            > Another discord message whose embed
+            > should be swapped with that of `message_a`.
+
+            `embeds: (bool) = True`
+            > If set to `True`, the first embeds will also
+            > (when present) be swapped between the given messages.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command pg!sudo swap 123456789123456789 69696969969669420
+        -----
+        """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg_a.channel,
+            permissions=("view_channel", "send_messages"),
+        ) or not utils.check_channel_permissions(
+            self.author,
+            msg_b.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        bot_id = common.bot.user.id
+
+        if (
+            not msg_a.content
+            and not msg_a.embeds
+            or not msg_b.content
+            and not msg_b.embeds
+        ):
+            raise BotException(
+                "Cannot execute command:",
+                "Not enough data found in one or more of the given messages.",
+            )
+
+        elif bot_id not in (msg_a.author.id, msg_b.author.id):
+            raise BotException(
+                "Cannot execute command:",
+                f"Both messages must have been authored by me, {common.bot.user.mention}.",
+            )
+
+        msg_embed_a = msg_a.embeds[0] if msg_a.embeds else None
+        msg_embed_b = msg_b.embeds[0] if msg_b.embeds else None
+
+        msg_content_a = msg_a.content
+        msg_content_b = msg_b.content
+
+        if embeds:
+            await msg_a.edit(content=msg_content_b, embed=msg_embed_b)
+            await msg_b.edit(content=msg_content_a, embed=msg_embed_a)
+        else:
+            await msg_a.edit(content=msg_content_b)
+            await msg_b.edit(content=msg_content_a)
+
+        await self.response_msg.delete()
 
     @add_group("sudo", "get")
     async def cmd_sudo_get(
@@ -603,6 +694,7 @@ class SudoCommand(BaseCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
+        channel_ids: bool = False,
         urls: bool = False,
         pinned: bool = False,
         pin_range: Optional[range] = None,
@@ -708,21 +800,76 @@ class SudoCommand(BaseCommand):
 
             if not messages:
                 raise BotException(
-                    "Invalid time range",
+                    "Invalid message/time range",
                     "No messages were found for the specified input values.",
                 )
 
             if not after and oldest_first:
                 messages.reverse()
 
+        msg_count = len(messages)
+        msgs_per_loop = 200
+
+        output_str = prefix
+
         if urls:
             output_filename = "message_urls.txt"
-            output_str += sep.string.join(msg.jump_url for msg in messages)
-        else:
-            output_filename = "message_ids.txt"
-            output_str += sep.string.join(str(msg.id) for msg in messages)
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    messages[j].jump_url
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
+                await asyncio.sleep(0)
 
-        output_str += suffix.string
+            output_str += (
+                "".join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
+                + suffix
+            )
+
+        elif channel_ids:
+            output_filename = "message_and_channel_ids.txt"
+            output_str = prefix
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    f"{messages[j].channel.id}/{messages[j].id}"
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
+                await asyncio.sleep(0)
+
+            output_str += (
+                "".join(
+                    f"{messages[j].channel.id}/{messages[j].id}"
+                    for j in range(end_idx + 1, msg_count)
+                )
+                + suffix
+            )
+
+        else:
+            output_filename = "message_and_channel_ids.txt"
+            output_str = prefix
+            start_idx = 0
+            end_idx = 0
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    f"{messages[j].id}"
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
+                await asyncio.sleep(0)
+
+            output_str += (
+                "".join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
+                + suffix
+            )
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))

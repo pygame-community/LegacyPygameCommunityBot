@@ -397,6 +397,13 @@ class BaseCommand:
                 # Generic discord API Object that has an ID
                 return discord.Object(utils.filter_id(arg))
 
+
+            elif anno == "discord.Role":
+                role = self.guild.get_role(utils.filter_id(arg))
+                if role is None:
+                    raise ValueError()
+                return role
+
             elif anno == "discord.Member":
                 try:
                     return await self.guild.fetch_member(utils.filter_id(arg))
@@ -492,33 +499,36 @@ class BaseCommand:
                 typ = "a range specifier, matching the `range` object in Python 3.x"
 
             elif anno == "discord.Object":
-                typ = "a generic discord Object, which has an ID"
+                typ = "a generic Discord Object with an ID"
+
+            elif anno == "discord.Role":
+                typ = "An ID or mention of a Discord server/guild Role"
 
             elif anno == "discord.Member":
                 typ = (
-                    "an id of a person or a mention to them \nPlease make sure "
+                    "an ID or mention of a Discord server/guild member or a mention to them.\nPlease make sure "
                     "that the ID is a valid ID of a member in the server"
                 )
 
             elif anno == "discord.User":
-                typ = "an id of a person"
+                typ = "an ID or mention of a Discord user"
 
             elif anno in ("discord.TextChannel", "common.Channel"):
                 typ = (
-                    "an id or mention to a text channel\nPlease make sure "
+                    "an ID or mention of a Discord server/guild text channel\nPlease make sure "
                     "that the ID is a valid ID of a channel in the server"
                 )
 
             elif anno == "discord.Message":
                 typ = (
-                    "a message id, or a 'channel_id/message_id' combo, or a "
+                    "a message ID, or a 'channel_id/message_id' combo, or a "
                     "[link](#) to a message\nPlease make sure that the given "
-                    "ID(s) is/are valid and that the message is accesible to "
+                    "ID(s) is/are valid and that the message is accessible to "
                     "the bot"
                 )
 
             elif anno == "pygame.Color":
-                typ = "a color, represented by the color name or hex rgb"
+                typ = "a color, represented by the color name or a hex RGB value"
 
             else:
                 typ = f"of type `{param.annotation}`"
