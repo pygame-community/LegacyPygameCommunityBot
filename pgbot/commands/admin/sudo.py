@@ -441,12 +441,12 @@ class SudoCommand(BaseCommand):
 
         bot_id = None
         if self.guild is not None:
-            bot_member_or_user = self.guild.get_member(common.bot.user.id)
-            if bot_member_or_user is None:
-                bot_member_or_user = await self.guild.fetch_member(common.bot.user.id)
-            bot_id = bot_member_or_user.id
+            bot_member = self.guild.get_member(common.bot.user.id)
+            if not bot_member:
+                bot_member = await self.guild.fetch_member(common.bot.user.id)
+            bot_id = bot_member.id
         else:
-            bot_member_or_user = common.bot.user.id
+            bot_id = common.bot.user.id
 
         if (
             not msg_a.content
