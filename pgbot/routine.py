@@ -42,11 +42,11 @@ async def handle_reminders():
                 if channel is None:
                     # Channel does not exist in the guild, DM the user
                     try:
-                        member = await common.guild.fetch_member(mem_id)
-                        if member.dm_channel is None:
-                            await member.create_dm()
+                        user = await common.bot.fetch_user(mem_id)
+                        if user.dm_channel is None:
+                            await user.create_dm()
 
-                        await member.dm_channel.send(content=content)
+                        await user.dm_channel.send(content=content)
                     except discord.HTTPException:
                         pass
                     continue

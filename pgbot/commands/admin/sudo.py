@@ -34,7 +34,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo(
         self,
         *datas: Union[discord.Message, String],
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         from_attachment: bool = True,
     ):
         """
@@ -386,7 +386,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         as_attachment: bool = False,
         attachments: bool = True,
         embeds: bool = True,
@@ -634,10 +634,7 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
-        prefix = prefix.string
-        sep = sep.string
-        suffix = suffix.string
-
+        output_str = prefix.string
         destination = self.channel
 
         if pinned:
@@ -727,6 +724,7 @@ class SudoCommand(BaseCommand):
 
         if urls:
             output_filename = "message_urls.txt"
+<<<<<<< HEAD
             start_idx = 0
             end_idx = 0
             for i in range(msg_count//msgs_per_loop):
@@ -762,6 +760,14 @@ class SudoCommand(BaseCommand):
                 await asyncio.sleep(0)
             
             output_str += "".join( f"{messages[j].id}" for j in range(end_idx+1, msg_count) ) + suffix
+=======
+            output_str += sep.string.join(msg.jump_url for msg in messages)
+        else:
+            output_filename = "message_ids.txt"
+            output_str += sep.string.join(str(msg.id) for msg in messages)
+
+        output_str += suffix.string
+>>>>>>> 336b38f4573cfc71e3ebcbfdacbe826d58e639de
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
@@ -771,7 +777,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo_clone(
         self,
         *msgs: discord.Message,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         embeds: bool = True,
         attachments: bool = True,
         as_spoiler: bool = False,

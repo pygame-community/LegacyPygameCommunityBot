@@ -328,7 +328,7 @@ class UserCommand(FunCommand, HelpCommand):
             # Message already deleted
             pass
 
-        embed = await embed_utils.send_2(None, **embed_dict)
+        embed = embed_utils.create(**embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         if file:
@@ -348,7 +348,11 @@ class UserCommand(FunCommand, HelpCommand):
         Implement pg!refresh, to refresh a message which supports pages
         """
 
-        if not msg.embeds or not msg.embeds[0].footer or not msg.embeds[0].footer.text:
+        if (
+            not msg.embeds
+            or not msg.embeds[0].footer
+            or not isinstance(msg.embeds[0].footer.text, str)
+        ):
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure you "
@@ -388,7 +392,7 @@ class UserCommand(FunCommand, HelpCommand):
         self,
         desc: String,
         *emojis: String,
-        _destination: Optional[discord.TextChannel] = None,
+        _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
     ):
         """
@@ -402,12 +406,8 @@ class UserCommand(FunCommand, HelpCommand):
         ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
         """
 
-        if not isinstance(_destination, discord.TextChannel):
-            destination = self.channel
-        else:
-            destination = _destination
+        destination = self.channel if _destination is None else _destination
 
-        newline = "\n"
         base_embed_dict = {
             "title": "Voting in progress",
             "fields": [
@@ -427,8 +427,8 @@ class UserCommand(FunCommand, HelpCommand):
             },
             "color": 0x34A832,
             "footer": {
-                "text": f"By {self.author.display_name}{newline}"
-                f"({self.author.id}){newline}Started"
+                "text": f"By {self.author.display_name}\n"
+                f"({self.author.id})\nStarted"
             },
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string,
@@ -510,6 +510,10 @@ class UserCommand(FunCommand, HelpCommand):
         ->extended description
         The poll can only be closed by the person who started it or by mods.
         """
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
+
         if not utils.check_channel_permissions(
             self.author, msg.channel, permissions=("view_channel",)
         ):
@@ -527,6 +531,13 @@ class UserCommand(FunCommand, HelpCommand):
             )
 
         embed = msg.embeds[0]
+        if not isinstance(embed.footer.text, str):
+            raise BotException(
+                "Invalid message",
+                "The message specified is not an ongoing vote."
+                " Please double-check the id.",
+            )
+
         # Take the second line remove the parenthesies
         if embed.footer.text and embed.footer.text.count("\n"):
             poll_owner = int(
@@ -570,6 +581,9 @@ class UserCommand(FunCommand, HelpCommand):
 
         fields = []
         for field in embed.fields:
+            if not isinstance(field.name, str):
+                continue
+
             try:
                 r_count = reactions[utils.filter_emoji_id(field.name)] - 1
             except KeyError:

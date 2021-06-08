@@ -174,7 +174,7 @@ def emotion_pie_chart(emotions: dict[str, int], pie_radius: int):
         pygame.draw.rect(
             image,
             EMOTION_COLORS[bot_emotion],
-            (txt_x + pie_radius * 1.8 / EMOTIONS_PER_ROW, txt_y, 20, 40),
+            (int(txt_x + pie_radius * 1.8 / EMOTIONS_PER_ROW), txt_y, 20, 40),
         )
 
         if i % EMOTIONS_PER_ROW != EMOTIONS_PER_ROW - 1:
