@@ -325,6 +325,15 @@ class UserCommand(FunCommand, HelpCommand):
                         "The GIF file size is above 4MiB```"
                     )
 
+        try:
+            await self.response_msg.delete()
+        except discord.errors.NotFound:
+            # Message already deleted
+            pass
+
+        embed = embed_utils.create_from_dict(embed_dict)
+        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+
         max_file_size = (
             self.guild.filesize_limit
             if self.guild is not None
@@ -337,15 +346,6 @@ class UserCommand(FunCommand, HelpCommand):
                 else returned.text[: max_file_size - 40]
             ) as fobj:
                 await self.channel.send(file=discord.File(fobj, filename="output.txt"))
-
-        try:
-            await self.response_msg.delete()
-        except discord.errors.NotFound:
-            # Message already deleted
-            pass
-
-        embed = embed_utils.create_from_dict(embed_dict)
-        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         if file:
             file.close()
