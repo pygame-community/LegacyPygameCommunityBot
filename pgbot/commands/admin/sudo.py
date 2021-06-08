@@ -382,6 +382,99 @@ class SudoCommand(BaseCommand):
         await self.response_msg.delete()
         return
 
+    @add_group("sudo", "swap")
+    async def cmd_sudo_swap(
+        self,
+        msg_a: discord.Message,
+        msg_b: discord.Message,
+        embeds: bool = True,
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!sudo swap <message> <message>
+        ->description Swap message contents and embeds between messages through the bot
+        ->extended description
+        Swap message contents and embeds between the two given messages.
+
+        __Args__:
+            `message_a: (Message)`
+            > A discord message whose embed
+            > should be swapped with that of `message_b`.
+
+            `message_b: (Message)`
+            > Another discord message whose embed
+            > should be swapped with that of `message_a`.
+
+            `embeds: (bool) = True`
+            > If set to `True`, the first embeds will also
+            > (when present) be swapped between the given messages.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command pg!sudo swap 123456789123456789 69696969969669420
+        -----
+        """
+
+        if not utils.check_channel_permissions(
+            self.author,
+            msg_a.channel,
+            permissions=("view_channel", "send_messages"),
+        ) or not utils.check_channel_permissions(
+            self.author,
+            msg_b.channel,
+            permissions=("view_channel", "send_messages"),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        bot_member_or_user = None
+        bot_id = None
+        if self.guild is not None:
+            bot_member_or_user = self.guild.get_member(common.bot.user.id)
+            if not bot_member_or_user:
+                bot_member_or_user = await self.guild.fetch_member(common.bot.user.id)
+            bot_id = bot_member_or_user.id
+        else:
+            bot_member_or_user = common.bot.user
+            bot_id = bot_member_or_user.id
+
+        if (
+            not msg_a.content
+            and not msg_a.embeds
+            or not msg_b.content
+            and not msg_b.embeds
+        ):
+            raise BotException(
+                "Cannot execute command:",
+                "Not enough data found in one or more of the given messages.",
+            )
+
+        elif bot_id not in (msg_a.author.id, msg_b.author.id):
+            raise BotException(
+                "Cannot execute command:",
+                f"Both messages must have been authored by me, {common.bot.user.mention}.",
+            )
+
+        msg_embed_a = msg_a.embeds[0] if msg_a.embeds else None
+        msg_embed_b = msg_b.embeds[0] if msg_b.embeds else None
+
+        msg_content_a = msg_a.content
+        msg_content_b = msg_b.content
+
+        if embeds:
+            await msg_a.edit(content=msg_content_b, embed=msg_embed_b)
+            await msg_b.edit(content=msg_content_a, embed=msg_embed_a)
+        else:
+            await msg_a.edit(content=msg_content_b)
+            await msg_b.edit(content=msg_content_a)
+
+        await self.invoke_msg.delete()
+        await self.response_msg.delete()
+
     @add_group("sudo", "get")
     async def cmd_sudo_get(
         self,
@@ -716,7 +809,6 @@ class SudoCommand(BaseCommand):
             if not after and oldest_first:
                 messages.reverse()
 
-
         msg_count = len(messages)
         msgs_per_loop = 200
 
@@ -724,50 +816,62 @@ class SudoCommand(BaseCommand):
 
         if urls:
             output_filename = "message_urls.txt"
-<<<<<<< HEAD
             start_idx = 0
             end_idx = 0
-            for i in range(msg_count//msgs_per_loop):
-                start_idx = msgs_per_loop*i
-                end_idx = start_idx+msgs_per_loop-1
-                output_str += "".join( messages[j].jump_url for j in range(start_idx, start_idx+msgs_per_loop) )
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    messages[j].jump_url
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
                 await asyncio.sleep(0)
-            
-            output_str += "".join( messages[j].jump_url for j in range(end_idx+1, msg_count) ) + suffix
+
+            output_str += (
+                "".join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
+                + suffix
+            )
 
         elif channel_ids:
             output_filename = "message_and_channel_ids.txt"
             output_str = prefix
             start_idx = 0
             end_idx = 0
-            for i in range(msg_count//msgs_per_loop):
-                start_idx = msgs_per_loop*i
-                end_idx = start_idx+msgs_per_loop-1
-                output_str += "".join( f"{messages[j].channel.id}/{messages[j].id}" for j in range(start_idx, start_idx+msgs_per_loop) )
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    f"{messages[j].channel.id}/{messages[j].id}"
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
                 await asyncio.sleep(0)
-            
-            output_str += "".join( f"{messages[j].channel.id}/{messages[j].id}" for j in range(end_idx+1, msg_count) ) + suffix
+
+            output_str += (
+                "".join(
+                    f"{messages[j].channel.id}/{messages[j].id}"
+                    for j in range(end_idx + 1, msg_count)
+                )
+                + suffix
+            )
 
         else:
             output_filename = "message_and_channel_ids.txt"
             output_str = prefix
             start_idx = 0
             end_idx = 0
-            for i in range(msg_count//msgs_per_loop):
-                start_idx = msgs_per_loop*i
-                end_idx = start_idx+msgs_per_loop-1
-                output_str += "".join( f"{messages[j].id}" for j in range(start_idx, start_idx+msgs_per_loop) )
+            for i in range(msg_count // msgs_per_loop):
+                start_idx = msgs_per_loop * i
+                end_idx = start_idx + msgs_per_loop - 1
+                output_str += "".join(
+                    f"{messages[j].id}"
+                    for j in range(start_idx, start_idx + msgs_per_loop)
+                )
                 await asyncio.sleep(0)
-            
-            output_str += "".join( f"{messages[j].id}" for j in range(end_idx+1, msg_count) ) + suffix
-=======
-            output_str += sep.string.join(msg.jump_url for msg in messages)
-        else:
-            output_filename = "message_ids.txt"
-            output_str += sep.string.join(str(msg.id) for msg in messages)
 
-        output_str += suffix.string
->>>>>>> 336b38f4573cfc71e3ebcbfdacbe826d58e639de
+            output_str += (
+                "".join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
+                + suffix
+            )
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
