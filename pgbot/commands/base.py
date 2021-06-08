@@ -13,9 +13,8 @@ from __future__ import annotations
 import asyncio
 import datetime
 import inspect
-import io
 import random
-from typing import Any
+from typing import Any, Optional, Union
 
 import discord
 import pygame
@@ -198,9 +197,9 @@ class BaseCommand:
         self.cmd_str: str = self.invoke_msg.content[len(common.PREFIX) :]
 
         # Put a few attributes here for easy access
-        self.author: discord.Member = self.invoke_msg.author
-        self.channel: discord.TextChannel = self.invoke_msg.channel
-        self.guild: discord.Guild = self.invoke_msg.guild
+        self.author: Union[discord.Member, discord.User] = self.invoke_msg.author
+        self.channel: common.Channel = self.invoke_msg.channel
+        self.guild: Optional[discord.Guild] = self.invoke_msg.guild
         self.is_dm = self.guild is None
 
         # if someone is DMing, set guild to primary server (PGC server)
@@ -410,7 +409,7 @@ class BaseCommand:
                 except discord.errors.NotFound:
                     raise ValueError()
 
-            elif anno == "discord.TextChannel":
+            elif anno in ("discord.TextChannel", "common.Channel"):
                 arg = utils.format_discord_link(arg, self.guild.id)
 
                 chan = self.guild.get_channel(utils.filter_id(arg))
@@ -504,7 +503,7 @@ class BaseCommand:
             elif anno == "discord.User":
                 typ = "an id of a person"
 
-            elif anno == "discord.TextChannel":
+            elif anno in ("discord.TextChannel", "common.Channel"):
                 typ = (
                     "an id or mention to a text channel\nPlease make sure "
                     "that the ID is a valid ID of a channel in the server"

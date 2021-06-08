@@ -23,7 +23,7 @@ import pygame
 from pgbot import common, db
 from pgbot.commands.admin.emsudo import EmsudoCommand
 from pgbot.commands.admin.sudo import SudoCommand
-from pgbot.commands.base import BotException, CodeBlock, String, add_group
+from pgbot.commands.base import BotException, CodeBlock, String, add_group, no_dm
 from pgbot.commands.user import UserCommand
 from pgbot.utils import embed_utils, utils
 
@@ -237,14 +237,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         origin: discord.TextChannel,
         quantity: int,
         mode: Optional[int] = 0,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         before: Optional[Union[discord.Message, datetime.datetime]] = None,
         after: Optional[Union[discord.Message, datetime.datetime]] = None,
         around: Optional[Union[discord.Message, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
-        divider_str: String = String("-" * 56),
+        divider: String = String("-" * 56),
         group_by_author: bool = True,
         oldest_first: bool = True,
         same_channel: bool = False,
@@ -253,7 +253,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->type Admin commands
         ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
         [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
-        [divider_str=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
+        [divider=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -278,14 +278,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         archive_header_msg = None
         archive_header_msg_embed = None
 
-        if origin == destination and not same_channel:
+        if origin.id == destination.id and not same_channel:
             raise BotException(
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
         tz_utc = datetime.timezone.utc
         datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
-        divider_str = divider_str.string
+        divider_str = divider.string
 
         if isinstance(before, discord.Message) and before.channel.id != origin.id:
             raise BotException(
@@ -548,9 +548,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if show_header and not raw:
             archive_header_msg_embed.set_footer(text="Status: Complete")
-            await embed_utils.replace_from_dict(
-                archive_header_msg, archive_header_msg_embed.to_dict()
-            )
+            if archive_header_msg is not None:
+                await embed_utils.replace_from_dict(
+                    archive_header_msg, archive_header_msg_embed.to_dict()
+                )
 
         await embed_utils.edit_field_from_dict(
             self.response_msg,
@@ -860,12 +861,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await self.response_msg.delete(delay=10.0 if idx_count > 1 else 0.0)
 
+    @no_dm
     @add_group("poll")
     async def cmd_poll(
         self,
         desc: String,
         *emojis: String,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
@@ -916,6 +918,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             desc, *emojis, _destination=destination, _admin_embed_dict=embed_dict
         )
 
+    @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
         self,

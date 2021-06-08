@@ -34,7 +34,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo(
         self,
         *datas: Union[discord.Message, String],
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         from_attachment: bool = True,
     ):
         """
@@ -386,7 +386,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo_get(
         self,
         *msgs: discord.Message,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         as_attachment: bool = False,
         attachments: bool = True,
         embeds: bool = True,
@@ -633,10 +633,7 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
-        prefix = prefix.string
-        sep = sep.string
-        suffix = suffix.string
-
+        output_str = prefix.string
         destination = self.channel
 
         if pinned:
@@ -720,10 +717,12 @@ class SudoCommand(BaseCommand):
 
         if urls:
             output_filename = "message_urls.txt"
-            output_str = prefix + sep.join(msg.jump_url for msg in messages) + suffix
+            output_str += sep.string.join(msg.jump_url for msg in messages)
         else:
             output_filename = "message_ids.txt"
-            output_str = prefix + sep.join(str(msg.id) for msg in messages) + suffix
+            output_str += sep.string.join(str(msg.id) for msg in messages)
+
+        output_str += suffix.string
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
@@ -733,7 +732,7 @@ class SudoCommand(BaseCommand):
     async def cmd_sudo_clone(
         self,
         *msgs: discord.Message,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         embeds: bool = True,
         attachments: bool = True,
         as_spoiler: bool = False,
