@@ -1576,7 +1576,9 @@ class EmsudoCommand(BaseCommand):
                         1,
                     )
                 embed_dict = embed.to_dict()
-                pop_embed_dict = embed_utils.copy_embed_dict(embed_dict)  # circumvents discord.py bug
+                pop_embed_dict = embed_utils.copy_embed_dict(
+                    embed_dict
+                )  # circumvents discord.py bug
                 corrected_embed_dict = None
                 corrected_pop_embed_dict = None
                 if embed_mask_dict:
@@ -1597,7 +1599,7 @@ class EmsudoCommand(BaseCommand):
                                 embed_dict,
                                 embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
-                        
+
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
@@ -1607,9 +1609,7 @@ class EmsudoCommand(BaseCommand):
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
 
-                        embed_utils.recursive_delete(
-                            pop_embed_dict, embed_mask_dict
-                        )
+                        embed_utils.recursive_delete(pop_embed_dict, embed_mask_dict)
 
                         if "fields" in pop_embed_dict:
                             field_dict = pop_embed_dict["fields"]
@@ -1625,9 +1625,7 @@ class EmsudoCommand(BaseCommand):
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
-                        embed_utils.recursive_delete(
-                            pop_embed_dict, embed_mask_dict
-                        )
+                        embed_utils.recursive_delete(pop_embed_dict, embed_mask_dict)
                 else:
                     if not system_attributes:
                         embed_utils.recursive_delete(
@@ -1647,14 +1645,18 @@ class EmsudoCommand(BaseCommand):
                     )
 
                 if pop and pop_embed_dict and embed_mask_dict:
-                    #corrected_pop_embed_dict = embed_utils.clean_embed_dict(
+                    # corrected_pop_embed_dict = embed_utils.clean_embed_dict(
                     #    embed_utils.copy_embed_dict(pop_embed_dict)
-                    #)
-                    corrected_pop_embed_dict = embed_utils.copy_embed_dict(pop_embed_dict)
+                    # )
+                    corrected_pop_embed_dict = embed_utils.copy_embed_dict(
+                        pop_embed_dict
+                    )
 
                 if mode == 0 or mode == 2:
-                    if mode == 2 and corrected_embed_dict and embed_utils.validate_embed_dict(
-                        corrected_embed_dict
+                    if (
+                        mode == 2
+                        and corrected_embed_dict
+                        and embed_utils.validate_embed_dict(corrected_embed_dict)
                     ):
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
@@ -1704,7 +1706,9 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 elif mode == 1:
-                    if corrected_embed_dict and embed_utils.validate_embed_dict(corrected_embed_dict):
+                    if corrected_embed_dict and embed_utils.validate_embed_dict(
+                        corrected_embed_dict
+                    ):
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1715,8 +1719,9 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 if pop and corrected_pop_embed_dict:
-                    await msg.edit(embed=discord.Embed.from_dict(corrected_pop_embed_dict))
-                    
+                    await msg.edit(
+                        embed=discord.Embed.from_dict(corrected_pop_embed_dict)
+                    )
 
             if embed_count > 2:
                 await embed_utils.edit_field_from_dict(

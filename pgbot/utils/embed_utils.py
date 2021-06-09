@@ -411,7 +411,7 @@ def handle_embed_dict_timestamp(embed_dict: dict):
     return embed_dict
 
 
-def copy_embed_dict(embed_dict: dict): 
+def copy_embed_dict(embed_dict: dict):
     # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
         k: embed_dict[k].copy() if isinstance(embed_dict[k], dict) else embed_dict[k]
@@ -920,7 +920,7 @@ def validate_embed_dict(embed_dict: dict):
 
     Args:
         embed_dict: The target embed dictionary
-    
+
     Returns:
         A boolean indicating the validity of the
         given input dictionary.
