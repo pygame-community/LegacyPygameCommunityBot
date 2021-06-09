@@ -1412,6 +1412,7 @@ class EmsudoCommand(BaseCommand):
         mode: int = 0,
         destination: Optional[discord.TextChannel] = None,
         output_name: String = String("(add a title by editing this embed)"),
+        pop: bool = False,
         system_attributes: bool = False,
         as_json: bool = True,
         as_python: bool = False,
@@ -1575,25 +1576,44 @@ class EmsudoCommand(BaseCommand):
                         1,
                     )
                 embed_dict = embed.to_dict()
-
+                pop_embed_dict = embed_utils.copy_embed_dict(embed_dict)  # circumvents discord.py bug
+                corrected_embed_dict = None
+                corrected_pop_embed_dict = None
                 if embed_mask_dict:
                     if "fields" in embed_dict and "fields" in embed_mask_dict:
                         field_list = embed_dict["fields"]
                         embed_dict["fields"] = {
                             str(i): field_list[i] for i in range(len(field_list))
                         }
+                        field_list = pop_embed_dict["fields"]
+                        pop_embed_dict["fields"] = {
+                            str(i): field_list[i] for i in range(len(field_list))
+                        }
+
+                        print("pop_embed_dict (before filter):", pop_embed_dict)
 
                         if not system_attributes:
                             embed_utils.recursive_delete(
                                 embed_dict,
                                 embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
+                        
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
                         if "fields" in embed_dict:
                             field_dict = embed_dict["fields"]
                             embed_dict["fields"] = [
+                                field_dict[i] for i in sorted(field_dict.keys())
+                            ]
+
+                        embed_utils.recursive_delete(
+                            pop_embed_dict, embed_mask_dict
+                        )
+
+                        if "fields" in pop_embed_dict:
+                            field_dict = pop_embed_dict["fields"]
+                            pop_embed_dict["fields"] = [
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
                     else:
@@ -1605,19 +1625,20 @@ class EmsudoCommand(BaseCommand):
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
+                        embed_utils.recursive_delete(
+                            pop_embed_dict, embed_mask_dict
+                        )
                 else:
                     if not system_attributes:
                         embed_utils.recursive_delete(
                             embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                         )
 
-                corrected_embed_dict = embed_utils.copy_embed_dict(embed_dict)
-                if embed_dict:
+                if embed_dict and embed_mask_dict:
                     if mode == 1 or mode == 2:
                         corrected_embed_dict = embed_utils.clean_embed_dict(
-                            corrected_embed_dict
+                            embed_utils.copy_embed_dict(embed_dict)
                         )
-
                 else:
                     raise BotException(
                         "Cannot execute command:",
@@ -1625,8 +1646,14 @@ class EmsudoCommand(BaseCommand):
                         " the pattern of the given embed attribute filter string.",
                     )
 
+                if pop and pop_embed_dict and embed_mask_dict:
+                    #corrected_pop_embed_dict = embed_utils.clean_embed_dict(
+                    #    embed_utils.copy_embed_dict(pop_embed_dict)
+                    #)
+                    corrected_pop_embed_dict = embed_utils.copy_embed_dict(pop_embed_dict)
+
                 if mode == 0 or mode == 2:
-                    if mode == 2 and embed_utils.validate_embed_dict(
+                    if mode == 2 and corrected_embed_dict and embed_utils.validate_embed_dict(
                         corrected_embed_dict
                     ):
                         await destination.send(
@@ -1677,15 +1704,19 @@ class EmsudoCommand(BaseCommand):
                         )
 
                 elif mode == 1:
-                    if embed_utils.validate_embed_dict(corrected_embed_dict):
+                    if corrected_embed_dict and embed_utils.validate_embed_dict(corrected_embed_dict):
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
                     else:
                         raise BotException(
-                            "Invalid Embed data",
+                            "Invalid embed creation data",
                             "Could not generate a valid embed from the extracted embed attributes.",
                         )
+
+                if pop and corrected_pop_embed_dict:
+                    await msg.edit(embed=discord.Embed.from_dict(corrected_pop_embed_dict))
+                    
 
             if embed_count > 2:
                 await embed_utils.edit_field_from_dict(

@@ -210,7 +210,7 @@ def recursive_delete(
     """
     if inverse:
         for k, v in tuple(old_dict.items()):
-            if isinstance(v, dict):
+            if isinstance(v, Mapping):
                 lower_update_dict = None
                 if isinstance(update_dict, dict):
                     lower_update_dict = update_dict.get(k, {})
@@ -411,7 +411,8 @@ def handle_embed_dict_timestamp(embed_dict: dict):
     return embed_dict
 
 
-def copy_embed_dict(embed_dict: dict):
+def copy_embed_dict(embed_dict: dict): 
+    # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
         k: embed_dict[k].copy() if isinstance(embed_dict[k], dict) else embed_dict[k]
         for k in embed_dict
@@ -913,10 +914,21 @@ def create_as_dict(
 
 
 def validate_embed_dict(embed_dict: dict):
+    """
+    Checks if an embed dictionary can produce
+    a viable embed on Discord.
+
+    Args:
+        embed_dict: The target embed dictionary
+    
+    Returns:
+        A boolean indicating the validity of the
+        given input dictionary.
+
+    """
     if not embed_dict:
         return False
 
-    valid = True
     embed_dict_len = len(embed_dict)
     for k in tuple(embed_dict.keys()):
         if (
@@ -925,8 +937,7 @@ def validate_embed_dict(embed_dict: dict):
             or embed_dict_len == 2
             and ("color" in embed_dict and "timestamp" in embed_dict)
         ):
-            valid = False
-            break
+            return False
         elif (
             not embed_dict[k]
             or k == "footer"
@@ -936,8 +947,7 @@ def validate_embed_dict(embed_dict: dict):
             or k in ("thumbnail", "image")
             and "url" not in embed_dict[k]
         ):
-            valid = False
-            break
+            return False
 
         elif k == "fields":
             for i in range(len(embed_dict["fields"])):
@@ -945,21 +955,18 @@ def validate_embed_dict(embed_dict: dict):
                     "name" not in embed_dict["fields"][i]
                     or "value" not in embed_dict["fields"][i]
                 ):
-                    valid = False
-                    break
+                    return False
 
         elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
-            valid = False
-            break
+            return False
 
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])
             except ValueError:
-                valid = False
-                break
+                return False
 
-    return valid
+    return True
 
 
 def clean_embed_dict(embed_dict: dict):
