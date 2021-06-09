@@ -698,7 +698,6 @@ class SudoCommand(BaseCommand):
             )
 
         try:
-            await self.invoke_msg.delete()
             await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass
@@ -1072,7 +1071,6 @@ class SudoCommand(BaseCommand):
             )
 
         try:
-            await self.invoke_msg.delete()
             await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass
