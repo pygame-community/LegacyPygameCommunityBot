@@ -36,7 +36,7 @@ class EmsudoCommand(BaseCommand):
     @add_group("emsudo")
     async def cmd_emsudo(
         self,
-        *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
+        *datas: Union[discord.Message, CodeBlock, String, bool],
         destination: Optional[common.Channel] = None,
     ):
         """
@@ -844,7 +844,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_edit(
         self,
         msg: discord.Message,
-        *datas: Optional[Union[discord.Message, CodeBlock, String, bool]],
+        *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
         inner_fields: bool = False,
     ):
@@ -1628,7 +1628,7 @@ class EmsudoCommand(BaseCommand):
                         await destination.send(
                             embed=embed_utils.create(
                                 author_name="Embed Data",
-                                title=(output_name.string)
+                                title=output_name.string
                                 if len(msgs) < 2
                                 else "(add a title by editing this embed)",
                                 fields=(

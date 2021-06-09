@@ -6,6 +6,8 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines several functions used to get the pie chart of the bot's emotions
 """
 
+from __future__ import annotations
+
 import math
 import os
 

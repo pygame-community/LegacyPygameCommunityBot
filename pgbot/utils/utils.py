@@ -114,7 +114,7 @@ def format_long_time(
     """
     Formats time into string, which is of the order of a few days
     """
-    result = []
+    result: list[str] = []
 
     for name, count in unit_data:
         value = seconds // count
@@ -155,7 +155,7 @@ def split_long_message(message: str, limit: int = 2000):
     """
     Splits message string by 2000 characters with safe newline splitting
     """
-    split_output = []
+    split_output: list[str] = []
     lines = message.split("\n")
     temp = ""
 

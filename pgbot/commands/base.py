@@ -14,7 +14,7 @@ import asyncio
 import datetime
 import inspect
 import random
-from typing import Any, Optional, Union
+from typing import Any, Generator, Optional, Union
 
 import discord
 import pygame
@@ -106,9 +106,10 @@ class String:
             char = string[cnt]
             cnt += 1
             if char == "\\":
+                # got a backslash, handle escapes
                 char = string[cnt]
                 cnt += 1
-                if char.lower() in ["x", "u"]:
+                if char.lower() in ["x", "u"]:  # these are unicode escapes
                     if char.lower() == "x":
                         n = 2
                     else:
@@ -124,6 +125,7 @@ class String:
                             "Invalid unicode escape character in string",
                         )
                 elif char in ESCAPES:
+                    # general escapes
                     newstr += ESCAPES[char]
                 else:
                     raise BotException(
@@ -176,6 +178,125 @@ def add_group(groupname: str, *subcmds: str):
     return inner
 
 
+# declare a dict of anno names, and the respective messages to give on error
+ANNO_AND_ERROR = {
+    "str": "a normal argument",
+    "CodeBlock": "a codeblock, code surrounded in code ticks",
+    "String": 'a string, surrounded in quotes (`""`)',
+    "datetime.datetime": "a string, that denotes datetime in iso format",
+    "datetime": "a string, that denotes datetime in iso format",
+    "range": "a range specifier",
+    "pygame.Color": "a color, represented by the color name or the hex RGB value",
+    "common.Channel": "an ID or mention of a Discord server text channel",
+    "discord.Object": "a generic Discord Object with an ID",
+    "discord.Role": "an ID or mention of a Discord server Role",
+    "discord.Member": "an ID or mention of a Discord server member",
+    "discord.User": "an ID or mention of a Discord user",
+    "discord.TextChannel": "an ID or mention of a Discord server text channel",
+    "discord.Guild": "an ID of a discord guild (server)",
+    "discord.Message": (
+        "a message ID, or a 'channel_id/message_id' combo, or a [link](#) to a message"
+    ),
+}
+
+
+def split_anno(anno: str):
+    """
+    Helper to split an anno string based on commas, but does not split commas
+    within nested annotations. Returns a generator of strings.
+    """
+    nest_cnt = 0
+    prev = 0
+    for cnt, char in enumerate(anno):
+        if char == "[":
+            nest_cnt += 1
+        elif char == "]":
+            nest_cnt -= 1
+        elif char == "," and not nest_cnt:
+            ret = anno[prev:cnt].strip()
+            prev = cnt + 1
+            if ret:
+                yield ret
+
+    ret = anno[prev:].strip()
+    if ret and not nest_cnt:
+        yield ret
+
+
+def strip_optional_anno(anno: str):
+    """
+    Helper to strip "Optional" anno
+    """
+    anno = anno.strip()
+    if anno.startswith("Optional[") and anno.endswith("]"):
+        # call recursively to split "Optional" chains
+        return strip_optional_anno(anno[9:-1])
+
+    return anno
+
+
+def split_union_anno(anno: str):
+    """
+    Helper to split a 'Union' annotation. Returns a generator of strings.
+    """
+    anno = strip_optional_anno(anno)
+    if anno.startswith("Union[") and anno.endswith("]"):
+        for anno in split_anno(anno[6:-1]):
+            # use recursive splits to "flatten" unions
+            yield from split_union_anno(anno)
+    else:
+        yield anno
+
+
+def split_tuple_anno(anno: str):
+    """
+    Helper to split a 'tuple' annotation.
+    Returns None if anno is not a valid tuple annotation
+    """
+    anno = anno.strip()
+    if anno == "tuple":
+        anno = "tuple[Any, ...]"
+
+    if anno.startswith("tuple[") and anno.endswith("]"):
+        return list(split_anno(anno[6:-1]))
+
+
+def get_anno_error(anno: str) -> str:
+    """
+    Get error message to display to user when user has passed invalid arg
+    """
+    union_errors = []
+    for subanno in split_union_anno(anno):
+        tupled = split_tuple_anno(subanno)
+        if tupled is None:
+            union_errors.append(ANNO_AND_ERROR.get(subanno, f"of type `{subanno}`"))
+            continue
+
+        # handle tuple
+        if len(tupled) == 2 and tupled[1] == "...":
+            # variable length tuple
+            union_errors.append(
+                f"a tuple, where each element is {get_anno_error(tupled[0])}"
+            )
+
+        else:
+            ret = "a tuple, where "
+            for i, j in enumerate(map(get_anno_error, tupled)):
+                ret += f"element at index {i} is {j}; "
+
+            union_errors.append(ret[:-2])  # strip last two chars, which is "; "
+
+    msg = ""
+    if len(union_errors) != 1:
+        # display error messages of all the union-ed annos
+        msg += "either "
+        msg += ", or ".join(union_errors[:-1])
+        msg += ", or atleast, "
+
+    msg += union_errors[-1]
+    return msg
+
+
 class BaseCommand:
     """
     Base class for all commands. Defines the main utilities like argument
@@ -223,14 +344,17 @@ class BaseCommand:
 
         # page number, useful for PagedEmbed commands. 0 by deafult, gets modified
         # in pg!refresh command when invoked
-        self.page = 0
+        self.page: int = 0
 
-    def split_args(self, split_str: str, split_flags: list[tuple[str, Any, tuple]]):
+    def split_args(
+        self, split_str: str, split_flags: list[tuple[str, Any, tuple]]
+    ) -> Generator[Union[str, String, CodeBlock], None, None]:
         """
         Utility function to do the first parsing step to recursively split
         string based on seperators
         """
         if not split_flags:
+            # we are done with splitting, and got the node at the final depth
             yield split_str
             return
 
@@ -249,6 +373,7 @@ class BaseCommand:
                 prev = ""
 
             else:
+                # recursively split the remaining substrings
                 yield from self.split_args(substr, split_flags.copy())
 
             cnt += 1
@@ -261,67 +386,152 @@ class BaseCommand:
 
     async def parse_args(self):
         """
-        Custom parser for handling arguments. The work of this function is to
-        parse the source string of the command into the command name, a list
-        of arguments and a dictionary of keyword arguments. The list of
-        arguments must only contain strings, 'CodeBlock' objects and 'String'
-        objects.
+        Custom parser for handling arguments. This function parses the source
+        string of the command into the command name, a list of arguments and a
+        dictionary of keyword arguments. Arguments must only contain strings,
+        'CodeBlock' objects, 'String' objects and tuples.
         """
-        args = []
-        kwargs = {}
+        args: list[Any] = []
+        kwargs: dict[str, Any] = {}
+        temp_list: Optional[list] = None  # used to store the temporary tuple
+
         kwstart = False  # used to make sure that keyword args come after args
         prevkey = None  # temporarily store previous key name
         for arg in self.split_args(self.cmd_str, SPLIT_FLAGS.copy()):
             if not isinstance(arg, str):
-                if prevkey is not None:
-                    # had a keyword, flush arg into keyword
-                    kwargs[prevkey] = arg
-                    prevkey = None
+                if temp_list is not None:
+                    # already in a tuple, flush arg into that
+                    temp_list.append(arg)
                 else:
-                    args.append(arg)
+                    if prevkey is not None:
+                        # had a keyword, flush arg into keyword
+                        kwargs[prevkey] = arg
+                        prevkey = None
+                    else:
+                        if kwstart:
+                            raise KwargError(
+                                "Keyword arguments cannot come before positional "
+                                "arguments"
+                            )
+                        args.append(arg)
                 continue
 
-            arg = arg.replace(" =", "=")
+            # ignore any commas in the source string, just treat them as spaces
+            arg = arg.replace(" =", "=").replace(",", " ")
             for substr in arg.split():
                 substr = substr.strip()
                 if not substr:
                     continue
 
-                a, b, c = substr.partition("=")  # split based on = for keyword
-                if not b:
-                    # current token is not a keyword
+                splits = substr.split("=")
+                if len(splits) == 2:
+                    # got first keyword, mark a flag so that future arguments are
+                    # all keywords
+                    kwstart = True
                     if prevkey:
+                        # we had a prevkey, and also got a new keyword in the
+                        # same iteration
+                        raise KwargError("Did not specify argument after '='")
+
+                    prevkey = splits[0]
+                    if not prevkey:
+                        raise KwargError("Missing keyword before '=' symbol")
+
+                    if temp_list is not None:
+                        raise KwargError("Keyword arguments cannot come inside a tuple")
+
+                    # underscores not allowed at start of keyword names here
+                    if not prevkey[0].isalpha():
+                        raise KwargError("Keyword argument must begin with an alphabet")
+
+                    substr = splits[1]
+                    if not substr:
+                        continue
+
+                    if substr.startswith("("):
+                        temp_list = []
+                        substr = substr[1:]
+                        if not substr:
+                            continue
+
+                    if substr.endswith(")"):
+                        if temp_list is None:
+                            raise ArgError("Invalid closing tuple bracket")
+
+                        substr = substr[:-1]
+                        if substr:
+                            temp_list.append(substr)
+
+                        kwargs[prevkey] = tuple(temp_list)
+                        temp_list = prevkey = None
+
+                    else:
+                        if temp_list is not None:
+                            temp_list.append(substr)
+                        else:
+                            kwargs[prevkey] = substr
+                            prevkey = None
+
+                elif len(splits) == 1:
+                    # current substring is not a keyword (does not have =)
+                    if substr.startswith("("):
+                        if temp_list is not None:
+                            raise ArgError("Nested tuples are not supported (yet)")
+
+                        temp_list = []
+                        substr = substr[1:]
+                        if not substr:
+                            continue
+
+                    if substr.endswith(")"):
+                        if temp_list is None:
+                            raise ArgError("Invalid closing tuple bracket")
+
+                        substr = substr[:-1]
+                        if substr:
+                            temp_list.append(substr)
+
+                        if prevkey:
+                            kwargs[prevkey] = tuple(temp_list)
+                            prevkey = None
+                        else:
+                            if kwstart:
+                                raise KwargError(
+                                    "Keyword arguments cannot come before positional "
+                                    "arguments"
+                                )
+                            args.append(tuple(temp_list))
+
+                        temp_list = None
+                        continue
+
+                    if temp_list is not None:
+                        # already in a tuple, flush substring into that
+                        temp_list.append(substr)
+                        continue
+
+                    if prevkey is not None:
                         # flush into keyword
-                        kwargs[prevkey] = a
+                        kwargs[prevkey] = substr
                         prevkey = None
                         continue
 
                     if kwstart:
                         raise KwargError(
-                            "Keyword arguments cannot come before positional "
-                            + "arguments"
+                            "Keyword arguments cannot come before positional arguments"
                         )
+
                     args.append(substr)
-
                 else:
-                    kwstart = True
-                    if prevkey:
-                        raise KwargError("Did not specify argument after '='")
-
-                    if not a:
-                        raise KwargError("Missing keyword before '=' symbol")
-
-                    # underscores not allowed at start of keyword names here
-                    if not a[0].isalpha():
-                        raise KwargError("Keyword argument must begin with an alphabet")
-
-                    if c:
-                        kwargs[a] = c
-                    else:
-                        prevkey = a
+                    raise KwargError(
+                        "Invalid number of '=' in keyword argument expression"
+                    )
 
         if prevkey:
             raise KwargError("Did not specify argument after '='")
+
+        if temp_list is not None:
+            raise ArgError("Tuple was not closed")
 
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
@@ -344,14 +554,18 @@ class BaseCommand:
 
         return cmd, args, kwargs
 
-    async def _cast_arg(self, anno: str, arg: Union[CodeBlock, String, str]):
+    async def cast_basic_arg(self, anno: str, arg: Any) -> Any:
         """
         Helper to cast an argument to the type mentioned by the parameter
-        annotation
-        Raises ValueErrors on failure to cast arguments
+        annotation. This casts an argument in its "basic" form, where both argument
+        and typehint are "simple", that does not contain stuff like Union[...],
+        tuple[...], etc.
+        Raises ValueError on failure to cast arguments
         """
+        if isinstance(arg, tuple):
+            raise ValueError()
 
-        if isinstance(arg, CodeBlock):
+        elif isinstance(arg, CodeBlock):
             if anno == "CodeBlock":
                 return arg
             raise ValueError()
@@ -371,8 +585,8 @@ class BaseCommand:
             if anno in ["CodeBlock", "String", "datetime.datetime", "datetime"]:
                 raise ValueError()
 
-            elif anno == "pygame.Color":
-                return pygame.Color(arg)
+            elif anno == "str":
+                return arg
 
             elif anno == "bool":
                 return arg == "1" or arg.lower() == "true"
@@ -384,14 +598,17 @@ class BaseCommand:
                 return float(arg)
 
             elif anno == "range":
-                if not arg.startswith("range(") or not arg.endswith(")"):
+                if not arg.startswith("[") or not arg.endswith("]"):
                     raise ValueError()
 
-                splits = [int(i.strip()) for i in arg[6:-1].split(",")]
+                splits = [int(i.strip()) for i in arg[6:-1].split(":")]
 
                 if splits and len(splits) <= 3:
                     return range(*splits)
                 raise ValueError()
+
+            elif anno == "pygame.Color":
+                return pygame.Color(arg)
 
             elif anno == "discord.Object":
                 # Generic discord API Object that has an ID
@@ -424,6 +641,15 @@ class BaseCommand:
 
                 return chan
 
+            elif anno == "discord.Guild":
+                guild = common.bot.get_guild(utils.filter_id(arg))
+                if guild is None:
+                    try:
+                        guild = await common.bot.fetch_guild(utils.filter_id(arg))
+                    except discord.HTTPException:
+                        raise ValueError()
+                return guild
+
             elif anno == "discord.Message":
                 arg = utils.format_discord_link(arg, self.guild.id)
 
@@ -443,9 +669,6 @@ class BaseCommand:
                 except discord.NotFound:
                     raise ValueError()
 
-            elif anno == "str":
-                return arg
-
             raise BotException(
                 "Internal Bot error", f"Invalid type annotation `{anno}`"
             )
@@ -456,92 +679,82 @@ class BaseCommand:
 
     async def cast_arg(
         self,
-        param: inspect.Parameter,
-        arg: Union[CodeBlock, String, str],
+        param: Union[inspect.Parameter, str],
+        arg: Any,
         cmd: str,
         key: Optional[str] = None,
-    ):
+        convert_error: bool = True,
+    ) -> Any:
         """
         Cast an argument to the type mentioned by the paramenter annotation
         """
-        anno = param.annotation
-        if anno in ["Any", param.empty]:
+        if isinstance(param, str):
+            anno = param
+        else:
+            if param.annotation == param.empty:
+                # no checking/converting, do a direct return
+                return arg
+
+            anno: str = param.annotation
+
+        if anno == "Any":
             # no checking/converting, do a direct return
             return arg
 
-        if anno.startswith("Optional[") and anno.endswith("]"):
-            # got Optional[...] typehint, this is semantic, and has no parser effects,
-            # so ignore
-            anno = anno[9:-1].strip()
+        union_annos = list(split_union_anno(anno))
+        last_anno = union_annos.pop()
 
+        for union_anno in union_annos:
+            # we are in a union argument type, try to cast to each element one
+            # by one
+            try:
+                return await self.cast_arg(union_anno, arg, cmd, key, False)
+            except ValueError:
+                pass
+
+        tupled = split_tuple_anno(last_anno)
         try:
-            if anno.startswith("Union[") and anno.endswith("]"):
-                # got a union typehint, try to cast to each type one by one,
-                # fail at last
-                annos = [i.strip() for i in anno[6:-1].split(",")]
-                for cnt, anno in enumerate(annos):
-                    try:
-                        return await self._cast_arg(anno, arg)
-                    except ValueError:
-                        if cnt == len(annos) - 1:
-                            raise
+            if tupled is None:
+                # got a basic argument
+                return await self.cast_basic_arg(last_anno, arg)
 
-            return await self._cast_arg(anno, arg)
+            if not isinstance(arg, tuple):
+                raise ValueError()
+
+            if len(tupled) == 2 and tupled[1] == "...":
+                # variable length tuple
+                return tuple(
+                    [
+                        await self.cast_arg(tupled[0], elem, cmd, key, False)
+                        for elem in arg
+                    ]
+                )
+
+            # fixed length tuple
+            if len(tupled) != len(arg):
+                raise ValueError()
+
+            return tuple(
+                [
+                    await self.cast_arg(i, j, cmd, key, False)
+                    for i, j in zip(tupled, arg)
+                ]
+            )
 
         except ValueError:
-            # handle errors, give more user-friendly error messages
-            if anno == "CodeBlock":
-                typ = "a codeblock, please surround your code in codeblocks, and "
-                " add a correct language specifier (e.g. \\`\\`\\`python) when needed"
+            if not convert_error:
+                # Just forward value error in this case
+                raise
 
-            elif anno == "String":
-                typ = 'a string, please surround it in quotes (`""`)'
-
-            elif anno in ["datetime.datetime", "datetime"]:
-                typ = "a string, that denotes datetime in iso format"
-
-            elif anno == "range":
-                typ = "a range specifier, matching the `range` object in Python 3.x"
-
-            elif anno == "discord.Object":
-                typ = "a generic Discord Object with an ID"
-
-            elif anno == "discord.Role":
-                typ = "An ID or mention of a Discord server/guild Role"
-
-            elif anno == "discord.Member":
-                typ = (
-                    "an ID or mention of a Discord server/guild member or a mention to them.\nPlease make sure "
-                    "that the ID is a valid ID of a member in the server"
-                )
-
-            elif anno == "discord.User":
-                typ = "an ID or mention of a Discord user"
-
-            elif anno in ("discord.TextChannel", "common.Channel"):
-                typ = (
-                    "an ID or mention of a Discord server/guild text channel\nPlease make sure "
-                    "that the ID is a valid ID of a channel in the server"
-                )
-
-            elif anno == "discord.Message":
-                typ = (
-                    "a message ID, or a 'channel_id/message_id' combo, or a "
-                    "[link](#) to a message\nPlease make sure that the given "
-                    "ID(s) is/are valid and that the message is accessible to "
-                    "the bot"
-                )
-
-            elif anno == "pygame.Color":
-                typ = "a color, represented by the color name or a hex RGB value"
-
+            if key is None and not isinstance(param, str):
+                if param.kind == param.VAR_POSITIONAL:
+                    key = "Each of the variable arguments"
+                else:
+                    key = "Each of the variable keyword arguments"
             else:
-                typ = f"of type `{param.annotation}`"
+                key = f"The argument `{key}`"
 
-            if key is None:
-                raise ArgError(f"The variable args/kwargs must be {typ}", cmd)
-
-            raise ArgError(f"The argument `{key}` must be {typ}", cmd)
+            raise ArgError(f"{key} must be {get_anno_error(anno)}.", cmd)
 
     async def call_cmd(self):
         """
@@ -552,7 +765,6 @@ class BaseCommand:
         before calling the actual function. Relies on argument annotations to
         cast args/kwargs to the types required by the function
         """
-        args: list[Any]
         cmd, args, kwargs = await self.parse_args()
 
         # command has been blacklisted from running
@@ -639,7 +851,11 @@ class BaseCommand:
             param = sig.parameters[key]
             iskw = False
 
-            if i == 0 and "discord.Message" in param.annotation:
+            if (
+                i == 0
+                and isinstance(param.annotation, str)
+                and "discord.Message" in param.annotation
+            ):
                 # first arg is expected to be a Message object, handle reply into
                 # the first argument
                 if self.invoke_msg.reference is not None:
@@ -724,8 +940,11 @@ class BaseCommand:
         except ArgError as exc:
             emotion.update("confused", random.randint(2, 6))
             title = "Invalid Arguments!"
-            msg, cmd = exc.args
-            msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
+            if len(exc.args) == 2:
+                msg, cmd = exc.args
+                msg += f"\nFor help on this bot command, do `pg!help {cmd}`"
+            else:
+                msg = exc.args[0]
             excname = "Argument Error"
 
         except KwargError as exc:

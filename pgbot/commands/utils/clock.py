@@ -6,6 +6,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines user_clock function, to get image of the clock
 """
 
+from __future__ import annotations
 
 import math
 import os

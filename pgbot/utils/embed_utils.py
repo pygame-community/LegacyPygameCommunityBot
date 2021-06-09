@@ -6,6 +6,8 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some important embed related utility functions.
 """
 
+from __future__ import annotations
+
 
 import asyncio
 import datetime

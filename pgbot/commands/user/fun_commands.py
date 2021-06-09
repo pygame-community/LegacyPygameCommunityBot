@@ -159,7 +159,6 @@ class FunCommand(BaseCommand):
 
         emotion.update("happy", random.randint(10, 15))
 
-    @fun_command
     async def cmd_vibecheck(self):
         """
         ->type Play With Me :snake:
