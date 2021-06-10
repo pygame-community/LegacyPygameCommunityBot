@@ -575,6 +575,12 @@ class SudoCommand(BaseCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
+        if not msgs:
+            raise BotException(
+                f"Invalid arguments!",
+                "No messages given as input.",
+            )
+
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
@@ -989,6 +995,12 @@ class SudoCommand(BaseCommand):
 
             if not i % 50:
                 await asyncio.sleep(0)
+
+        if not msgs:
+            raise BotException(
+                f"Invalid arguments!",
+                "No messages given as input.",
+            )
 
         load_embed = embed_utils.create(
             title=f"Your command is being processed:",

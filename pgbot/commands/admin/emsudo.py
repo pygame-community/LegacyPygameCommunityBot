@@ -37,11 +37,12 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo(
         self,
         *datas: Union[discord.Message, CodeBlock, String, bool],
+        content: String = String(""),
         destination: Optional[common.Channel] = None,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo <*datas> [destination=]
+        ->signature pg!emsudo <*datas> [content=""] [destination=]
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments
@@ -61,6 +62,9 @@ class EmsudoCommand(BaseCommand):
             > If `*datas` is omitted or the only given input is `False`,
             > assume that embed data (Python or JSON embed data)
             > is contained in the invocation message.
+
+            `content: (String) = ""`
+            > The text content of each output message.
 
             `destination: (Channel) =`
             > A destination channel to send the generated outputs to.
@@ -189,6 +193,7 @@ class EmsudoCommand(BaseCommand):
         \\`\\`\\`
         -----
         """
+        content = content.string
 
         if destination is None:
             destination = self.channel
@@ -406,7 +411,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                     1,
                 )
-            await destination.send(embed=embed)
+            await destination.send(content=content, embed=embed)
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
@@ -891,7 +896,7 @@ class EmsudoCommand(BaseCommand):
 
             `inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
-            > embed (if present) also will be able to be
+            > embed (if present) will be able to be
             > individually modified by the given input
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
@@ -902,7 +907,8 @@ class EmsudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
 
-        ->example command pg!emsudo_edit 987654321987654321 "Lol only the embed description changed"
+        ->example command
+        pg!emsudo edit 987654321987654321 "Lol only the embed description changed"
         pg!emsudo edit 987654321987654321 123456789012345678 251613726327333621
         pg!emsudo edit 987654321987654321
         \\`\\`\\`json
@@ -1189,6 +1195,189 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
+    @add_group("emsudo", "sum")
+    async def cmd_emsudo_sum(
+        self,
+        *msgs: discord.Message,
+        destination: Optional[common.Channel] = None,
+        inner_fields: bool = False,
+        in_place: bool = False,
+        remove_inputs: bool = False,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo sum <*messages> [destination=] [inner_fields=False] [in_place=False]
+        ->description Combine several embeds into one
+        ->extended description
+        Create a new embed representing the sum of all embed messages
+        given as input.
+
+        __Args__:
+            `*messages: (Messages)`
+            > A sequence of messages whose first embeds should
+            > be merged to create a new embed
+
+            `destination: (Channel) =`
+            > A destination channel to send the generated outputs to.
+            > If omitted, the destination will be the channel where
+            > this command was invoked.
+
+            `inner_fields: (bool) = False`
+            > If set to `True`, the individual embed fields
+            > of the embeds given as input will be considered
+            > in the joining process, otherwise they will all
+            > be treated as one entity.
+
+            `add_attributes: (bool) = True`
+            > Whether the input embeds should add new
+            > attributes to the the data of the first embed
+            > given as input. If set to `False`, only the
+            > attributes present in the first embed will be changed.
+
+            `in_place: (bool) = True`
+            > If set to `True`, the first message's embed
+            > given as input will be replaced with the generated
+            > output embed.
+
+        +===+
+            `remove_inputs: (bool) = False`
+            > If set to `True`, all embeds
+            > given as input (excluding
+            > the first one if `in_place=` is `True`)
+            > will be deleted. This can be
+            > used to emulate the behavior of
+            > 'fusing' embeds with another.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command
+        pg!emsudo sum 987654321987654321 123456789012345678 251613726327333621
+        -----
+        """
+
+        if not isinstance(destination, discord.TextChannel):
+            destination = self.channel
+
+        if not utils.check_channel_permissions(
+            self.author, destination, permissions=("view_channel", "send_messages")
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command with the specified arguments.",
+            )
+
+        if not msgs:
+            raise BotException(
+                f"Invalid arguments!",
+                "No messages given as input.",
+            )
+
+        checked_channels = set()
+        for i, msg in enumerate(msgs):
+            if not msg.channel in checked_channels:
+                if not utils.check_channel_permissions(
+                    self.author,
+                    msg.channel,
+                    permissions=("view_channel",)
+                    + (("send_messages",) if remove_inputs else ()),
+                ):
+                    raise BotException(
+                        f"Not enough permissions",
+                        "You do not have enough permissions to run this command with the specified arguments.",
+                    )
+                elif not msg.embeds:
+                    raise BotException(
+                        f"Input {i}: Cannot execute command:",
+                        "No embed found in message.",
+                    )
+                else:
+                    checked_channels.add(msg.channel)
+
+            if not i % 50:
+                await asyncio.sleep(0)
+
+        load_embed = embed_utils.create(
+            title=f"Your command is being processed:",
+            fields=(("\u2800", "`...`", False),),
+        )
+
+        output_embed_dict = {}
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
+            if msg_count > 2 and not i % 3:
+                await embed_utils.edit_field_from_dict(
+                    self.response_msg,
+                    load_embed,
+                    dict(
+                        name="Processing Messages",
+                        value=f"`{i}/{msg_count}` messages processed\n"
+                        f"{(i/msg_count)*100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
+                    ),
+                    0,
+                )
+
+            await destination.trigger_typing()
+
+            embed = msg.embeds[0]
+            embed_dict = embed.to_dict()
+
+            if output_embed_dict:
+                if inner_fields and "fields" in output_embed_dict:
+                    output_embed_dict["fields"].extend(embed_dict["fields"])
+                    del embed_dict["fields"]
+
+                output_embed_dict = embed_utils.edit_dict_from_dict(
+                    output_embed_dict, embed_dict, add_attributes=True
+                )
+            else:
+                output_embed_dict = embed_dict
+
+            await asyncio.sleep(0)
+
+        if embed_utils.validate_embed_dict(output_embed_dict):
+            if in_place:
+                await msgs[0].edit(embed=discord.Embed.from_dict(output_embed_dict))
+            else:
+                await destination.send(embed=discord.Embed.from_dict(output_embed_dict))
+        else:
+            raise BotException(
+                "Ivalid embed sum operation",
+                "Could not successfully generate"
+                " an embed from the data of those"
+                " given as input.",
+            )
+
+        if remove_inputs:
+            for j, msg in enumerate(msgs[1:] if in_place else msgs):
+                if msg.content:
+                    await msg.edit(embed=None)
+                else:
+                    await msg.delete()
+
+                if not j % 5:
+                    await asyncio.sleep(0)
+
+        if msg_count > 2:
+            await embed_utils.edit_field_from_dict(
+                self.response_msg,
+                load_embed,
+                dict(
+                    name="Processing Completed",
+                    value=f"`{msg_count}/{msg_count}` messages processed\n"
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                ),
+                0,
+            )
+
+        try:
+            await self.invoke_msg.delete()
+            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+        except discord.NotFound:
+            pass
+
     @add_group("emsudo", "swap")
     async def cmd_emsudo_swap(
         self,
@@ -1277,7 +1466,7 @@ class EmsudoCommand(BaseCommand):
 
             `inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
-            > embed (if present) also will be able to be
+            > embed (if present) will be able to be
             > individually modified by the given input
             > embed data. If `False`, all embed fields will
             > be modified as a single embed attribute.
@@ -1421,7 +1610,8 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=] [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
+        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=]
+        [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
 
         ->description Get the embed data of a message
         ->extended description
@@ -1498,7 +1688,9 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if not msg.channel in checked_channels:
                 if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel",)
+                    self.author,
+                    msg.channel,
+                    permissions=("view_channel",) + (("send_messages",) if pop else ()),
                 ):
                     raise BotException(
                         f"Not enough permissions",
@@ -1765,7 +1957,7 @@ class EmsudoCommand(BaseCommand):
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
     ):
         """
         ->type emsudo commands
@@ -1780,7 +1972,7 @@ class EmsudoCommand(BaseCommand):
         __Args__:
             `*messages: (Message)`
             > A sequence of discord messages whose embeds should
-            > be serialized into a JSON or Python format.
+            > be modified.
 
             `a|attributes: (String) =`
             > A string containing the attributes to pop out
