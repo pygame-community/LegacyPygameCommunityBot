@@ -77,6 +77,7 @@ class EmsudoCommand(BaseCommand):
         +===+
 
         Syntax for a condensed embed data list (only works inside of Discord):
+
         \\`\\`\\`py
         ```py
         # Condensed embed data list syntax. String elements that are empty "" will be ignored.
@@ -104,9 +105,9 @@ class EmsudoCommand(BaseCommand):
         ]
         ```
         \\`\\`\\`
-
         +===+
         Syntax for a Python dictionary embed:
+
         \\`\\`\\`py
         ```py
         {
@@ -1413,6 +1414,7 @@ class EmsudoCommand(BaseCommand):
         destination: Optional[discord.TextChannel] = None,
         output_name: String = String("(add a title by editing this embed)"),
         pop: bool = False,
+        copy_color_with_pop: bool = False, 
         system_attributes: bool = False,
         as_json: bool = True,
         as_python: bool = False,
@@ -1464,7 +1466,8 @@ class EmsudoCommand(BaseCommand):
             > Whether to include Discord generated embed
             > attributes in the serialized output.
 
-            `as_python (bool) = False``as_json (bool) = True`
+            `as_python (bool) = False`
+            `as_json (bool) = True`
             > If `as_python=` is `True` send `.py` output,
             > else if `as_json=` is `True` send `.json` output,
             > otherwise send `.txt` output.
@@ -1576,23 +1579,21 @@ class EmsudoCommand(BaseCommand):
                         1,
                     )
                 embed_dict = embed.to_dict()
-                pop_embed_dict = embed_utils.copy_embed_dict(
+                pop_target_embed_dict = embed_utils.copy_embed_dict(
                     embed_dict
                 )  # circumvents discord.py bug
                 corrected_embed_dict = None
-                corrected_pop_embed_dict = None
+                corrected_pop_target_embed_dict = None
                 if embed_mask_dict:
                     if "fields" in embed_dict and "fields" in embed_mask_dict:
                         field_list = embed_dict["fields"]
                         embed_dict["fields"] = {
                             str(i): field_list[i] for i in range(len(field_list))
                         }
-                        field_list = pop_embed_dict["fields"]
-                        pop_embed_dict["fields"] = {
+                        field_list = pop_target_embed_dict["fields"]
+                        pop_target_embed_dict["fields"] = {
                             str(i): field_list[i] for i in range(len(field_list))
                         }
-
-                        print("pop_embed_dict (before filter):", pop_embed_dict)
 
                         if not system_attributes:
                             embed_utils.recursive_delete(
@@ -1609,11 +1610,11 @@ class EmsudoCommand(BaseCommand):
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
 
-                        embed_utils.recursive_delete(pop_embed_dict, embed_mask_dict)
+                        embed_utils.recursive_delete(pop_target_embed_dict, embed_mask_dict)
 
-                        if "fields" in pop_embed_dict:
-                            field_dict = pop_embed_dict["fields"]
-                            pop_embed_dict["fields"] = [
+                        if "fields" in pop_target_embed_dict:
+                            field_dict = pop_target_embed_dict["fields"]
+                            pop_target_embed_dict["fields"] = [
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
                     else:
@@ -1625,7 +1626,7 @@ class EmsudoCommand(BaseCommand):
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
-                        embed_utils.recursive_delete(pop_embed_dict, embed_mask_dict)
+                        embed_utils.recursive_delete(pop_target_embed_dict, embed_mask_dict)
                 else:
                     if not system_attributes:
                         embed_utils.recursive_delete(
@@ -1644,12 +1645,9 @@ class EmsudoCommand(BaseCommand):
                         " the pattern of the given embed attribute filter string.",
                     )
 
-                if pop and pop_embed_dict and embed_mask_dict:
-                    # corrected_pop_embed_dict = embed_utils.clean_embed_dict(
-                    #    embed_utils.copy_embed_dict(pop_embed_dict)
-                    # )
-                    corrected_pop_embed_dict = embed_utils.copy_embed_dict(
-                        pop_embed_dict
+                if pop and pop_target_embed_dict and embed_mask_dict:
+                    corrected_pop_target_embed_dict = embed_utils.clean_embed_dict(
+                       embed_utils.copy_embed_dict(pop_target_embed_dict)
                     )
 
                 if mode == 0 or mode == 2:
@@ -1658,6 +1656,8 @@ class EmsudoCommand(BaseCommand):
                         and corrected_embed_dict
                         and embed_utils.validate_embed_dict(corrected_embed_dict)
                     ):
+                        if pop and copy_color_with_pop and embed.color:
+                            corrected_embed_dict["color"] = embed.color.value 
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1709,6 +1709,8 @@ class EmsudoCommand(BaseCommand):
                     if corrected_embed_dict and embed_utils.validate_embed_dict(
                         corrected_embed_dict
                     ):
+                        if pop and copy_color_with_pop and embed.color:
+                            corrected_embed_dict["color"] = embed.color.value 
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1718,9 +1720,9 @@ class EmsudoCommand(BaseCommand):
                             "Could not generate a valid embed from the extracted embed attributes.",
                         )
 
-                if pop and corrected_pop_embed_dict:
+                if pop and corrected_pop_target_embed_dict:
                     await msg.edit(
-                        embed=discord.Embed.from_dict(corrected_pop_embed_dict)
+                        embed=discord.Embed.from_dict(corrected_pop_target_embed_dict)
                     )
 
             if embed_count > 2:
@@ -1753,6 +1755,72 @@ class EmsudoCommand(BaseCommand):
             await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
+    
+    @add_group("emsudo", "pop")
+    async def cmd_emsudo_pop(
+        self,
+        *msgs: discord.Message,
+        a: String = String(""),
+        attributes: String = String(""),
+        destination: Optional[discord.TextChannel] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo pop <*messages> [a|attributes=""]
+
+        ->description 'pop' out a part of an embed into a separate one 
+        ->extended description
+        Remove attributes of the embed of a message from the given arguments and send those as
+        another embed to a given destination channel. If this is not possible
+        a BotException will be raised.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose embeds should
+            > be serialized into a JSON or Python format.
+
+            `a|attributes: (String) =`
+            > A string containing the attributes to pop out
+            > of the target embeds. If those attributes
+            > have attributes themselves
+            > (e.g. `author`, `fields`, `footer`),
+            > then those can be specified using the dot `.`
+            > operator inside this string.
+            > If omitted or empty, the attributes of
+            > all target message embeds will be serialized.
+            > Embed attributes that become invalid
+            > upon their extraction (missing required sub-attributes, etc.)
+            > will still be included in the serialized output,
+            > but that output might not be enough
+            > to successfully generate embeds anymore.
+            > In some cases, popping embed attributes might
+            > not be possible, thereby leading to a BotException.
+
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        ->example command
+        pg!emsudo pop 98765432198765444321
+        pg!emsudo pop 123456789123456789/98765432198765444321 a="description fields.0 fields.(3,7) author"
+        pg!emsudo pop 123456789123456789/98765432198765444321 attributes="fields thumbnail"
+        -----
+        """
+
+        attribs = (
+            a.string if a.string else attributes.string if attributes.string else ""
+        )
+
+        if not attribs:
+            raise BotException(
+                "Invalid embed attribute string!",
+                "No embed attributes specified."
+            )
+        
+        await self.cmd_emsudo_get(*msgs, a=a, mode=1, destination=destination, pop=True, copy_color_with_pop=True)
+
 
     @add_group("emsudo", "add", "field")
     async def cmd_emsudo_add_field(
