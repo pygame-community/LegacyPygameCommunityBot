@@ -145,7 +145,7 @@ async def member_join(member: discord.Member):
                 + f"{common.roles_channel.mention}{end}"
             )
             # new member joined, yaayyy, snek is happi
-            emotion.update("happy", 3)
+            emotion.update("happy", 20)
             return
 
 
@@ -203,7 +203,7 @@ async def handle_message(msg: discord.Message):
         if len(common.cmd_logs) > 100:
             del common.cmd_logs[list(common.cmd_logs.keys())[0]]
 
-        emotion.update("bored", -15)
+        emotion.update("bored", -10)
 
     elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
@@ -217,7 +217,7 @@ async def handle_message(msg: discord.Message):
         #         "good." if emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
         #         allowed_mentions=no_mentions,
         #     )
-        #     emotion.update("happy", -4)
+        #     emotion.update("happy", -8)
         if common.GENERIC:
             return
 

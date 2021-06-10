@@ -410,19 +410,20 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_poll(
         self,
         desc: String,
-        *emojis: String,
+        *emojis: tuple[str, String],
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*args]
+        ->signature pg!poll <description> [*emojis]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
-        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The args must series of two element tuples, first element being emoji,
+        and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
-        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
         destination = self.channel if _destination is None else _destination
@@ -455,7 +456,7 @@ class UserCommand(FunCommand, HelpCommand):
         base_embed_dict.update(_admin_embed_dict)
 
         if emojis:
-            if len(emojis) <= 3 or len(emojis) % 2:
+            if len(emojis) == 1:
                 raise BotException(
                     "Invalid arguments for emojis.",
                     "Please add at least 2 emojis with 2 descriptions."
@@ -465,17 +466,14 @@ class UserCommand(FunCommand, HelpCommand):
                 )
 
             base_embed_dict["fields"] = []
-            for i, substr in enumerate(emojis):
-                if not i % 2:
-                    base_embed_dict["fields"].append(
-                        {
-                            "name": substr.string.strip(),
-                            "value": common.ZERO_SPACE,
-                            "inline": True,
-                        }
-                    )
-                else:
-                    base_embed_dict["fields"][i // 2]["value"] = substr.string.strip()
+            for emoji, desc in emojis:
+                base_embed_dict["fields"].append(
+                    {
+                        "name": emoji.strip(),
+                        "value": desc.string.strip(),
+                        "inline": True,
+                    }
+                )
 
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)

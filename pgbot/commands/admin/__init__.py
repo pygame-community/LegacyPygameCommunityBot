@@ -35,6 +35,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     Base class for all admin commands
     """
 
+    async def cmd_test_parser(self, *args, **kwargs):
+        """
+        ->skip
+        """
+        await embed_utils.replace(
+            self.response_msg,
+            "Here are the args and kwargs you passed",
+            utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
+        )
+
     @add_group("db")
     async def cmd_db(self):
         """
@@ -240,7 +250,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
-        mode: Optional[int] = 0,
+        mode: int = 0,
         destination: Optional[common.Channel] = None,
         before: Optional[Union[discord.Message, datetime.datetime]] = None,
         after: Optional[Union[discord.Message, datetime.datetime]] = None,
@@ -884,7 +894,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_poll(
         self,
         desc: String,
-        *emojis: String,
+        *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
@@ -897,10 +907,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
         ->description Start a poll.
         ->extended description
-        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The args must series of two element tuples, first element being emoji,
+        and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         Additionally admins can specify some keyword arguments to improve the appearance of the poll
-        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
         if not isinstance(destination, discord.TextChannel):
