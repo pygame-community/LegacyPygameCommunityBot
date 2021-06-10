@@ -1792,11 +1792,9 @@ class EmsudoCommand(BaseCommand):
             > operator inside this string.
             > If omitted or empty, the attributes of
             > all target message embeds will be serialized.
-            > Embed attributes that become invalid
-            > upon their extraction (missing required sub-attributes, etc.)
-            > will still be included in the serialized output,
-            > but that output might not be enough
-            > to successfully generate embeds anymore.
+            > Embed data that becomes invalid
+            > upon being popped out might not be enough
+            > to successfully represent an embed anymore.
             > In some cases, popping embed attributes might
             > not be possible, thereby leading to a BotException.
 
