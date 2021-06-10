@@ -1199,7 +1199,7 @@ class EmsudoCommand(BaseCommand):
     async def cmd_emsudo_sum(
         self,
         *msgs: discord.Message,
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
         inner_fields: bool = False,
         in_place: bool = False,
         remove_inputs: bool = False,
@@ -1954,7 +1954,7 @@ class EmsudoCommand(BaseCommand):
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
-        destination: Optional[discord.TextChannel] = None,
+        destination: Optional[common.Channel] = None,
     ):
         """
         ->type emsudo commands
