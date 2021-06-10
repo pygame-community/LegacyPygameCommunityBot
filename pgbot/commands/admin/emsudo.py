@@ -33,6 +33,168 @@ class EmsudoCommand(BaseCommand):
     Base class to handle emsudo commands.
     """
 
+    @add_group("emsudo")
+    async def cmd_emsudo(
+        self,
+        *datas: Union[discord.Message, CodeBlock, String, bool],
+        content: String = String(""),
+        destination: Optional[common.Channel] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo data <*datas> [content=""] [destination=]
+        ->description Send embeds through the bot
+        ->extended description
+        Generate embeds from the given arguments
+        and send them with a message
+        to the given destination channel.
+
+        __Args__:
+            `*datas: (Message|CodeBlock|String|bool)`
+            > A sequence of data to create embeds from.
+            > Each can be a discord message whose first attachment contains
+            > JSON or Python embed data, a string
+            > (will only affect a embed description field),
+            > a code block containing JSON embed data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed data as a
+            > dictionary, or a condensed embed data list.
+            > If `*datas` is omitted or the only given input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+            `content: (String) = ""`
+            > The text content of each output message.
+
+            `destination: (Channel) =`
+            > A destination channel to send the generated outputs to.
+            > If omitted, the destination will be the channel where
+            > this command was invoked.
+
+        __Returns__:
+            > One or more generated embeds based on the given input.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        +===+
+
+        Syntax for a condensed embed data list (only works inside of Discord):
+
+        \\`\\`\\`py
+        ```py
+        # Condensed embed data list syntax. String elements that are empty "" will be ignored.
+        # The list must contain at least one argument.
+        [
+            'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'author.icon_url'),   # embed author
+
+            'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
+
+            '''desc.''' or ('''desc.''', 'image.url'),  # embed description, image
+
+            0xabcdef, # or -1 for default embed color
+
+            [   # embed fields
+            '''
+            <field.name|
+            ...field.value....
+            |field.inline>
+            ''',
+            ],
+
+            'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
+
+            datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
+        ]
+        ```
+        \\`\\`\\`
+        +===+
+        Syntax for a Python dictionary embed:
+
+        \\`\\`\\`py
+        ```py
+        {
+            "title": "title `(<= 256 chars.)`",
+            "description":  "this supports [named links](https://discordapp.com) on top of the previously shown subset of markdown."
+            "An embed cannot exceed the character count of 6000. (<=2048 chars)",
+            "url": "https://discordapp.com",
+            "color": 0xABCDEF,    # must be between [0, 0xFFFFFF)
+            "timestamp": "1970-01-01T00:00:00.000",  # please use UTC
+            "footer": {
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+            "text": "footer text `(<= 256 chars)` (No markdown support here sorry)"
+            },
+            "thumbnail": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "image": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "author": {
+            "name": "author name `(<= 256 chars)` (No markdown support here sorry)",
+            "url": "https://discordapp.com",
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "fields": [
+            {
+                "name": ":thinking:",
+                "value": "some of these properties have certain limits..."
+            },
+            {
+                "name": ":scream: `(<=256 chars)`",
+                "value": "try exceeding some of them! (spoiler: embed fields can't contain more than 1024 chars.)"
+            },
+            {
+                "name": ":rolling_eyes:",
+                "value": "Discord will show you a big fat error. :smirk:"
+            },
+            {
+                "name": " :snake: ",
+                "value": "these last two",
+                "inline": True
+            },
+            {
+                "name": " :pensive: ",
+                "value": "are inline fields",
+                "inline": True
+            }
+            ]
+        }
+        ```
+        \\`\\`\\`
+
+        Note: The JSON embed syntax is very similar, however multiline strings,
+        and hexadecimal integers and other Python features aren't supported,
+        since they would be seen as invalid JSON syntax.
+        +===+
+
+        ->example command
+        pg!emsudo data "This is one embed" "This is another"
+        pg!emsudo data 987654321987654321
+        pg!emsudo data
+        \\`\\`\\`py
+        (
+            "Author",
+            "Title",
+            "desc."
+        )
+        \\`\\`\\`
+        pg!emsudo data
+        \\`\\`\\`json
+        {
+            "title": "An Embed",
+            "description": "Lol",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "footer text"
+                }
+        }
+        \\`\\`\\`
+        -----
+        """
+        await self.cmd_emsudo(*datas, content=content, destination=destination)
+    
     @add_group("emsudo", "data")
     async def cmd_emsudo_data(
         self,
