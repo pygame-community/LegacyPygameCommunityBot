@@ -1206,7 +1206,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo sum <*messages> [destination=] [inner_fields=False] [in_place=False]
+        ->signature pg!emsudo sum <*messages> [destination=] [inner_fields=False] [in_place=False] [remove_inputs=False]
         ->description Combine several embeds into one
         ->extended description
         Create a new embed representing the sum of all embed messages
@@ -1246,7 +1246,7 @@ class EmsudoCommand(BaseCommand):
             > the first one if `in_place=` is `True`)
             > will be deleted. This can be
             > used to emulate the behavior of
-            > 'fusing' embeds with another.
+            > 'pushing' one or more embeds into another.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
@@ -1352,13 +1352,14 @@ class EmsudoCommand(BaseCommand):
 
         if remove_inputs:
             for j, msg in enumerate(msgs[1:] if in_place else msgs):
-                if msg.content:
-                    await msg.edit(embed=None)
-                else:
-                    await msg.delete()
+                if msg.author.id == self.author.id:
+                    if msg.content:
+                        await msg.edit(embed=None)
+                    else:
+                        await msg.delete()
 
-                if not j % 5:
-                    await asyncio.sleep(0)
+                    if not j % 5:
+                        await asyncio.sleep(0)
 
         if msg_count > 2:
             await embed_utils.edit_field_from_dict(
