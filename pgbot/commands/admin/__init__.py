@@ -1120,7 +1120,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         """
         if guild is None:
-            guild = self.invoke_msg.guild
+            guild = self.guild
 
         description = (
             f"Server Name: `{guild.name}`\n"
