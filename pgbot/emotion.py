@@ -16,7 +16,7 @@ from pgbot.utils import embed_utils, utils
 EMOTION_CAPS = {
     "happy": (-100, 100),
     "anger": (0, 100),
-    "bored": (-1000, 1000),
+    "bored": (-100, 100),
     "confused": (0, 100),
 }
 

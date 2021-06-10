@@ -79,7 +79,7 @@ class SudoCommand(BaseCommand):
         Implement pg!sudo, for admins to send messages via the bot
         """
 
-        if not isinstance(destination, discord.TextChannel):
+        if destination is None:
             destination = self.channel
 
         if not utils.check_channel_permissions(
@@ -613,7 +613,7 @@ class SudoCommand(BaseCommand):
                     ]
 
             if info:
-                info_embed = embed_utils.get_msg_info_embed(msg)
+                info_embed = embed_utils.get_msg_info_embed(msg, author_info)
                 info_embed.set_author(name="Message data & info")
                 info_embed.title = ""
                 info_embed.description = f"```\n{msg.content}```\n\u2800"
