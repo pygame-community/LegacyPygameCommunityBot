@@ -193,8 +193,8 @@ class EmsudoCommand(BaseCommand):
         \\`\\`\\`
         -----
         """
-        await self.cmd_emsudo(*datas, content=content, destination=destination)
-    
+        await self.cmd_emsudo_data(*datas, content=content, destination=destination)
+
     @add_group("emsudo", "data")
     async def cmd_emsudo_data(
         self,
