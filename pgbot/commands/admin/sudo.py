@@ -995,7 +995,7 @@ class SudoCommand(BaseCommand):
 
             if not i % 50:
                 await asyncio.sleep(0)
-        
+
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",

@@ -1243,7 +1243,7 @@ class EmsudoCommand(BaseCommand):
             `remove_inputs: (bool) = False`
             > If set to `True`, all embeds
             > given as input (excluding
-            > the first one if `in_place=` is `True`) 
+            > the first one if `in_place=` is `True`)
             > will be deleted. This can be
             > used to emulate the behavior of
             > 'fusing' embeds with another.
@@ -1267,13 +1267,13 @@ class EmsudoCommand(BaseCommand):
                 f"Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
-        
+
         if not msgs:
             raise BotException(
                 f"Invalid arguments!",
                 "No messages given as input.",
             )
-        
+
         checked_channels = set()
         for i, msg in enumerate(msgs):
             if not msg.channel in checked_channels:
@@ -1299,7 +1299,7 @@ class EmsudoCommand(BaseCommand):
             title=f"Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
-        
+
         output_embed_dict = {}
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
@@ -1317,7 +1317,7 @@ class EmsudoCommand(BaseCommand):
                 )
 
             await destination.trigger_typing()
-            
+
             embed = msg.embeds[0]
             embed_dict = embed.to_dict()
 
@@ -1326,12 +1326,13 @@ class EmsudoCommand(BaseCommand):
                     output_embed_dict["fields"].extend(embed_dict["fields"])
                     del embed_dict["fields"]
 
-                output_embed_dict = embed_utils.edit_dict_from_dict(output_embed_dict, embed_dict, add_attributes=True)
+                output_embed_dict = embed_utils.edit_dict_from_dict(
+                    output_embed_dict, embed_dict, add_attributes=True
+                )
             else:
                 output_embed_dict = embed_dict
 
             await asyncio.sleep(0)
-
 
         if embed_utils.validate_embed_dict(output_embed_dict):
             if in_place:
@@ -1352,10 +1353,10 @@ class EmsudoCommand(BaseCommand):
                     await msg.edit(embed=None)
                 else:
                     await msg.delete()
-                
+
                 if not j % 5:
                     await asyncio.sleep(0)
-        
+
         if msg_count > 2:
             await embed_utils.edit_field_from_dict(
                 self.response_msg,
@@ -1684,7 +1685,9 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if not msg.channel in checked_channels:
                 if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel",)+(("send_messages",) if pop else ())
+                    self.author,
+                    msg.channel,
+                    permissions=("view_channel",) + (("send_messages",) if pop else ()),
                 ):
                     raise BotException(
                         f"Not enough permissions",
