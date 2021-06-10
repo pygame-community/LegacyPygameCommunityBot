@@ -121,7 +121,7 @@ async def routine():
     if common.guild is not None:
         await handle_reminders()
 
-    if random.randint(0, 3) == 0:
+    if random.randint(0, 4) == 0:
         emotion.update("bored", 1)
 
     await common.bot.change_presence(
