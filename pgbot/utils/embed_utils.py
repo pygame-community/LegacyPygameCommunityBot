@@ -335,18 +335,14 @@ def create_embed_mask_dict(
 
                 elif i == 1 and attr[i - 1] == "fields" and not attr[i].isnumeric():
                     if attr[i].startswith("(") and attr[i].endswith(")"):
-                        if not attr[i].startswith("(") and not attr[i].endswith(
-                            ")"
-                        ):
+                        if not attr[i].startswith("(") and not attr[i].endswith(")"):
                             raise ValueError(
                                 "Invalid embed attribute filter string!"
                                 " Embed field ranges should only contain integers"
                                 " and should be structured like this: "
                                 "`fields.(start, stop[, step]).attribute`",
                             )
-                        field_str_range_list = [
-                            v for v in attr[i][1:][:-1].split(",")
-                        ]
+                        field_str_range_list = [v for v in attr[i][1:][:-1].split(",")]
                         field_range_list = []
 
                         for j in range(len(field_str_range_list)):
@@ -355,9 +351,7 @@ def create_embed_mask_dict(
                                 or len(field_str_range_list[j]) > 1
                                 and field_str_range_list[j][1:].isnumeric()
                             ):
-                                field_range_list.append(
-                                    int(field_str_range_list[j])
-                                )
+                                field_range_list.append(int(field_str_range_list[j]))
                             else:
                                 raise ValueError(
                                     "Invalid embed attribute filter string!"
@@ -392,9 +386,7 @@ def create_embed_mask_dict(
                                 }
                             else:
                                 for sub_attr in sub_attrs:
-                                    embed_mask_dict["fields"][str_idx][
-                                        sub_attr
-                                    ] = None
+                                    embed_mask_dict["fields"][str_idx][sub_attr] = None
 
                         break
 
@@ -426,7 +418,7 @@ def create_embed_mask_dict(
                             " `fields.(start,stop[,step]).attribute`. Note that embed"
                             " field ranges cannot contain whitespace.",
                         )
-            
+
                 elif i == len(attr) - 1:
                     if attr[i] not in bottom_dict:
                         bottom_dict[attr[i]] = None
