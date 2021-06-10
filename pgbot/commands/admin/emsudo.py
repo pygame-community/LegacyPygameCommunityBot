@@ -1278,7 +1278,10 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if not msg.channel in checked_channels:
                 if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel",)
+                    self.author,
+                    msg.channel,
+                    permissions=("view_channel",)
+                    + (("send_messages",) if remove_inputs else ()),
                 ):
                     raise BotException(
                         f"Not enough permissions",
