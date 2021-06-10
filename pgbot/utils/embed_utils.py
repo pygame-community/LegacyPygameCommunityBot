@@ -332,7 +332,11 @@ def create_embed_mask_dict(
                         bottom_dict = embed_mask_dict[attr[i]]
 
                 elif i == 1 and attr[i - 1] == "fields":
-                    if not attr[i].isnumeric() or len(attr[i]) > 1 and attr[i][1:].isnumeric():
+                    if (
+                        not attr[i].isnumeric()
+                        or len(attr[i]) > 1
+                        and attr[i][1:].isnumeric()
+                    ):
                         if "(" in attr[i] and ")" in attr[i]:
                             if not attr[i].startswith("(") and not attr[i].endswith(
                                 ")"
@@ -344,13 +348,16 @@ def create_embed_mask_dict(
                                     "`fields.(start, stop[, step]).attribute`",
                                 )
                             field_str_range_list = [
-                                v for v in attr[i][1:][:-1]
-                                .split(",")
+                                v for v in attr[i][1:][:-1].split(",")
                             ]
                             field_range_list = []
 
                             for j in range(len(field_str_range_list)):
-                                if field_str_range_list[j].isnumeric() or len(field_str_range_list[j]) > 1 and field_str_range_list[j][1:].isnumeric():
+                                if (
+                                    field_str_range_list[j].isnumeric()
+                                    or len(field_str_range_list[j]) > 1
+                                    and field_str_range_list[j][1:].isnumeric()
+                                ):
                                     field_range_list.append(
                                         int(field_str_range_list[j])
                                     )
@@ -373,7 +380,7 @@ def create_embed_mask_dict(
                                 raise ValueError(
                                     f"`{attr[-1]}` is not a valid embed (sub-)attribute name!",
                                 )
-                            
+
                             field_range = range(*field_range_list)
                             if not field_range:
                                 raise ValueError(

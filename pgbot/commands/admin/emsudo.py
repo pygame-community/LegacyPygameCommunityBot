@@ -1414,7 +1414,7 @@ class EmsudoCommand(BaseCommand):
         destination: Optional[discord.TextChannel] = None,
         output_name: String = String("(add a title by editing this embed)"),
         pop: bool = False,
-        copy_color_with_pop: bool = False, 
+        copy_color_with_pop: bool = False,
         system_attributes: bool = False,
         as_json: bool = True,
         as_python: bool = False,
@@ -1610,7 +1610,9 @@ class EmsudoCommand(BaseCommand):
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
 
-                        embed_utils.recursive_delete(pop_target_embed_dict, embed_mask_dict)
+                        embed_utils.recursive_delete(
+                            pop_target_embed_dict, embed_mask_dict
+                        )
 
                         if "fields" in pop_target_embed_dict:
                             field_dict = pop_target_embed_dict["fields"]
@@ -1626,7 +1628,9 @@ class EmsudoCommand(BaseCommand):
                         embed_utils.recursive_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
-                        embed_utils.recursive_delete(pop_target_embed_dict, embed_mask_dict)
+                        embed_utils.recursive_delete(
+                            pop_target_embed_dict, embed_mask_dict
+                        )
                 else:
                     if not system_attributes:
                         embed_utils.recursive_delete(
@@ -1647,7 +1651,7 @@ class EmsudoCommand(BaseCommand):
 
                 if pop and pop_target_embed_dict and embed_mask_dict:
                     corrected_pop_target_embed_dict = embed_utils.clean_embed_dict(
-                       embed_utils.copy_embed_dict(pop_target_embed_dict)
+                        embed_utils.copy_embed_dict(pop_target_embed_dict)
                     )
 
                 if mode == 0 or mode == 2:
@@ -1657,7 +1661,7 @@ class EmsudoCommand(BaseCommand):
                         and embed_utils.validate_embed_dict(corrected_embed_dict)
                     ):
                         if pop and copy_color_with_pop and embed.color:
-                            corrected_embed_dict["color"] = embed.color.value 
+                            corrected_embed_dict["color"] = embed.color.value
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1710,7 +1714,7 @@ class EmsudoCommand(BaseCommand):
                         corrected_embed_dict
                     ):
                         if pop and copy_color_with_pop and embed.color:
-                            corrected_embed_dict["color"] = embed.color.value 
+                            corrected_embed_dict["color"] = embed.color.value
                         await destination.send(
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
@@ -1755,7 +1759,7 @@ class EmsudoCommand(BaseCommand):
             await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
-    
+
     @add_group("emsudo", "pop")
     async def cmd_emsudo_pop(
         self,
@@ -1768,7 +1772,7 @@ class EmsudoCommand(BaseCommand):
         ->type emsudo commands
         ->signature pg!emsudo pop <*messages> [a|attributes=""]
 
-        ->description 'pop' out a part of an embed into a separate one 
+        ->description 'pop' out a part of an embed into a separate one
         ->extended description
         Remove attributes of the embed of a message from the given arguments and send those as
         another embed to a given destination channel. If this is not possible
@@ -1815,12 +1819,17 @@ class EmsudoCommand(BaseCommand):
 
         if not attribs:
             raise BotException(
-                "Invalid embed attribute string!",
-                "No embed attributes specified."
+                "Invalid embed attribute string!", "No embed attributes specified."
             )
-        
-        await self.cmd_emsudo_get(*msgs, a=a, mode=1, destination=destination, pop=True, copy_color_with_pop=True)
 
+        await self.cmd_emsudo_get(
+            *msgs,
+            a=a,
+            mode=1,
+            destination=destination,
+            pop=True,
+            copy_color_with_pop=True,
+        )
 
     @add_group("emsudo", "add", "field")
     async def cmd_emsudo_add_field(
