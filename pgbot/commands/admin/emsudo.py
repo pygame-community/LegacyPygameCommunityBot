@@ -33,7 +33,7 @@ class EmsudoCommand(BaseCommand):
     Base class to handle emsudo commands.
     """
 
-    @add_group("emsudo", "data")
+    @add_group("emsudo")
     async def cmd_emsudo(
         self,
         *datas: Union[discord.Message, CodeBlock, String, bool],
