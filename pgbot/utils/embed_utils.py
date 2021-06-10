@@ -333,105 +333,100 @@ def create_embed_mask_dict(
                     else:
                         bottom_dict = embed_mask_dict[attr[i]]
 
-                elif i == 1 and attr[i - 1] == "fields":
-                    if (
-                        not attr[i].isnumeric()
-                        or len(attr[i]) > 1
-                        and attr[i][1:].isnumeric()
-                    ):
-                        if "(" in attr[i] and ")" in attr[i]:
-                            if not attr[i].startswith("(") and not attr[i].endswith(
-                                ")"
+                elif i == 1 and attr[i - 1] == "fields" and not attr[i].isnumeric():
+                    if attr[i].startswith("(") and attr[i].endswith(")"):
+                        if not attr[i].startswith("(") and not attr[i].endswith(
+                            ")"
+                        ):
+                            raise ValueError(
+                                "Invalid embed attribute filter string!"
+                                " Embed field ranges should only contain integers"
+                                " and should be structured like this: "
+                                "`fields.(start, stop[, step]).attribute`",
+                            )
+                        field_str_range_list = [
+                            v for v in attr[i][1:][:-1].split(",")
+                        ]
+                        field_range_list = []
+
+                        for j in range(len(field_str_range_list)):
+                            if (
+                                field_str_range_list[j].isnumeric()
+                                or len(field_str_range_list[j]) > 1
+                                and field_str_range_list[j][1:].isnumeric()
                             ):
+                                field_range_list.append(
+                                    int(field_str_range_list[j])
+                                )
+                            else:
                                 raise ValueError(
                                     "Invalid embed attribute filter string!"
                                     " Embed field ranges should only contain integers"
                                     " and should be structured like this: "
                                     "`fields.(start, stop[, step]).attribute`",
                                 )
-                            field_str_range_list = [
-                                v for v in attr[i][1:][:-1].split(",")
-                            ]
-                            field_range_list = []
 
-                            for j in range(len(field_str_range_list)):
-                                if (
-                                    field_str_range_list[j].isnumeric()
-                                    or len(field_str_range_list[j]) > 1
-                                    and field_str_range_list[j][1:].isnumeric()
-                                ):
-                                    field_range_list.append(
-                                        int(field_str_range_list[j])
-                                    )
-                                else:
-                                    raise ValueError(
-                                        "Invalid embed attribute filter string!"
-                                        " Embed field ranges should only contain integers"
-                                        " and should be structured like this: "
-                                        "`fields.(start, stop[, step]).attribute`",
-                                    )
+                        sub_attrs = []
+                        if attr[i] == attr[-1]:
+                            sub_attrs.extend(("name", "value", "inline"))
 
-                            sub_attrs = []
-                            if attr[i] == attr[-1]:
-                                sub_attrs.extend(("name", "value", "inline"))
+                        elif attr[-1] in ("name", "value", "inline"):
+                            sub_attrs.append(attr[-1])
 
-                            elif attr[-1] in ("name", "value", "inline"):
-                                sub_attrs.append(attr[-1])
+                        else:
+                            raise ValueError(
+                                f"`{attr[-1]}` is not a valid embed (sub-)attribute name!",
+                            )
 
+                        field_range = range(*field_range_list)
+                        if not field_range:
+                            raise ValueError(
+                                "Invalid embed attribute filter string!"
+                                " Empty field range!",
+                            )
+                        for j in range(*field_range_list):
+                            str_idx = str(j)
+                            if str_idx not in embed_mask_dict["fields"]:
+                                embed_mask_dict["fields"][str_idx] = {
+                                    sub_attr: None for sub_attr in sub_attrs
+                                }
                             else:
-                                raise ValueError(
-                                    f"`{attr[-1]}` is not a valid embed (sub-)attribute name!",
-                                )
+                                for sub_attr in sub_attrs:
+                                    embed_mask_dict["fields"][str_idx][
+                                        sub_attr
+                                    ] = None
 
-                            field_range = range(*field_range_list)
-                            if not field_range:
-                                raise ValueError(
-                                    "Invalid embed attribute filter string!"
-                                    " Empty field range!",
-                                )
-                            for j in range(*field_range_list):
-                                str_idx = str(j)
-                                if str_idx not in embed_mask_dict["fields"]:
-                                    embed_mask_dict["fields"][str_idx] = {
-                                        sub_attr: None for sub_attr in sub_attrs
-                                    }
-                                else:
-                                    for sub_attr in sub_attrs:
+                        break
+
+                    elif attr[i] in ("name", "value", "inline"):
+                        for sub_attr in ("name", "value", "inline"):
+                            if attr[i] == sub_attr:
+                                for j in range(25):
+                                    str_idx = str(j)
+                                    if str_idx not in embed_mask_dict["fields"]:
+                                        embed_mask_dict["fields"][str_idx] = {
+                                            sub_attr: None
+                                        }
+                                    else:
                                         embed_mask_dict["fields"][str_idx][
                                             sub_attr
                                         ] = None
-
-                            break
-
-                        elif attr[i] in ("name", "value", "inline"):
-                            for sub_attr in ("name", "value", "inline"):
-                                if attr[i] == sub_attr:
-                                    for j in range(25):
-                                        str_idx = str(j)
-                                        if str_idx not in embed_mask_dict["fields"]:
-                                            embed_mask_dict["fields"][str_idx] = {
-                                                sub_attr: None
-                                            }
-                                        else:
-                                            embed_mask_dict["fields"][str_idx][
-                                                sub_attr
-                                            ] = None
-                                    break
-                            else:
-                                raise ValueError(
-                                    "Invalid embed attribute filter string!"
-                                    f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
-                                )
-                            break
+                                break
                         else:
                             raise ValueError(
                                 "Invalid embed attribute filter string!"
-                                " Embed field attibutes must be either structutred like"
-                                " `fields.0`, `fields.0.attribute`, `fields.attribute` or"
-                                " `fields.(start,stop[,step]).attribute`. Note that embed"
-                                " field ranges cannot contain whitespace.",
+                                f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
                             )
-
+                        break
+                    else:
+                        raise ValueError(
+                            "Invalid embed attribute filter string!"
+                            " Embed field attibutes must be either structutred like"
+                            " `fields.0`, `fields.0.attribute`, `fields.attribute` or"
+                            " `fields.(start,stop[,step]).attribute`. Note that embed"
+                            " field ranges cannot contain whitespace.",
+                        )
+            
                 elif i == len(attr) - 1:
                     if attr[i] not in bottom_dict:
                         bottom_dict[attr[i]] = None
