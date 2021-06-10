@@ -16,6 +16,7 @@ import sys
 import io
 
 import discord
+from discord.embeds import Embed
 import pygame
 
 from pgbot import commands, common, db, emotion, routine
@@ -174,6 +175,20 @@ async def message_delete(msg: discord.Message):
                 if common.cmd_logs[log].id == msg.id:
                     del common.cmd_logs[log]
                     return
+
+    if common.GENERIC:
+        return
+
+    if msg.channel in common.entry_channels.values():
+        history = await common.entries_discussion_channel.history(
+            around=msg.created_at
+        ).flatten()
+        message: discord.Message
+        for message in history:
+            embed: discord.embeds.Embed = message.embeds[0]
+            link = embed.fields[1].value
+            if int(link.split("/")[6][:-1]) == msg.id:
+                await message.delete()
 
 
 async def message_edit(old: discord.Message, new: discord.Message):
