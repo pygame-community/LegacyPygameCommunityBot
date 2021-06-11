@@ -168,7 +168,7 @@ class FunCommand(BaseCommand):
         ->signature pg!vibecheck
         ->description Check my mood.
         -----
-        Implement pg!vibecheck, to check if the bot is angry
+        Implement pg!vibecheck, to check the snek's emotion
         """
         db_obj = db.DiscordDB("emotions")
         all_emotions = db_obj.get({})
