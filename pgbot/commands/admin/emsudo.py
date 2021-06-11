@@ -1275,7 +1275,6 @@ class EmsudoCommand(BaseCommand):
             )
 
         msgs_perms = ("view_channel",) + (("send_messages",) if remove_inputs else ())
-
         checked_channels = set()
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
@@ -1687,7 +1686,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         checked_channels = set()
-        msgs_perms = (("view_channel",) + (("send_messages",) if pop else ()),)
+        msgs_perms = ("view_channel",) + (("send_messages",) if pop else ())
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
