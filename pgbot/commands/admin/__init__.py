@@ -171,11 +171,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
 
     async def cmd_clock(
-            self,
-            action: str = "",
-            timezone: float = 0,
-            color: Optional[pygame.Color] = None,
-            member: Optional[discord.Member] = None,
+        self,
+        action: str = "",
+        timezone: float = 0,
+        color: Optional[pygame.Color] = None,
+        member: Optional[discord.Member] = None,
     ):
         """
         ->type Get help
@@ -247,21 +247,21 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
     async def cmd_archive(
-            self,
-            origin: discord.TextChannel,
-            quantity: int,
-            mode: int = 0,
-            destination: Optional[common.Channel] = None,
-            before: Optional[Union[discord.Message, datetime.datetime]] = None,
-            after: Optional[Union[discord.Message, datetime.datetime]] = None,
-            around: Optional[Union[discord.Message, datetime.datetime]] = None,
-            raw: bool = False,
-            show_header: bool = True,
-            show_author: bool = True,
-            divider: String = String("-" * 56),
-            group_by_author: bool = True,
-            oldest_first: bool = True,
-            same_channel: bool = False,
+        self,
+        origin: discord.TextChannel,
+        quantity: int,
+        mode: int = 0,
+        destination: Optional[common.Channel] = None,
+        before: Optional[Union[discord.Message, datetime.datetime]] = None,
+        after: Optional[Union[discord.Message, datetime.datetime]] = None,
+        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        raw: bool = False,
+        show_header: bool = True,
+        show_author: bool = True,
+        divider: String = String("-" * 56),
+        group_by_author: bool = True,
+        oldest_first: bool = True,
+        same_channel: bool = False,
     ):
         """
         ->type Admin commands
@@ -276,9 +276,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             destination = self.channel
 
         if not utils.check_channel_permissions(
-                self.author,
-                origin,
-                permissions=("view_channel",),
+            self.author,
+            origin,
+            permissions=("view_channel",),
         ) or not utils.check_channel_permissions(
             self.author,
             destination,
@@ -358,14 +358,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 msg = f"On `{start_date_str} | {start_date.isoformat()}`"
             else:
                 msg = (
-                        f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
-                        + f"To\n> `{end_date_str} | {end_date.isoformat()}`"
+                    f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
+                    + f"To\n> `{end_date_str} | {end_date.isoformat()}`"
                 )
 
             archive_header_msg_embed = embed_utils.create(
                 title=f"__Archive of `#{origin.name}`__",
                 description=f"\nAn archive of **{origin.mention}** "
-                            f"({len(messages)} message(s))\n\n" + msg,
+                f"({len(messages)} message(s))\n\n" + msg,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete",
             )
@@ -381,7 +381,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
             for i, msg in enumerate(
-                    reversed(messages) if not oldest_first else messages
+                reversed(messages) if not oldest_first else messages
             ):
                 if msg_count > 2 and not i % 2:
                     await embed_utils.edit_field_from_dict(
@@ -390,8 +390,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         dict(
                             name="Archiving Messages",
                             value=f"`{i}/{msg_count}` messages archived\n"
-                                  f"{(i / msg_count) * 100:.01f}% | "
-                                  + utils.progress_bar(i / msg_count, divisions=30),
+                            f"{(i / msg_count) * 100:.01f}% | "
+                            + utils.progress_bar(i / msg_count, divisions=30),
                         ),
                         0,
                     )
@@ -413,20 +413,20 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     current_divider_str = divider_str
                     if show_author or divider_str:
                         if (
-                                group_by_author
-                                and i > 0
-                                and messages[i - 1].author == author
+                            group_by_author
+                            and i > 0
+                            and messages[i - 1].author == author
                         ):
                             # no author info or divider for mesmages next to each other sharing an author
                             current_divider_str = None
                         else:
                             author_embed = embed_utils.create(
                                 description=f"{author.mention}"
-                                            f" (`{author.name}#{author.discriminator}`)\n"
-                                            f"ID: `{author.id}`\u2800|\u2800**[View Original]({msg.jump_url})**",
+                                f" (`{author.name}#{author.discriminator}`)\n"
+                                f"ID: `{author.id}`\u2800|\u2800**[View Original]({msg.jump_url})**",
                                 color=0x36393F,
                                 footer_text="\nISO Time: "
-                                            f"{msg.created_at.replace(tzinfo=None).isoformat()}",
+                                f"{msg.created_at.replace(tzinfo=None).isoformat()}",
                                 timestamp=msg.created_at.replace(tzinfo=tz_utc),
                                 footer_icon_url=str(author.avatar_url),
                             )
@@ -446,9 +446,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         )
 
                         if (
-                                msg_embed_dict
-                                and "type" in msg_embed_dict
-                                and msg_embed_dict["type"] == "gifv"
+                            msg_embed_dict
+                            and "type" in msg_embed_dict
+                            and msg_embed_dict["type"] == "gifv"
                         ):
                             msg_embed = None
 
@@ -573,7 +573,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Successfully archived {msg_count} message(s)",
                 value=f"`{msg_count}/{msg_count}` messages archived\n"
-                      f"100% | " + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -585,11 +585,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
     @add_group("pin")
     async def cmd_pin(
-            self,
-            channel: discord.TextChannel,
-            *msgs: discord.Message,
-            delete_system_messages: bool = True,
-            flush_bottom: bool = True,
+        self,
+        channel: discord.TextChannel,
+        *msgs: discord.Message,
+        delete_system_messages: bool = True,
+        flush_bottom: bool = True,
     ):
         """
         ->type Admin commands
@@ -599,9 +599,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
         if not utils.check_channel_permissions(
-                self.author,
-                channel,
-                permissions=("view_channel", "manage_messages"),
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
                 f"Not enough permissions",
@@ -651,8 +651,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                              f"{(i / msg_count) * 100:.01f}% | "
-                              + utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i / msg_count) * 100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
                 )
@@ -677,7 +677,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
                 value=f"`{msg_count}/{msg_count}` messages pinned\n"
-                      f"100% | " + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -691,9 +691,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
     @add_group("pin", "remove")
     async def cmd_pin_remove(
-            self,
-            channel: discord.TextChannel,
-            *msgs: discord.Message,
+        self,
+        channel: discord.TextChannel,
+        *msgs: discord.Message,
     ):
         """
         ->type Admin commands
@@ -703,9 +703,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
         if not utils.check_channel_permissions(
-                self.author,
-                channel,
-                permissions=("view_channel", "manage_messages"),
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
                 f"Not enough permissions",
@@ -747,8 +747,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                              f"{(i / msg_count) * 100:.01f}% | "
-                              + utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i / msg_count) * 100:.01f}% | "
+                        + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
                 )
@@ -767,7 +767,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {msg_count} message(s)!",
                 value=f"`{msg_count}/{msg_count}` messages processed\n"
-                      f"100% | " + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -779,9 +779,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
     @add_group("pin", "remove", "at")
     async def cmd_pin_remove_at(
-            self,
-            channel: discord.TextChannel,
-            *indices: Union[int, range],
+        self,
+        channel: discord.TextChannel,
+        *indices: Union[int, range],
     ):
         """
         ->type Admin commands
@@ -791,9 +791,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
         if not utils.check_channel_permissions(
-                self.author,
-                channel,
-                permissions=("view_channel", "manage_messages"),
+            self.author,
+            channel,
+            permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
                 f"Not enough permissions",
@@ -853,8 +853,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{idx_count}` messages processed\n"
-                              f"{(i / idx_count) * 100:.01f}% | "
-                              + utils.progress_bar(i / idx_count, divisions=30),
+                        f"{(i / idx_count) * 100:.01f}% | "
+                        + utils.progress_bar(i / idx_count, divisions=30),
                     ),
                     0,
                 )
@@ -879,7 +879,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {idx_count} message(s)!",
                 value=f"`{idx_count}/{idx_count}` messages processed\n"
-                      f"100% | " + utils.progress_bar(1.0, divisions=30),
+                f"100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -892,15 +892,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     @no_dm
     @add_group("poll")
     async def cmd_poll(
-            self,
-            desc: String,
-            *emojis: tuple[str, String],
-            destination: Optional[common.Channel] = None,
-            author: Optional[String] = None,
-            color: Optional[pygame.Color] = None,
-            url: Optional[String] = None,
-            img_url: Optional[String] = None,
-            thumbnail: Optional[String] = None,
+        self,
+        desc: String,
+        *emojis: tuple[str, String],
+        destination: Optional[common.Channel] = None,
+        author: Optional[String] = None,
+        color: Optional[pygame.Color] = None,
+        url: Optional[String] = None,
+        img_url: Optional[String] = None,
+        thumbnail: Optional[String] = None,
     ):
         """
         ->type Other commands
@@ -918,9 +918,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             destination = self.channel
 
         if not utils.check_channel_permissions(
-                self.author,
-                destination,
-                permissions=("view_channel", "send_messages"),
+            self.author,
+            destination,
+            permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
                 f"Not enough permissions",
@@ -950,9 +950,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
-            self,
-            msg: discord.Message,
-            color: pygame.Color = pygame.Color("#A83232"),
+        self,
+        msg: discord.Message,
+        color: pygame.Color = pygame.Color("#A83232"),
     ):
         """
         ->type Other commands
@@ -990,9 +990,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
     @add_group("info")
     async def cmd_info(
-            self,
-            *objs: Union[discord.Message, discord.Member, discord.User],
-            author: bool = True,
+        self,
+        *objs: Union[discord.Message, discord.Member, discord.User],
+        author: bool = True,
     ):
         """
         ->type More admin commands
@@ -1027,9 +1027,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         for i, obj in enumerate(objs):
             if isinstance(obj, discord.Message):
                 if not utils.check_channel_permissions(
-                        self.author,
-                        obj.channel,
-                        permissions=("view_channel",),
+                    self.author,
+                    obj.channel,
+                    permissions=("view_channel",),
                 ):
                     raise BotException(
                         f"Not enough permissions",
@@ -1059,8 +1059,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{obj_count}` inputs processed\n"
-                              f"{(i / obj_count) * 100:.01f}% | "
-                              + utils.progress_bar(i / obj_count, divisions=30),
+                        f"{(i / obj_count) * 100:.01f}% | "
+                        + utils.progress_bar(i / obj_count, divisions=30),
                     ),
                     0,
                 )
@@ -1084,7 +1084,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 dict(
                     name="Processing Complete",
                     value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                          f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    f"100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -1130,9 +1130,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         description += f"Number of Members: `{guild.member_count}`\n"
 
-        number_of_bots = len(
-            [i for i in guild.members if i.bot]
-        )
+        number_of_bots = len([i for i in guild.members if i.bot])
         number_of_members = len(guild.members) - number_of_bots
         description += f"> - `{number_of_members}` humans\n"
         description += f"> - `{number_of_bots}` bots\n"
@@ -1186,8 +1184,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 e.args = (
                     e.args[0]
                     + "\n\nYou gave me some invalid emojis or I am unable to use them here. "
-                      "Remember the emojis have to be separated by spaces. Find help in "
-                      "`pg!help react`",
+                    "Remember the emojis have to be separated by spaces. Find help in "
+                    "`pg!help react`",
                 )
                 raise
         try:
@@ -1200,7 +1198,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
     (
-        i[len(common.CMD_FUNC_PREFIX):]
+        i[len(common.CMD_FUNC_PREFIX) :]
         for i in dir(AdminCommand)
         if i.startswith(common.CMD_FUNC_PREFIX)
     )
