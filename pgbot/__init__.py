@@ -100,7 +100,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     if entry_type != "":
         title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     else:
-        title=""
+        title = ""
 
     attachments = ""
     if msg.attachments:
@@ -183,8 +183,7 @@ async def message_delete(msg: discord.Message):
 
     if msg.channel in common.entry_channels.values():
         history = await common.entries_discussion_channel.history(
-            around=msg.created_at,
-            limit=5
+            around=msg.created_at, limit=5
         ).flatten()
         print(history[0].content)
         message: discord.Message
@@ -208,8 +207,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
             pass
     if new.channel in common.entry_channels.values():
         history = await common.entries_discussion_channel.history(
-            around=old.created_at,
-            limit=5
+            around=old.created_at, limit=5
         ).flatten()
         message: discord.Message
         for message in history:
@@ -217,11 +215,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
             link = message_embed.fields[1].value
             if int(link.split("/")[6][:-1]) == new.id:
                 title, fields = format_entries_message(new, "")
-                await embed_utils.edit_2(
-                    message, 
-                    embed=message_embed, 
-                    fields=fields
-                    )
+                await embed_utils.edit_2(message, embed=message_embed, fields=fields)
                 break
 
 
