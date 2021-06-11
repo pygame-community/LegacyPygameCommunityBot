@@ -100,7 +100,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     if entry_type != "":
         title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     else:
-        title = ""
+        title=""
 
     attachments = ""
     if msg.attachments:
@@ -182,12 +182,12 @@ async def message_delete(msg: discord.Message):
         return
 
     if msg.channel in common.entry_channels.values():
-        history = await common.entries_discussion_channel.history(
-            around=msg.created_at, limit=5
-        ).flatten()
-        print(history[0].content)
+        history = common.entries_discussion_channel.history(
+            around=msg.created_at,
+            limit=5
+        )
         message: discord.Message
-        for message in history:
+        async for message in history:
             embed: discord.embeds.Embed = message.embeds[0]
             link = embed.fields[1].value
             if int(link.split("/")[6][:-1]) == msg.id:
@@ -206,16 +206,21 @@ async def message_edit(old: discord.Message, new: discord.Message):
         except discord.HTTPException:
             pass
     if new.channel in common.entry_channels.values():
-        history = await common.entries_discussion_channel.history(
-            around=old.created_at, limit=5
-        ).flatten()
+        history = common.entries_discussion_channel.history(
+            around=old.created_at,
+            limit=5
+        )
         message: discord.Message
-        for message in history:
+        async for message in history:
             message_embed: discord.embeds.Embed = message.embeds[0]
             link = message_embed.fields[1].value
             if int(link.split("/")[6][:-1]) == new.id:
                 title, fields = format_entries_message(new, "")
-                await embed_utils.edit_2(message, embed=message_embed, fields=fields)
+                await embed_utils.edit_2(
+                    message, 
+                    embed=message_embed, 
+                    fields=fields
+                    )
                 break
 
 
