@@ -782,7 +782,11 @@ class BaseCommand:
         is_group = False
         func = None
         if cmd in self.groups:
-            for func in self.groups[cmd]:
+            # iterate over group commands sorted in descending order, so that
+            # we find the correct match
+            for func in sorted(
+                self.groups[cmd], key=lambda x: len(x.subcmds), reverse=True
+            ):
                 n = len(func.subcmds)
                 if func.subcmds == tuple(args[:n]):
                     args = args[n:]

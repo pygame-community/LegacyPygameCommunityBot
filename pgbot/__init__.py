@@ -100,7 +100,7 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     if entry_type != "":
         title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
     else:
-        title=""
+        title = ""
 
     attachments = ""
     if msg.attachments:
@@ -182,17 +182,20 @@ async def message_delete(msg: discord.Message):
         return
 
     if msg.channel in common.entry_channels.values():
-        history = common.entries_discussion_channel.history(
-            around=msg.created_at,
-            limit=5
-        )
-        message: discord.Message
-        async for message in history:
-            embed: discord.embeds.Embed = message.embeds[0]
-            link = embed.fields[1].value
-            if int(link.split("/")[6][:-1]) == msg.id:
-                await message.delete()
-                break
+        async for message in common.entries_discussion_channel.history(
+            around=msg.created_at, limit=5
+        ):
+            try:
+                link = message.embeds[0].fields[1].value
+                if not isinstance(link, str):
+                    continue
+
+                if int(link.split("/")[6][:-1]) == msg.id:
+                    await message.delete()
+                    break
+
+            except (IndexError, AttributeError):
+                pass
 
 
 async def message_edit(old: discord.Message, new: discord.Message):
@@ -205,23 +208,24 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
+
     if new.channel in common.entry_channels.values():
-        history = common.entries_discussion_channel.history(
-            around=old.created_at,
-            limit=5
-        )
-        message: discord.Message
-        async for message in history:
-            message_embed: discord.embeds.Embed = message.embeds[0]
-            link = message_embed.fields[1].value
-            if int(link.split("/")[6][:-1]) == new.id:
-                title, fields = format_entries_message(new, "")
-                await embed_utils.edit_2(
-                    message, 
-                    embed=message_embed, 
-                    fields=fields
-                    )
-                break
+        async for message in common.entries_discussion_channel.history(
+            around=old.created_at, limit=5
+        ):
+            try:
+                embed = message.embeds[0]
+                link = embed.fields[1].value
+                if not isinstance(link, str):
+                    continue
+
+                if int(link.split("/")[6][:-1]) == new.id:
+                    _, fields = format_entries_message(new, "")
+                    await embed_utils.edit_2(message, embed=embed, fields=fields)
+                    break
+
+            except (IndexError, AttributeError):
+                pass
 
 
 async def handle_message(msg: discord.Message):
