@@ -539,7 +539,7 @@ class EmsudoCommand(BaseCommand):
 
         checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author,
                     msg.channel,
@@ -1274,14 +1274,15 @@ class EmsudoCommand(BaseCommand):
                 "No messages given as input.",
             )
 
+        msgs_perms = ("view_channel",) + (("send_messages",) if remove_inputs else ())
+
         checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author,
                     msg.channel,
-                    permissions=("view_channel",)
-                    + (("send_messages",) if remove_inputs else ()),
+                    permissions=msgs_perms,
                 ):
                     raise BotException(
                         f"Not enough permissions",
@@ -1498,7 +1499,7 @@ class EmsudoCommand(BaseCommand):
 
         checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author, msg.channel, permissions=("view_channel",)
                 ):
@@ -1686,12 +1687,13 @@ class EmsudoCommand(BaseCommand):
             )
 
         checked_channels = set()
+        msgs_perms = (("view_channel",) + (("send_messages",) if pop else ()),)
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author,
                     msg.channel,
-                    permissions=("view_channel",) + (("send_messages",) if pop else ()),
+                    permissions=msgs_perms,
                 ):
                     raise BotException(
                         f"Not enough permissions",
@@ -1829,7 +1831,7 @@ class EmsudoCommand(BaseCommand):
                             embed_dict, embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
                         )
 
-                if embed_dict and embed_mask_dict:
+                if embed_dict:
                     if mode == 1 or mode == 2:
                         corrected_embed_dict = embed_utils.clean_embed_dict(
                             embed_utils.copy_embed_dict(embed_dict)
