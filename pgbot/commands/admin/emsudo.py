@@ -42,7 +42,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo <*datas> [content=""] [destination=]
+        ->signature pg!emsudo data <*datas> [content=""] [destination=]
         ->description Send embeds through the bot
         ->extended description
         Generate embeds from the given arguments
@@ -170,9 +170,9 @@ class EmsudoCommand(BaseCommand):
         +===+
 
         ->example command
-        pg!emsudo "This is one embed" "This is another"
-        pg!emsudo 987654321987654321
-        pg!emsudo
+        pg!emsudo data "This is one embed" "This is another"
+        pg!emsudo data 987654321987654321
+        pg!emsudo data
         \\`\\`\\`py
         (
             "Author",
@@ -180,7 +180,169 @@ class EmsudoCommand(BaseCommand):
             "desc."
         )
         \\`\\`\\`
-        pg!emsudo
+        pg!emsudo data
+        \\`\\`\\`json
+        {
+            "title": "An Embed",
+            "description": "Lol",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "footer text"
+                }
+        }
+        \\`\\`\\`
+        -----
+        """
+        await self.cmd_emsudo_data(*datas, content=content, destination=destination)
+
+    @add_group("emsudo", "data")
+    async def cmd_emsudo_data(
+        self,
+        *datas: Union[discord.Message, CodeBlock, String, bool],
+        content: String = String(""),
+        destination: Optional[common.Channel] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo data <*datas> [content=""] [destination=]
+        ->description Send embeds through the bot
+        ->extended description
+        Generate embeds from the given arguments
+        and send them with a message
+        to the given destination channel.
+
+        __Args__:
+            `*datas: (Message|CodeBlock|String|bool)`
+            > A sequence of data to create embeds from.
+            > Each can be a discord message whose first attachment contains
+            > JSON or Python embed data, a string
+            > (will only affect a embed description field),
+            > a code block containing JSON embed data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed data as a
+            > dictionary, or a condensed embed data list.
+            > If `*datas` is omitted or the only given input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+            `content: (String) = ""`
+            > The text content of each output message.
+
+            `destination: (Channel) =`
+            > A destination channel to send the generated outputs to.
+            > If omitted, the destination will be the channel where
+            > this command was invoked.
+
+        __Returns__:
+            > One or more generated embeds based on the given input.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        +===+
+
+        Syntax for a condensed embed data list (only works inside of Discord):
+
+        \\`\\`\\`py
+        ```py
+        # Condensed embed data list syntax. String elements that are empty "" will be ignored.
+        # The list must contain at least one argument.
+        [
+            'author.name' or ('author.name', 'author.url') or ('author.name', 'author.url', 'author.icon_url'),   # embed author
+
+            'title' or ('title', 'url') or ('title', 'url', 'thumbnail.url'),  #embed title, url, thumbnail
+
+            '''desc.''' or ('''desc.''', 'image.url'),  # embed description, image
+
+            0xabcdef, # or -1 for default embed color
+
+            [   # embed fields
+            '''
+            <field.name|
+            ...field.value....
+            |field.inline>
+            ''',
+            ],
+
+            'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
+
+            datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
+        ]
+        ```
+        \\`\\`\\`
+        +===+
+        Syntax for a Python dictionary embed:
+
+        \\`\\`\\`py
+        ```py
+        {
+            "title": "title `(<= 256 chars.)`",
+            "description":  "this supports [named links](https://discordapp.com) on top of the previously shown subset of markdown."
+            "An embed cannot exceed the character count of 6000. (<=2048 chars)",
+            "url": "https://discordapp.com",
+            "color": 0xABCDEF,    # must be between [0, 0xFFFFFF)
+            "timestamp": "1970-01-01T00:00:00.000",  # please use UTC
+            "footer": {
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+            "text": "footer text `(<= 256 chars)` (No markdown support here sorry)"
+            },
+            "thumbnail": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "image": {
+            "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "author": {
+            "name": "author name `(<= 256 chars)` (No markdown support here sorry)",
+            "url": "https://discordapp.com",
+            "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "fields": [
+            {
+                "name": ":thinking:",
+                "value": "some of these properties have certain limits..."
+            },
+            {
+                "name": ":scream: `(<=256 chars)`",
+                "value": "try exceeding some of them! (spoiler: embed fields can't contain more than 1024 chars.)"
+            },
+            {
+                "name": ":rolling_eyes:",
+                "value": "Discord will show you a big fat error. :smirk:"
+            },
+            {
+                "name": " :snake: ",
+                "value": "these last two",
+                "inline": True
+            },
+            {
+                "name": " :pensive: ",
+                "value": "are inline fields",
+                "inline": True
+            }
+            ]
+        }
+        ```
+        \\`\\`\\`
+
+        Note: The JSON embed syntax is very similar, however multiline strings,
+        and hexadecimal integers and other Python features aren't supported,
+        since they would be seen as invalid JSON syntax.
+        +===+
+
+        ->example command
+        pg!emsudo data "This is one embed" "This is another"
+        pg!emsudo data 987654321987654321
+        pg!emsudo data
+        \\`\\`\\`py
+        (
+            "Author",
+            "Title",
+            "desc."
+        )
+        \\`\\`\\`
+        pg!emsudo data
         \\`\\`\\`json
         {
             "title": "An Embed",
@@ -430,8 +592,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add")
-    async def cmd_emsudo_add(
+    @add_group("emsudo", "data", "add")
+    async def cmd_emsudo_data_add(
         self,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
@@ -439,7 +601,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo add <message> [data] [overwrite=False]
+        ->signature pg!emsudo data add <message> [data] [overwrite=False]
         ->description Add an embed through the bot
         ->extended description
         Add an embed to a message.
@@ -468,9 +630,9 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo add 987654321987654321 "A wild __Embed__ appeared!"
-        pg!emsudo add 987654321987654321 123456789012345678
-        pg!emsudo add 987654321987654321
+        pg!emsudo data add 987654321987654321 "A wild __Embed__ appeared!"
+        pg!emsudo data add 987654321987654321 123456789012345678
+        pg!emsudo data add 987654321987654321
         \\`\\`\\`json
         {
             "title": "An Embed Replacement",
@@ -485,7 +647,7 @@ class EmsudoCommand(BaseCommand):
         """
 
         if not msg.embeds or overwrite:
-            await self.cmd_emsudo_replace(msg=msg, data=data, _add=True)
+            await self.cmd_emsudo_data_replace(msg=msg, data=data, _add=True)
         else:
             raise BotException(
                 "Cannot overwrite embed!",
@@ -493,8 +655,8 @@ class EmsudoCommand(BaseCommand):
                 " `overwrite=` is set to `False`",
             )
 
-    @add_group("emsudo", "remove")
-    async def cmd_emsudo_remove(
+    @add_group("emsudo", "data", "remove")
+    async def cmd_emsudo_data_remove(
         self,
         *msgs: discord.Message,
         a: String = String(""),
@@ -502,7 +664,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo remove <*messages> [a|attributes=""]
+        ->signature pg!emsudo data remove <*messages> [a|attributes=""]
         ->description Remove embeds (or their attributes) through the bot
         ->extended description
         Remove an embed or only their specified attributes from several messages.
@@ -531,9 +693,9 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo remove 98765432198765444321
-        pg!emsudo remove 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
-        pg!emsudo remove 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
+        pg!emsudo data remove 98765432198765444321
+        pg!emsudo data remove 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo data remove 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         """
 
@@ -674,8 +836,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "replace")
-    async def cmd_emsudo_replace(
+    @add_group("emsudo", "data", "replace")
+    async def cmd_emsudo_data_replace(
         self,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
@@ -684,7 +846,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo replace <message> [data]
+        ->signature pg!emsudo data replace <message> [data]
         ->description Replace an embed through the bot
         ->extended description
         Replace the embed of a message with a new one using the given arguments.
@@ -708,9 +870,9 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo replace 987654321987654321 "Whoops the embed is boring now"
-        pg!emsudo replace 987654321987654321 123456789012345678
-        pg!emsudo replace 987654321987654321/123456789123456789
+        pg!emsudo data replace 987654321987654321 "Whoops the embed is boring now"
+        pg!emsudo data replace 987654321987654321 123456789012345678
+        pg!emsudo data replace 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
             "title": "An Embed Replacement",
@@ -855,8 +1017,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit")
-    async def cmd_emsudo_edit(
+    @add_group("emsudo", "data", "edit")
+    async def cmd_emsudo_data_edit(
         self,
         msg: discord.Message,
         *datas: Union[discord.Message, CodeBlock, String, bool],
@@ -865,7 +1027,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo edit <message> <*datas> [add_atributes=True] [inner_fields=False]
+        ->signature pg!emsudo data edit <message> <*datas> [add_atributes=True] [inner_fields=False]
         ->description Edit an embed through the bot
         ->extended description
         Edit the embed of a message using the given inputs.
@@ -908,9 +1070,9 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo edit 987654321987654321 "Lol only the embed description changed"
-        pg!emsudo edit 987654321987654321 123456789012345678 251613726327333621
-        pg!emsudo edit 987654321987654321
+        pg!emsudo data edit 987654321987654321 "Lol only the embed description changed"
+        pg!emsudo data edit 987654321987654321 123456789012345678 251613726327333621
+        pg!emsudo data edit 987654321987654321
         \\`\\`\\`json
         {
             "title": "An Embed Edit",
@@ -1206,7 +1368,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo sum <*messages> [destination=] [inner_fields=False] [in_place=False] [remove_inputs=False]
+        ->signature pg!emsudo data sum <*messages> [destination=] [inner_fields=False] [in_place=False] [remove_inputs=False]
         ->description Combine several embeds into one
         ->extended description
         Create a new embed representing the sum of all embed messages
@@ -1253,7 +1415,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo sum 987654321987654321 123456789012345678 251613726327333621
+        pg!emsudo data sum 987654321987654321 123456789012345678 251613726327333621
         -----
         """
 
@@ -1480,7 +1642,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsud clone 987654321987654321 123456789123456789
+        pg!emsudo clone 987654321987654321 123456789123456789
         https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         """
@@ -1594,8 +1756,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "get")
-    async def cmd_emsudo_get(
+    @add_group("emsudo", "data", "get")
+    async def cmd_emsudo_data_get(
         self,
         *msgs: discord.Message,
         a: String = String(""),
@@ -1611,7 +1773,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=]
+        ->signature pg!emsudo data get <*messages> [a|attributes=""] [mode=0] [destination=]
         [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
 
         ->description Get the embed data of a message
@@ -1668,9 +1830,9 @@ class EmsudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
         ->example command
-        pg!emsudo get 98765432198765444321
-        pg!emsudo get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
-        pg!emsudo get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
+        pg!emsudo data get 98765432198765444321
+        pg!emsudo data get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo data get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         """
 
@@ -2013,7 +2175,7 @@ class EmsudoCommand(BaseCommand):
                 "Invalid embed attribute string!", "No embed attributes specified."
             )
 
-        await self.cmd_emsudo_get(
+        await self.cmd_emsudo_data_get(
             *msgs,
             a=a,
             mode=1,
@@ -2022,15 +2184,15 @@ class EmsudoCommand(BaseCommand):
             copy_color_with_pop=True,
         )
 
-    @add_group("emsudo", "add", "field")
-    async def cmd_emsudo_add_field(
+    @add_group("emsudo", "data", "add", "field")
+    async def cmd_emsudo_data_add_field(
         self,
         msg: discord.Message,
         data: Union[CodeBlock, String],
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo add field <message> <data>
+        ->signature pg!emsudo data add field <message> <data>
         ->description Add an embed field through the bot
         ->extended description
         Add an embed field to the embed of the given message.
@@ -2055,7 +2217,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo add field 987654321987654321/123456789123456789
+        pg!emsudo data add field 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
            "name": "Mr Field",
@@ -2173,15 +2335,15 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "fields")
-    async def cmd_emsudo_add_fields(
+    @add_group("emsudo", "data", "add", "fields")
+    async def cmd_emsudo_data_add_fields(
         self,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo add fields <message> [data]
+        ->signature pg!emsudo data add fields <message> [data]
         ->description Add embed fields through the bot
         ->extended description
         Add multiple embed fields to the embed of a message using the given arguments.
@@ -2212,7 +2374,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo add fields 987654321987654321/123456789123456789
+        pg!emsudo data add fields 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
             "fields": [
@@ -2418,8 +2580,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "field", "at")
-    async def cmd_emsudo_add_field_at(
+    @add_group("emsudo", "data", "add", "field", "at")
+    async def cmd_emsudo_data_add_field_at(
         self,
         msg: discord.Message,
         index: int,
@@ -2427,7 +2589,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo add field at <message> <index> <data>
+        ->signature pg!emsudo data add field at <message> <index> <data>
         ->description Insert an embed field through the bot
         ->extended description
         Insert an embed field to the embed of the given message at the specified index.
@@ -2455,7 +2617,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo add field at https://discord.com/channels/772505616680878080/775317562715406336/846955385688031282 2
+        pg!emsudo data add field at https://discord.com/channels/772505616680878080/775317562715406336/846955385688031282 2
         \\`\\`\\`json
         {
             "name": "Mrs Field",
@@ -2573,8 +2735,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "fields", "at")
-    async def cmd_emsudo_add_fields_at(
+    @add_group("emsudo", "data", "add", "fields", "at")
+    async def cmd_emsudo_data_add_fields_at(
         self,
         msg: discord.Message,
         index: int,
@@ -2582,7 +2744,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo add fields at <message> <index> [data]
+        ->signature pg!emsudo data add fields at <message> <index> [data]
         ->description Insert embed fields through the bot
         ->extended description
         Insert several embed fields into the embed of the given message at the specified index.
@@ -2616,7 +2778,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo add fields at 2 987654321987654321/123456789123456789
+        pg!emsudo data add fields at 2 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
             "fields": [
@@ -2822,8 +2984,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit", "field")
-    async def cmd_emsudo_edit_field(
+    @add_group("emsudo", "data", "edit", "field")
+    async def cmd_emsudo_data_edit_field(
         self,
         msg: discord.Message,
         index: int,
@@ -2831,7 +2993,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo edit field <message> <index> <data>
+        ->signature pg!emsudo data edit field <message> <index> <data>
         ->description Edit an embed field through the bot
         ->extended description
         Edit an embed field of the embed of the given message at the specified index.
@@ -2862,7 +3024,7 @@ class EmsudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
 
-        pg!emsudo edit field 7 987654321987654321/123456789123456789
+        pg!emsudo data edit field 7 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
            "name": "Boy Field",
@@ -2979,15 +3141,15 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit", "fields")
-    async def cmd_emsudo_edit_fields(
+    @add_group("emsudo", "data", "edit", "fields")
+    async def cmd_emsudo_data_edit_fields(
         self,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo edit fields <message> [data]
+        ->signature pg!emsudo data edit fields <message> [data]
         ->description Edit multiple embed fields through the bot
         ->extended description
         Edit multiple embed fields in the embed of the given message using the specified arguments.
@@ -3023,7 +3185,7 @@ class EmsudoCommand(BaseCommand):
 
 
         ->example command
-        pg!emsudo edit fields 987654321987654321/123456789123456789
+        pg!emsudo data edit fields 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
             "fields": [
@@ -3225,8 +3387,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "replace", "field")
-    async def cmd_emsudo_replace_field(
+    @add_group("emsudo", "data", "replace", "field")
+    async def cmd_emsudo_data_replace_field(
         self,
         msg: discord.Message,
         index: int,
@@ -3234,7 +3396,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo replace field <message> <index> <data>
+        ->signature pg!emsudo data replace field <message> <index> <data>
         ->description Replace an embed field through the bot
         ->extended description
         Replace an embed field of the embed of the given message at the specified index.
@@ -3262,7 +3424,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo replace field 2 987654321987654321/123456789123456789
+        pg!emsudo data replace field 2 987654321987654321/123456789123456789
         \\`\\`\\`json
         {
            "name": "Uncle Field",
@@ -3380,8 +3542,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "swap", "fields")
-    async def cmd_emsudo_swap_fields(
+    @add_group("emsudo", "data", "swap", "fields")
+    async def cmd_emsudo_data_swap_fields(
         self, msg: discord.Message, index_a: int, index_b: int
     ):
         """
@@ -3437,8 +3599,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "clone", "fields")
-    async def cmd_emsudo_clone_fields(
+    @add_group("emsudo", "data", "clone", "fields")
+    async def cmd_emsudo_data_clone_fields(
         self,
         msg: discord.Message,
         *indices: Union[range, int],
@@ -3530,8 +3692,8 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "remove", "fields")
-    async def cmd_emsudo_remove_fields(
+    @add_group("emsudo", "data", "remove", "fields")
+    async def cmd_emsudo_data_remove_fields(
         self,
         msg: discord.Message,
         *indices: Union[range, int],
@@ -3539,7 +3701,7 @@ class EmsudoCommand(BaseCommand):
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo remove fields <message> <*indices> [multi_indices=False]
+        ->signature pg!emsudo data remove fields <message> <*indices> [multi_indices=False]
         ->description Remove an embed field through the bot
         ->extended description
         Remove embed fields at the given indices of the embed of a message using the given arguments.
@@ -3565,8 +3727,8 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsudo remove fields 987654321987654321/123456789123456789 range(0, 10, 2)
-        pg!emsudo remove fields 987654321987654321 5
+        pg!emsudo data remove fields 987654321987654321/123456789123456789 range(0, 10, 2)
+        pg!emsudo data remove fields 987654321987654321 5
         -----
         """
 
@@ -3616,14 +3778,14 @@ class EmsudoCommand(BaseCommand):
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "remove", "fields", "all")
-    async def cmd_emsudo_remove_fields_all(
+    @add_group("emsudo", "data", "remove", "fields", "all")
+    async def cmd_emsudo_data_remove_fields_all(
         self,
         msg: discord.Message,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo remove fields all <message>
+        ->signature pg!emsudo data remove fields all <message>
         ->description Remove all embed fields through the bot
         ->extended description
         Remove all embed fields of the embed of a message.
