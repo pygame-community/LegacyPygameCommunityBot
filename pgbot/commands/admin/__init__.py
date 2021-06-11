@@ -390,7 +390,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         dict(
                             name="Archiving Messages",
                             value=f"`{i}/{msg_count}` messages archived\n"
-                            f"{(i/msg_count)*100:.01f}% | "
+                            f"{(i / msg_count) * 100:.01f}% | "
                             + utils.progress_bar(i / msg_count, divisions=30),
                         ),
                         0,
@@ -466,7 +466,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     if len(attached_files) > 1:
                         for i in range(1, len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -488,7 +488,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     if attached_files:
                         for i in range(len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -507,7 +507,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
-                                content=f"**Message embed** ({i+1}):",
+                                content=f"**Message embed** ({i + 1}):",
                                 file=discord.File(
                                     embed_data_fobjs[i], filename="embeddata.json"
                                 ),
@@ -527,7 +527,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     if attached_files:
                         for i in range(len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -546,7 +546,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
-                                content=f"**Message embed** ({i+1}):",
+                                content=f"**Message embed** ({i + 1}):",
                                 file=discord.File(
                                     embed_data_fobjs[i], filename="embeddata.json"
                                 ),
@@ -651,7 +651,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
+                        f"{(i / msg_count) * 100:.01f}% | "
                         + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
@@ -747,7 +747,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
+                        f"{(i / msg_count) * 100:.01f}% | "
                         + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
@@ -853,7 +853,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{idx_count}` messages processed\n"
-                        f"{(i/idx_count)*100:.01f}% | "
+                        f"{(i / idx_count) * 100:.01f}% | "
                         + utils.progress_bar(i / idx_count, divisions=30),
                     ),
                     0,
@@ -988,6 +988,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         await super().cmd_stream_del(_members=members if members else None)
 
+    @add_group("info")
     async def cmd_info(
         self,
         *objs: Union[discord.Message, discord.Member, discord.User],
@@ -1058,7 +1059,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{obj_count}` inputs processed\n"
-                        f"{(i/obj_count)*100:.01f}% | "
+                        f"{(i / obj_count) * 100:.01f}% | "
                         + utils.progress_bar(i / obj_count, divisions=30),
                     ),
                     0,
@@ -1092,6 +1093,68 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
         except discord.NotFound:
             pass
+
+    @add_group("info", "server")
+    async def cmd_info_server(self, guild: Optional[discord.Guild] = None):
+        """
+        ->type More admin commands
+        ->signature pg!info server [guild_id=None]
+        ->description Get information about a Discord server
+
+        ->extended description
+        Return an information embed for the Discord server ID given
+
+        __Args__:
+            `guild_id: (int) = None`
+            > An integer that should represent
+            > a server's ID. If no input is given,
+            > the server would be set to the server
+            > where the command was invoked
+
+        __Returns__:
+            > An embed with the given server's information
+
+        __Raises__:
+            > `BotException`: The guild either doesn't exist or is private
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        -----
+        """
+        if guild is None:
+            guild = self.guild
+
+        description = (
+            f"Server Name: `{guild.name}`\n"
+            f"Server ID: `{guild.id}`\n"
+            f"Created At: `{guild.created_at.strftime('%a %b %d %Y, %I:%M:%S %p')} UTC`\n"
+        )
+
+        description += f"Number of Members: `{guild.member_count}`\n"
+
+        number_of_bots = len([i for i in guild.members if i.bot])
+        number_of_members = len(guild.members) - number_of_bots
+        description += f"> - `{number_of_members}` humans\n"
+        description += f"> - `{number_of_bots}` bots\n"
+
+        description += f"Number of Channels: `{len(guild.channels)}`\n"
+
+        description += f"Number of Roles: `{len(guild.roles)}`\n"
+
+        if guild.premium_subscription_count != 0:
+            description += (
+                f"Number of Server Boosts: `{guild.premium_subscription_count}`\n"
+            )
+
+        description += (
+            f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
+        )
+
+        kwargs = {
+            "title": f"Server information for {guild.name}:",
+            "thumbnail_url": guild.icon_url,
+            "description": description,
+        }
+
+        await embed_utils.replace_2(self.response_msg, **kwargs)
 
     async def cmd_react(self, message: discord.Message, *emojis: str):
         """
