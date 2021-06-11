@@ -1229,7 +1229,7 @@ async def edit_2(
     thumbnail_url=EmptyEmbed,
     description=EmptyEmbed,
     image_url=EmptyEmbed,
-    color=0xFFFFAA,
+    color=-1,
     fields=[],
     footer_text=EmptyEmbed,
     footer_icon_url=EmptyEmbed,
