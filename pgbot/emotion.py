@@ -101,4 +101,4 @@ def euphoria():
 
 async def server_boost(msg: discord.Message):
     euphoria()
-    await msg.channel.send("A LOT OF THANKSSS! :heart: :pg_snake:")
+    await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")
