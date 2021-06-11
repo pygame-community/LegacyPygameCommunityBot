@@ -85,7 +85,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             pass
 
     @add_group("db", "write")
-    async def cmd_db_write(self, name: str, data: CodeBlock):
+    async def cmd_db_write(self, name: str, data: Union[discord.Message, CodeBlock]):
         """
         ->type Admin commands
         ->signature pg!db write <name> <data>
@@ -93,8 +93,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_write, to overwrite DB messages
         """
+        if isinstance(data, CodeBlock):
+            obj_str = data.code
+        elif data.attachments:
+            obj_str = (await data.attachments[0].read()).decode()
+        else:
+            raise BotException(
+                "Failed to overwrite DB", "File attachment was not found"
+            )
 
-        db.DiscordDB(name).write(eval(data.code))
+        db.DiscordDB(name).write(eval(obj_str))
 
         await embed_utils.replace(
             self.response_msg,
@@ -285,7 +293,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel(s).",
             )
 

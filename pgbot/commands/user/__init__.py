@@ -87,6 +87,11 @@ class UserCommand(FunCommand, HelpCommand):
         if self.author.id not in db_data:
             db_data[self.author.id] = {}
 
+        # user is editing old reminder message, discard the old reminder
+        for key, (_, chan_id, msg_id) in tuple(db_data[self.author.id].items()):
+            if chan_id == self.channel.id and msg_id == self.invoke_msg.id:
+                db_data[self.author.id].pop(key)
+
         limit = 25 if self.is_priv else 10
         if len(db_data[self.author.id]) >= limit:
             raise BotException(
