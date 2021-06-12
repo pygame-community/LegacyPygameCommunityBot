@@ -516,7 +516,8 @@ class SudoCommand(BaseCommand):
             > Whether the text content (if present) of the given
             > messages should be sent as an attachment (`.txt`)
             > or as embed containing it inside a code block in its
-            > description.
+            > description. This will always occur if the text
+            > content is above 2000 characters.
 
             `attachments: (bool) = True`
             > Whether the attachments of the given messages
@@ -601,6 +602,8 @@ class SudoCommand(BaseCommand):
                     0,
                 )
             await destination.trigger_typing()
+
+            escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
             if attachments:
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
@@ -617,10 +620,16 @@ class SudoCommand(BaseCommand):
                 info_embed = embed_utils.get_msg_info_embed(msg, author_info)
                 info_embed.set_author(name="Message data & info")
                 info_embed.title = ""
-                info_embed.description = f"```\n{msg.content}```\n\u2800"
 
+                info_embed.description = "".join(
+                    (
+                        f"__Text"+ ( " (Shortened)" if len(escaped_msg_content) > 2000 else "") +"__:",
+                        f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```" + "\n\u2800" if len(escaped_msg_content) > 2000 else "\n\u2800"
+                    )
+                )
+                
                 content_file = None
-                if as_attachment and msg.content:
+                if as_attachment or len(msg.content) > 2000:
                     with io.StringIO(msg.content) as fobj:
                         content_file = discord.File(fobj, "messagedata.txt")
 
@@ -633,25 +642,33 @@ class SudoCommand(BaseCommand):
                         embed=embed_utils.create(
                             author_name="Message data",
                             description=f"**[View Original Message]({msg.jump_url})**",
-                            color=0xFFFFAA,
                         ),
                     )
-
             else:
-                await embed_utils.send_2(
-                    self.channel,
-                    author_name="Message data",
-                    description="```\n{0}```".format(
-                        msg.content.replace("```", "\\`\\`\\`")
-                    ),
-                    fields=(
-                        (
-                            "\u2800",
-                            f"**[View Original Message]({msg.jump_url})**",
-                            False,
+                if len(msg.content) > 2000 or len(escaped_msg_content) > 2000:
+                    with io.StringIO(msg.content) as fobj:
+                        await destination.send(
+                            file=discord.File(fobj, "messagedata.txt"),
+                            embed=embed_utils.create(
+                                author_name="Message data",
+                                description=f"**[View Original Message]({msg.jump_url})**",
+                            ),
+                        )
+                else:
+                    await embed_utils.send_2(
+                        self.channel,
+                        author_name="Message data",
+                        description="```\n{0}```".format(
+                            escaped_msg_content
                         ),
-                    ),
-                )
+                        fields=(
+                            (
+                                "\u2800",
+                                f"**[View Original Message]({msg.jump_url})**",
+                                False,
+                            ),
+                        ),
+                    )
 
             if attached_files:
                 for i in range(len(attached_files)):
@@ -722,11 +739,10 @@ class SudoCommand(BaseCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_fetch <origin channel> <quantity> [urls=False] [pinned=False] [pin_range=]
+        ->signature pg!sudo fetch <origin channel> <quantity> [urls=False] [pinned=False] [pin_range=]
         [before=None] [after=None] [around=None] [oldest_first=True] [prefix=""] [sep=" "] [suffix=""]
         ->description Fetch message IDs or URLs
         -----
-        Implement pg!sudo_fetch, for admins to fetch several message IDs and links at once
         """
 
         if not utils.check_channel_permissions(
@@ -902,10 +918,11 @@ class SudoCommand(BaseCommand):
         as_spoiler: bool = False,
         info: bool = False,
         author_info: bool = True,
+        skip_empty: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_clone <*messages> [destination=] [embeds=True] [attachments=True] [as_spoiler=False]
+        ->signature pg!sudo clone <*messages> [destination=] [embeds=True] [attachments=True] [as_spoiler=False]
         [info=False] [author_info=True]
         ->description Clone a message through the bot
         ->extended description
@@ -953,6 +970,10 @@ class SudoCommand(BaseCommand):
             > info embed which is sent if `info` is set
             > to `True`.
 
+            `skip_empty: (bool) = True`
+            > Whether empty messages
+            > should be skipped.
+
         __Returns__:
             > One or more cloned messages with attachents
             > or embeds based on the given input.
@@ -961,7 +982,6 @@ class SudoCommand(BaseCommand):
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
-        Implement pg!sudo_clone, to get the content of a message and send it.
         """
 
         if not isinstance(destination, discord.TextChannel):
@@ -1019,7 +1039,7 @@ class SudoCommand(BaseCommand):
                 )
 
             await destination.trigger_typing()
-            cloned_msg = None
+            cloned_msg0 = None
             attached_files = []
             if msg.attachments and attachments:
                 with io.StringIO("This file was too large to be cloned.") as fobj:
@@ -1033,13 +1053,44 @@ class SudoCommand(BaseCommand):
                     ]
 
             if msg.content or msg.embeds or attached_files:
-                cloned_msg = await destination.send(
-                    content=msg.content,
-                    embed=msg.embeds[0] if msg.embeds and embeds else None,
-                    file=attached_files[0] if attached_files else None,
-                    allowed_mentions=no_mentions,
-                )
-            else:
+                if len(msg.content) > 2000:
+                    start_idx = 0
+                    stop_idx = 0
+                    for i in range(len(msg.content)//2000):
+                        start_idx = 2000*i
+                        stop_idx = 2000+2000*i
+
+                        if not i:
+                            cloned_msg0 = await destination.send(
+                                content=msg.content[start_idx:stop_idx],
+                                allowed_mentions=no_mentions,
+                            )
+                        else:
+                            await destination.send(
+                                content=msg.content[start_idx:stop_idx],
+                                allowed_mentions=no_mentions,
+                            )
+                    
+                    with io.StringIO(msg.content) as fobj:
+                        await destination.send(
+                            content=msg.content[stop_idx:],
+                            embed=embed_utils.create(footer_text="Full message data"),
+                            file=discord.File(fobj, filename="messagedata.txt"),
+                            allowed_mentions=no_mentions,
+                        )
+                    
+                    await destination.send(
+                        embed=msg.embeds[0] if msg.embeds and embeds else None,
+                        file=attached_files[0] if attached_files else None,
+                    )
+                else:
+                    cloned_msg0 = await destination.send(
+                        content=msg.content,
+                        embed=msg.embeds[0] if msg.embeds and embeds else None,
+                        file=attached_files[0] if attached_files else None,
+                        allowed_mentions=no_mentions,
+                    )
+            elif not skip_empty:
                 raise BotException("Cannot clone an empty message!", "")
 
             for i in range(1, len(attached_files)):
@@ -1055,7 +1106,7 @@ class SudoCommand(BaseCommand):
             if info:
                 await self.channel.send(
                     embed=embed_utils.get_msg_info_embed(msg, author=author_info),
-                    reference=cloned_msg,
+                    reference=cloned_msg0,
                 )
 
             await asyncio.sleep(0)

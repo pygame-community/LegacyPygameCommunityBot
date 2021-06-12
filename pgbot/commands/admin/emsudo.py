@@ -33,7 +33,7 @@ class EmsudoCommand(BaseCommand):
     Base class to handle emsudo commands.
     """
 
-    @add_group("emsudo")
+    @add_group("emsudo", "data")
     async def cmd_emsudo(
         self,
         *datas: Union[discord.Message, CodeBlock, String, bool],
@@ -1480,7 +1480,7 @@ class EmsudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
 
         ->example command
-        pg!emsud clone 987654321987654321 123456789123456789
+        pg!emsudo clone 987654321987654321 123456789123456789
         https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         """

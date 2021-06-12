@@ -480,15 +480,52 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         ):
                             msg_embed = None
 
-                        await destination.send(
-                            content=msg.content,
-                            embed=msg_embed,
-                            file=attached_files[0] if attached_files else None,
-                            allowed_mentions=no_mentions,
-                        )
+                        if len(msg.content) > 2000:
+                            start_idx = 0
+                            stop_idx = 0
+                            for i in range(len(msg.content)//2000):
+                                start_idx = 2000*i
+                                stop_idx = 2000+2000*i
+
+                                if not i:
+                                    await destination.send(
+                                        content=msg.content[start_idx:stop_idx],
+                                        allowed_mentions=no_mentions,
+                                    )
+                                else:
+                                    await destination.send(
+                                        content=msg.content[start_idx:stop_idx],
+                                        allowed_mentions=no_mentions,
+                                    )
+                            
+                            with io.StringIO(msg.content) as fobj:
+                                await destination.send(
+                                    content=msg.content[stop_idx:],
+                                    embed=embed_utils.create(footer_text="Full message data"),
+                                    file=discord.File(fobj, filename="messagedata.txt"),
+                                    allowed_mentions=no_mentions,
+                                )
+                            
+                            await destination.send(
+                                embed=msg_embed,
+                                file=attached_files[0] if attached_files else None,
+                            )
+                        else:
+                            await destination.send(
+                                content=msg.content,
+                                embed=msg_embed,
+                                file=attached_files[0] if attached_files else None,
+                                allowed_mentions=no_mentions,
+                            )
+
                     elif msg.type == discord.MessageType.pins_add:
                         await destination.send(
                             content=f"{msg.author.name}#{msg.author.discriminator} pinned a message in #{origin.name}"
+                        )
+
+                    elif msg.type == discord.MessageType.premium_guild_subscription:
+                        await destination.send(
+                            content=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
                         )
 
                     if len(attached_files) > 1:
@@ -505,13 +542,19 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                 elif mode == 1:
                     if msg.content:
-                        await destination.send(
-                            embed=embed_utils.create(
-                                author_name="Message data",
-                                description=f"```\n{msg.content}\n```",
-                            ),
-                            allowed_mentions=no_mentions,
-                        )
+                        escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
+                        if len(msg.content) > 2000 or len(escaped_msg_content) > 2000:
+                            with io.StringIO(msg.content) as fobj:
+                                await destination.send(
+                                    file=discord.File(fobj, "messagedata.txt"),
+                                )
+                        else:
+                            await embed_utils.send_2(
+                                self.channel,
+                                description="```\n{0}```".format(
+                                    escaped_msg_content
+                                ),
+                            )
 
                     if attached_files:
                         for i in range(len(attached_files)):
