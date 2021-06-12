@@ -85,7 +85,7 @@ async def dad_joke(msg: discord.Message):
                 allowed_mentions=discord.AllowedMentions.none(),
             )
         elif lowered == "i am":
-            await msg.channel.send(common.SHAKESPEARE_QUOTE)
+            await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
 
 
 def euphoria():
