@@ -86,7 +86,7 @@ class SudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -98,7 +98,7 @@ class SudoCommand(BaseCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
 
@@ -107,7 +107,7 @@ class SudoCommand(BaseCommand):
 
         output_strings = []
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
@@ -143,7 +143,7 @@ class SudoCommand(BaseCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 if from_attachment:
@@ -223,7 +223,7 @@ class SudoCommand(BaseCommand):
                 output_strings.append(msg_text)
             else:
                 raise BotException(
-                    f"Too little/many characters!",
+                    "Too little/many characters!",
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
 
@@ -234,7 +234,7 @@ class SudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{data_count}/{data_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -265,7 +265,7 @@ class SudoCommand(BaseCommand):
                 dict(
                     name="Creation Completed",
                     value=f"`{output_count}/{output_count}` messages created\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 1,
             )
@@ -321,7 +321,7 @@ class SudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -331,7 +331,7 @@ class SudoCommand(BaseCommand):
             permissions=("view_channel",),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -382,7 +382,7 @@ class SudoCommand(BaseCommand):
 
             if not 0 < len(msg_text) <= 2000:
                 raise BotException(
-                    f"Too little/many characters!",
+                    "Too little/many characters!",
                     "a Discord message must contain at least one character and cannot contain more than 2000.",
                 )
         try:
@@ -442,7 +442,7 @@ class SudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -555,18 +555,18 @@ class SudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
         checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author, msg.channel, permissions=("view_channel",)
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 else:
@@ -577,12 +577,12 @@ class SudoCommand(BaseCommand):
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -604,15 +604,10 @@ class SudoCommand(BaseCommand):
             attached_files = None
             if attachments:
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
-                    file_size_limit = (
-                        msg.guild.filesize_limit
-                        if msg.guild
-                        else common.GUILD_MAX_FILE_SIZE
-                    )
                     attached_files = [
                         (
                             await a.to_file(spoiler=a.is_spoiler())
-                            if a.size <= file_size_limit
+                            if a.size <= self.filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
                         for a in msg.attachments
@@ -698,7 +693,7 @@ class SudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -740,7 +735,7 @@ class SudoCommand(BaseCommand):
             permissions=("view_channel",),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -976,18 +971,18 @@ class SudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
         checked_channels = set()
         for i, msg in enumerate(msgs):
-            if not msg.channel in checked_channels:
+            if msg.channel not in checked_channels:
                 if not utils.check_channel_permissions(
                     self.author, msg.channel, permissions=("view_channel",)
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 else:
@@ -998,12 +993,12 @@ class SudoCommand(BaseCommand):
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -1028,15 +1023,10 @@ class SudoCommand(BaseCommand):
             attached_files = []
             if msg.attachments and attachments:
                 with io.StringIO("This file was too large to be cloned.") as fobj:
-                    file_size_limit = (
-                        msg.guild.filesize_limit
-                        if msg.guild
-                        else common.GUILD_MAX_FILE_SIZE
-                    )
                     attached_files = [
                         (
                             await a.to_file(spoiler=a.is_spoiler() or as_spoiler)
-                            if a.size <= file_size_limit
+                            if a.size <= self.filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
                         for a in msg.attachments
@@ -1050,7 +1040,7 @@ class SudoCommand(BaseCommand):
                     allowed_mentions=no_mentions,
                 )
             else:
-                raise BotException(f"Cannot clone an empty message!", "")
+                raise BotException("Cannot clone an empty message!", "")
 
             for i in range(1, len(attached_files)):
                 await self.channel.send(
@@ -1077,7 +1067,7 @@ class SudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )

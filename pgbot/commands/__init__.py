@@ -100,7 +100,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
     if response_msg is None:
         response_msg = await embed_utils.send_2(
             invoke_msg.channel,
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`Loading...`", False),),
         )
 
