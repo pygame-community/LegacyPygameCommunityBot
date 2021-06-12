@@ -1979,14 +1979,15 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             msg_is_pinned,
         )
     )
-
+    
     if author:
         return create(
             title="__Message & Author Info__",
+            description="".join((
+                f"__Text"+ ( " (Shortened)" if len(msg.content) > 2000 else "") +"__:",
+                f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800" if len(msg.content) > 2000 else "\n\u2800"
+            )),
             thumbnail_url=str(member.avatar_url),
-            description=(
-                f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
-            ),
             fields=[
                 ("__Message Info__", msg_info, True),
                 ("__Message Author Info__", get_member_info_str(member), True),
@@ -2013,9 +2014,10 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         title="__Message Info__",
         author_name=f"{member.name}#{member.discriminator}",
         author_icon_url=str(member.avatar_url),
-        description=(
-            f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
-        ),
+        description="".join((
+            f"__Text"+ ( " (Shortened)" if len(msg.content) > 2000 else "") +"__:",
+            f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800" if len(msg.content) > 2000 else "\n\u2800"
+        )),
         fields=[
             (
                 "__" + ("Message " if author else "") + "Info__",
