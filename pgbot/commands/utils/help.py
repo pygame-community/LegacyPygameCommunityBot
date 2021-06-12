@@ -159,7 +159,7 @@ async def send_help_message(
                 return await embed_utils.replace(
                     original_msg,
                     "Could not get docs",
-                    f"Command has no documentation",
+                    "Command has no documentation",
                     0xFF0000,
                 )
 
@@ -213,7 +213,7 @@ async def send_help_message(
         return await embed_utils.replace(
             original_msg,
             "Command not found",
-            f"No such command exists",
+            "No such command exists",
             0xFF0000,
         )
 

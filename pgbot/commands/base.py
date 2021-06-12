@@ -327,6 +327,10 @@ class BaseCommand:
         if self.is_dm:
             self.guild = common.guild
 
+        self.filesize_limit: int = (
+            common.BASIC_MAX_FILE_SIZE if self.is_dm else self.guild.filesize_limit
+        )
+
         # build self.groups and self.cmds_and_functions from class functions
         self.cmds_and_funcs = {}  # this is a mapping from funtion name to funtion
         self.groups = {}  # This is a mapping from group name to list of sub functions
@@ -828,7 +832,7 @@ class BaseCommand:
             if confused > 60 and random.random() < confused / 400:
                 await embed_utils.replace_2(
                     self.response_msg,
-                    title=f"I am confused...",
+                    title="I am confused...",
                     description="Hang on, give me a sec...",
                 )
 
@@ -972,7 +976,7 @@ class BaseCommand:
             title, msg = exc.__class__.__name__, exc.args[0]
             excname = "discord.HTTPException"
 
-        except:
+        except Exception:
             emotion.update("confused", random.randint(10, 22))
             await embed_utils.replace(
                 self.response_msg,

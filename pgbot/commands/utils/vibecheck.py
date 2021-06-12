@@ -33,7 +33,7 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
     """
     return {
         "happy": {
-            "msg": f"I feel... happi!\n"
+            "msg": "I feel... happi!\n"
             "While I am happi, I'll make more dad jokes (Spot the dad joke in there?)\n"
             "However, don't bonk me or say 'ded chat', as that would make me sad.\n"
             f"*The snek's happiness level is `{emotions.get('happy', '0')}`, "
@@ -41,7 +41,7 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
             "emoji_link": "https://cdn.discordapp.com/emojis/837389387024957440.png?v=1",
         },
         "sad": {
-            "msg": f"I'm sad...\n"
+            "msg": "I'm sad...\n"
             "I don't feel like making any jokes. This is your fault, "
             "**don't make me sad.**\nPet me pls :3\n"
             f"*The snek's sadness level is `{-emotions.get('happy', 0)}`, play with "
@@ -49,7 +49,7 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
             "emoji_link": "https://cdn.discordapp.com/emojis/824721451735056394.png?v=1",
         },
         "exhausted": {
-            "msg": f"I'm exhausted. \nI ran too many commands, "
+            "msg": "I'm exhausted. \nI ran too many commands, "
             "so I'll be resting for a while..\n"
             "Don't try to make me run commands for now, I'll most likely "
             "just ignore it..\n"
@@ -58,21 +58,21 @@ def get_emotion_desc_dict(emotions: dict[str, int]):
             "emoji_link": None,
         },
         "bored": {
-            "msg": f"I'm booooooooored...\nNo one is spending time with me, "
+            "msg": "I'm booooooooored...\nNo one is spending time with me, "
             "and I feel lonely :pg_depressed:\n"
             f"*The snek's boredom level is `{emotions.get('bored', '0')}`, run "
             "more command(s) to improve its mood.*",
             "emoji_link": "https://cdn.discordapp.com/emojis/823502668500172811.png?v=1",
         },
         "confused": {
-            "msg": f"I'm confused!\nEither there were too many exceptions in my code, "
+            "msg": "I'm confused!\nEither there were too many exceptions in my code, "
             "or too many commands were used wrongly!\n"
             f"*The snek's confusion level is `{emotions.get('confused', '0')}`, "
             "to lower its level of confusion, use proper command syntax.*",
             "emoji_link": "https://cdn.discordapp.com/emojis/837402289709907978.png?v=1",
         },
         "anger": {
-            "msg": f"I'm angry!\nI've been bonked too many times, you'd be "
+            "msg": "I'm angry!\nI've been bonked too many times, you'd be "
             "angry too if someone bonked you 50+ times :unamused:\n"
             "No jokes, no quotes. :pg_angry:. Don't you dare pet me!\n"
             f"*The snek's anger level is `{emotions.get('anger', '0')}`, "

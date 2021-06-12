@@ -198,6 +198,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         return await super().cmd_clock(action, timezone, color, _member=member)
 
+    @no_dm
     async def cmd_eval(self, code: CodeBlock):
         """
         ->type Admin commands
@@ -206,6 +207,24 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!eval, for admins to run arbitrary code on the bot
         """
+        # make typecheckers happy
+        if not isinstance(self.author, discord.Member):
+            return
+
+        evalable = False
+        for role in self.author.roles:
+            if role.id in common.ServerConstants.EVAL_ROLES:
+                evalable = True
+
+        if common.TEST_MODE and self.author.id in common.TEST_USER_IDS:
+            evalable = True
+
+        if not evalable:
+            raise BotException(
+                "Insufficient perms",
+                "The `eval` command needs Server Admin or Mage level perms",
+            )
+
         try:
             script = compile(code.code, "<string>", "eval")  # compile script
 
@@ -213,11 +232,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             eval_output = eval(script)  # pylint: disable = eval-used
             total = time.perf_counter() - script_start
 
-            await embed_utils.replace(
-                self.response_msg,
-                f"Return output (code executed in {utils.format_time(total)}):",
-                utils.code_block(repr(eval_output)),
-            )
         except Exception as ex:
             raise BotException(
                 "An exception occured:",
@@ -225,6 +239,12 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
                 ),
             )
+
+        await embed_utils.replace(
+            self.response_msg,
+            f"Return output (code executed in {utils.format_time(total)}):",
+            utils.code_block(repr(eval_output)),
+        )
 
     async def cmd_heap(self):
         """
@@ -306,7 +326,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             )
 
         tz_utc = datetime.timezone.utc
-        datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
+        datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
         if isinstance(before, discord.Message) and before.channel.id != origin.id:
@@ -383,7 +403,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         no_mentions = discord.AllowedMentions.none()
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(messages)
@@ -410,7 +430,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
-                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        if a.size <= self.filesize_limit
                         else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                     )
                     for a in msg.attachments
@@ -581,7 +601,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Successfully archived {msg_count} message(s)",
                 value=f"`{msg_count}/{msg_count}` messages archived\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -612,18 +632,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No message IDs given as input.",
             )
         elif len(msgs) > 50:
             raise BotException(
-                f"Too many arguments!",
+                "Too many arguments!",
                 "Cannot pin more than 50 messages in a channel.",
             )
 
@@ -647,7 +667,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(input_msgs)
@@ -674,7 +694,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     await (
                         await channel.fetch_message(channel.last_message_id)
                     ).delete()
-                except (discord.HTTPException, discord.NotFound) as e:
+                except (discord.HTTPException, discord.NotFound):
                     pass
 
             await asyncio.sleep(0)
@@ -685,7 +705,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
                 value=f"`{msg_count}/{msg_count}` messages pinned\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -716,18 +736,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No message IDs given as input.",
             )
         elif len(msgs) > 50:
             raise BotException(
-                f"Too many arguments!",
+                "Too many arguments!",
                 "No more than 50 messages can be pinned in a channel.",
             )
         elif not all(msg.channel.id == channel.id for msg in msgs):
@@ -742,7 +762,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -775,7 +795,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {msg_count} message(s)!",
                 value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -804,13 +824,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not indices:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No channel pin list indices given as input.",
             )
 
@@ -820,7 +840,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not pinned_msgs:
             raise BotException(
-                f"No messages to unpin!",
+                "No messages to unpin!",
                 "No messages are currently pinned on the specified channel.",
             )
 
@@ -832,7 +852,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             if isinstance(index, range):
                 if len(index) > 50:
                     raise BotException(
-                        f"Invalid range object!",
+                        "Invalid range object!",
                         "The given range object must not contain more than 50 integers.",
                     )
                 else:
@@ -845,7 +865,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         indices_list.reverse()
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -887,7 +907,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {idx_count} message(s)!",
                 value=f"`{idx_count}/{idx_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -931,7 +951,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -1040,7 +1060,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
                 else:
@@ -1055,7 +1075,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await self.channel.send(embed=embed)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         obj_count = len(objs)
@@ -1092,7 +1112,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 dict(
                     name="Processing Complete",
                     value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )

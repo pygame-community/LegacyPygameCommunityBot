@@ -3,10 +3,8 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file is the main file of pgbot subdir 
+This file is the main file of pgbot subdir
 """
-
-import discord
 
 import asyncio
 import os
@@ -76,7 +74,7 @@ async def init():
     """
     try:
         await _init()
-    except:
+    except Exception:
         # error happened in the first init sequence. report error to stdout/stderr
         # note that the chances of this happening are pretty slim, but you never know
         sys.stdout = sys.__stdout__

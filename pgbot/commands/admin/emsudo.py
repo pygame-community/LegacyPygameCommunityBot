@@ -364,14 +364,14 @@ class EmsudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
         data_count = len(datas)
         output_embeds = []
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False), ("\u2800", "`...`", False)),
         )
 
@@ -412,7 +412,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 attachment_msg = data
@@ -472,7 +472,7 @@ class EmsudoCommand(BaseCommand):
                     try:
                         args = literal_eval(data.code)
                     except Exception as e:
-                        raise BotException(f"Invalid arguments!", e.args[0])
+                        raise BotException("Invalid arguments!", e.args[0])
 
                     if isinstance(args, dict):
                         output_embeds.append(embed_utils.create_from_dict(args))
@@ -489,7 +489,7 @@ class EmsudoCommand(BaseCommand):
                         except TypeError:
                             raise BotException(
                                 f"Input {i}:",
-                                f"Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
+                                "Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
                                 f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             )
@@ -516,7 +516,7 @@ class EmsudoCommand(BaseCommand):
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
-                    f"No valid attachment found in message.",
+                    "No valid attachment found in message.",
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
@@ -530,7 +530,7 @@ class EmsudoCommand(BaseCommand):
                     break
             else:
                 raise BotException(
-                    f"No valid attachment found in message.",
+                    "No valid attachment found in message.",
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
@@ -554,7 +554,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{data_count}/{data_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -582,7 +582,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Generation Completed",
                     value=f"`{output_embed_count}/{output_embed_count}` embeds generated\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 1,
             )
@@ -708,7 +708,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=("view_channel", "send_messages"),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 elif not msg.embeds:
@@ -724,12 +724,12 @@ class EmsudoCommand(BaseCommand):
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -825,7 +825,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -892,7 +892,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -925,7 +925,7 @@ class EmsudoCommand(BaseCommand):
                 permissions=("view_channel",),
             ):
                 raise BotException(
-                    f"Not enough permissions",
+                    "Not enough permissions",
                     "You do not have enough permissions to run this command with the specified arguments.",
                 )
             attachment_msg = data
@@ -972,7 +972,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
                 await embed_utils.replace_from_dict(msg, embed_dict)
@@ -980,7 +980,7 @@ class EmsudoCommand(BaseCommand):
                 try:
                     args = literal_eval(data.code)
                 except Exception as e:
-                    raise BotException(f"Invalid arguments!", e.args[0])
+                    raise BotException("Invalid arguments!", e.args[0])
 
                 if isinstance(args, dict):
                     await embed_utils.replace_from_dict(msg, args)
@@ -991,11 +991,11 @@ class EmsudoCommand(BaseCommand):
                             embed_utils.parse_condensed_embed_list(args)
                         )
                     except ValueError as v:
-                        raise BotException(f"Condensed Embed Syntax Error:", v.args[0])
+                        raise BotException("Condensed Embed Syntax Error:", v.args[0])
                     except TypeError:
                         raise BotException(
                             "Invalid arguments!",
-                            f"The condensed embed syntax is:\n\n\\`\\`\\`py\n"
+                            "The condensed embed syntax is:\n\n\\`\\`\\`py\n"
                             f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                             "The input Python `list` or `tuple` must contain at least 1 element.",
                         )
@@ -1003,7 +1003,7 @@ class EmsudoCommand(BaseCommand):
                     await embed_utils.replace_2(msg, **replace_embed_args)
                 else:
                     raise BotException(
-                        f"Invalid arguments!",
+                        "Invalid arguments!",
                         "A code block given as input must"
                         " contain either a Python `tuple`/`list` of embed data, or a"
                         " Python `dict` of embed data matching the JSON structure of"
@@ -1090,7 +1090,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -1102,7 +1102,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
             if not i % 50:
@@ -1119,7 +1119,7 @@ class EmsudoCommand(BaseCommand):
         data_count = len(datas)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         for i, data in enumerate(datas):
@@ -1161,7 +1161,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 attachment_msg = data
@@ -1250,7 +1250,7 @@ class EmsudoCommand(BaseCommand):
                         except TypeError:
                             raise BotException(
                                 f"Input {i}:",
-                                f"Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
+                                "Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
                                 f"```py\n{embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             )
@@ -1293,7 +1293,7 @@ class EmsudoCommand(BaseCommand):
             attachment_msg = self.invoke_msg
             if not attachment_msg.attachments:
                 raise BotException(
-                    f"No valid attachment found in message.",
+                    "No valid attachment found in message.",
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
@@ -1307,7 +1307,7 @@ class EmsudoCommand(BaseCommand):
                     break
             else:
                 raise BotException(
-                    f"No valid attachment found in message.",
+                    "No valid attachment found in message.",
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
@@ -1347,7 +1347,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Complete",
                     value=f"`{data_count}/{data_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -1426,13 +1426,13 @@ class EmsudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
@@ -1446,7 +1446,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=msgs_perms,
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 elif not msg.embeds:
@@ -1461,7 +1461,7 @@ class EmsudoCommand(BaseCommand):
                 await asyncio.sleep(0)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -1530,7 +1530,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -1581,7 +1581,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -1654,7 +1654,7 @@ class EmsudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -1665,7 +1665,7 @@ class EmsudoCommand(BaseCommand):
                     self.author, msg.channel, permissions=("view_channel",)
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 elif not msg.embeds:
@@ -1681,12 +1681,12 @@ class EmsudoCommand(BaseCommand):
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
@@ -1732,7 +1732,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Cloning Completed",
                     value=f"`{embed_count}/{embed_count}` embeds cloned\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 1,
             )
@@ -1746,7 +1746,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -1843,7 +1843,7 @@ class EmsudoCommand(BaseCommand):
             self.author, destination, permissions=("view_channel", "send_messages")
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -1857,7 +1857,7 @@ class EmsudoCommand(BaseCommand):
                     permissions=msgs_perms,
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
                 elif not msg.embeds:
@@ -1873,13 +1873,13 @@ class EmsudoCommand(BaseCommand):
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No messages given as input.",
             )
 
         if mode < 0 or mode > 2:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "`mode=` must be either `0` or `1`",
             )
 
@@ -1897,7 +1897,7 @@ class EmsudoCommand(BaseCommand):
             raise BotException("An attribute string parsing error occured:", v.args[0])
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(
                 ("\u2800", "`...`", False),
                 ("\u2800", "`...`", False),
@@ -2091,7 +2091,7 @@ class EmsudoCommand(BaseCommand):
                     dict(
                         name="Serialization Completed",
                         value=f"`{embed_count}/{embed_count}` embeds serialized\n"
-                        f"100% | " + utils.progress_bar(1.0, divisions=30),
+                        "100% | " + utils.progress_bar(1.0, divisions=30),
                     ),
                     1,
                 )
@@ -2105,7 +2105,7 @@ class EmsudoCommand(BaseCommand):
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -2234,7 +2234,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -2282,7 +2282,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
             else:
@@ -2400,7 +2400,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -2436,7 +2436,7 @@ class EmsudoCommand(BaseCommand):
                 permissions=("view_channel",),
             ):
                 raise BotException(
-                    f"Not enough permissions",
+                    "Not enough permissions",
                     "You do not have enough permissions to run this command with the specified arguments.",
                 )
             attachment_msg = data
@@ -2489,7 +2489,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
 
@@ -2634,7 +2634,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
@@ -2682,7 +2682,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
             else:
@@ -2804,7 +2804,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -2840,7 +2840,7 @@ class EmsudoCommand(BaseCommand):
                 permissions=("view_channel",),
             ):
                 raise BotException(
-                    f"Not enough permissions",
+                    "Not enough permissions",
                     "You do not have enough permissions to run this command with the specified arguments.",
                 )
             attachment_msg = data
@@ -2893,7 +2893,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
 
@@ -3041,7 +3041,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3088,7 +3088,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
             else:
@@ -3207,7 +3207,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3243,7 +3243,7 @@ class EmsudoCommand(BaseCommand):
                 permissions=("view_channel",),
             ):
                 raise BotException(
-                    f"Not enough permissions",
+                    "Not enough permissions",
                     "You do not have enough permissions to run this command with the specified arguments.",
                 )
             attachment_msg = data
@@ -3296,7 +3296,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
 
@@ -3442,7 +3442,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3489,7 +3489,7 @@ class EmsudoCommand(BaseCommand):
                     )
                 except json.JSONDecodeError as j:
                     raise BotException(
-                        f"Invalid JSON data",
+                        "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
             else:
@@ -3579,7 +3579,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3652,7 +3652,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3738,7 +3738,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -3807,7 +3807,7 @@ class EmsudoCommand(BaseCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 

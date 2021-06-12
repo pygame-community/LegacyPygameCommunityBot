@@ -160,7 +160,7 @@ class UserCommand(FunCommand, HelpCommand):
                     pass
 
             if "mo" in timestr:
-                month_results = re.search(rf"\d+mo", timestr).group()
+                month_results = re.search(r"\d+mo", timestr).group()
                 parsed_month_time = int(month_results.replace("mo", ""))
                 sec += (
                     self.invoke_msg.created_at.replace(
@@ -339,16 +339,11 @@ class UserCommand(FunCommand, HelpCommand):
         embed = embed_utils.create_from_dict(embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
-        max_file_size = (
-            self.guild.filesize_limit
-            if self.guild is not None
-            else common.GUILD_MAX_FILE_SIZE
-        )
         if len(returned.text) > 1500:
             with io.StringIO(
                 returned.text
-                if len(returned.text) - 40 < max_file_size
-                else returned.text[: max_file_size - 40]
+                if len(returned.text) - 40 < self.filesize_limit
+                else returned.text[: self.filesize_limit - 40]
             ) as fobj:
                 await self.channel.send(file=discord.File(fobj, filename="output.txt"))
 
@@ -543,7 +538,7 @@ class UserCommand(FunCommand, HelpCommand):
             self.author, msg.channel, permissions=("view_channel",)
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
         newline = "\n"

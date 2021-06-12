@@ -98,7 +98,7 @@ def format_time(
     for fractions, unit in unit_data:
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
-    return f"very fast"
+    return "very fast"
 
 
 def format_long_time(
