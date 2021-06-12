@@ -72,8 +72,7 @@ if TEST_USER_ID is not None:
 PREFIX = "pd!" if TEST_MODE else "pg!"
 CMD_FUNC_PREFIX = "cmd_"
 
-GUILD_LEVEL = 1
-GUILD_MAX_FILE_SIZE = 8_000_000  # bytes
+BASIC_MAX_FILE_SIZE = 8_000_000  # bytes
 
 ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
@@ -108,6 +107,9 @@ class ServerConstants:
         "resource": 810516093273768016,
     }
     ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
+
+    # eval is a pretty dangerous command, so grant it only for Admins and Senior Mages
+    EVAL_ROLES = {772521884373614603, 772849669591400501}
 
     # Admin, Moderator, Senior Mage, Wizards, Lead Forgers
     ADMIN_ROLES = {

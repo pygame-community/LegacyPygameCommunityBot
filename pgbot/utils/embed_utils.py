@@ -21,7 +21,6 @@ from typing import Union, Optional, Any
 import black
 import discord
 from discord.embeds import EmptyEmbed
-from discord.message import Message
 
 from pgbot import common
 
@@ -161,7 +160,7 @@ CONDENSED_EMBED_DATA_LIST_SYNTAX = """
 
     'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
-    datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
+    datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
 ]
 """
 
@@ -433,7 +432,7 @@ def create_embed_mask_dict(
             if attribs_tuple.count(attr) > 1:
                 raise ValueError(
                     "Invalid embed attribute filter string!"
-                    f" Do not specify top level embed attributes"
+                    " Do not specify top level embed attributes"
                     f" twice when not using the `.` operator: `{attr}`",
                 )
             elif attr in all_system_attribs_set and not allow_system_attributes:
@@ -659,7 +658,7 @@ class PagedEmbed:
         footer = f"Page {page_num + 1} of {len(self.pages)}.\n"
 
         if self.parent_command:
-            footer += f"Refresh by replying to this message with `pg!refresh`\n"
+            footer += "Refresh by replying to this message with `pg!refresh`\n"
             footer += f"Command: {self.parent_command}"
 
         return footer
@@ -1687,8 +1686,8 @@ def import_embed_data(
 
             if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
-                    f"The given string must contain a JSON object that"
-                    f" can be converted into a Python `dict` object"
+                    "The given string must contain a JSON object that"
+                    " can be converted into a Python `dict` object"
                 )
             if as_string:
                 json_data = json.dumps(json_data)
@@ -1701,7 +1700,7 @@ def import_embed_data(
             if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
                     f"the file at '{source}' must contain a JSON object that"
-                    f" can be converted into a Python `dict` object"
+                    " can be converted into a Python `dict` object"
                 )
             if as_string:
                 json_data = json.dumps(json_data)
@@ -1740,7 +1739,7 @@ def import_embed_data(
                     raise TypeError(
                         f", not '{type(data)}'"
                         f"the content of the file at '{source}' must be parsable into a"
-                        f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                        "literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                     ).with_traceback(e)
 
                 if not isinstance(data, dict) and as_dict:
@@ -1759,7 +1758,7 @@ def import_embed_data(
                         raise TypeError(
                             f", not '{type(data)}'"
                             f"the content of the file at '{source}' must be parsable into a"
-                            f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                            "literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                         ).with_traceback(e)
 
                     if not isinstance(data, dict) and as_dict:
@@ -1842,7 +1841,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     """
     Get member info in a string, utility function for the embed functions
     """
-    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
     if hasattr(member, "nick") and member.display_name:
@@ -1875,7 +1874,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
             + f"> {member_joined_at_fdtime}\n\n"
         )
     else:
-        member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
+        member_joined_at_info = "*Joined On*: \n> `...`\n\n"
 
     divider_roles = {} if common.GENERIC else common.ServerConstants.DIVIDER_ROLES
 
@@ -1936,7 +1935,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     """
     member: Union[discord.Member, discord.User] = msg.author
 
-    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
     msg_created_at_fdtime = msg.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
@@ -1959,7 +1958,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         )
 
     else:
-        msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
+        msg_edited_at_info = "*Last Edited On*: \n> `...`\n\n"
 
     msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"

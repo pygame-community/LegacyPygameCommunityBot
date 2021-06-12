@@ -16,7 +16,7 @@ def cleanup_code():
     """
     Clean up all files of a given extension under a directory
     """
-    for filepath in glob.iglob(f"**/*.py", recursive=True):
+    for filepath in glob.iglob("**/*.py", recursive=True):
         path = pathlib.Path(os.getcwd(), filepath)
         if black.format_file_in_place(
             path, False, black.FileMode(), black.WriteBack.YES
