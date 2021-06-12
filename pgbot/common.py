@@ -269,7 +269,8 @@ To be, or not to be, that is the question
 — SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet 
 """,
     """
-All the world's a stage, / And all the men and women merely players
+All the world's a stage,
+And all the men and women merely players
 — SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions 
 """,
     """
@@ -290,7 +291,8 @@ Be not afraid of greatness. Some are born great, some achieve greatness, and som
 — SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio 
 """,
     """
-When we are born we cry that we are come / To this great stage of fools
+When we are born we cry that we are come
+To this great stage of fools
 — SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester 
 """,
     """
