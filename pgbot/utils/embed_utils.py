@@ -639,6 +639,15 @@ class PagedEmbed:
         await self.message.edit(embed=self.pages[self.current_page])
 
     async def setup(self):
+        if not self.pages:
+            await replace(
+                self.message,
+                "Internal error occured!",
+                "Got empty embed list for PagedEmbed",
+                0xFF0000,
+            )
+            return False
+
         if len(self.pages) == 1:
             await self.message.edit(embed=self.pages[0])
             return False
