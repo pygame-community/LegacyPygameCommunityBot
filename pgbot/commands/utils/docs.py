@@ -174,6 +174,14 @@ async def put_main_doc(name: str, original_msg: discord.Message):
         if cnt >= common.DOC_EMBED_LIMIT:
             break
 
+    if not embeds:
+        await embed_utils.replace(
+            original_msg,
+            "Class/function/sub-module not found!",
+            f"There's no such thing here named `{name}`",
+        )
+        return None, None
+
     return module_objs, embeds
 
 
