@@ -82,29 +82,29 @@ class UserCommand(FunCommand, HelpCommand):
         # remove microsecond precision of the 'on' variable
         on -= datetime.timedelta(microseconds=on.microsecond)
 
-        db_obj = db.DiscordDB("reminders")
-        db_data = db_obj.get({})
-        if self.author.id not in db_data:
-            db_data[self.author.id] = {}
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
+            if self.author.id not in db_data:
+                db_data[self.author.id] = {}
 
-        # user is editing old reminder message, discard the old reminder
-        for key, (_, chan_id, msg_id) in tuple(db_data[self.author.id].items()):
-            if chan_id == self.channel.id and msg_id == self.invoke_msg.id:
-                db_data[self.author.id].pop(key)
+            # user is editing old reminder message, discard the old reminder
+            for key, (_, chan_id, msg_id) in tuple(db_data[self.author.id].items()):
+                if chan_id == self.channel.id and msg_id == self.invoke_msg.id:
+                    db_data[self.author.id].pop(key)
 
-        limit = 25 if self.is_priv else 10
-        if len(db_data[self.author.id]) >= limit:
-            raise BotException(
-                "Failed to set reminder!",
-                f"I cannot set more than {limit} reminders for you",
+            limit = 25 if self.is_priv else 10
+            if len(db_data[self.author.id]) >= limit:
+                raise BotException(
+                    "Failed to set reminder!",
+                    f"I cannot set more than {limit} reminders for you",
+                )
+
+            db_data[self.author.id][on] = (
+                msg.string.strip(),
+                self.channel.id,
+                self.invoke_msg.id,
             )
-
-        db_data[self.author.id][on] = (
-            msg.string.strip(),
-            self.channel.id,
-            self.invoke_msg.id,
-        )
-        db_obj.write(db_data)
+            db_obj.write(db_data)
 
         await embed_utils.replace(
             self.response_msg,
@@ -197,7 +197,8 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders, for users to view their reminders
         """
-        db_data = db.DiscordDB("reminders").get({})
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
 
         msg = "You have no reminders set"
         if self.author.id in db_data:
@@ -232,31 +233,35 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
-        db_obj = db.DiscordDB("reminders")
-        db_data = db_obj.get({})
-        db_data_copy = copy.deepcopy(db_data)
-        cnt = 0
-        if reminder_ids:
-            for reminder_id in sorted(set(reminder_ids), reverse=True):
-                if self.author.id in db_data:
-                    for i, dt in enumerate(db_data_copy[self.author.id]):
-                        if i == reminder_id:
-                            db_data[self.author.id].pop(dt)
-                            cnt += 1
-                            break
-                if reminder_id >= len(db_data_copy[self.author.id]) or reminder_id < 0:
-                    raise BotException(
-                        "Invalid Reminder ID!",
-                        "Reminder ID was not an existing reminder ID",
-                    )
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
+            db_data_copy = copy.deepcopy(db_data)
+            cnt = 0
+            if reminder_ids:
+                for reminder_id in sorted(set(reminder_ids), reverse=True):
+                    if self.author.id in db_data:
+                        for i, dt in enumerate(db_data_copy[self.author.id]):
+                            if i == reminder_id:
+                                db_data[self.author.id].pop(dt)
+                                cnt += 1
+                                break
+                    if (
+                        reminder_id >= len(db_data_copy[self.author.id])
+                        or reminder_id < 0
+                    ):
+                        raise BotException(
+                            "Invalid Reminder ID!",
+                            "Reminder ID was not an existing reminder ID",
+                        )
 
-            if self.author.id in db_data and not db_data[self.author.id]:
-                db_data.pop(self.author.id)
+                if self.author.id in db_data and not db_data[self.author.id]:
+                    db_data.pop(self.author.id)
 
-        elif self.author.id in db_data:
-            cnt = len(db_data.pop(self.author.id))
+            elif self.author.id in db_data:
+                cnt = len(db_data.pop(self.author.id))
 
-        db_obj.write(db_data)
+            db_obj.write(db_data)
+
         await embed_utils.replace(
             self.response_msg,
             "Reminders removed!",
@@ -664,7 +669,9 @@ class UserCommand(FunCommand, HelpCommand):
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
         """
-        data = db.DiscordDB("stream").get([])
+        async with db.DiscordDB("stream") as db_obj:
+            data = db_obj.get([])
+
         if not data:
             await embed_utils.replace(
                 self.response_msg,
@@ -693,17 +700,18 @@ class UserCommand(FunCommand, HelpCommand):
         Add yourself to the stream-ping-list. You can always delete you later
         with `pg!stream del`
         """
-        ping_db = db.DiscordDB("stream")
-        data: list = ping_db.get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
-        if _members:
-            for mem in _members:
-                if mem.id not in data:
-                    data.append(mem.id)
-        elif self.author.id not in data:
-            data.append(self.author.id)
+            if _members:
+                for mem in _members:
+                    if mem.id not in data:
+                        data.append(mem.id)
+            elif self.author.id not in data:
+                data.append(self.author.id)
 
-        ping_db.write(data)
+            ping_db.write(data)
+
         await self.cmd_stream()
 
     @add_group("stream", "del")
@@ -718,22 +726,23 @@ class UserCommand(FunCommand, HelpCommand):
         Remove yourself from the stream-ping-list. You can always add you later
         with `pg!stream add`
         """
-        ping_db = db.DiscordDB("stream")
-        data: list = ping_db.get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
-        try:
-            if _members:
-                for mem in _members:
-                    data.remove(mem.id)
-            else:
-                data.remove(self.author.id)
-        except ValueError:
-            raise BotException(
-                "Could not remove member",
-                "Member was not previously added to the ping list",
-            )
+            try:
+                if _members:
+                    for mem in _members:
+                        data.remove(mem.id)
+                else:
+                    data.remove(self.author.id)
+            except ValueError:
+                raise BotException(
+                    "Could not remove member",
+                    "Member was not previously added to the ping list",
+                )
 
-        ping_db.write(data)
+            ping_db.write(data)
+
         await self.cmd_stream()
 
     @add_group("stream", "ping")
@@ -748,7 +757,8 @@ class UserCommand(FunCommand, HelpCommand):
         The streamer name will be included and many people will be pinged so \
         don't make pranks with this command.
         """
-        data: list = db.DiscordDB("stream").get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
         msg = message.string if message else "Enjoy the stream!"
         ping = (

@@ -20,10 +20,8 @@ from discord.ext import tasks
 from pgbot import common, db, emotion
 from pgbot.utils import utils
 
-reminder_obj = db.DiscordDB("reminders")
 
-
-async def handle_reminders():
+async def handle_reminders(reminder_obj: db.DiscordDB):
     """
     Handle reminder routines
     """
@@ -119,10 +117,11 @@ async def routine():
     routine functions to handle stuff
     """
     if common.guild is not None:
-        await handle_reminders()
+        async with db.DiscordDB("reminders") as db_obj:
+            await handle_reminders(db_obj)
 
     if random.randint(0, 4) == 0:
-        emotion.update("bored", 1)
+        await emotion.update("bored", 1)
 
     await common.bot.change_presence(
         activity=discord.Activity(

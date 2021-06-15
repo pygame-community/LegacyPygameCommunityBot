@@ -21,30 +21,30 @@ EMOTION_CAPS = {
 }
 
 
-db_obj = db.DiscordDB("emotions")
-
-
-def update(emotion_name: str, value: int):
+async def update(emotion_name: str, value: int):
     """
     Update emotion characteristic 'emotion_name' with value 'value' integer
     """
-    emotions = db_obj.get({})
-    try:
-        emotions[emotion_name] += value
-    except KeyError:
-        emotions[emotion_name] = value
+    async with db.DiscordDB("emotions") as db_obj:
+        emotions = db_obj.get({})
+        try:
+            emotions[emotion_name] += value
+        except KeyError:
+            emotions[emotion_name] = value
 
-    emotions[emotion_name] = utils.clamp(
-        emotions[emotion_name], *EMOTION_CAPS[emotion_name]
-    )
-    db_obj.write(emotions)
+        emotions[emotion_name] = utils.clamp(
+            emotions[emotion_name], *EMOTION_CAPS[emotion_name]
+        )
+        db_obj.write(emotions)
 
 
-def get(emotion_name: str):
+async def get(emotion_name: str):
     """
     Get emotion characteristic 'emotion_name'
     """
-    emotions = db_obj.get({})
+    async with db.DiscordDB("emotions") as db_obj:
+        emotions = db_obj.get({})
+
     try:
         return emotions[emotion_name]
     except KeyError:
@@ -59,7 +59,7 @@ async def check_bonk(msg: discord.Message):
         return
 
     bonks = msg.content.count(common.BONK)
-    if get("anger") + bonks > 30:
+    if await get("anger") + bonks > 30:
         await embed_utils.send_2(
             msg.channel,
             title="Did you hit the snek?",
@@ -68,8 +68,8 @@ async def check_bonk(msg: discord.Message):
         )
     bonks = msg.content.count(common.BONK) // 5 + random.randint(0, 8)
 
-    update("anger", bonks)
-    update("happy", -bonks)
+    await update("anger", bonks)
+    await update("happy", -bonks)
 
 
 async def dad_joke(msg: discord.Message):
@@ -88,17 +88,18 @@ async def dad_joke(msg: discord.Message):
             await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
 
 
-def euphoria():
-    db_obj.write(
-        {
-            "happy": EMOTION_CAPS["happy"][1],
-            "anger": EMOTION_CAPS["anger"][0],
-            "bored": 0,
-            "confused": 0,
-        }
-    )
+async def euphoria():
+    async with db.DiscordDB("emotions") as db_obj:
+        db_obj.write(
+            {
+                "happy": EMOTION_CAPS["happy"][1],
+                "anger": EMOTION_CAPS["anger"][0],
+                "bored": 0,
+                "confused": 0,
+            }
+        )
 
 
 async def server_boost(msg: discord.Message):
-    euphoria()
+    await euphoria()
     await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")

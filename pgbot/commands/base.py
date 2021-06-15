@@ -772,14 +772,15 @@ class BaseCommand:
         cmd, args, kwargs = await self.parse_args()
 
         # command has been blacklisted from running
-        if cmd in db.DiscordDB("blacklist").get([]):
-            raise BotException(
-                "Cannot execute comamand!",
-                f"The command '{cmd}' has been temporarily been blocked from "
-                "running, while wizards are casting their spells on it!\n"
-                "Please try running the command after the maintenance work "
-                "has been finished",
-            )
+        async with db.DiscordDB("blacklist") as db_obj:
+            if cmd in db_obj.get([]):
+                raise BotException(
+                    "Cannot execute comamand!",
+                    f"The command '{cmd}' has been temporarily been blocked from "
+                    "running, while wizards are casting their spells on it!\n"
+                    "Please try running the command after the maintenance work "
+                    "has been finished",
+                )
 
         # First check if it is a group command, and handle it.
         # get the func object
@@ -820,7 +821,7 @@ class BaseCommand:
             )
 
         if hasattr(func, "fun_cmd"):
-            bored = emotion.get("bored")
+            bored = await emotion.get("bored")
             if bored < -60 and -bored / 100 >= random.random():
                 raise BotException(
                     "I am Exhausted!",
@@ -828,7 +829,7 @@ class BaseCommand:
                     "Give me a bit of a break, and I will be back to normal!",
                 )
 
-            confused = emotion.get("confused")
+            confused = await emotion.get("confused")
             if confused > 60 and random.random() < confused / 400:
                 await embed_utils.replace_2(
                     self.response_msg,
@@ -942,11 +943,11 @@ class BaseCommand:
         """
         try:
             await self.call_cmd()
-            emotion.update("confused", -random.randint(4, 8))
+            await emotion.update("confused", -random.randint(4, 8))
             return
 
         except ArgError as exc:
-            emotion.update("confused", random.randint(2, 6))
+            await emotion.update("confused", random.randint(2, 6))
             title = "Invalid Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -956,7 +957,7 @@ class BaseCommand:
             excname = "Argument Error"
 
         except KwargError as exc:
-            emotion.update("confused", random.randint(2, 6))
+            await emotion.update("confused", random.randint(2, 6))
             title = "Invalid Keyword Arguments!"
             if len(exc.args) == 2:
                 msg, cmd = exc.args
@@ -967,17 +968,17 @@ class BaseCommand:
             excname = "Keyword argument Error"
 
         except BotException as exc:
-            emotion.update("confused", random.randint(4, 8))
+            await emotion.update("confused", random.randint(4, 8))
             title, msg = exc.args
             excname = "BotException"
 
         except discord.HTTPException as exc:
-            emotion.update("confused", random.randint(7, 13))
+            await emotion.update("confused", random.randint(7, 13))
             title, msg = exc.__class__.__name__, exc.args[0]
             excname = "discord.HTTPException"
 
         except Exception:
-            emotion.update("confused", random.randint(10, 22))
+            await emotion.update("confused", random.randint(10, 22))
             await embed_utils.replace(
                 self.response_msg,
                 "Unknown Error!",
