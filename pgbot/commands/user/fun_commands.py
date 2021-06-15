@@ -150,7 +150,7 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!pet, to pet the bot
         """
-        fname = "die.gif" if emotion.get("anger") > 60 else "pet.gif"
+        fname = "die.gif" if await emotion.get("anger") > 60 else "pet.gif"
         await embed_utils.replace(
             self.response_msg,
             "",
@@ -160,7 +160,7 @@ class FunCommand(BaseCommand):
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
-        emotion.update("happy", random.randint(10, 15))
+        await emotion.update("happy", random.randint(10, 15))
 
     async def cmd_vibecheck(self):
         """
@@ -170,8 +170,8 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!vibecheck, to check the snek's emotion
         """
-        db_obj = db.DiscordDB("emotions")
-        all_emotions = db_obj.get({})
+        async with db.DiscordDB("emotions") as db_obj:
+            all_emotions = db_obj.get({})
 
         emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
         all_emotion_response = vibecheck.get_emotion_desc_dict(all_emotions)
@@ -223,7 +223,7 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!sorry, to ask forgiveness from the bot after bonccing it
         """
-        anger = emotion.get("anger")
+        anger = await emotion.get("anger")
         if not anger:
             await embed_utils.replace(
                 self.response_msg,
@@ -240,7 +240,7 @@ class FunCommand(BaseCommand):
                 "Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
             )
-            emotion.update("anger", -num)
+            await emotion.update("anger", -num)
         else:
             await embed_utils.replace(
                 self.response_msg,

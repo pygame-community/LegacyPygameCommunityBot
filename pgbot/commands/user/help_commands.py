@@ -113,57 +113,57 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        db_obj = db.DiscordDB("clock")
+        async with db.DiscordDB("clock") as db_obj:
 
-        timezones = db_obj.get({})
-        if action:
-            if _member is None:
-                member = self.author
-                if member.id not in timezones:
-                    raise BotException(
-                        "Cannot update clock!",
-                        "You cannot run clock update commands because you are "
-                        + "not on the clock",
-                    )
-            else:
-                member = _member
-
-            if action == "update":
-                if abs(timezone) > 12:
-                    raise BotException(
-                        "Failed to update clock!", "Timezone offset out of range"
-                    )
-
-                if member.id in timezones:
-                    timezones[member.id][0] = timezone
-                    if color is not None:
-                        timezones[member.id][1] = utils.color_to_rgb_int(color)
+            timezones = db_obj.get({})
+            if action:
+                if _member is None:
+                    member = self.author
+                    if member.id not in timezones:
+                        raise BotException(
+                            "Cannot update clock!",
+                            "You cannot run clock update commands because you are "
+                            + "not on the clock",
+                        )
                 else:
-                    if color is None:
+                    member = _member
+
+                if action == "update":
+                    if abs(timezone) > 12:
+                        raise BotException(
+                            "Failed to update clock!", "Timezone offset out of range"
+                        )
+
+                    if member.id in timezones:
+                        timezones[member.id][0] = timezone
+                        if color is not None:
+                            timezones[member.id][1] = utils.color_to_rgb_int(color)
+                    else:
+                        if color is None:
+                            raise BotException(
+                                "Failed to update clock!",
+                                "Color argument is required when adding new people",
+                            )
+                        timezones[member.id] = [timezone, utils.color_to_rgb_int(color)]
+
+                    # sort timezones dict after an update operation
+                    timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
+
+                elif action == "remove":
+                    try:
+                        timezones.pop(member.id)
+                    except KeyError:
                         raise BotException(
                             "Failed to update clock!",
-                            "Color argument is required when adding new people",
+                            "Cannot remove non-existing person from clock",
                         )
-                    timezones[member.id] = [timezone, utils.color_to_rgb_int(color)]
 
-                # sort timezones dict after an update operation
-                timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
-
-            elif action == "remove":
-                try:
-                    timezones.pop(member.id)
-                except KeyError:
+                else:
                     raise BotException(
-                        "Failed to update clock!",
-                        "Cannot remove non-existing person from clock",
+                        "Failed to update clock!", f"Invalid action specifier {action}"
                     )
 
-            else:
-                raise BotException(
-                    "Failed to update clock!", f"Invalid action specifier {action}"
-                )
-
-            db_obj.write(timezones)
+                db_obj.write(timezones)
 
         t = time.time()
 
