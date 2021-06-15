@@ -79,7 +79,7 @@ async def handle_reminders(reminder_obj: db.DiscordDB):
 
 async def handle_mutes(mute_obj: db.DiscordDB):
     bot_mutes = mute_obj.get({})
-    for user_id, mute_time in bot_mutes.items():
+    for user_id, mute_time in tuple(bot_mutes.items()):
         if datetime.datetime.utcnow() >= mute_time:
             del bot_mutes[user_id]
     mute_obj.write(bot_mutes)
@@ -127,8 +127,8 @@ async def routine():
     if common.guild is not None:
         async with db.DiscordDB("reminders") as db_obj:
             await handle_reminders(db_obj)
-        async with db.DiscordDB("bot_mutes") as db_obj:
-            await handle_mutes(db_obj)
+    async with db.DiscordDB("bot_mutes") as db_obj:
+        await handle_mutes(db_obj)
 
     if random.randint(0, 4) == 0:
         await emotion.update("bored", 1)

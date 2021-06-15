@@ -97,24 +97,25 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
     ):
         return
 
-    async with db.DiscordDB("bot_mutes") as db_obj:
-        muted_users = db_obj.get({})
-
-    if invoke_msg.author.id in muted_users:
-        await embed_utils.send_2(
-            invoke_msg.channel,
-            title="Do you think I'm your servant?",
-            description="How **dare** you assume I would work for the likes of you! Go back and take time to reconsider what you did, and then **maybe** I'll work for you.",
-            thumbnail_url="https://cdn.discordapp.com/emojis/779654121627058187.png?v=1",
-        )
-        return
-
     if response_msg is None:
         response_msg = await embed_utils.send_2(
             invoke_msg.channel,
             title="Your command is being processed:",
             fields=(("\u2800", "`Loading...`", False),),
         )
+
+    async with db.DiscordDB("bot_mutes") as db_obj:
+        muted_users = db_obj.get({})
+
+    if invoke_msg.author.id in muted_users:
+        response_msg = await embed_utils.send_2(
+            invoke_msg.channel,
+            title="Do you think I'm your servant?",
+            description="How **dare** you assume I would work for the likes of you! "
+            "Go back and take time to reconsider what you did, and then **maybe** I'll work for you.",
+            thumbnail_url="https://cdn.discordapp.com/emojis/779654121627058187.png?v=1",
+        )
+        return
 
     if not common.TEST_MODE and not common.GENERIC:
         log_txt_file = None
