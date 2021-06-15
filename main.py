@@ -74,7 +74,7 @@ async def on_raw_reaction_add(payload):
     """
     This function is called for every reaction added by user.
     """
-    if payload.member.bot:
+    if payload.member.bot or payload.member is None:
         return
 
     await pgbot.raw_reaction_add(payload)
