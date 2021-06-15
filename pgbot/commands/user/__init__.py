@@ -413,6 +413,7 @@ class UserCommand(FunCommand, HelpCommand):
         *emojis: tuple[str, String],
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
+        unique: Optional[bool] = True,
     ):
         """
         ->type Other commands
@@ -504,6 +505,12 @@ class UserCommand(FunCommand, HelpCommand):
                     "The emoji could not be added as a reaction. Make sure it is"
                     " the correct emoji and that it is not from another server",
                 )
+
+        db_obj = db.DiscordDB("polls")
+        all_polls = db_obj.get({})
+        all_polls[poll_msg.id] = True if unique else False
+
+        db_obj.write(all_polls)
 
     async def cmd_close_poll(self, msg=None):
         """
@@ -636,6 +643,13 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
+
+        db_obj = db.DiscordDB("polls")
+        all_poll_info = db_obj.get({})
+
+        del all_poll_info[msg.id]
+
+        db_obj.write(all_poll_info)
 
     @add_group("stream")
     async def cmd_stream(self):

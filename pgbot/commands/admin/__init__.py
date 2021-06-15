@@ -483,9 +483,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         if len(msg.content) > 2000:
                             start_idx = 0
                             stop_idx = 0
-                            for i in range(len(msg.content)//2000):
-                                start_idx = 2000*i
-                                stop_idx = 2000+2000*i
+                            for i in range(len(msg.content) // 2000):
+                                start_idx = 2000 * i
+                                stop_idx = 2000 + 2000 * i
 
                                 if not i:
                                     await destination.send(
@@ -497,15 +497,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                         content=msg.content[start_idx:stop_idx],
                                         allowed_mentions=no_mentions,
                                     )
-                            
+
                             with io.StringIO(msg.content) as fobj:
                                 await destination.send(
                                     content=msg.content[stop_idx:],
-                                    embed=embed_utils.create(footer_text="Full message data"),
+                                    embed=embed_utils.create(
+                                        footer_text="Full message data"
+                                    ),
                                     file=discord.File(fobj, filename="messagedata.txt"),
                                     allowed_mentions=no_mentions,
                                 )
-                            
+
                             await destination.send(
                                 embed=msg_embed,
                                 file=attached_files[0] if attached_files else None,
@@ -551,9 +553,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         else:
                             await embed_utils.send_2(
                                 self.channel,
-                                description="```\n{0}```".format(
-                                    escaped_msg_content
-                                ),
+                                description="```\n{0}```".format(escaped_msg_content),
                             )
 
                     if attached_files:
@@ -967,6 +967,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         desc: String,
         *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
+        unique: Optional[bool] = True,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
@@ -1015,7 +1016,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
         return await super().cmd_poll(
-            desc, *emojis, _destination=destination, _admin_embed_dict=embed_dict
+            desc,
+            *emojis,
+            _destination=destination,
+            _admin_embed_dict=embed_dict,
+            unique=unique,
         )
 
     @no_dm
