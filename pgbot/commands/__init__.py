@@ -108,8 +108,8 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         muted_users = db_obj.get({})
 
     if invoke_msg.author.id in muted_users:
-        response_msg = await embed_utils.send_2(
-            invoke_msg.channel,
+        await embed_utils.send_2(
+            response_msg,
             title="Do you think I'm your servant?",
             description="How **dare** you assume I would work for the likes of you! "
             "Go back and take time to reconsider what you did, and then **maybe** I'll work for you.",
