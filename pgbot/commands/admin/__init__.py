@@ -970,6 +970,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         desc: String,
         *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
+        unique: bool = True,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
@@ -978,13 +979,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
+        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail] [unique=True]
         ->description Start a poll.
         ->extended description
         The args must series of two element tuples, first element being emoji,
         and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         Additionally admins can specify some keyword arguments to improve the appearance of the poll
+        A `unique` arg can also be passed indicating if the poll should be unique or not.
+        If unique is True, then users can only vote once.
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
@@ -1018,7 +1021,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
         return await super().cmd_poll(
-            desc, *emojis, _destination=destination, _admin_embed_dict=embed_dict
+            desc,
+            *emojis,
+            _destination=destination,
+            _admin_embed_dict=embed_dict,
+            unique=unique,
         )
 
     @no_dm

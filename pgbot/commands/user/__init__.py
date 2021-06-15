@@ -418,16 +418,19 @@ class UserCommand(FunCommand, HelpCommand):
         *emojis: tuple[str, String],
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
+        unique: bool = True,
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis]
+        ->signature pg!poll <description> [*emojis] [unique=True]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
         The args must series of two element tuples, first element being emoji,
         and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
+        A `unique` arg can also be passed indicating if the poll should be unique or not.
+        If unique is True, then users can only vote once.
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
@@ -509,6 +512,14 @@ class UserCommand(FunCommand, HelpCommand):
                     "The emoji could not be added as a reaction. Make sure it is"
                     " the correct emoji and that it is not from another server",
                 )
+
+        if unique:
+            async with db.DiscordDB("polls") as db_obj:
+                all_polls = db_obj.get([])
+
+                all_polls.append(poll_msg.id)
+
+                db_obj.write(all_polls)
 
     async def cmd_close_poll(self, msg=None):
         """
@@ -641,6 +652,16 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
+        
+        async with db.DiscordDB("polls") as db_obj:
+            all_poll_info = db_obj.get([])
+
+            try:
+                all_poll_info.remove(msg.id)
+            except ValueError:
+                pass
+    
+            db_obj.write(all_poll_info)
 
     @add_group("stream")
     async def cmd_stream(self):

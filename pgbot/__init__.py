@@ -226,6 +226,26 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 pass
 
 
+async def raw_reaction_add(payload):
+    async with db.DiscordDB("polls") as db_obj:
+        all_poll_info = db_obj.get([])
+
+    if payload.message_id in all_poll_info:
+        channel = await common.bot.fetch_channel(payload.channel_id)
+        msg = await channel.fetch_message(payload.message_id)
+
+        all_reactions_user = {
+            reaction: user
+            for reaction in msg.reactions
+            for user in await reaction.users().flatten()
+            if user.id == payload.user_id and reaction.emoji != payload.emoji.name
+        }
+
+        if len(all_reactions_user) > 0:
+            for reaction, user in all_reactions_user.items():
+                await reaction.remove(user)
+
+
 async def handle_message(msg: discord.Message):
     """
     Handle a message posted by user
