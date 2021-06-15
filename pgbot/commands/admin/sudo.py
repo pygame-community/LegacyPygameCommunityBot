@@ -623,11 +623,16 @@ class SudoCommand(BaseCommand):
 
                 info_embed.description = "".join(
                     (
-                        f"__Text"+ ( " (Shortened)" if len(escaped_msg_content) > 2000 else "") +"__:",
-                        f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```" + "\n\u2800" if len(escaped_msg_content) > 2000 else "\n\u2800"
+                        f"__Text"
+                        + (" (Shortened)" if len(escaped_msg_content) > 2000 else "")
+                        + "__:",
+                        f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```"
+                        + "\n\u2800"
+                        if len(escaped_msg_content) > 2000
+                        else "\n\u2800",
                     )
                 )
-                
+
                 content_file = None
                 if as_attachment or len(msg.content) > 2000:
                     with io.StringIO(msg.content) as fobj:
@@ -658,9 +663,7 @@ class SudoCommand(BaseCommand):
                     await embed_utils.send_2(
                         self.channel,
                         author_name="Message data",
-                        description="```\n{0}```".format(
-                            escaped_msg_content
-                        ),
+                        description="```\n{0}```".format(escaped_msg_content),
                         fields=(
                             (
                                 "\u2800",
@@ -1056,9 +1059,9 @@ class SudoCommand(BaseCommand):
                 if len(msg.content) > 2000:
                     start_idx = 0
                     stop_idx = 0
-                    for i in range(len(msg.content)//2000):
-                        start_idx = 2000*i
-                        stop_idx = 2000+2000*i
+                    for i in range(len(msg.content) // 2000):
+                        start_idx = 2000 * i
+                        stop_idx = 2000 + 2000 * i
 
                         if not i:
                             cloned_msg0 = await destination.send(
@@ -1070,7 +1073,7 @@ class SudoCommand(BaseCommand):
                                 content=msg.content[start_idx:stop_idx],
                                 allowed_mentions=no_mentions,
                             )
-                    
+
                     with io.StringIO(msg.content) as fobj:
                         await destination.send(
                             content=msg.content[stop_idx:],
@@ -1078,7 +1081,7 @@ class SudoCommand(BaseCommand):
                             file=discord.File(fobj, filename="messagedata.txt"),
                             allowed_mentions=no_mentions,
                         )
-                    
+
                     await destination.send(
                         embed=msg.embeds[0] if msg.embeds and embeds else None,
                         file=attached_files[0] if attached_files else None,

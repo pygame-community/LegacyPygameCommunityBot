@@ -9,6 +9,7 @@ import random
 
 import discord
 import unidecode
+import datetime
 
 from pgbot import common, db
 from pgbot.utils import embed_utils, utils
@@ -66,6 +67,17 @@ async def check_bonk(msg: discord.Message):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
+    if bonks >= 10:
+        async with db.DiscordDB("bot_mutes") as db_obj:
+            bot_mutes = db_obj.get({})
+            # If user is already muted, then add more time to their mute
+            if msg.author.id in bot_mutes:
+                bot_mutes[msg.author.id] += datetime.timedelta(minutes=(bonks / 2))
+            else:
+                bot_mutes[
+                    msg.author.id
+                ] = datetime.datetime.utcnow() + datetime.timedelta(minutes=(bonks / 3))
+            db_obj.write(bot_mutes)
     bonks = msg.content.count(common.BONK) // 5 + random.randint(0, 8)
 
     await update("anger", bonks)
