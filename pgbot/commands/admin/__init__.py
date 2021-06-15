@@ -68,10 +68,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_read, to visualise DB messages
         """
-        str_obj = black.format_str(
-            repr(db.DiscordDB(name).get()),
-            mode=black.FileMode(),
-        )
+        async with db.DiscordDB(name) as db_obj:
+            str_obj = black.format_str(
+                repr(db_obj.get()),
+                mode=black.FileMode(),
+            )
 
         with io.StringIO(str_obj) as fobj:
             await self.channel.send(
@@ -102,7 +103,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Failed to overwrite DB", "File attachment was not found"
             )
 
-        db.DiscordDB(name).write(eval(obj_str))
+        async with db.DiscordDB(name) as db_obj:
+            db_obj.write(eval(obj_str))
 
         await embed_utils.replace(
             self.response_msg,
@@ -120,8 +122,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         Implement pg!db_del, to delete DB messages
         """
 
-        if not db.DiscordDB(name).delete():
-            raise BotException("Could not delete DB", "No such DB exists")
+        async with db.DiscordDB(name) as db_obj:
+            if not db_obj.delete():
+                raise BotException("Could not delete DB", "No such DB exists")
 
         await embed_utils.replace(
             self.response_msg,
@@ -137,15 +140,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!whitelist_cmd, to whitelist commands
         """
-        db_obj = db.DiscordDB("blacklist")
-        commands = db_obj.get([])
-        cnt = 0
-        for cmd in cmds:
-            if cmd in commands:
-                cnt += 1
-                commands.remove(cmd)
+        async with db.DiscordDB("blacklist") as db_obj:
+            commands = db_obj.get([])
+            cnt = 0
+            for cmd in cmds:
+                if cmd in commands:
+                    cnt += 1
+                    commands.remove(cmd)
 
-        db_obj.write(commands)
+            db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -161,16 +164,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!blacklist_cmd, to blacklist commands
         """
-        db_obj = db.DiscordDB("blacklist")
-        commands = db_obj.get([])
+        async with db.DiscordDB("blacklist") as db_obj:
+            commands = db_obj.get([])
 
-        cnt = 0
-        for cmd in cmds:
-            if cmd not in commands and cmd != "whitelist_cmd":
-                cnt += 1
-                commands.append(cmd)
+            cnt = 0
+            for cmd in cmds:
+                if cmd not in commands and cmd != "whitelist_cmd":
+                    cnt += 1
+                    commands.append(cmd)
 
-        db_obj.write(commands)
+            db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -483,9 +486,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         if len(msg.content) > 2000:
                             start_idx = 0
                             stop_idx = 0
-                            for i in range(len(msg.content)//2000):
-                                start_idx = 2000*i
-                                stop_idx = 2000+2000*i
+                            for i in range(len(msg.content) // 2000):
+                                start_idx = 2000 * i
+                                stop_idx = 2000 + 2000 * i
 
                                 if not i:
                                     await destination.send(
@@ -497,15 +500,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                         content=msg.content[start_idx:stop_idx],
                                         allowed_mentions=no_mentions,
                                     )
-                            
+
                             with io.StringIO(msg.content) as fobj:
                                 await destination.send(
                                     content=msg.content[stop_idx:],
-                                    embed=embed_utils.create(footer_text="Full message data"),
+                                    embed=embed_utils.create(
+                                        footer_text="Full message data"
+                                    ),
                                     file=discord.File(fobj, filename="messagedata.txt"),
                                     allowed_mentions=no_mentions,
                                 )
-                            
+
                             await destination.send(
                                 embed=msg_embed,
                                 file=attached_files[0] if attached_files else None,
@@ -551,9 +556,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         else:
                             await embed_utils.send_2(
                                 self.channel,
-                                description="```\n{0}```".format(
-                                    escaped_msg_content
-                                ),
+                                description="```\n{0}```".format(escaped_msg_content),
                             )
 
                     if attached_files:
