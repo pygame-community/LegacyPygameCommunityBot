@@ -647,9 +647,12 @@ class UserCommand(FunCommand, HelpCommand):
             pass
 
         db_obj = db.DiscordDB("polls")
-        all_poll_info = db_obj.get({})
+        all_poll_info = db_obj.get([])
 
-        del all_poll_info[msg.id]
+        try:
+            all_poll_info.remove(msg.id)
+        except ValueError:
+            pass
 
         db_obj.write(all_poll_info)
 
