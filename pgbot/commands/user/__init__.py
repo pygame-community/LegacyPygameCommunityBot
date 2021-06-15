@@ -413,7 +413,7 @@ class UserCommand(FunCommand, HelpCommand):
         *emojis: tuple[str, String],
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
-        unique: Optional[bool] = True,
+        unique: bool = True,
     ):
         """
         ->type Other commands
@@ -506,11 +506,13 @@ class UserCommand(FunCommand, HelpCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-        db_obj = db.DiscordDB("polls")
-        all_polls = db_obj.get({})
-        all_polls[poll_msg.id] = True if unique else False
+        if unique:
+            db_obj = db.DiscordDB("polls")
+            all_polls = db_obj.get([])
 
-        db_obj.write(all_polls)
+            all_polls.append(poll_msg.id)
+
+            db_obj.write(all_polls)
 
     async def cmd_close_poll(self, msg=None):
         """

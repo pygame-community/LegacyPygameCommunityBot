@@ -228,9 +228,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
 async def raw_reaction_add(payload):
     db_obj = db.DiscordDB("polls")
-    all_poll_info = db_obj.get({})
+    all_poll_info = db_obj.get([])
 
-    if payload.message_id in all_poll_info.keys() and all_poll_info[payload.message_id]:
+    if payload.message_id in all_poll_info:
         channel = await common.bot.fetch_channel(payload.channel_id)
         msg = await channel.fetch_message(payload.message_id)
 

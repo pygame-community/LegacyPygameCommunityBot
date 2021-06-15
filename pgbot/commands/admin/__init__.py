@@ -967,7 +967,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         desc: String,
         *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
-        unique: Optional[bool] = True,
+        unique: bool = True,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
