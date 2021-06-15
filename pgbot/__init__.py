@@ -227,6 +227,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
 
 async def raw_reaction_add(payload):
+    if payload.member is None:
+        return
+
     async with db.DiscordDB("polls") as db_obj:
         all_poll_info = db_obj.get([])
 

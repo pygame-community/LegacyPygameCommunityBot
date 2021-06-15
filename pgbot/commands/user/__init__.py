@@ -422,13 +422,15 @@ class UserCommand(FunCommand, HelpCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis]
+        ->signature pg!poll <description> [*emojis] [unique=True]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
         The args must series of two element tuples, first element being emoji,
         and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
+        A `unique` arg can also be passed indicating if the poll should be unique or not.
+        If unique is True, then users can only vote once.
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
