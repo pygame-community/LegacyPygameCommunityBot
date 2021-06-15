@@ -512,12 +512,12 @@ class UserCommand(FunCommand, HelpCommand):
                 )
 
         if unique:
-            db_obj = db.DiscordDB("polls")
-            all_polls = db_obj.get([])
+            async with db.DiscordDB("polls") as db_obj:
+                all_polls = db_obj.get([])
 
-            all_polls.append(poll_msg.id)
+                all_polls.append(poll_msg.id)
 
-            db_obj.write(all_polls)
+                db_obj.write(all_polls)
 
     async def cmd_close_poll(self, msg=None):
         """
@@ -650,16 +650,16 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
+        
+        async with db.DiscordDB("polls") as db_obj:
+            all_poll_info = db_obj.get([])
 
-        db_obj = db.DiscordDB("polls")
-        all_poll_info = db_obj.get([])
-
-        try:
-            all_poll_info.remove(msg.id)
-        except ValueError:
-            pass
-
-        db_obj.write(all_poll_info)
+            try:
+                all_poll_info.remove(msg.id)
+            except ValueError:
+                pass
+    
+            db_obj.write(all_poll_info)
 
     @add_group("stream")
     async def cmd_stream(self):
