@@ -560,7 +560,7 @@ class PagedEmbed:
         self.current_page = num % len(self.pages)
         await self.message.edit(embed=self.pages[self.current_page])
 
-    async def setup(self):
+    async def _setup(self):
         if len(self.pages) == 1:
             await self.message.edit(embed=self.pages[0])
             return False
@@ -602,7 +602,7 @@ class PagedEmbed:
 
     async def mainloop(self):
         """Start the mainloop. This checks for reactions and handles them."""
-        if not await self.setup():
+        if not await self._setup():
             return
 
         while not self.killed:
