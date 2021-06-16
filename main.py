@@ -69,5 +69,16 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
     await pgbot.message_edit(old, new)
 
 
+@bot.event
+async def on_raw_reaction_add(payload):
+    """
+    This function is called for every reaction added by user.
+    """
+    if payload.member is None or payload.member.bot:
+        return
+
+    await pgbot.raw_reaction_add(payload)
+
+
 if __name__ == "__main__":
     pgbot.run()

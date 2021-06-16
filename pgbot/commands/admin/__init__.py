@@ -36,6 +36,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     Base class for all admin commands
     """
 
+    async def cmd_test_parser(self, *args, **kwargs):
+        """
+        ->skip
+        """
+        await embed_utils.replace(
+            self.response_msg,
+            "Here are the args and kwargs you passed",
+            utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
+        )
+
     @add_group("db")
     async def cmd_db(self):
         """
@@ -59,10 +69,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_read, to visualise DB messages
         """
-        str_obj = black.format_str(
-            repr(db.DiscordDB(name).get()),
-            mode=black.FileMode(),
-        )
+        async with db.DiscordDB(name) as db_obj:
+            str_obj = black.format_str(
+                repr(db_obj.get()),
+                mode=black.FileMode(),
+            )
 
         with io.StringIO(str_obj) as fobj:
             await self.channel.send(
@@ -76,7 +87,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             pass
 
     @add_group("db", "write")
-    async def cmd_db_write(self, name: str, data: CodeBlock):
+    async def cmd_db_write(self, name: str, data: Union[discord.Message, CodeBlock]):
         """
         ->type Admin commands
         ->signature pg!db write <name> <data>
@@ -84,8 +95,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_write, to overwrite DB messages
         """
+        if isinstance(data, CodeBlock):
+            obj_str = data.code
+        elif data.attachments:
+            obj_str = (await data.attachments[0].read()).decode()
+        else:
+            raise BotException(
+                "Failed to overwrite DB", "File attachment was not found"
+            )
 
-        db.DiscordDB(name).write(eval(data.code))
+        async with db.DiscordDB(name) as db_obj:
+            db_obj.write(eval(obj_str))
 
         await embed_utils.replace(
             self.response_msg,
@@ -103,8 +123,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         Implement pg!db_del, to delete DB messages
         """
 
-        if not db.DiscordDB(name).delete():
-            raise BotException("Could not delete DB", "No such DB exists")
+        async with db.DiscordDB(name) as db_obj:
+            if not db_obj.delete():
+                raise BotException("Could not delete DB", "No such DB exists")
 
         await embed_utils.replace(
             self.response_msg,
@@ -120,15 +141,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!whitelist_cmd, to whitelist commands
         """
-        db_obj = db.DiscordDB("blacklist")
-        commands = db_obj.get([])
-        cnt = 0
-        for cmd in cmds:
-            if cmd in commands:
-                cnt += 1
-                commands.remove(cmd)
+        async with db.DiscordDB("blacklist") as db_obj:
+            commands = db_obj.get([])
+            cnt = 0
+            for cmd in cmds:
+                if cmd in commands:
+                    cnt += 1
+                    commands.remove(cmd)
 
-        db_obj.write(commands)
+            db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -144,16 +165,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!blacklist_cmd, to blacklist commands
         """
-        db_obj = db.DiscordDB("blacklist")
-        commands = db_obj.get([])
+        async with db.DiscordDB("blacklist") as db_obj:
+            commands = db_obj.get([])
 
-        cnt = 0
-        for cmd in cmds:
-            if cmd not in commands and cmd != "whitelist_cmd":
-                cnt += 1
-                commands.append(cmd)
+            cnt = 0
+            for cmd in cmds:
+                if cmd not in commands and cmd != "whitelist_cmd":
+                    cnt += 1
+                    commands.append(cmd)
 
-        db_obj.write(commands)
+            db_obj.write(commands)
 
         await embed_utils.replace(
             self.response_msg,
@@ -181,6 +202,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         return await super().cmd_clock(action, timezone, color, _member=member)
 
+    @no_dm
     async def cmd_eval(self, code: CodeBlock):
         """
         ->type Admin commands
@@ -189,6 +211,24 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!eval, for admins to run arbitrary code on the bot
         """
+        # make typecheckers happy
+        if not isinstance(self.author, discord.Member):
+            return
+
+        evalable = False
+        for role in self.author.roles:
+            if role.id in common.ServerConstants.EVAL_ROLES:
+                evalable = True
+
+        if common.TEST_MODE and self.author.id in common.TEST_USER_IDS:
+            evalable = True
+
+        if not evalable:
+            raise BotException(
+                "Insufficient perms",
+                "The `eval` command needs Server Admin or Mage level perms",
+            )
+
         try:
             script = compile(code.code, "<string>", "eval")  # compile script
 
@@ -196,11 +236,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             eval_output = eval(script)  # pylint: disable = eval-used
             total = time.perf_counter() - script_start
 
-            await embed_utils.replace(
-                self.response_msg,
-                f"Return output (code executed in {utils.format_time(total)}):",
-                utils.code_block(repr(eval_output)),
-            )
         except Exception as ex:
             raise BotException(
                 "An exception occured:",
@@ -208,6 +243,12 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
                 ),
             )
+
+        await embed_utils.replace(
+            self.response_msg,
+            f"Return output (code executed in {utils.format_time(total)}):",
+            utils.code_block(repr(eval_output)),
+        )
 
     async def cmd_heap(self):
         """
@@ -241,7 +282,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         self,
         origin: discord.TextChannel,
         quantity: int,
-        mode: Optional[int] = 0,
+        mode: int = 0,
         destination: Optional[common.Channel] = None,
         before: Optional[Union[discord.Message, datetime.datetime]] = None,
         after: Optional[Union[discord.Message, datetime.datetime]] = None,
@@ -276,7 +317,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel(s).",
             )
 
@@ -289,7 +330,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             )
 
         tz_utc = datetime.timezone.utc
-        datetime_format_str = f"%a, %d %b %Y - %H:%M:%S (UTC)"
+        datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
         if isinstance(before, discord.Message) and before.channel.id != origin.id:
@@ -366,7 +407,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         no_mentions = discord.AllowedMentions.none()
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(messages)
@@ -381,7 +422,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         dict(
                             name="Archiving Messages",
                             value=f"`{i}/{msg_count}` messages archived\n"
-                            f"{(i/msg_count)*100:.01f}% | "
+                            f"{(i / msg_count) * 100:.01f}% | "
                             + utils.progress_bar(i / msg_count, divisions=30),
                         ),
                         0,
@@ -393,7 +434,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
-                        if a.size <= common.GUILD_MAX_FILE_SIZE
+                        if a.size <= self.filesize_limit
                         else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                     )
                     for a in msg.attachments
@@ -443,21 +484,60 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         ):
                             msg_embed = None
 
-                        await destination.send(
-                            content=msg.content,
-                            embed=msg_embed,
-                            file=attached_files[0] if attached_files else None,
-                            allowed_mentions=no_mentions,
-                        )
+                        if len(msg.content) > 2000:
+                            start_idx = 0
+                            stop_idx = 0
+                            for i in range(len(msg.content) // 2000):
+                                start_idx = 2000 * i
+                                stop_idx = 2000 + 2000 * i
+
+                                if not i:
+                                    await destination.send(
+                                        content=msg.content[start_idx:stop_idx],
+                                        allowed_mentions=no_mentions,
+                                    )
+                                else:
+                                    await destination.send(
+                                        content=msg.content[start_idx:stop_idx],
+                                        allowed_mentions=no_mentions,
+                                    )
+
+                            with io.StringIO(msg.content) as fobj:
+                                await destination.send(
+                                    content=msg.content[stop_idx:],
+                                    embed=embed_utils.create(
+                                        footer_text="Full message data"
+                                    ),
+                                    file=discord.File(fobj, filename="messagedata.txt"),
+                                    allowed_mentions=no_mentions,
+                                )
+
+                            await destination.send(
+                                embed=msg_embed,
+                                file=attached_files[0] if attached_files else None,
+                            )
+                        else:
+                            await destination.send(
+                                content=msg.content,
+                                embed=msg_embed,
+                                file=attached_files[0] if attached_files else None,
+                                allowed_mentions=no_mentions,
+                            )
+
                     elif msg.type == discord.MessageType.pins_add:
                         await destination.send(
                             content=f"{msg.author.name}#{msg.author.discriminator} pinned a message in #{origin.name}"
                         )
 
+                    elif msg.type == discord.MessageType.premium_guild_subscription:
+                        await destination.send(
+                            content=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
+                        )
+
                     if len(attached_files) > 1:
                         for i in range(1, len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -468,18 +548,22 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                 elif mode == 1:
                     if msg.content:
-                        await destination.send(
-                            embed=embed_utils.create(
-                                author_name="Message data",
-                                description=f"```\n{msg.content}\n```",
-                            ),
-                            allowed_mentions=no_mentions,
-                        )
+                        escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
+                        if len(msg.content) > 2000 or len(escaped_msg_content) > 2000:
+                            with io.StringIO(msg.content) as fobj:
+                                await destination.send(
+                                    file=discord.File(fobj, "messagedata.txt"),
+                                )
+                        else:
+                            await embed_utils.send_2(
+                                self.channel,
+                                description="```\n{0}```".format(escaped_msg_content),
+                            )
 
                     if attached_files:
                         for i in range(len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -498,7 +582,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
-                                content=f"**Message embed** ({i+1}):",
+                                content=f"**Message embed** ({i + 1}):",
                                 file=discord.File(
                                     embed_data_fobjs[i], filename="embeddata.json"
                                 ),
@@ -518,7 +602,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     if attached_files:
                         for i in range(len(attached_files)):
                             await destination.send(
-                                content=f"**Message attachment** ({i+1}):",
+                                content=f"**Message attachment** ({i + 1}):",
                                 file=attached_files[i],
                             )
 
@@ -537,7 +621,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
-                                content=f"**Message embed** ({i+1}):",
+                                content=f"**Message embed** ({i + 1}):",
                                 file=discord.File(
                                     embed_data_fobjs[i], filename="embeddata.json"
                                 ),
@@ -564,7 +648,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Successfully archived {msg_count} message(s)",
                 value=f"`{msg_count}/{msg_count}` messages archived\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -595,18 +679,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No message IDs given as input.",
             )
         elif len(msgs) > 50:
             raise BotException(
-                f"Too many arguments!",
+                "Too many arguments!",
                 "Cannot pin more than 50 messages in a channel.",
             )
 
@@ -630,7 +714,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         msg_count = len(input_msgs)
@@ -642,7 +726,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
+                        f"{(i / msg_count) * 100:.01f}% | "
                         + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
@@ -657,7 +741,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     await (
                         await channel.fetch_message(channel.last_message_id)
                     ).delete()
-                except (discord.HTTPException, discord.NotFound) as e:
+                except (discord.HTTPException, discord.NotFound):
                     pass
 
             await asyncio.sleep(0)
@@ -668,7 +752,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
                 value=f"`{msg_count}/{msg_count}` messages pinned\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -699,18 +783,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not msgs:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No message IDs given as input.",
             )
         elif len(msgs) > 50:
             raise BotException(
-                f"Too many arguments!",
+                "Too many arguments!",
                 "No more than 50 messages can be pinned in a channel.",
             )
         elif not all(msg.channel.id == channel.id for msg in msgs):
@@ -725,7 +809,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -738,7 +822,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
+                        f"{(i / msg_count) * 100:.01f}% | "
                         + utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
@@ -758,7 +842,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {msg_count} message(s)!",
                 value=f"`{msg_count}/{msg_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -787,13 +871,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "manage_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
         if not indices:
             raise BotException(
-                f"Invalid arguments!",
+                "Invalid arguments!",
                 "No channel pin list indices given as input.",
             )
 
@@ -803,7 +887,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not pinned_msgs:
             raise BotException(
-                f"No messages to unpin!",
+                "No messages to unpin!",
                 "No messages are currently pinned on the specified channel.",
             )
 
@@ -815,7 +899,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             if isinstance(index, range):
                 if len(index) > 50:
                     raise BotException(
-                        f"Invalid range object!",
+                        "Invalid range object!",
                         "The given range object must not contain more than 50 integers.",
                     )
                 else:
@@ -828,7 +912,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         indices_list.reverse()
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
 
@@ -844,7 +928,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{idx_count}` messages processed\n"
-                        f"{(i/idx_count)*100:.01f}% | "
+                        f"{(i / idx_count) * 100:.01f}% | "
                         + utils.progress_bar(i / idx_count, divisions=30),
                     ),
                     0,
@@ -870,7 +954,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             dict(
                 name=f"Succesfully unpinned {idx_count} message(s)!",
                 value=f"`{idx_count}/{idx_count}` messages processed\n"
-                f"100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + utils.progress_bar(1.0, divisions=30),
             ),
             0,
         )
@@ -885,8 +969,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_poll(
         self,
         desc: String,
-        *emojis: String,
+        *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
+        unique: bool = True,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
@@ -895,13 +980,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail]
+        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail] [unique=True]
         ->description Start a poll.
         ->extended description
-        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The args must series of two element tuples, first element being emoji,
+        and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         Additionally admins can specify some keyword arguments to improve the appearance of the poll
-        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        A `unique` arg can also be passed indicating if the poll should be unique or not.
+        If unique is True, then users can only vote once.
+        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
         if not isinstance(destination, discord.TextChannel):
@@ -913,7 +1001,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             permissions=("view_channel", "send_messages"),
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
@@ -934,7 +1022,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
         return await super().cmd_poll(
-            desc, *emojis, _destination=destination, _admin_embed_dict=embed_dict
+            desc,
+            *emojis,
+            _destination=destination,
+            _admin_embed_dict=embed_dict,
+            unique=unique,
         )
 
     @no_dm
@@ -978,6 +1070,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         await super().cmd_stream_del(_members=members if members else None)
 
+    @add_group("info")
     async def cmd_info(
         self,
         *objs: Union[discord.Message, discord.Member, discord.User],
@@ -1021,7 +1114,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     permissions=("view_channel",),
                 ):
                     raise BotException(
-                        f"Not enough permissions",
+                        "Not enough permissions",
                         "You do not have enough permissions to run this command on the specified channel.",
                     )
                 else:
@@ -1036,7 +1129,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await self.channel.send(embed=embed)
 
         load_embed = embed_utils.create(
-            title=f"Your command is being processed:",
+            title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
         obj_count = len(objs)
@@ -1048,7 +1141,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{obj_count}` inputs processed\n"
-                        f"{(i/obj_count)*100:.01f}% | "
+                        f"{(i / obj_count) * 100:.01f}% | "
                         + utils.progress_bar(i / obj_count, divisions=30),
                     ),
                     0,
@@ -1073,7 +1166,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 dict(
                     name="Processing Complete",
                     value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                    f"100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + utils.progress_bar(1.0, divisions=30),
                 ),
                 0,
             )
@@ -1082,6 +1175,68 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
         except discord.NotFound:
             pass
+
+    @add_group("info", "server")
+    async def cmd_info_server(self, guild: Optional[discord.Guild] = None):
+        """
+        ->type More admin commands
+        ->signature pg!info server [guild_id=None]
+        ->description Get information about a Discord server
+
+        ->extended description
+        Return an information embed for the Discord server ID given
+
+        __Args__:
+            `guild_id: (int) = None`
+            > An integer that should represent
+            > a server's ID. If no input is given,
+            > the server would be set to the server
+            > where the command was invoked
+
+        __Returns__:
+            > An embed with the given server's information
+
+        __Raises__:
+            > `BotException`: The guild either doesn't exist or is private
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        -----
+        """
+        if guild is None:
+            guild = self.guild
+
+        description = (
+            f"Server Name: `{guild.name}`\n"
+            f"Server ID: `{guild.id}`\n"
+            f"Created At: `{guild.created_at.strftime('%a %b %d %Y, %I:%M:%S %p')} UTC`\n"
+        )
+
+        description += f"Number of Members: `{guild.member_count}`\n"
+
+        number_of_bots = len([i for i in guild.members if i.bot])
+        number_of_members = len(guild.members) - number_of_bots
+        description += f"> - `{number_of_members}` humans\n"
+        description += f"> - `{number_of_bots}` bots\n"
+
+        description += f"Number of Channels: `{len(guild.channels)}`\n"
+
+        description += f"Number of Roles: `{len(guild.roles)}`\n"
+
+        if guild.premium_subscription_count != 0:
+            description += (
+                f"Number of Server Boosts: `{guild.premium_subscription_count}`\n"
+            )
+
+        description += (
+            f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
+        )
+
+        kwargs = {
+            "title": f"Server information for {guild.name}:",
+            "thumbnail_url": guild.icon_url,
+            "description": description,
+        }
+
+        await embed_utils.replace_2(self.response_msg, **kwargs)
 
     async def cmd_react(self, message: discord.Message, *emojis: str):
         """

@@ -94,7 +94,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
         await embed_utils.replace(
             original_msg, "Unknown module!", "No such module was found."
         )
-        return None, None, None
+        return None, None
 
     module_objs = dict(doc_module_dict)
     obj = None
@@ -115,7 +115,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
                 "Class/function/sub-module not found!",
                 f"There's no such thing here named `{name}`",
             )
-            return None, None, None
+            return None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
         await embed_utils.replace(
@@ -124,7 +124,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
             f"{name} is a constant with a type of `{obj.__class__.__name__}`"
             " which does not have documentation.",
         )
-        return None, None, None
+        return None, None
 
     header = ""
     if splits[0] == "pygame":
@@ -174,7 +174,15 @@ async def put_main_doc(name: str, original_msg: discord.Message):
         if cnt >= common.DOC_EMBED_LIMIT:
             break
 
-    return module_objs, name, embeds
+    if not embeds:
+        await embed_utils.replace(
+            original_msg,
+            "Class/function/sub-module not found!",
+            f"There's no such thing here named `{name}`",
+        )
+        return None, None
+
+    return module_objs, embeds
 
 
 async def put_doc(
@@ -183,8 +191,8 @@ async def put_doc(
     """
     Helper function to get docs
     """
-    module_objs, name, main_embeds = await put_main_doc(name, original_msg)
-    if module_objs is None:
+    module_objs, main_embeds = await put_main_doc(name, original_msg)
+    if module_objs is None or main_embeds is None:
         return
 
     allowed_obj_names = {

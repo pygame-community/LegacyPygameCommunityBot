@@ -6,6 +6,8 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some important embed related utility functions.
 """
 
+from __future__ import annotations
+
 
 import asyncio
 import datetime
@@ -19,7 +21,6 @@ from typing import Union, Optional, Any
 import black
 import discord
 from discord.embeds import EmptyEmbed
-from discord.message import Message
 
 from pgbot import common
 
@@ -159,7 +160,7 @@ CONDENSED_EMBED_DATA_LIST_SYNTAX = """
 
     'footer.text' or ('footer.text', 'footer.icon_url'),   # embed footer
 
-    datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp 
+    datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
 ]
 """
 
@@ -210,7 +211,7 @@ def recursive_delete(
     """
     if inverse:
         for k, v in tuple(old_dict.items()):
-            if isinstance(v, dict):
+            if isinstance(v, Mapping):
                 lower_update_dict = None
                 if isinstance(update_dict, dict):
                     lower_update_dict = update_dict.get(k, {})
@@ -282,7 +283,6 @@ def create_embed_mask_dict(
     )
 
     all_attribs_set = EMBED_ATTRIBUTES_SET | set(str(i) for i in range(25))
-
     attribs_with_sub_attribs = EMBED_ATTRIBUTES_WITH_SUB_ATTRIBUTES_SET
 
     for attr in attribs_tuple:
@@ -295,9 +295,20 @@ def create_embed_mask_dict(
             bottom_dict = {}
             for i in range(len(attr)):
                 if attr[i] not in all_attribs_set:
-                    raise ValueError(
-                        f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
-                    )
+                    if i == 1:
+                        if (
+                            attr[i - 1] == "fields"
+                            and "(" not in attr[i]
+                            and ")" not in attr[i]
+                        ):
+                            raise ValueError(
+                                f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
+                            )
+                    else:
+                        raise ValueError(
+                            f"`{attr[i]}` is not a valid embed (sub-)attribute name!",
+                        )
+
                 elif attr[i] in all_system_attribs_set and not allow_system_attributes:
                     raise ValueError(
                         f"The given attribute `{attr[i]}` cannot be retrieved when `system_attributes=`"
@@ -307,7 +318,8 @@ def create_embed_mask_dict(
                     if attribs_tuple.count(attr[i]):
                         raise ValueError(
                             "Invalid embed attribute filter string!"
-                            f" Do not specify upper level embed attributes twice! {attr[i]}",
+                            f" Top level embed attribute `{attr[i]}` conflicts with its"
+                            " preceding instances.",
                         )
                     elif attr[i] not in attribs_with_sub_attribs:
                         raise ValueError(
@@ -320,29 +332,93 @@ def create_embed_mask_dict(
                     else:
                         bottom_dict = embed_mask_dict[attr[i]]
 
-                elif i == len(attr) - 1:
-                    if i == 1 and attr[i - 1] == "fields":
-                        if not attr[i].isnumeric():
-                            for sub_attr in ("name", "value", "inline"):
-                                if attr[i] == sub_attr:
-                                    for j in range(25):
-                                        str_idx = str(j)
-                                        if str_idx not in embed_mask_dict["fields"]:
-                                            embed_mask_dict["fields"][str_idx] = {
-                                                sub_attr: None
-                                            }
-                                        else:
-                                            embed_mask_dict["fields"][str_idx][
-                                                sub_attr
-                                            ] = None
-                                    break
+                elif i == 1 and attr[i - 1] == "fields" and not attr[i].isnumeric():
+                    if attr[i].startswith("(") and attr[i].endswith(")"):
+                        if not attr[i].startswith("(") and not attr[i].endswith(")"):
+                            raise ValueError(
+                                "Invalid embed attribute filter string!"
+                                " Embed field ranges should only contain integers"
+                                " and should be structured like this: "
+                                "`fields.(start, stop[, step]).attribute`",
+                            )
+                        field_str_range_list = [v for v in attr[i][1:][:-1].split(",")]
+                        field_range_list = []
+
+                        for j in range(len(field_str_range_list)):
+                            if (
+                                field_str_range_list[j].isnumeric()
+                                or len(field_str_range_list[j]) > 1
+                                and field_str_range_list[j][1:].isnumeric()
+                            ):
+                                field_range_list.append(int(field_str_range_list[j]))
                             else:
                                 raise ValueError(
                                     "Invalid embed attribute filter string!"
-                                    f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
+                                    " Embed field ranges should only contain integers"
+                                    " and should be structured like this: "
+                                    "`fields.(start, stop[, step]).attribute`",
                                 )
-                            continue
 
+                        sub_attrs = []
+                        if attr[i] == attr[-1]:
+                            sub_attrs.extend(("name", "value", "inline"))
+
+                        elif attr[-1] in ("name", "value", "inline"):
+                            sub_attrs.append(attr[-1])
+
+                        else:
+                            raise ValueError(
+                                f"`{attr[-1]}` is not a valid embed (sub-)attribute name!",
+                            )
+
+                        field_range = range(*field_range_list)
+                        if not field_range:
+                            raise ValueError(
+                                "Invalid embed attribute filter string!"
+                                " Empty field range!",
+                            )
+                        for j in range(*field_range_list):
+                            str_idx = str(j)
+                            if str_idx not in embed_mask_dict["fields"]:
+                                embed_mask_dict["fields"][str_idx] = {
+                                    sub_attr: None for sub_attr in sub_attrs
+                                }
+                            else:
+                                for sub_attr in sub_attrs:
+                                    embed_mask_dict["fields"][str_idx][sub_attr] = None
+
+                        break
+
+                    elif attr[i] in ("name", "value", "inline"):
+                        for sub_attr in ("name", "value", "inline"):
+                            if attr[i] == sub_attr:
+                                for j in range(25):
+                                    str_idx = str(j)
+                                    if str_idx not in embed_mask_dict["fields"]:
+                                        embed_mask_dict["fields"][str_idx] = {
+                                            sub_attr: None
+                                        }
+                                    else:
+                                        embed_mask_dict["fields"][str_idx][
+                                            sub_attr
+                                        ] = None
+                                break
+                        else:
+                            raise ValueError(
+                                "Invalid embed attribute filter string!"
+                                f" The given attribute `{attr[i]}` is not an attribute of an embed field!",
+                            )
+                        break
+                    else:
+                        raise ValueError(
+                            "Invalid embed attribute filter string!"
+                            " Embed field attibutes must be either structutred like"
+                            " `fields.0`, `fields.0.attribute`, `fields.attribute` or"
+                            " `fields.(start,stop[,step]).attribute`. Note that embed"
+                            " field ranges cannot contain whitespace.",
+                        )
+
+                elif i == len(attr) - 1:
                     if attr[i] not in bottom_dict:
                         bottom_dict[attr[i]] = None
                 else:
@@ -356,7 +432,8 @@ def create_embed_mask_dict(
             if attribs_tuple.count(attr) > 1:
                 raise ValueError(
                     "Invalid embed attribute filter string!"
-                    f" Do not specify upper level embed attributes twice: `{attr}`",
+                    " Do not specify top level embed attributes"
+                    f" twice when not using the `.` operator: `{attr}`",
                 )
             elif attr in all_system_attribs_set and not allow_system_attributes:
                 raise ValueError(
@@ -374,7 +451,7 @@ def create_embed_mask_dict(
 
         else:
             raise ValueError(
-                f"Invalid embed attribute name `{attr}`!",
+                f"Invalid top level embed attribute name `{attr}`!",
             )
 
     if not fields_as_field_dict and "fields" in embed_mask_dict:
@@ -412,6 +489,7 @@ def handle_embed_dict_timestamp(embed_dict: dict):
 
 
 def copy_embed_dict(embed_dict: dict):
+    # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
         k: embed_dict[k].copy() if isinstance(embed_dict[k], dict) else embed_dict[k]
         for k in embed_dict
@@ -561,6 +639,15 @@ class PagedEmbed:
         await self.message.edit(embed=self.pages[self.current_page])
 
     async def _setup(self):
+        if not self.pages:
+            await replace(
+                self.message,
+                "Internal error occured!",
+                "Got empty embed list for PagedEmbed",
+                0xFF0000,
+            )
+            return False
+
         if len(self.pages) == 1:
             await self.message.edit(embed=self.pages[0])
             return False
@@ -580,7 +667,7 @@ class PagedEmbed:
         footer = f"Page {page_num + 1} of {len(self.pages)}.\n"
 
         if self.parent_command:
-            footer += f"Refresh by replying to this message with `pg!refresh`\n"
+            footer += "Refresh by replying to this message with `pg!refresh`\n"
             footer += f"Command: {self.parent_command}"
 
         return footer
@@ -913,10 +1000,21 @@ def create_as_dict(
 
 
 def validate_embed_dict(embed_dict: dict):
+    """
+    Checks if an embed dictionary can produce
+    a viable embed on Discord.
+
+    Args:
+        embed_dict: The target embed dictionary
+
+    Returns:
+        A boolean indicating the validity of the
+        given input dictionary.
+
+    """
     if not embed_dict:
         return False
 
-    valid = True
     embed_dict_len = len(embed_dict)
     for k in tuple(embed_dict.keys()):
         if (
@@ -925,8 +1023,7 @@ def validate_embed_dict(embed_dict: dict):
             or embed_dict_len == 2
             and ("color" in embed_dict and "timestamp" in embed_dict)
         ):
-            valid = False
-            break
+            return False
         elif (
             not embed_dict[k]
             or k == "footer"
@@ -936,8 +1033,7 @@ def validate_embed_dict(embed_dict: dict):
             or k in ("thumbnail", "image")
             and "url" not in embed_dict[k]
         ):
-            valid = False
-            break
+            return False
 
         elif k == "fields":
             for i in range(len(embed_dict["fields"])):
@@ -945,21 +1041,18 @@ def validate_embed_dict(embed_dict: dict):
                     "name" not in embed_dict["fields"][i]
                     or "value" not in embed_dict["fields"][i]
                 ):
-                    valid = False
-                    break
+                    return False
 
         elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
-            valid = False
-            break
+            return False
 
         elif k == "timestamp":
             try:
                 datetime.datetime.fromisoformat(embed_dict[k])
             except ValueError:
-                valid = False
-                break
+                return False
 
-    return valid
+    return True
 
 
 def clean_embed_dict(embed_dict: dict):
@@ -1144,7 +1237,7 @@ async def edit_2(
     thumbnail_url=EmptyEmbed,
     description=EmptyEmbed,
     image_url=EmptyEmbed,
-    color=0xFFFFAA,
+    color=-1,
     fields=[],
     footer_text=EmptyEmbed,
     footer_icon_url=EmptyEmbed,
@@ -1602,8 +1695,8 @@ def import_embed_data(
 
             if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
-                    f"The given string must contain a JSON object that"
-                    f" can be converted into a Python `dict` object"
+                    "The given string must contain a JSON object that"
+                    " can be converted into a Python `dict` object"
                 )
             if as_string:
                 json_data = json.dumps(json_data)
@@ -1616,7 +1709,7 @@ def import_embed_data(
             if not isinstance(json_data, dict) and as_dict:
                 raise TypeError(
                     f"the file at '{source}' must contain a JSON object that"
-                    f" can be converted into a Python `dict` object"
+                    " can be converted into a Python `dict` object"
                 )
             if as_string:
                 json_data = json.dumps(json_data)
@@ -1655,7 +1748,7 @@ def import_embed_data(
                     raise TypeError(
                         f", not '{type(data)}'"
                         f"the content of the file at '{source}' must be parsable into a"
-                        f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                        "literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                     ).with_traceback(e)
 
                 if not isinstance(data, dict) and as_dict:
@@ -1674,7 +1767,7 @@ def import_embed_data(
                         raise TypeError(
                             f", not '{type(data)}'"
                             f"the content of the file at '{source}' must be parsable into a"
-                            f"literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
+                            "literal Python strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None."
                         ).with_traceback(e)
 
                     if not isinstance(data, dict) and as_dict:
@@ -1757,7 +1850,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     """
     Get member info in a string, utility function for the embed functions
     """
-    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
 
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
     if hasattr(member, "nick") and member.display_name:
@@ -1790,7 +1883,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
             + f"> {member_joined_at_fdtime}\n\n"
         )
     else:
-        member_joined_at_info = f"*Joined On*: \n> `...`\n\n"
+        member_joined_at_info = "*Joined On*: \n> `...`\n\n"
 
     divider_roles = {} if common.GENERIC else common.ServerConstants.DIVIDER_ROLES
 
@@ -1851,7 +1944,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     """
     member: Union[discord.Member, discord.User] = msg.author
 
-    datetime_format_str = f"`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
+    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
     msg_created_at_fdtime = msg.created_at.astimezone(
         tz=datetime.timezone.utc
     ).strftime(datetime_format_str)
@@ -1874,7 +1967,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         )
 
     else:
-        msg_edited_at_info = f"*Last Edited On*: \n> `...`\n\n"
+        msg_edited_at_info = "*Last Edited On*: \n> `...`\n\n"
 
     msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
@@ -1899,10 +1992,17 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     if author:
         return create(
             title="__Message & Author Info__",
-            thumbnail_url=str(member.avatar_url),
-            description=(
-                f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
+            description="".join(
+                (
+                    f"__Text"
+                    + (" (Shortened)" if len(msg.content) > 2000 else "")
+                    + "__:",
+                    f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
+                    if len(msg.content) > 2000
+                    else "\n\u2800",
+                )
             ),
+            thumbnail_url=str(member.avatar_url),
             fields=[
                 ("__Message Info__", msg_info, True),
                 ("__Message Author Info__", get_member_info_str(member), True),
@@ -1929,8 +2029,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         title="__Message Info__",
         author_name=f"{member.name}#{member.discriminator}",
         author_icon_url=str(member.avatar_url),
-        description=(
-            f"__Text__:\n\n {msg.content}\n\u2800" if msg.content else EmptyEmbed
+        description="".join(
+            (
+                f"__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
+                f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
+                if len(msg.content) > 2000
+                else "\n\u2800",
+            )
         ),
         fields=[
             (

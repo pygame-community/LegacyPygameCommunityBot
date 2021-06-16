@@ -82,24 +82,29 @@ class UserCommand(FunCommand, HelpCommand):
         # remove microsecond precision of the 'on' variable
         on -= datetime.timedelta(microseconds=on.microsecond)
 
-        db_obj = db.DiscordDB("reminders")
-        db_data = db_obj.get({})
-        if self.author.id not in db_data:
-            db_data[self.author.id] = {}
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
+            if self.author.id not in db_data:
+                db_data[self.author.id] = {}
 
-        limit = 25 if self.is_priv else 10
-        if len(db_data[self.author.id]) >= limit:
-            raise BotException(
-                "Failed to set reminder!",
-                f"I cannot set more than {limit} reminders for you",
+            # user is editing old reminder message, discard the old reminder
+            for key, (_, chan_id, msg_id) in tuple(db_data[self.author.id].items()):
+                if chan_id == self.channel.id and msg_id == self.invoke_msg.id:
+                    db_data[self.author.id].pop(key)
+
+            limit = 25 if self.is_priv else 10
+            if len(db_data[self.author.id]) >= limit:
+                raise BotException(
+                    "Failed to set reminder!",
+                    f"I cannot set more than {limit} reminders for you",
+                )
+
+            db_data[self.author.id][on] = (
+                msg.string.strip(),
+                self.channel.id,
+                self.invoke_msg.id,
             )
-
-        db_data[self.author.id][on] = (
-            msg.string.strip(),
-            self.channel.id,
-            self.invoke_msg.id,
-        )
-        db_obj.write(db_data)
+            db_obj.write(db_data)
 
         await embed_utils.replace(
             self.response_msg,
@@ -155,7 +160,7 @@ class UserCommand(FunCommand, HelpCommand):
                     pass
 
             if "mo" in timestr:
-                month_results = re.search(rf"\d+mo", timestr).group()
+                month_results = re.search(r"\d+mo", timestr).group()
                 parsed_month_time = int(month_results.replace("mo", ""))
                 sec += (
                     self.invoke_msg.created_at.replace(
@@ -192,7 +197,8 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders, for users to view their reminders
         """
-        db_data = db.DiscordDB("reminders").get({})
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
 
         msg = "You have no reminders set"
         if self.author.id in db_data:
@@ -227,31 +233,35 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
-        db_obj = db.DiscordDB("reminders")
-        db_data = db_obj.get({})
-        db_data_copy = copy.deepcopy(db_data)
-        cnt = 0
-        if reminder_ids:
-            for reminder_id in sorted(set(reminder_ids), reverse=True):
-                if self.author.id in db_data:
-                    for i, dt in enumerate(db_data_copy[self.author.id]):
-                        if i == reminder_id:
-                            db_data[self.author.id].pop(dt)
-                            cnt += 1
-                            break
-                if reminder_id >= len(db_data_copy[self.author.id]) or reminder_id < 0:
-                    raise BotException(
-                        "Invalid Reminder ID!",
-                        "Reminder ID was not an existing reminder ID",
-                    )
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
+            db_data_copy = copy.deepcopy(db_data)
+            cnt = 0
+            if reminder_ids:
+                for reminder_id in sorted(set(reminder_ids), reverse=True):
+                    if self.author.id in db_data:
+                        for i, dt in enumerate(db_data_copy[self.author.id]):
+                            if i == reminder_id:
+                                db_data[self.author.id].pop(dt)
+                                cnt += 1
+                                break
+                    if (
+                        reminder_id >= len(db_data_copy[self.author.id])
+                        or reminder_id < 0
+                    ):
+                        raise BotException(
+                            "Invalid Reminder ID!",
+                            "Reminder ID was not an existing reminder ID",
+                        )
 
-            if self.author.id in db_data and not db_data[self.author.id]:
-                db_data.pop(self.author.id)
+                if self.author.id in db_data and not db_data[self.author.id]:
+                    db_data.pop(self.author.id)
 
-        elif self.author.id in db_data:
-            cnt = len(db_data.pop(self.author.id))
+            elif self.author.id in db_data:
+                cnt = len(db_data.pop(self.author.id))
 
-        db_obj.write(db_data)
+            db_obj.write(db_data)
+
         await embed_utils.replace(
             self.response_msg,
             "Reminders removed!",
@@ -334,16 +344,11 @@ class UserCommand(FunCommand, HelpCommand):
         embed = embed_utils.create_from_dict(embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
-        max_file_size = (
-            self.guild.filesize_limit
-            if self.guild is not None
-            else common.GUILD_MAX_FILE_SIZE
-        )
         if len(returned.text) > 1500:
             with io.StringIO(
                 returned.text
-                if len(returned.text) - 40 < max_file_size
-                else returned.text[: max_file_size - 40]
+                if len(returned.text) - 40 < self.filesize_limit
+                else returned.text[: self.filesize_limit - 40]
             ) as fobj:
                 await self.channel.send(file=discord.File(fobj, filename="output.txt"))
 
@@ -410,19 +415,23 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_poll(
         self,
         desc: String,
-        *emojis: String,
+        *emojis: tuple[str, String],
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
+        unique: bool = True,
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*args]
+        ->signature pg!poll <description> [*emojis] [unique=True]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
-        The args must be strings with one emoji and one description of said emoji (see example command). \
+        The args must series of two element tuples, first element being emoji,
+        and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
-        ->example command pg!poll "Which apple is better?" "🍎" "Red apple" "🍏" "Green apple"
+        A `unique` arg can also be passed indicating if the poll should be unique or not.
+        If unique is True, then users can only vote once.
+        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
         destination = self.channel if _destination is None else _destination
@@ -455,7 +464,7 @@ class UserCommand(FunCommand, HelpCommand):
         base_embed_dict.update(_admin_embed_dict)
 
         if emojis:
-            if len(emojis) <= 3 or len(emojis) % 2:
+            if len(emojis) == 1:
                 raise BotException(
                     "Invalid arguments for emojis.",
                     "Please add at least 2 emojis with 2 descriptions."
@@ -465,17 +474,14 @@ class UserCommand(FunCommand, HelpCommand):
                 )
 
             base_embed_dict["fields"] = []
-            for i, substr in enumerate(emojis):
-                if not i % 2:
-                    base_embed_dict["fields"].append(
-                        {
-                            "name": substr.string.strip(),
-                            "value": common.ZERO_SPACE,
-                            "inline": True,
-                        }
-                    )
-                else:
-                    base_embed_dict["fields"][i // 2]["value"] = substr.string.strip()
+            for emoji, desc in emojis:
+                base_embed_dict["fields"].append(
+                    {
+                        "name": emoji.strip(),
+                        "value": desc.string.strip(),
+                        "inline": True,
+                    }
+                )
 
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)
@@ -506,6 +512,14 @@ class UserCommand(FunCommand, HelpCommand):
                     "The emoji could not be added as a reaction. Make sure it is"
                     " the correct emoji and that it is not from another server",
                 )
+
+        if unique:
+            async with db.DiscordDB("polls") as db_obj:
+                all_polls = db_obj.get([])
+
+                all_polls.append(poll_msg.id)
+
+                db_obj.write(all_polls)
 
     async def cmd_close_poll(self, msg=None):
         """
@@ -540,7 +554,7 @@ class UserCommand(FunCommand, HelpCommand):
             self.author, msg.channel, permissions=("view_channel",)
         ):
             raise BotException(
-                f"Not enough permissions",
+                "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
         newline = "\n"
@@ -638,6 +652,16 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
+        
+        async with db.DiscordDB("polls") as db_obj:
+            all_poll_info = db_obj.get([])
+
+            try:
+                all_poll_info.remove(msg.id)
+            except ValueError:
+                pass
+    
+            db_obj.write(all_poll_info)
 
     @add_group("stream")
     async def cmd_stream(self):
@@ -647,7 +671,9 @@ class UserCommand(FunCommand, HelpCommand):
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
         """
-        data = db.DiscordDB("stream").get([])
+        async with db.DiscordDB("stream") as db_obj:
+            data = db_obj.get([])
+
         if not data:
             await embed_utils.replace(
                 self.response_msg,
@@ -676,17 +702,18 @@ class UserCommand(FunCommand, HelpCommand):
         Add yourself to the stream-ping-list. You can always delete you later
         with `pg!stream del`
         """
-        ping_db = db.DiscordDB("stream")
-        data: list = ping_db.get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
-        if _members:
-            for mem in _members:
-                if mem.id not in data:
-                    data.append(mem.id)
-        elif self.author.id not in data:
-            data.append(self.author.id)
+            if _members:
+                for mem in _members:
+                    if mem.id not in data:
+                        data.append(mem.id)
+            elif self.author.id not in data:
+                data.append(self.author.id)
 
-        ping_db.write(data)
+            ping_db.write(data)
+
         await self.cmd_stream()
 
     @add_group("stream", "del")
@@ -701,22 +728,23 @@ class UserCommand(FunCommand, HelpCommand):
         Remove yourself from the stream-ping-list. You can always add you later
         with `pg!stream add`
         """
-        ping_db = db.DiscordDB("stream")
-        data: list = ping_db.get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
-        try:
-            if _members:
-                for mem in _members:
-                    data.remove(mem.id)
-            else:
-                data.remove(self.author.id)
-        except ValueError:
-            raise BotException(
-                "Could not remove member",
-                "Member was not previously added to the ping list",
-            )
+            try:
+                if _members:
+                    for mem in _members:
+                        data.remove(mem.id)
+                else:
+                    data.remove(self.author.id)
+            except ValueError:
+                raise BotException(
+                    "Could not remove member",
+                    "Member was not previously added to the ping list",
+                )
 
-        ping_db.write(data)
+            ping_db.write(data)
+
         await self.cmd_stream()
 
     @add_group("stream", "ping")
@@ -731,7 +759,8 @@ class UserCommand(FunCommand, HelpCommand):
         The streamer name will be included and many people will be pinged so \
         don't make pranks with this command.
         """
-        data: list = db.DiscordDB("stream").get([])
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
 
         msg = message.string if message else "Enjoy the stream!"
         ping = (

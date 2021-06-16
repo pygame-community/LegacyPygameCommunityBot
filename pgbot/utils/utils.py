@@ -30,7 +30,7 @@ def clamp(value, min_, max_):
     return value if value < max_ else max_
 
 
-def color_to_rgb_int(col: pygame.Color, alpha=False):
+def color_to_rgb_int(col: pygame.Color, alpha: bool = False):
     """
     Get integer RGB representation of pygame color object.
     """
@@ -65,7 +65,9 @@ def format_discord_link(link: str, guild_id: int):
     return link
 
 
-def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: int = 10):
+def progress_bar(
+    pct: float, full_bar: str = "█", empty_bar: str = "░", divisions: int = 10
+):
     """
     A simple horizontal progress bar generator.
     """
@@ -78,7 +80,7 @@ def progress_bar(pct, full_bar: str = "█", empty_bar: str = "░", divisions: 
 def format_time(
     seconds: float,
     decimal_places: int = 4,
-    unit_data=(
+    unit_data: tuple[tuple[float, str], ...] = (
         (1.0, "s"),
         (1e-03, "ms"),
         (1e-06, "\u03bcs"),
@@ -96,12 +98,12 @@ def format_time(
     for fractions, unit in unit_data:
         if seconds >= fractions:
             return f"{seconds / fractions:.0{decimal_places}f} {unit}"
-    return f"very fast"
+    return "very fast"
 
 
 def format_long_time(
     seconds: int,
-    unit_data=(
+    unit_data: tuple[tuple[str, int], ...] = (
         ("weeks", 604800),
         ("days", 86400),
         ("hours", 3600),
@@ -112,7 +114,7 @@ def format_long_time(
     """
     Formats time into string, which is of the order of a few days
     """
-    result = []
+    result: list[str] = []
 
     for name, count in unit_data:
         value = seconds // count
@@ -149,11 +151,11 @@ def format_byte(size: int, decimal_places: int = 3):
     return f"{round(size / 1e9, decimal_places)} GB"
 
 
-def split_long_message(message: str, limit=2000):
+def split_long_message(message: str, limit: int = 2000):
     """
     Splits message string by 2000 characters with safe newline splitting
     """
-    split_output = []
+    split_output: list[str] = []
     lines = message.split("\n")
     temp = ""
 

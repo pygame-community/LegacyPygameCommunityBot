@@ -3,10 +3,8 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file is the main file of pgbot subdir 
+This file is the main file of pgbot subdir
 """
-
-import discord
 
 import asyncio
 import os
@@ -76,7 +74,7 @@ async def init():
     """
     try:
         await _init()
-    except:
+    except Exception:
         # error happened in the first init sequence. report error to stdout/stderr
         # note that the chances of this happening are pretty slim, but you never know
         sys.stdout = sys.__stdout__
@@ -97,7 +95,10 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     """
     Formats an entries message to be reposted in discussion channel
     """
-    title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
+    if entry_type != "":
+        title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
+    else:
+        title = ""
 
     attachments = ""
     if msg.attachments:
@@ -145,7 +146,7 @@ async def member_join(member: discord.Member):
                 + f"{common.roles_channel.mention}{end}"
             )
             # new member joined, yaayyy, snek is happi
-            emotion.update("happy", 3)
+            await emotion.update("happy", 20)
             return
 
 
@@ -154,11 +155,11 @@ async def clean_db_member(member: discord.Member):
     This function silently removes users from database messages
     """
     for table_name in ("stream", "reminders", "clock"):
-        db_obj = db.DiscordDB(table_name)
-        data = db_obj.get({})
-        if member.id in data:
-            data.pop(member)
-            db_obj.write(data)
+        async with db.DiscordDB(table_name) as db_obj:
+            data = db_obj.get({})
+            if member.id in data:
+                data.pop(member)
+                db_obj.write(data)
 
 
 async def message_delete(msg: discord.Message):
@@ -175,6 +176,25 @@ async def message_delete(msg: discord.Message):
                     del common.cmd_logs[log]
                     return
 
+    if common.GENERIC:
+        return
+
+    if msg.channel in common.entry_channels.values():
+        async for message in common.entries_discussion_channel.history(
+            around=msg.created_at, limit=5
+        ):
+            try:
+                link = message.embeds[0].fields[1].value
+                if not isinstance(link, str):
+                    continue
+
+                if int(link.split("/")[6][:-1]) == msg.id:
+                    await message.delete()
+                    break
+
+            except (IndexError, AttributeError):
+                pass
+
 
 async def message_edit(old: discord.Message, new: discord.Message):
     """
@@ -186,6 +206,44 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 await commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
+
+    if new.channel in common.entry_channels.values():
+        async for message in common.entries_discussion_channel.history(
+            around=old.created_at, limit=5
+        ):
+            try:
+                embed = message.embeds[0]
+                link = embed.fields[1].value
+                if not isinstance(link, str):
+                    continue
+
+                if int(link.split("/")[6][:-1]) == new.id:
+                    _, fields = format_entries_message(new, "")
+                    await embed_utils.edit_2(message, embed=embed, fields=fields)
+                    break
+
+            except (IndexError, AttributeError):
+                pass
+
+
+async def raw_reaction_add(payload):
+    async with db.DiscordDB("polls") as db_obj:
+        all_poll_info = db_obj.get([])
+
+    if payload.message_id in all_poll_info:
+        channel = await common.bot.fetch_channel(payload.channel_id)
+        msg = await channel.fetch_message(payload.message_id)
+
+        all_reactions_user = {
+            reaction: user
+            for reaction in msg.reactions
+            for user in await reaction.users().flatten()
+            if user.id == payload.user_id and reaction.emoji != payload.emoji.name
+        }
+
+        if len(all_reactions_user) > 0:
+            for reaction, user in all_reactions_user.items():
+                await reaction.remove(user)
 
 
 async def handle_message(msg: discord.Message):
@@ -203,7 +261,7 @@ async def handle_message(msg: discord.Message):
         if len(common.cmd_logs) > 100:
             del common.cmd_logs[list(common.cmd_logs.keys())[0]]
 
-        emotion.update("bored", -15)
+        await emotion.update("bored", -10)
 
     elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
@@ -214,10 +272,10 @@ async def handle_message(msg: discord.Message):
         # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
         #     # ded chat makes snek sad
         #     await msg.channel.send(
-        #         "good." if emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
+        #         "good." if await emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
         #         allowed_mentions=no_mentions,
         #     )
-        #     emotion.update("happy", -4)
+        #     await emotion.update("happy", -8)
         if common.GENERIC:
             return
 
@@ -234,7 +292,7 @@ async def handle_message(msg: discord.Message):
                 common.entries_discussion_channel, title, "", color, fields=fields
             )
         elif (
-            random.random() < emotion.get("happy") / 200
+            random.random() < await emotion.get("happy") / 200
             or msg.author.id == 683852333293109269
         ):
             await emotion.dad_joke(msg)
