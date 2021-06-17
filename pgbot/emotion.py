@@ -76,9 +76,11 @@ async def dad_joke(msg: discord.Message):
     """
     Utility to handle the bot making dad jokes
     """
+    if msg.channel.id in common.ServerConstants.HELP_CHANNELS_IDS and random.random() < 0.5:
+        return
     lowered = unidecode.unidecode(msg.content.lower().strip())
-    if "i am" in lowered and len(lowered) < 60:
-        name = msg.content[lowered.index("i am") + 4 :].strip()
+    if "i am" in lowered and ("i am " in lowered or " i am" in lowered or lowered == "i am") and len(lowered) < 60:
+        name = msg.content[lowered.index("i am") + 4 :].split("\n")[0].strip()
         if name:
             await msg.channel.send(
                 f"Hi {name}! I am <@!{common.bot.user.id}>",

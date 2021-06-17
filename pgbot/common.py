@@ -107,6 +107,11 @@ class ServerConstants:
         "resource": 810516093273768016,
     }
     ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
+    HELP_CHANNELS_IDS = {
+        772816508015083552,
+        772507303781859348,
+        772507287734321162
+    }
 
     # eval is a pretty dangerous command, so grant it only for Admins and Senior Mages
     EVAL_ROLES = {772521884373614603, 772849669591400501}
