@@ -223,13 +223,13 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_reminders_remove(self, *reminder_ids: int):
         """
         ->type Reminders
-        ->signature pg!reminders remove [*datetimes]
+        ->signature pg!reminders remove [*ids]
         ->description Remove reminders
         ->extended description
         Remove variable number of reminders, corresponding to each datetime argument
         The reminder id argument must be an integer
         If no arguments are passed, the command clears all reminders
-        ->example command pg!reminder remove 1
+        ->example command pg!reminders remove 1
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """

@@ -637,9 +637,9 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno in ("discord.TextChannel", "common.Channel"):
-                arg = utils.format_discord_link(arg, self.guild.id)
+                formatted = utils.format_discord_link(arg, self.guild.id)
 
-                chan = self.guild.get_channel(utils.filter_id(arg))
+                chan = self.guild.get_channel(utils.filter_id(formatted))
                 if chan is None:
                     raise ValueError()
 
@@ -655,14 +655,14 @@ class BaseCommand:
                 return guild
 
             elif anno == "discord.Message":
-                arg = utils.format_discord_link(arg, self.guild.id)
+                formatted = utils.format_discord_link(arg, self.guild.id)
 
-                a, b, c = arg.partition("/")
+                a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
                     chan = self.guild.get_channel(utils.filter_id(a))
 
-                    if chan is None:
+                    if not isinstance(chan, discord.TextChannel):
                         raise ValueError()
                 else:
                     msg = int(a)
@@ -821,6 +821,17 @@ class BaseCommand:
             )
 
         if hasattr(func, "fun_cmd"):
+            async with db.DiscordDB("feature") as db_obj:
+                db_dict: dict[str, dict[int, bool]] = db_obj.get({})
+                nofun = db_dict.get("nofun", {})
+                if nofun.get(self.channel.id, False):
+                    raise BotException(
+                        "Could not run command!",
+                        "This command is a 'fun' command, and is not allowed "
+                        "in this channel. Please try running the command in "
+                        "some other channel.",
+                    )
+
             bored = await emotion.get("bored")
             if bored < -60 and -bored / 100 >= random.random():
                 raise BotException(

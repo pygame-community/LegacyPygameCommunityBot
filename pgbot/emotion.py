@@ -6,7 +6,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some utitities and functions for the bots emotion system
 """
 import random
-
+import math
 import discord
 import unidecode
 
@@ -66,7 +66,7 @@ async def check_bonk(msg: discord.Message):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
-    bonks = msg.content.count(common.BONK) // 5 + random.randint(0, 8)
+    bonks = math.floor(math.log2(msg.content.count(common.BONK) + 1))
 
     await update("anger", bonks)
     await update("happy", -bonks)
@@ -76,21 +76,37 @@ async def dad_joke(msg: discord.Message):
     """
     Utility to handle the bot making dad jokes
     """
+    async with db.DiscordDB("feature") as db_obj:
+        db_dict: dict[str, dict[int, bool]] = db_obj.get({})
+        dadjokes = db_dict.get("dadjokes", {})
+        if dadjokes.get(msg.channel.id, False):
+            return
+
     lowered = unidecode.unidecode(msg.content.lower().strip())
     for trigger in ("i am", "i'm"):
+        if lowered == trigger:
+            await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
+            return
+
         if trigger in lowered and len(lowered) < 60:
-            name = msg.content[lowered.index(trigger) + 4 :].strip()
+            ind = lowered.index(trigger)
+            if ind and not msg.content[ind - 1].isspace():
+                return
+
+            name = msg.content[ind + len(trigger) :]
+            if not name or not name[0].isspace():
+                return
+
+            name = name.strip()
             for char in (",", "\n", "."):
                 if char in name:
-                    name = name.strip(char)[0]
+                    name = name.split(char)[0]
 
             if name:
                 await msg.channel.send(
                     f"Hi {name}! I am <@!{common.bot.user.id}>",
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-            elif lowered == trigger:
-                await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
             return
 
 

@@ -1275,6 +1275,49 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         except discord.NotFound:
             pass
 
+    async def cmd_feature(
+        self, name: str, *channels: common.Channel, disable: bool = True
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!feature <name> [*channels] [enable=True]
+        ->description Per channel finer control on bot features
+
+        ->extended description
+
+        __Args__:
+            `name: (str)`
+            > The name of the feature
+
+            `*channels: (common.Channel)`
+            > Series of channel mentions to apply the
+            > settings to. If empty, applies the feature
+            > to the current channel
+
+            `disable: bool = True`
+            > Bool that controls whether to disable the
+            > feature or not (enable). `True` by default
+        -----
+        """
+        if not channels:
+            channels = (self.channel,)
+
+        async with db.DiscordDB("feature") as db_obj:
+            db_dict = db_obj.get({})
+            if name not in db_dict:
+                db_dict[name] = {}
+
+            for chan in channels:
+                db_dict[name][chan.id] = disable
+
+            db_obj.write(db_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            "Successfully executed command!",
+            f"Changed settings on {len(channels)} channel(s)",
+        )
+
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
