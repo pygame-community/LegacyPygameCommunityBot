@@ -77,18 +77,27 @@ async def dad_joke(msg: discord.Message):
     Utility to handle the bot making dad jokes
     """
     lowered = unidecode.unidecode(msg.content.lower().strip())
-    if "i am" in lowered and len(lowered) < 60:
-        name = msg.content[lowered.index("i am") + 4 :].strip()
-        if name:
-            await msg.channel.send(
-                f"Hi {name}! I am <@!{common.bot.user.id}>",
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-        elif lowered == "i am":
-            await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
+    for trigger in ("i am", "i'm"):
+        if trigger in lowered and len(lowered) < 60:
+            name = msg.content[lowered.index(trigger) + 4 :].strip()
+            for char in (",", "\n", "."):
+                if char in name:
+                    name = name.strip(char)[0]
+
+            if name:
+                await msg.channel.send(
+                    f"Hi {name}! I am <@!{common.bot.user.id}>",
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+            elif lowered == trigger:
+                await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
+            return
 
 
 async def euphoria():
+    """
+    Trigger a state of "euphoria" emotion, extremely happy and positive bot
+    """
     async with db.DiscordDB("emotions") as db_obj:
         db_obj.write(
             {
@@ -101,5 +110,11 @@ async def euphoria():
 
 
 async def server_boost(msg: discord.Message):
+    """
+    Helper to handle boost, trigger euphoria emotion state
+    """
     await euphoria()
+    if common.TEST_MODE:
+        return
+
     await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")

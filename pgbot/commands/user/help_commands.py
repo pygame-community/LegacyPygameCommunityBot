@@ -60,12 +60,24 @@ class HelpCommand(BaseCommand):
             else:
                 value = "Does not exist lol"
 
+            if len(str(rule)) > 200:
+                raise BotException(
+                    "Overflow in command",
+                    "Why would you want to check such a large rule number?",
+                )
+
             fields.append(
                 {
                     "name": f"__Rule number {rule}:__",
                     "value": value,
                     "inline": False,
                 }
+            )
+
+        if len(rules) > 25:
+            raise BotException(
+                "Overflow in command",
+                "Too many rules were requested",
             )
 
         if len(rules) == 1:
@@ -114,7 +126,6 @@ class HelpCommand(BaseCommand):
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
         async with db.DiscordDB("clock") as db_obj:
-
             timezones = db_obj.get({})
             if action:
                 if _member is None:
@@ -393,5 +404,4 @@ class HelpCommand(BaseCommand):
             self.cmd_str,
             self.page,
         )
-
         await page_embed.mainloop()
