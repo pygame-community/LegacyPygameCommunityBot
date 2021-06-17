@@ -66,7 +66,7 @@ async def check_bonk(msg: discord.Message):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
-    bonks = math.floor(math.log2(msg.content.count(common.BONK)+1))
+    bonks = math.floor(math.log2(msg.content.count(common.BONK)))
 
     await update("anger", bonks)
     await update("happy", -bonks)
