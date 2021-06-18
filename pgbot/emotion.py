@@ -66,7 +66,7 @@ async def check_bonk(msg: discord.Message):
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
         )
-    bonks = math.floor(math.log2(msg.content.count(common.BONK)))
+    bonks = math.floor(math.log2(msg.content.count(common.BONK) + 1))
 
     await update("anger", bonks)
     await update("happy", -bonks)
@@ -76,19 +76,44 @@ async def dad_joke(msg: discord.Message):
     """
     Utility to handle the bot making dad jokes
     """
+    async with db.DiscordDB("feature") as db_obj:
+        db_dict: dict[str, dict[int, bool]] = db_obj.get({})
+        dadjokes = db_dict.get("dadjokes", {})
+        if dadjokes.get(msg.channel.id, False):
+            return
+
     lowered = unidecode.unidecode(msg.content.lower().strip())
-    if "i am" in lowered and len(lowered) < 60:
-        name = msg.content[lowered.index("i am") + 4 :].strip()
-        if name:
-            await msg.channel.send(
-                f"Hi {name}! I am <@!{common.bot.user.id}>",
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-        elif lowered == "i am":
+    for trigger in ("i am", "i'm"):
+        if lowered == trigger:
             await msg.channel.send(random.choice(common.SHAKESPEARE_QUOTES))
+            return
+
+        if trigger in lowered and len(lowered) < 60:
+            ind = lowered.index(trigger)
+            if ind and not msg.content[ind - 1].isspace():
+                return
+
+            name = msg.content[ind + len(trigger) :]
+            if not name or not name[0].isspace():
+                return
+
+            name = name.strip()
+            for char in (",", "\n", "."):
+                if char in name:
+                    name = name.split(char)[0]
+
+            if name:
+                await msg.channel.send(
+                    f"Hi {name}! I am <@!{common.bot.user.id}>",
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+            return
 
 
 async def euphoria():
+    """
+    Trigger a state of "euphoria" emotion, extremely happy and positive bot
+    """
     async with db.DiscordDB("emotions") as db_obj:
         db_obj.write(
             {
@@ -101,5 +126,11 @@ async def euphoria():
 
 
 async def server_boost(msg: discord.Message):
+    """
+    Helper to handle boost, trigger euphoria emotion state
+    """
     await euphoria()
+    if common.TEST_MODE:
+        return
+
     await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")

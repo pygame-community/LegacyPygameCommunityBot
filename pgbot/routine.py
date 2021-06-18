@@ -37,7 +37,7 @@ async def handle_reminders(reminder_obj: db.DiscordDB):
                 content = f"__**Reminder for you:**__\n>>> {msg}"
 
                 channel = common.guild.get_channel(chan_id)
-                if channel is None:
+                if not isinstance(channel, discord.TextChannel):
                     # Channel does not exist in the guild, DM the user
                     try:
                         user = await common.bot.fetch_user(mem_id)

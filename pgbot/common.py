@@ -266,12 +266,12 @@ BYDARIO_QUOTE = """
 SHAKESPEARE_QUOTES = (
     """
 To be, or not to be, that is the question
-— SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet 
+— SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet
 """,
     """
 All the world's a stage,
 And all the men and women merely players
-— SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions 
+— SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions
 """,
     """
 We are such stuff
@@ -288,19 +288,19 @@ That struts and frets his hour upon the stage.
 """,
     """
 Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatnessthrust upon 'em.
-— SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio 
+— SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio
 """,
     """
 When we are born we cry that we are come
 To this great stage of fools
-— SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester 
+— SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester
 """,
     """
 The web of our life is of a mingled yarn, good and ill together
-— SHAKESPEARE, _All's Well That Ends Well_, Act 4 Scene 3, lines 68-69; One lord to another 
+— SHAKESPEARE, _All's Well That Ends Well_, Act 4 Scene 3, lines 68-69; One lord to another
 """,
     """
 You cannot, sir, take from me anything that I will not more willingly part withal - except my life, except my life, except my life
-— SHAKESPEARE, _Hamlet_, Act 2 Scene 2, lines 213-17; Hamlet 
+— SHAKESPEARE, _Hamlet_, Act 2 Scene 2, lines 213-17; Hamlet
 """,
 )
