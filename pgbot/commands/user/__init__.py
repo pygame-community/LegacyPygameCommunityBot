@@ -652,7 +652,7 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
-        
+
         async with db.DiscordDB("polls") as db_obj:
             all_poll_info = db_obj.get([])
 
@@ -660,7 +660,7 @@ class UserCommand(FunCommand, HelpCommand):
                 all_poll_info.remove(msg.id)
             except ValueError:
                 pass
-    
+
             db_obj.write(all_poll_info)
 
     @add_group("stream")

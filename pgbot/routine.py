@@ -110,6 +110,86 @@ async def handle_console():
         )
 
 
+async def handle_depression():
+    async with db.DiscordDB("emotions") as db_obj:
+        all_emotions = db_obj.get({})
+
+        try:
+            depression = all_emotions["depression"]
+        except KeyError:
+            depression = {}
+
+        happiness = all_emotions.get("happy", 0)
+        if happiness > 0:
+            depression["min_of_sadness"] = None
+
+            if depression.get("value", 0) > 0:
+                try:
+                    depression["min_of_happiness"] = (
+                        emotion.depression_function_curve(
+                            "happy", depression.get("value", 0), inverse=True
+                        )
+                        + 1 / 20
+                    )
+                except ValueError:
+                    depression["min_of_happiness"] -= 1
+            else:
+                try:
+                    depression["min_of_happiness"] = (
+                        depression.get("min_of_happiness", 0) + 1 / 20
+                    )
+                except TypeError:
+                    depression["min_of_happiness"] = 1 / 20
+        else:
+            depression["min_of_happiness"] = None
+
+            if 0 < depression.get("value", 0) < 100:
+                try:
+                    depression["min_of_sadness"] = (
+                        emotion.depression_function_curve(
+                            "depression", depression.get("value", 0), inverse=True
+                        )
+                        + 2
+                    )
+                except ValueError:
+                    depression["min_of_happiness"] += 0.1
+            else:
+                try:
+                    depression["min_of_sadness"] = (
+                        depression.get("min_of_sadness", 0) + 1 / 20
+                    )
+                except TypeError:
+                    depression["min_of_sadness"] = 1 / 20
+
+        try:
+            if depression.get("min_of_happiness", 0) < 0:
+                depression["min_of_happiness"] = 1 / 20
+        except TypeError:
+            pass
+
+        try:
+            if depression.get("value", 1) < 1e-3:
+                depression["value"] = 0
+                depression["min_of_happiness"] = None
+        except TypeError:
+            pass
+
+        if depression["min_of_sadness"]:
+            depression["value"] = emotion.depression_function_curve(
+                "depression", depression["min_of_sadness"]
+            )
+        elif depression["min_of_happiness"]:
+            depression["value"] = emotion.depression_function_curve(
+                "happy", depression["min_of_happiness"]
+            )
+
+        all_emotions["depression"] = depression
+
+        print(depression)
+
+        db_obj.write(all_emotions)
+
+
 @tasks.loop(seconds=3)
 async def routine():
     """
@@ -122,6 +202,7 @@ async def routine():
 
     if random.randint(0, 4) == 0:
         await emotion.update("bored", 1)
+    await handle_depression()
 
     await common.bot.change_presence(
         activity=discord.Activity(

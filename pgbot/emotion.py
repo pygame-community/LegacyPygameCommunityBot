@@ -5,6 +5,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 
 This file defines some utitities and functions for the bots emotion system
 """
+import math
 import random
 
 import discord
@@ -18,6 +19,7 @@ EMOTION_CAPS = {
     "anger": (0, 100),
     "bored": (-100, 100),
     "confused": (0, 100),
+    "depression": (0, 100),
 }
 
 
@@ -103,3 +105,45 @@ async def euphoria():
 async def server_boost(msg: discord.Message):
     await euphoria()
     await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")
+
+
+def depression_function_curve(mode, context, inverse=False, prec=-1):
+    if mode == "depression":
+        if inverse:
+            if context < 0:
+                min_of_sadness = 0
+            elif 0 <= context < 40:
+                min_of_sadness = -(
+                    (5 * math.log(40 / context - 1) - 50 * math.log(1.7))
+                    / math.log(1.7)
+                )
+            else:
+                min_of_sadness = -5 * math.log((100 - context) / (context - 40)) + 130
+
+            if prec == -1:
+                return min_of_sadness
+            return round(min_of_sadness, prec)
+        else:
+            if context < 0:
+                depression = 0
+            elif 0 <= context < 100:
+                depression = 40 / (1 + 1.7 ** (-context / 5 + 10))
+            else:
+                depression = 60 / (1 + math.e ** (-context / 5 + 26)) + 40
+
+            if prec == -1:
+                return depression
+            return round(depression, prec)
+    elif mode == "happy":
+        if inverse:
+            depression = 2 * math.log(100 / context - 1) + 12
+
+            if prec == -1:
+                return depression
+            return round(depression, prec)
+        else:
+            min_of_happy = 100 / (1 + math.e ** (context / 2 - 6))
+
+            if prec == -1:
+                return min_of_happy
+            return round(min_of_happy, prec)
