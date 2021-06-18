@@ -171,12 +171,12 @@ async def message_delete(msg: discord.Message):
 
     elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
-            if msg.id is not None and common.cmd_logs[log].id is not None:
+            if common.cmd_logs[log].id is not None:
                 if common.cmd_logs[log].id == msg.id:
                     del common.cmd_logs[log]
                     return
 
-    if common.GENERIC:
+    if common.GENERIC or common.TEST_MODE:
         return
 
     if msg.channel in common.entry_channels.values():
@@ -207,6 +207,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
         except discord.HTTPException:
             pass
 
+    if common.GENERIC or common.TEST_MODE:
+        return
+
     if new.channel in common.entry_channels.values():
         async for message in common.entries_discussion_channel.history(
             around=old.created_at, limit=5
@@ -226,14 +229,19 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 pass
 
 
-async def raw_reaction_add(payload):
+async def raw_reaction_add(payload: discord.RawReactionActionEvent):
+    """
+    Helper to handle a raw reaction added on discord
+    """
     async with db.DiscordDB("polls") as db_obj:
         all_poll_info = db_obj.get([])
 
     if payload.message_id in all_poll_info:
         channel = await common.bot.fetch_channel(payload.channel_id)
-        msg = await channel.fetch_message(payload.message_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
 
+        msg: discord.Message = await channel.fetch_message(payload.message_id)
         all_reactions_user = {
             reaction: user
             for reaction in msg.reactions
@@ -302,7 +310,6 @@ def cleanup(*_):
     """
     Call cleanup functions
     """
-
     common.bot.loop.run_until_complete(db.quit())
     common.bot.loop.run_until_complete(common.bot.close())
     common.bot.loop.close()

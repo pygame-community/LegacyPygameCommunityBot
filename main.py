@@ -70,7 +70,7 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
 
 
 @bot.event
-async def on_raw_reaction_add(payload):
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     """
     This function is called for every reaction added by user.
     """

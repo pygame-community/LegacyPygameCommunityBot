@@ -108,7 +108,8 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
             module_objs = {}
             for i in dir(obj):
-                module_objs[i] = getattr(obj, i)
+                if i != "__abstractmethods__":
+                    module_objs[i] = getattr(obj, i)
         except KeyError:
             await embed_utils.replace(
                 original_msg,
