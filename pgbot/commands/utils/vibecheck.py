@@ -142,7 +142,7 @@ def emotion_pie_chart(emotions: dict[str, int], pie_radius: int):
     font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), 30)
     font.bold = True
 
-    image = pygame.Surface((pie_radius * 2, pie_radius * 2 + 30 * len(emotions)))
+    image = pygame.Surface((pie_radius * 2, pie_radius * 2 + 30 * len(emotions)), flags=pygame.SRCALPHA)
     image.fill((0, 0, 0, 0))
 
     emotion_percentage = get_emotion_percentage(emotions)

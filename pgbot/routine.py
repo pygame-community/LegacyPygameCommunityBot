@@ -20,6 +20,8 @@ from discord.ext import tasks
 from pgbot import common, db, emotion
 from pgbot.utils import utils
 
+num_increment = 1 / 20
+
 
 async def handle_reminders(reminder_obj: db.DiscordDB):
     """
@@ -111,69 +113,75 @@ async def handle_console():
 
 
 async def handle_depression():
+    """
+    Function to handle depression emotion
+    """
     async with db.DiscordDB("emotions") as db_obj:
         all_emotions = db_obj.get({})
 
-        try:
-            depression = all_emotions["depression"]
-        except KeyError:
-            depression = {}
+        # Gets the depression emotion dict
+        depression = all_emotions.get("depression", {})
 
         happiness = all_emotions.get("happy", 0)
         if happiness > 0:
+            # Bot is happy
             depression["min_of_sadness"] = None
 
             if depression.get("value", 0) > 0:
+                # If depression is > 0 when bot is happy,
+                # use happiness sigmoid inverse piecewise function
                 try:
                     depression["min_of_happiness"] = (
                         emotion.depression_function_curve(
                             "happy", depression.get("value", 0), inverse=True
                         )
-                        + 1 / 20
+                        + num_increment
                     )
                 except ValueError:
-                    depression["min_of_happiness"] -= 1
+                    depression["min_of_happiness"] = num_increment
             else:
-                try:
-                    depression["min_of_happiness"] = (
-                        depression.get("min_of_happiness", 0) + 1 / 20
-                    )
-                except TypeError:
-                    depression["min_of_happiness"] = 1 / 20
+                # If depression is 0 when bot is happy,
+                # start incrementing min of happiness
+                depression["min_of_happiness"] = num_increment
         else:
+            # Bot is sad
             depression["min_of_happiness"] = None
 
             if 0 < depression.get("value", 0) < 100:
+                # If depression in range (0, 100),
+                # Use depression sigmoid inverse piecewise function
                 try:
                     depression["min_of_sadness"] = (
                         emotion.depression_function_curve(
                             "depression", depression.get("value", 0), inverse=True
                         )
-                        + 2
+                        + num_increment
                     )
                 except ValueError:
                     depression["min_of_happiness"] += 0.1
             else:
+                # Otherwise, increment min of sadness
                 try:
                     depression["min_of_sadness"] = (
-                        depression.get("min_of_sadness", 0) + 1 / 20
+                        depression.get("min_of_sadness", 0) + num_increment
                     )
                 except TypeError:
-                    depression["min_of_sadness"] = 1 / 20
+                    depression["min_of_sadness"] = num_increment
 
         try:
+            # Sets the min value of happiness to num increment
             if depression.get("min_of_happiness", 0) < 0:
-                depression["min_of_happiness"] = 1 / 20
+                depression["min_of_happiness"] = num_increment
         except TypeError:
             pass
 
-        try:
-            if depression.get("value", 1) < 1e-3:
-                depression["value"] = 0
-                depression["min_of_happiness"] = None
-        except TypeError:
-            pass
+        # If depression < 0.001, set it to 0
+        # (it'd take 1431 minutes for python to not be able to store it and error out)
+        if depression.get("value", 1) < 1e-3:
+            depression["value"] = 0
+            depression["min_of_happiness"] = None
 
+        # Actually adjusts value based on minutes of sadness/happiness
         if depression["min_of_sadness"]:
             depression["value"] = emotion.depression_function_curve(
                 "depression", depression["min_of_sadness"]
@@ -183,9 +191,8 @@ async def handle_depression():
                 "happy", depression["min_of_happiness"]
             )
 
+        # Updates all_emotion's depression to depression dict and writes it to db_obj
         all_emotions["depression"] = depression
-
-        print(depression)
 
         db_obj.write(all_emotions)
 
