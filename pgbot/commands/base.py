@@ -197,6 +197,9 @@ ANNO_AND_ERROR = {
     "discord.Message": (
         "a message ID, or a 'channel_id/message_id' combo, or a [link](#) to a message"
     ),
+    "discord.PartialMessage": (
+        "a message ID, or a 'channel_id/message_id' combo, or a [link](#) to a message"
+    ),
 }
 
 
@@ -421,7 +424,7 @@ class BaseCommand:
                 continue
 
             # ignore any commas in the source string, just treat them as spaces
-            arg = arg.replace(" =", "=").replace(",", " ")
+            arg = arg.replace(" =", "=").replace(",", " ").replace(")(", ") (")
             for substr in arg.split():
                 substr = substr.strip()
                 if not substr:
@@ -673,6 +676,25 @@ class BaseCommand:
                 except discord.NotFound:
                     raise ValueError()
 
+            elif anno == "discord.PartialMessage":
+                formatted = utils.format_discord_link(arg, self.guild.id)
+
+                a, b, c = formatted.partition("/")
+                if b:
+                    msg = int(c)
+                    chan = self.guild.get_channel(utils.filter_id(a))
+
+                    if not isinstance(chan, discord.TextChannel):
+                        raise ValueError()
+                else:
+                    msg = int(a)
+                    chan = self.channel
+
+                if isinstance(chan, discord.GroupChannel):
+                    raise ValueError()
+
+                return chan.get_partial_message(msg)
+
             raise BotException(
                 "Internal Bot error", f"Invalid type annotation `{anno}`"
             )
@@ -821,16 +843,13 @@ class BaseCommand:
             )
 
         if hasattr(func, "fun_cmd"):
-            async with db.DiscordDB("feature") as db_obj:
-                db_dict: dict[str, dict[int, bool]] = db_obj.get({})
-                nofun = db_dict.get("nofun", {})
-                if nofun.get(self.channel.id, False):
-                    raise BotException(
-                        "Could not run command!",
-                        "This command is a 'fun' command, and is not allowed "
-                        "in this channel. Please try running the command in "
-                        "some other channel.",
-                    )
+            if await utils.get_channel_feature("nofun", self.channel):
+                raise BotException(
+                    "Could not run command!",
+                    "This command is a 'fun' command, and is not allowed "
+                    "in this channel. Please try running the command in "
+                    "some other channel.",
+                )
 
             bored = await emotion.get("bored")
             if bored < -60 and -bored / 100 >= random.random():
@@ -874,7 +893,10 @@ class BaseCommand:
             if (
                 i == 0
                 and isinstance(param.annotation, str)
-                and "discord.Message" in param.annotation
+                and (
+                    "discord.Message" in param.annotation
+                    or "discord.PartialMessage" in param.annotation
+                )
             ):
                 # first arg is expected to be a Message object, handle reply into
                 # the first argument

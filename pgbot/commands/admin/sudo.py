@@ -732,9 +732,9 @@ class SudoCommand(BaseCommand):
         urls: bool = False,
         pinned: bool = False,
         pin_range: Optional[range] = None,
-        before: Optional[Union[discord.Message, datetime.datetime]] = None,
-        after: Optional[Union[discord.Message, datetime.datetime]] = None,
-        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        before: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        after: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        around: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
         oldest_first: bool = True,
         prefix: String = String(""),
         sep: String = String(" "),
@@ -793,19 +793,28 @@ class SudoCommand(BaseCommand):
                 )
 
         else:
-            if isinstance(before, discord.Message) and before.channel.id != origin.id:
+            if (
+                isinstance(before, discord.PartialMessage)
+                and before.channel.id != origin.id
+            ):
                 raise BotException(
                     "Invalid `before` argument",
                     "`before` has to be an ID to a message from the origin channel",
                 )
 
-            if isinstance(after, discord.Message) and after.channel.id != origin.id:
+            if (
+                isinstance(after, discord.PartialMessage)
+                and after.channel.id != origin.id
+            ):
                 raise BotException(
                     "Invalid `after` argument",
                     "`after` has to be an ID to a message from the origin channel",
                 )
 
-            if isinstance(around, discord.Message) and around.channel.id != origin.id:
+            if (
+                isinstance(around, discord.PartialMessage)
+                and around.channel.id != origin.id
+            ):
                 raise BotException(
                     "Invalid `around` argument",
                     "`around` has to be an ID to a message from the origin channel",
@@ -843,8 +852,6 @@ class SudoCommand(BaseCommand):
         msg_count = len(messages)
         msgs_per_loop = 200
 
-        output_str = prefix
-
         if urls:
             output_filename = "message_urls.txt"
             start_idx = 0
@@ -852,7 +859,7 @@ class SudoCommand(BaseCommand):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += "".join(
+                output_str += sep.string.join(
                     messages[j].jump_url
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
@@ -860,48 +867,48 @@ class SudoCommand(BaseCommand):
 
             output_str += (
                 "".join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
-                + suffix
+                + suffix.string
             )
 
         elif channel_ids:
             output_filename = "message_and_channel_ids.txt"
-            output_str = prefix
             start_idx = 0
             end_idx = 0
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += "".join(
+                output_str += sep.string.join(
                     f"{messages[j].channel.id}/{messages[j].id}"
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                "".join(
+                sep.string.join(
                     f"{messages[j].channel.id}/{messages[j].id}"
                     for j in range(end_idx + 1, msg_count)
                 )
-                + suffix
+                + suffix.string
             )
 
         else:
             output_filename = "message_and_channel_ids.txt"
-            output_str = prefix
             start_idx = 0
             end_idx = 0
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += "".join(
+                output_str += sep.string.join(
                     f"{messages[j].id}"
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                "".join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
-                + suffix
+                sep.string.join(
+                    f"{messages[j].id}" for j in range(end_idx + 1, msg_count)
+                )
+                + suffix.string
             )
 
         with io.StringIO(output_str) as fobj:

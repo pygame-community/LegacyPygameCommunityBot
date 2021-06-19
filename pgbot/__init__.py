@@ -7,17 +7,17 @@ This file is the main file of pgbot subdir
 """
 
 import asyncio
+import io
 import os
 import random
 import signal
 import sys
-import io
 
 import discord
 import pygame
 
 from pgbot import commands, common, db, emotion, routine
-from pgbot.utils import embed_utils
+from pgbot.utils import embed_utils, utils
 
 
 async def _init():
@@ -246,12 +246,12 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
             reaction: user
             for reaction in msg.reactions
             for user in await reaction.users().flatten()
-            if user.id == payload.user_id and reaction.emoji != payload.emoji.name
+            if user.id == payload.user_id
+            and not utils.is_emoji_equal(payload.emoji, reaction.emoji)
         }
 
-        if len(all_reactions_user) > 0:
-            for reaction, user in all_reactions_user.items():
-                await reaction.remove(user)
+        for reaction, user in all_reactions_user.items():
+            await reaction.remove(user)
 
 
 async def handle_message(msg: discord.Message):

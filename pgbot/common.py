@@ -141,6 +141,14 @@ class ServerConstants:
         819537779847200809,
     )
 
+    # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
+    #       if you want to remove more, add the ID to the set below
+    MSGS_TO_FILTER = {
+        817137523905527889,
+        810942002114986045,
+        810942043488256060,
+    }
+
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
 

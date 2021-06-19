@@ -463,25 +463,19 @@ class UserCommand(FunCommand, HelpCommand):
         }
         base_embed_dict.update(_admin_embed_dict)
 
-        if emojis:
-            if len(emojis) == 1:
+        # Make into dict because we want to get rid of emoji repetitions
+        emojis_dict = {k.strip(): v.string.strip() for k, v in emojis}
+        if emojis_dict:
+            if len(emojis_dict) == 1:
                 raise BotException(
-                    "Invalid arguments for emojis.",
-                    "Please add at least 2 emojis with 2 descriptions."
-                    " Each emoji should have their own description."
-                    " Make sure each argument is a different string. For more"
-                    " information, see `pg!help poll`",
+                    "Invalid arguments for emojis",
+                    "Please add at least 2 options in the poll\n"
+                    "For more information, see `pg!help poll`",
                 )
 
-            base_embed_dict["fields"] = []
-            for emoji, desc in emojis:
-                base_embed_dict["fields"].append(
-                    {
-                        "name": emoji.strip(),
-                        "value": desc.string.strip(),
-                        "inline": True,
-                    }
-                )
+            base_embed_dict["fields"] = [
+                {"name": k, "value": v, "inline": True} for k, v in emojis_dict.items()
+            ]
 
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)

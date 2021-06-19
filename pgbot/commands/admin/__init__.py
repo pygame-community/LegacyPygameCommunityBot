@@ -85,6 +85,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         except discord.NotFound:
             pass
 
+    @no_dm
     @add_group("db", "write")
     async def cmd_db_write(self, name: str, data: Union[discord.Message, CodeBlock]):
         """
@@ -94,6 +95,24 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_write, to overwrite DB messages
         """
+        # make typecheckers happy
+        if not isinstance(self.author, discord.Member):
+            return
+
+        evalable = False
+        for role in self.author.roles:
+            if role.id in common.ServerConstants.EVAL_ROLES:
+                evalable = True
+
+        if common.TEST_MODE and self.author.id in common.TEST_USER_IDS:
+            evalable = True
+
+        if not evalable:
+            raise BotException(
+                "Insufficient perms",
+                "The `db write` command needs Server Admin or Mage level perms",
+            )
+
         if isinstance(data, CodeBlock):
             obj_str = data.code
         elif data.attachments:
@@ -104,7 +123,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             )
 
         async with db.DiscordDB(name) as db_obj:
-            db_obj.write(eval(obj_str))
+            db_obj.write(eval(obj_str))  # pylint: disable = eval-used
 
         await embed_utils.replace(
             self.response_msg,
@@ -283,9 +302,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         quantity: int,
         mode: int = 0,
         destination: Optional[common.Channel] = None,
-        before: Optional[Union[discord.Message, datetime.datetime]] = None,
-        after: Optional[Union[discord.Message, datetime.datetime]] = None,
-        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        before: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        after: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        around: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
@@ -332,19 +351,25 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
-        if isinstance(before, discord.Message) and before.channel.id != origin.id:
+        if (
+            isinstance(before, discord.PartialMessage)
+            and before.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `before` argument",
                 "`before` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(after, discord.Message) and after.channel.id != origin.id:
+        if isinstance(after, discord.PartialMessage) and after.channel.id != origin.id:
             raise BotException(
                 "Invalid `after` argument",
                 "`after` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(around, discord.Message) and around.channel.id != origin.id:
+        if (
+            isinstance(around, discord.PartialMessage)
+            and around.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `around` argument",
                 "`around` has to be an ID to a message from the origin channel",
@@ -661,7 +686,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_pin(
         self,
         channel: discord.TextChannel,
-        *msgs: discord.Message,
+        *msgs: discord.PartialMessage,
         delete_system_messages: bool = True,
         flush_bottom: bool = True,
     ):
@@ -767,7 +792,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_pin_remove(
         self,
         channel: discord.TextChannel,
-        *msgs: discord.Message,
+        *msgs: discord.PartialMessage,
     ):
         """
         ->type Admin commands
@@ -1237,7 +1262,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace_2(self.response_msg, **kwargs)
 
-    async def cmd_react(self, message: discord.Message, *emojis: str):
+    async def cmd_react(self, message: discord.PartialMessage, *emojis: str):
         """
         ->type More admin commands
         ->signature pg!react <message> <emojis>

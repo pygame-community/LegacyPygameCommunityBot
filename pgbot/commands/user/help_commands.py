@@ -259,14 +259,6 @@ class HelpCommand(BaseCommand):
         if isinstance(self.author, discord.User):
             return
 
-        # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
-        #       if you want to remove more, add the ID to the list below
-        msgs_to_filter = {
-            817137523905527889,
-            810942002114986045,
-            810942043488256060,
-        }
-
         if common.GENERIC:
             raise BotException(
                 "Cannot execute command!",
@@ -278,20 +270,13 @@ class HelpCommand(BaseCommand):
                 tag = tag.replace(to_replace, "")
             return tag.title()
 
-        def filter_func(x):
-            return x.id != msg_to_filter
-
         resource_entries_channel = common.entry_channels["resource"]
 
         # Retrieves all messages inside resource entries channel
-        msgs = await resource_entries_channel.history(
-            oldest_first=oldest_first
-        ).flatten()
-
-        # Filters any messages that have the same ID as the ones provided
-        # in msgs_to_filter
-        for msg_to_filter in msgs_to_filter:
-            msgs = list(filter(filter_func, msgs))
+        msgs: list[discord.Message] = []
+        async for msg in resource_entries_channel.history(oldest_first=oldest_first):
+            if msg.id not in common.ServerConstants.MSGS_TO_FILTER:
+                msgs.append(msg)
 
         if filter_tag:
             # Filter messages based on tag
