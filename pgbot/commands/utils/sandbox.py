@@ -272,9 +272,9 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     except ImportError:
         output.exc = (
             "Oopsies! The bot's exec function doesn't support importing "
-            "external modules. Don't worry, many modules are pre- imported "
-            "for you already! Just re-run your code, without the import "
-            "statements"
+            "external modules. Don't worry, many modules are pre-imported "
+            "for you already! Just re-run your code without the import "
+            "statements."
         )
 
     except Exception as err:
