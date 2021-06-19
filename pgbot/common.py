@@ -287,7 +287,7 @@ That struts and frets his hour upon the stage.
 — SHAKESPEARE, _Macbeth_, Act 5 Scene 5, Lines 23-25; Macbeth to Seyton
 """,
     """
-Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatnessthrust upon 'em.
+Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatness thrust upon 'em.
 — SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio
 """,
     """
