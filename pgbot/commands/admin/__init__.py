@@ -109,8 +109,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not evalable:
             raise BotException(
-                "Insufficient perms",
-                "The `db write` command needs Server Admin or Mage level perms",
+                "Insufficient permissions",
+                "You do not have enough permissions to run this command.",
             )
 
         if isinstance(data, CodeBlock):
@@ -243,8 +243,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not evalable:
             raise BotException(
-                "Insufficient perms",
-                "The `eval` command needs Server Admin or Mage level perms",
+                "Insufficient permissions",
+                "You do not have enough permissions to run this command.",
             )
 
         try:

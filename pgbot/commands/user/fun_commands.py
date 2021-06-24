@@ -43,7 +43,7 @@ class FunCommand(BaseCommand):
         Implement pg!version, to report bot version
         """
         await embed_utils.replace(
-            self.response_msg, "Current bot's version", f"`{common.VERSION}`"
+            self.response_msg, "Current bot's version", f"`{common.__version__}`"
         )
 
     @fun_command
