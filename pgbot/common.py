@@ -48,7 +48,7 @@ db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 
-VERSION = "1.5.2"
+__version__ = "1.5.3"
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
