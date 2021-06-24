@@ -25,9 +25,6 @@ async def handle_reminders(reminder_obj: db.DiscordDB):
     """
     Handle reminder routines
     """
-    if common.guild is None:
-        return
-
     reminders = reminder_obj.get({})
 
     new_reminders = {}
@@ -36,7 +33,9 @@ async def handle_reminders(reminder_obj: db.DiscordDB):
             if datetime.datetime.utcnow() >= dt:
                 content = f"__**Reminder for you:**__\n>>> {msg}"
 
-                channel = common.guild.get_channel(chan_id)
+                channel = None
+                if common.guild is not None:
+                    channel = common.guild.get_channel(chan_id)
                 if not isinstance(channel, discord.TextChannel):
                     # Channel does not exist in the guild, DM the user
                     try:
@@ -116,9 +115,8 @@ async def routine():
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    if common.guild is not None:
-        async with db.DiscordDB("reminders") as db_obj:
-            await handle_reminders(db_obj)
+    async with db.DiscordDB("reminders") as db_obj:
+        await handle_reminders(db_obj)
 
     if random.randint(0, 4) == 0:
         await emotion.update("bored", 1)

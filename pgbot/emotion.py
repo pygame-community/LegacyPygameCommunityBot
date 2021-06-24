@@ -76,11 +76,8 @@ async def dad_joke(msg: discord.Message):
     """
     Utility to handle the bot making dad jokes
     """
-    async with db.DiscordDB("feature") as db_obj:
-        db_dict: dict[str, dict[int, bool]] = db_obj.get({})
-        dadjokes = db_dict.get("dadjokes", {})
-        if dadjokes.get(msg.channel.id, False):
-            return
+    if await utils.get_channel_feature("dadjokes", msg.channel):
+        return
 
     lowered = unidecode.unidecode(msg.content.lower().strip())
     for trigger in ("i am", "i'm"):

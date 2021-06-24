@@ -178,12 +178,8 @@ class HelpCommand(BaseCommand):
 
         t = time.time()
 
-        # needed for typecheckers to know that self.guild cannot be none
-        if self.guild is None:
-            return
-
         pygame.image.save(
-            await clock.user_clock(t, timezones, self.guild), f"temp{t}.png"
+            await clock.user_clock(t, timezones, self.get_guild()), f"temp{t}.png"
         )
         common.cmd_logs[self.invoke_msg.id] = await self.channel.send(
             file=discord.File(f"temp{t}.png")
@@ -239,33 +235,25 @@ class HelpCommand(BaseCommand):
         self,
         limit: Optional[int] = None,
         filter_tag: Optional[String] = None,
-        filter_member: Optional[discord.Member] = None,
+        filter_members: Optional[tuple[discord.Object, ...]] = None,
         oldest_first: bool = False,
     ):
         """
         ->type Get help
-        ->signature pg!resources [limit] [filter_tag] [filter_member] [oldest_first]
+        ->signature pg!resources [limit] [filter_tag] [filter_members] [oldest_first]
         ->description Browse through resources.
         ->extended description
         pg!resources takes in additional arguments, though they are optional.
         `oldest_first`: Set oldest_first to True to browse through the oldest resources
         `limit=[num]`: Limits the number of resources to the number
         `filter_tag=[tag]`: Includes only the resources with that tag(s)
-        `filter_member=[member]`: Includes only the resources posted by that user
+        `filter_members=[members]`: Includes only the resources posted by those user(s). Can be a tuple of users
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
 
         # needed for typecheckers to know that self.author is a member
         if isinstance(self.author, discord.User):
             return
-
-        # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
-        #       if you want to remove more, add the ID to the list below
-        msgs_to_filter = {
-            817137523905527889,
-            810942002114986045,
-            810942043488256060,
-        }
 
         if common.GENERIC:
             raise BotException(
@@ -278,20 +266,13 @@ class HelpCommand(BaseCommand):
                 tag = tag.replace(to_replace, "")
             return tag.title()
 
-        def filter_func(x):
-            return x.id != msg_to_filter
-
         resource_entries_channel = common.entry_channels["resource"]
 
         # Retrieves all messages inside resource entries channel
-        msgs = await resource_entries_channel.history(
-            oldest_first=oldest_first
-        ).flatten()
-
-        # Filters any messages that have the same ID as the ones provided
-        # in msgs_to_filter
-        for msg_to_filter in msgs_to_filter:
-            msgs = list(filter(filter_func, msgs))
+        msgs: list[discord.Message] = []
+        async for msg in resource_entries_channel.history(oldest_first=oldest_first):
+            if msg.id not in common.ServerConstants.MSGS_TO_FILTER:
+                msgs.append(msg)
 
         if filter_tag:
             # Filter messages based on tag
@@ -305,8 +286,9 @@ class HelpCommand(BaseCommand):
                     )
                 )
 
-        if filter_member:
-            msgs = list(filter(lambda x: x.author.id == filter_member.id, msgs))
+        if filter_members:
+            filter_member_ids = [obj.id for obj in filter_members]
+            msgs = list(filter(lambda x: x.author.id in filter_member_ids, msgs))
 
         if limit is not None:
             # Uses list slicing instead of TextChannel.history's limit param
@@ -336,7 +318,8 @@ class HelpCommand(BaseCommand):
         copy_msgs = msgs[:]
         i = 1
         while msgs:
-            # Constructs embeds based on messages, and store them in pages to be used in the paginator
+            # Constructs embeds based on messages, and store them in pages to
+            # be used in the paginator
             top_msg = msgs[:6]
             if len(copy_msgs) > 1:
                 title = (
@@ -358,7 +341,8 @@ class HelpCommand(BaseCommand):
                         continue
 
                     field_name = f"{i}. {name}, posted by {msg.author.display_name}"
-                    # If the field name is > 256 (discord limit), shorten it with list slicing
+                    # If the field name is > 256 (discord limit), shorten it
+                    # with list slicing
                     field_name = f"{field_name[:253]}..."
 
                     value = msg.content.split(name)[1].removeprefix("**").strip()
@@ -390,10 +374,11 @@ class HelpCommand(BaseCommand):
             pages.append(current_embed)
             msgs = msgs[6:]
 
-        if len(pages) == 0:
+        if not pages:
             raise BotException(
                 f"Retrieved 0 entries in #{resource_entries_channel.name}",
-                "There are no results of resources with those parameters. Please try again.",
+                "There are no results of resources with those parameters. "
+                "Please try again.",
             )
 
         # Creates a paginator for the caller to use

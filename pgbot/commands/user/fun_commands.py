@@ -129,6 +129,10 @@ class FunCommand(BaseCommand):
         ->description Delete your fontified message by replying to it
         """
 
+        # make typecheckers happy
+        if common.bot.user is None:
+            return
+
         if (
             reply.author.id != common.bot.user.id
             or not reply.embeds
