@@ -327,12 +327,11 @@ class BaseCommand:
         self.is_dm = self.guild is None
 
         # if someone is DMing, set guild to primary server (PGC server)
-        if self.is_dm:
+        if self.guild is None:
             self.guild = common.guild
-
-        self.filesize_limit: int = (
-            common.BASIC_MAX_FILE_SIZE if self.is_dm else self.guild.filesize_limit
-        )
+            self.filesize_limit = common.BASIC_MAX_FILE_SIZE
+        else:
+            self.filesize_limit: int = self.guild.filesize_limit
 
         # build self.groups and self.cmds_and_functions from class functions
         self.cmds_and_funcs = {}  # this is a mapping from funtion name to funtion
@@ -352,6 +351,17 @@ class BaseCommand:
         # page number, useful for PagedEmbed commands. 0 by deafult, gets modified
         # in pg!refresh command when invoked
         self.page: int = 0
+
+    def get_guild(self):
+        """
+        Utility to retrieve self.guild. This function will raise BotException
+        if self.guild is not set
+        """
+        if self.guild is None:
+            raise BotException(
+                "Internal bot error!", "Primary guild for the bot was not set"
+            )
+        return self.guild
 
     def split_args(
         self, split_str: str, split_flags: list[tuple[str, Any, tuple]]
@@ -442,9 +452,11 @@ class BaseCommand:
 
                     prevkey = splits[0]
                     if not prevkey:
+                        # we do not have keyword name
                         raise KwargError("Missing keyword before '=' symbol")
 
                     if temp_list is not None:
+                        # we were parsing a tuple, and got keyword arg
                         raise KwargError("Keyword arguments cannot come inside a tuple")
 
                     # underscores not allowed at start of keyword names here
@@ -456,12 +468,14 @@ class BaseCommand:
                         continue
 
                     if substr.startswith("("):
+                        # start of a tuple, while also having keyword args
                         temp_list = []
                         substr = substr[1:]
                         if not substr:
                             continue
 
                     if substr.endswith(")"):
+                        # end of a tuple, in the same keyword arg
                         if temp_list is None:
                             raise ArgError("Invalid closing tuple bracket")
 
@@ -482,6 +496,7 @@ class BaseCommand:
                 elif len(splits) == 1:
                     # current substring is not a keyword (does not have =)
                     if substr.startswith("("):
+                        # start of a tuple
                         if temp_list is not None:
                             raise ArgError("Nested tuples are not supported (yet)")
 
@@ -491,6 +506,7 @@ class BaseCommand:
                             continue
 
                     if substr.endswith(")"):
+                        # end of a tuple
                         if temp_list is None:
                             raise ArgError("Invalid closing tuple bracket")
 
@@ -498,6 +514,7 @@ class BaseCommand:
                         if substr:
                             temp_list.append(substr)
 
+                        # flush into arg or kwarg depending on prevkey
                         if prevkey:
                             kwargs[prevkey] = tuple(temp_list)
                             prevkey = None
@@ -570,9 +587,13 @@ class BaseCommand:
         Raises ValueError on failure to cast arguments
         """
         if isinstance(arg, tuple):
-            raise ValueError()
+            if len(arg) != 1:
+                raise ValueError()
 
-        elif isinstance(arg, CodeBlock):
+            # got a one element tuple where we expected an arg, handle that element
+            arg = arg[0]
+
+        if isinstance(arg, CodeBlock):
             if anno == "CodeBlock":
                 return arg
             raise ValueError()
@@ -622,14 +643,14 @@ class BaseCommand:
                 return discord.Object(utils.filter_id(arg))
 
             elif anno == "discord.Role":
-                role = self.guild.get_role(utils.filter_id(arg))
+                role = self.get_guild().get_role(utils.filter_id(arg))
                 if role is None:
                     raise ValueError()
                 return role
 
             elif anno == "discord.Member":
                 try:
-                    return await self.guild.fetch_member(utils.filter_id(arg))
+                    return await self.get_guild().fetch_member(utils.filter_id(arg))
                 except discord.errors.NotFound:
                     raise ValueError()
 
@@ -640,9 +661,9 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno in ("discord.TextChannel", "common.Channel"):
-                formatted = utils.format_discord_link(arg, self.guild.id)
+                formatted = utils.format_discord_link(arg, self.get_guild().id)
 
-                chan = self.guild.get_channel(utils.filter_id(formatted))
+                chan = self.get_guild().get_channel(utils.filter_id(formatted))
                 if chan is None:
                     raise ValueError()
 
@@ -658,12 +679,12 @@ class BaseCommand:
                 return guild
 
             elif anno == "discord.Message":
-                formatted = utils.format_discord_link(arg, self.guild.id)
+                formatted = utils.format_discord_link(arg, self.get_guild().id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    chan = self.guild.get_channel(utils.filter_id(a))
+                    chan = self.get_guild().get_channel(utils.filter_id(a))
 
                     if not isinstance(chan, discord.TextChannel):
                         raise ValueError()
@@ -677,12 +698,12 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno == "discord.PartialMessage":
-                formatted = utils.format_discord_link(arg, self.guild.id)
+                formatted = utils.format_discord_link(arg, self.get_guild().id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    chan = self.guild.get_channel(utils.filter_id(a))
+                    chan = self.get_guild().get_channel(utils.filter_id(a))
 
                     if not isinstance(chan, discord.TextChannel):
                         raise ValueError()
@@ -745,6 +766,11 @@ class BaseCommand:
                 return await self.cast_basic_arg(last_anno, arg)
 
             if not isinstance(arg, tuple):
+                if len(tupled) == 2 and tupled[1] == "...":
+                    # specialcase where we expected variable length tuple and
+                    # got single element
+                    return (await self.cast_arg(tupled[0], arg, cmd, key, False),)
+
                 raise ValueError()
 
             if len(tupled) == 2 and tupled[1] == "...":
@@ -883,12 +909,16 @@ class BaseCommand:
         i = -1
         is_var_pos = is_var_key = False
         keyword_only_args = []
+        all_keywords = []
 
         # iterate through function parameters, arrange the given args and
         # kwargs in the order and format the function wants
         for i, key in enumerate(sig.parameters):
             param = sig.parameters[key]
             iskw = False
+
+            if param.kind not in [param.POSITIONAL_ONLY, param.VAR_POSITIONAL]:
+                all_keywords.append(key)
 
             if (
                 i == 0
@@ -965,7 +995,7 @@ class BaseCommand:
         # Iterate through kwargs to check if we received invalid ones
         if not is_var_key:
             for key in kwargs:
-                if key not in sig.parameters:
+                if key not in all_keywords:
                     raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
@@ -1015,7 +1045,9 @@ class BaseCommand:
             await embed_utils.replace(
                 self.response_msg,
                 "Unknown Error!",
-                "An unhandled exception occured while running the command!",
+                "An unhandled exception occured while running the command!\n"
+                "This is most likely a bug in the bot itself, and wizards will "
+                "recast magical spells on it soon!",
                 0xFF0000,
             )
             raise

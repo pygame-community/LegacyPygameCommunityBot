@@ -117,7 +117,7 @@ class UserCommand(FunCommand, HelpCommand):
     async def cmd_reminders_set(
         self,
         msg: String,
-        timestr: Union[String, str] = String(""),
+        timestr: Union[String, str] = "",
         weeks: int = 0,
         days: int = 0,
         hours: int = 0,
@@ -205,7 +205,10 @@ class UserCommand(FunCommand, HelpCommand):
             msg = ""
             cnt = 0
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
-                channel = self.guild.get_channel(chan_id)
+                channel = None
+                if common.guild is not None:
+                    channel = common.guild.get_channel(chan_id)
+
                 cin = channel.mention if channel is not None else "DM"
                 msg += (
                     f"Reminder ID: `{cnt}`\n"

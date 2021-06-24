@@ -446,8 +446,6 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        bot_id = common.bot.user.id
-
         if (
             not msg_a.content
             and not msg_a.embeds
@@ -459,7 +457,7 @@ class SudoCommand(BaseCommand):
                 "Not enough data found in one or more of the given messages.",
             )
 
-        elif bot_id not in (msg_a.author.id, msg_b.author.id):
+        elif common.bot.user.id not in (msg_a.author.id, msg_b.author.id):
             raise BotException(
                 "Cannot execute command:",
                 f"Both messages must have been authored by me, {common.bot.user.mention}.",

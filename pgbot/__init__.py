@@ -87,7 +87,7 @@ async def init():
     if common.guild is None:
         raise RuntimeWarning(
             "Primary guild was not set. Some features of bot would not run as usual."
-            " This includes bot reminders and some commands on DM"
+            " People running commands via DMs might face some problems"
         )
 
 

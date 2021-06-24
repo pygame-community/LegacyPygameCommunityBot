@@ -347,7 +347,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        tz_utc = datetime.timezone.utc
         datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
@@ -483,7 +482,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 color=0x36393F,
                                 footer_text="\nISO Time: "
                                 f"{msg.created_at.replace(tzinfo=None).isoformat()}",
-                                timestamp=msg.created_at.replace(tzinfo=tz_utc),
+                                timestamp=msg.created_at.replace(
+                                    tzinfo=datetime.timezone.utc
+                                ),
                                 footer_icon_url=str(author.avatar_url),
                             )
 
@@ -724,12 +725,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Each ID must be from a message in the given target channel",
             )
 
-        input_msgs = msgs
-
         pinned_msgs = await channel.pins()
 
-        unpin_count = max((len(pinned_msgs) + len(input_msgs)) - 50, 0)
-
+        unpin_count = max((len(pinned_msgs) + len(msgs)) - 50, 0)
         if unpin_count > 0:
             for i in range(unpin_count):
                 try:
@@ -741,8 +739,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
-        msg_count = len(input_msgs)
-        for i, msg in enumerate(input_msgs):
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -827,8 +825,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Each ID must be from a message in the given target channel",
             )
 
-        input_msgs = msgs
-
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
@@ -837,8 +833,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             fields=(("\u2800", "`...`", False),),
         )
 
-        msg_count = len(input_msgs)
-        for i, msg in enumerate(input_msgs):
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -1226,7 +1222,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         """
         if guild is None:
-            guild = self.guild
+            guild = self.get_guild()
 
         description = (
             f"Server Name: `{guild.name}`\n"
