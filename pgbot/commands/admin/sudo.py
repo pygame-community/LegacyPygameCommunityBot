@@ -621,7 +621,7 @@ class SudoCommand(BaseCommand):
 
                 info_embed.description = "".join(
                     (
-                        f"__Text"
+                        "__Text"
                         + (" (Shortened)" if len(escaped_msg_content) > 2000 else "")
                         + "__:",
                         f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```"
