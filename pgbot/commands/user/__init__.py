@@ -14,7 +14,7 @@ import io
 import os
 import re
 import time
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import discord
 import pygame
@@ -421,21 +421,20 @@ class UserCommand(FunCommand, HelpCommand):
         self,
         desc: String,
         *emojis: tuple[str, String],
-        unique: bool = True,
+        multi_votes: bool = False,
         _destination: Optional[common.Channel] = None,
         _admin_embed_dict: dict = {},
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis] [unique=True]
+        ->signature pg!poll <description> [*emojis] [multi_votes=True]
         ->description Start a poll.
         ->extended description
         `pg!poll description *args`
         The args must series of two element tuples, first element being emoji,
         and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
-        A `unique` arg can also be passed indicating if the poll should be unique or not.
-        If unique is True, then users can only vote once.
+        A `multi_votes` arg can also be passed indicating if the user can cast multiple votes in a poll or not
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
@@ -460,8 +459,8 @@ class UserCommand(FunCommand, HelpCommand):
             },
             "color": 0x34A832,
             "footer": {
-                "text": f"By {self.author.display_name}\n"
-                f"({self.author.id})\nStarted"
+                "text": f"By {self.author.display_name}\n({self.author.id})\n"
+                f"{'' if multi_votes else common.UNIQUE_POLL_MSG}Started"
             },
             "timestamp": self.response_msg.created_at.isoformat(),
             "description": desc.string,
@@ -512,12 +511,6 @@ class UserCommand(FunCommand, HelpCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-        if unique:
-            async with db.DiscordDB("polls") as db_obj:
-                all_polls = db_obj.get([])
-                all_polls.append(poll_msg.id)
-                db_obj.write(all_polls)
-
     @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
@@ -544,7 +537,6 @@ class UserCommand(FunCommand, HelpCommand):
                 "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
-        newline = "\n"
 
         if not msg.embeds:
             raise BotException(
@@ -588,7 +580,7 @@ class UserCommand(FunCommand, HelpCommand):
             else:
                 reactions[reaction.emoji.id] = reaction.count
 
-        top = [(0, None)]
+        top: list[tuple[int, Any]] = [(0, None)]
         for reaction in msg.reactions:
             if getattr(reaction.emoji, "id", reaction.emoji) not in reactions:
                 continue
@@ -618,8 +610,7 @@ class UserCommand(FunCommand, HelpCommand):
 
             if utils.filter_emoji_id(field.name) == top[0][1]:
                 title += (
-                    f"{newline}{field.value}({field.name}) "
-                    f"has won with {top[0][0]} votes!"
+                    f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
                 )
 
         if len(top) >= 2:
@@ -639,15 +630,6 @@ class UserCommand(FunCommand, HelpCommand):
             await self.response_msg.delete()
         except discord.errors.NotFound:
             pass
-
-        async with db.DiscordDB("polls") as db_obj:
-            all_poll_info = db_obj.get([])
-            try:
-                all_poll_info.remove(msg.id)
-            except ValueError:
-                pass
-
-            db_obj.write(all_poll_info)
 
     @add_group("stream")
     async def cmd_stream(self):

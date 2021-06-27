@@ -589,11 +589,10 @@ class PagedEmbed:
         self.killed = False
         self.caller = caller
 
-        newline = "\n"
         self.help_text = ""
         for emoji, desc in self.control_emojis.values():
             if emoji:
-                self.help_text += f"{emoji}: {desc}{newline}"
+                self.help_text += f"{emoji}: {desc}\n"
 
     async def add_control_emojis(self):
         """Add the control reactions to the message."""
@@ -703,6 +702,7 @@ class PagedEmbed:
                 self.killed = True
 
         await self.message.clear_reactions()
+
 
 def parse_condensed_embed_list(embed_list: Union[list, tuple]):
     """
@@ -1943,7 +1943,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             title="__Message & Author Info__",
             description="".join(
                 (
-                    f"__Text"
+                    "__Text"
                     + (" (Shortened)" if len(msg.content) > 2000 else "")
                     + "__:",
                     f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
@@ -1980,7 +1980,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         author_icon_url=str(member.avatar_url),
         description="".join(
             (
-                f"__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
+                "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
                 f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
                 if len(msg.content) > 2000
                 else "\n\u2800",

@@ -166,6 +166,10 @@ async def message_delete(msg: discord.Message):
     """
     This function is called for every message deleted by user.
     """
+    # make typecheckers happy
+    if common.bot.user is None:
+        return
+
     if msg.id in common.cmd_logs.keys():
         del common.cmd_logs[msg.id]
 
@@ -233,25 +237,32 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     """
     Helper to handle a raw reaction added on discord
     """
-    async with db.DiscordDB("polls") as db_obj:
-        all_poll_info = db_obj.get([])
 
-    if payload.message_id in all_poll_info:
-        channel = await common.bot.fetch_channel(payload.channel_id)
-        if not isinstance(channel, discord.TextChannel):
+    # Try to fetch channel without API call first
+    channel = common.bot.get_channel(payload.channel_id)
+    if channel is None:
+        try:
+            channel = await common.bot.fetch_channel(payload.channel_id)
+        except discord.HTTPException:
             return
 
-        msg: discord.Message = await channel.fetch_message(payload.message_id)
-        all_reactions_user = {
-            reaction: user
-            for reaction in msg.reactions
-            for user in await reaction.users().flatten()
-            if user.id == payload.user_id
-            and not utils.is_emoji_equal(payload.emoji, reaction.emoji)
-        }
+    if not isinstance(channel, discord.TextChannel):
+        return
 
-        for reaction, user in all_reactions_user.items():
-            await reaction.remove(user)
+    try:
+        msg: discord.Message = await channel.fetch_message(payload.message_id)
+    except discord.HTTPException:
+        return
+
+    if not msg.embeds or common.UNIQUE_POLL_MSG not in str(msg.embeds[0].footer):
+        return
+
+    for reaction in msg.reactions:
+        async for user in reaction.users():
+            if user.id == payload.user_id and not utils.is_emoji_equal(
+                payload.emoji, reaction.emoji
+            ):
+                await reaction.remove(user)
 
 
 async def handle_message(msg: discord.Message):
@@ -297,7 +308,10 @@ async def handle_message(msg: discord.Message):
 
             title, fields = format_entries_message(msg, entry_type)
             await embed_utils.send_2(
-                common.entries_discussion_channel, title=title, color=color, fields=fields
+                common.entries_discussion_channel,
+                title=title,
+                color=color,
+                fields=fields,
             )
         elif (
             random.random() < await emotion.get("happy") / 200
