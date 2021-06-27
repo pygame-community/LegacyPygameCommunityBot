@@ -76,6 +76,10 @@ async def dad_joke(msg: discord.Message):
     """
     Utility to handle the bot making dad jokes
     """
+    # make typecheckers happy
+    if common.bot.user is None:
+        return
+
     if await utils.get_channel_feature("dadjokes", msg.channel):
         return
 

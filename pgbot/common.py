@@ -84,6 +84,8 @@ DOC_EMBED_LIMIT = 3
 # the bot that requires access to server specific stuff
 GENERIC = False
 
+UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
+
 
 class ServerConstants:
     """
