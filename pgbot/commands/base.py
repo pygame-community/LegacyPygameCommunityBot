@@ -887,14 +887,14 @@ class BaseCommand:
 
             confused = await emotion.get("confused")
             if confused > 60 and random.random() < confused / 400:
-                await embed_utils.replace_2(
+                await embed_utils.replace(
                     self.response_msg,
                     title="I am confused...",
                     description="Hang on, give me a sec...",
                 )
 
                 await asyncio.sleep(random.randint(3, 5))
-                await embed_utils.replace_2(
+                await embed_utils.replace(
                     self.response_msg,
                     title="Oh, never mind...",
                     description="Sorry, I was confused for a sec there",
@@ -1044,17 +1044,19 @@ class BaseCommand:
             await emotion.update("confused", random.randint(10, 22))
             await embed_utils.replace(
                 self.response_msg,
-                "Unknown Error!",
-                "An unhandled exception occured while running the command!\n"
-                "This is most likely a bug in the bot itself, and wizards will "
-                "recast magical spells on it soon!",
-                0xFF0000,
+                title="Unknown Error!",
+                description=(
+                    "An unhandled exception occured while running the command!\n"
+                    "This is most likely a bug in the bot itself, and wizards will "
+                    "recast magical spells on it soon!"
+                ),
+                color=0xFF0000,
             )
             raise
 
         # display bot exception to user on discord
         try:
-            await embed_utils.replace_2(
+            await embed_utils.replace(
                 self.response_msg,
                 title=title,
                 description=msg,
@@ -1063,7 +1065,7 @@ class BaseCommand:
             )
         except discord.NotFound:
             # response message was deleted, send a new message
-            await embed_utils.send_2(
+            await embed_utils.send(
                 self.channel,
                 title=title,
                 description=msg,

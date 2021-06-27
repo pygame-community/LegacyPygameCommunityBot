@@ -296,8 +296,8 @@ async def handle_message(msg: discord.Message):
                 color = 0x0000AA
 
             title, fields = format_entries_message(msg, entry_type)
-            await embed_utils.send(
-                common.entries_discussion_channel, title, "", color, fields=fields
+            await embed_utils.send_2(
+                common.entries_discussion_channel, title=title, color=color, fields=fields
             )
         elif (
             random.random() < await emotion.get("happy") / 200

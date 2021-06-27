@@ -838,7 +838,7 @@ class EmsudoCommand(BaseCommand):
                             "The input Python `list` or `tuple` must contain at least 1 element.",
                         )
 
-                    await embed_utils.replace_2(msg, **replace_embed_args)
+                    await embed_utils.replace(msg, **replace_embed_args)
                 else:
                     raise BotException(
                         "Invalid arguments!",

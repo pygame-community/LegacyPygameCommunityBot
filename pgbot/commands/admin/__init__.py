@@ -41,8 +41,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         await embed_utils.replace(
             self.response_msg,
-            "Here are the args and kwargs you passed",
-            utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
+            title="Here are the args and kwargs you passed",
+            description=utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
         )
 
     @add_group("db")
@@ -56,7 +56,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
         await embed_utils.replace(
-            self.response_msg, "Tables:", "\n".join(db.db_obj_cache)
+            self.response_msg, title="Tables:", description="\n".join(db.db_obj_cache)
         )
 
     @add_group("db", "read")
@@ -127,8 +127,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "DB overwritten!",
-            "DB contents have been overwritten successfully",
+            title="DB overwritten!",
+            description="DB contents have been overwritten successfully",
         )
 
     @add_group("db", "del")
@@ -147,8 +147,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "DB has been deleted!",
-            "DB contents have been deleted successfully",
+            title="DB has been deleted!",
+            description="DB contents have been deleted successfully",
         )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
@@ -171,8 +171,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Whitelisted!",
-            f"Successfully whitelisted {cnt} command(s)",
+            title="Whitelisted!",
+            description=f"Successfully whitelisted {cnt} command(s)",
         )
 
     async def cmd_blacklist_cmd(self, *cmds: str):
@@ -196,8 +196,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Blacklisted!",
-            f"Successfully blacklisted {cnt} command(s)",
+            title="Blacklisted!",
+            description=f"Successfully blacklisted {cnt} command(s)",
         )
 
     async def cmd_clock(
@@ -264,8 +264,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            f"Return output (code executed in {utils.format_time(total)}):",
-            utils.code_block(repr(eval_output)),
+            title=f"Return output (code executed in {utils.format_time(total)}):",
+            description=utils.code_block(repr(eval_output)),
         )
 
     async def cmd_heap(self):
@@ -279,8 +279,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         mem = process.memory_info().rss
         await embed_utils.replace(
             self.response_msg,
-            "Total memory used:",
-            f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
+            title="Total memory used:",
+            description=f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
         )
 
     async def cmd_stop(self):
@@ -580,7 +580,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                     file=discord.File(fobj, "messagedata.txt"),
                                 )
                         else:
-                            await embed_utils.send_2(
+                            await embed_utils.send(
                                 self.channel,
                                 description="```\n{0}```".format(escaped_msg_content),
                             )
@@ -1256,7 +1256,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             "description": description,
         }
 
-        await embed_utils.replace_2(self.response_msg, **kwargs)
+        await embed_utils.replace(self.response_msg, **kwargs)
 
     async def cmd_react(self, message: discord.PartialMessage, *emojis: str):
         """
@@ -1335,8 +1335,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Successfully executed command!",
-            f"Changed settings on {len(channels)} channel(s)",
+            title="Successfully executed command!",
+            description=f"Changed settings on {len(channels)} channel(s)",
         )
 
 

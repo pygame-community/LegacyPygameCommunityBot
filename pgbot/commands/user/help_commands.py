@@ -81,7 +81,7 @@ class HelpCommand(BaseCommand):
             )
 
         if len(rules) == 1:
-            await embed_utils.replace_2(
+            await embed_utils.replace(
                 self.response_msg,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
@@ -93,7 +93,7 @@ class HelpCommand(BaseCommand):
             for field in fields:
                 field["value"] = field["value"][:1024]
 
-            await embed_utils.replace_2(
+            await embed_utils.replace(
                 self.response_msg,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,

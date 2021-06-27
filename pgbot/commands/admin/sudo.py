@@ -658,7 +658,7 @@ class SudoCommand(BaseCommand):
                             ),
                         )
                 else:
-                    await embed_utils.send_2(
+                    await embed_utils.send(
                         self.channel,
                         author_name="Message data",
                         description="```\n{0}```".format(escaped_msg_content),

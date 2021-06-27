@@ -108,9 +108,11 @@ class UserCommand(FunCommand, HelpCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Reminder set!",
-            f"Gonna remind {self.author.name} in {utils.format_timedelta(_delta)}\n"
-            f"And that is on {on} UTC",
+            title="Reminder set!",
+            description=(
+                f"Gonna remind {self.author.name} in {utils.format_timedelta(_delta)}\n"
+                f"And that is on {on} UTC"
+            )
         )
 
     @add_group("reminders", "set")
@@ -200,9 +202,9 @@ class UserCommand(FunCommand, HelpCommand):
         async with db.DiscordDB("reminders") as db_obj:
             db_data = db_obj.get({})
 
-        msg = "You have no reminders set"
+        desc = "You have no reminders set"
         if self.author.id in db_data:
-            msg = ""
+            desc = ""
             cnt = 0
             for on, (reminder, chan_id, _) in db_data[self.author.id].items():
                 channel = None
@@ -210,7 +212,7 @@ class UserCommand(FunCommand, HelpCommand):
                     channel = common.guild.get_channel(chan_id)
 
                 cin = channel.mention if channel is not None else "DM"
-                msg += (
+                desc += (
                     f"Reminder ID: `{cnt}`\n"
                     f"**On `{on}` in {cin}:**\n> {reminder}\n\n"
                 )
@@ -218,8 +220,8 @@ class UserCommand(FunCommand, HelpCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            f"Reminders for {self.author.display_name}:",
-            msg,
+            title=f"Reminders for {self.author.display_name}:",
+            description=desc,
         )
 
     @add_group("reminders", "remove")
@@ -267,8 +269,8 @@ class UserCommand(FunCommand, HelpCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Reminders removed!",
-            f"Successfully removed {cnt} reminder(s)",
+            title="Reminders removed!",
+            description=f"Successfully removed {cnt} reminder(s)",
         )
 
     async def cmd_exec(self, code: CodeBlock):
@@ -516,16 +518,6 @@ class UserCommand(FunCommand, HelpCommand):
                 all_polls.append(poll_msg.id)
                 db_obj.write(all_polls)
 
-    async def cmd_close_poll(self, msg=None):
-        """
-        ->skip
-        Stub for old function
-        """
-        raise BotException(
-            "Command 'pg!close_poll' does not exist",
-            "Perhaps you meant, 'pg!poll close'",
-        )
-
     @no_dm
     @add_group("poll", "close")
     async def cmd_poll_close(
@@ -634,7 +626,7 @@ class UserCommand(FunCommand, HelpCommand):
             title = title.split("\n")[0]
             title += "\nIt's a draw!"
 
-        await embed_utils.edit_2(
+        await embed_utils.edit(
             msg,
             embed,
             color=0xA83232 if not _color else utils.color_to_rgb_int(_color),
@@ -671,17 +663,19 @@ class UserCommand(FunCommand, HelpCommand):
         if not data:
             await embed_utils.replace(
                 self.response_msg,
-                "Memento ping list",
-                "Ping list is empty!",
+                title="Memento ping list",
+                description="Ping list is empty!",
             )
             return
 
         await embed_utils.replace(
             self.response_msg,
-            "Memento ping list",
-            "Here is a list of people who want to be pinged when stream starts"
-            "\nUse 'pg!stream ping' to ping them if you start streaming\n"
-            + "\n".join((f"<@{user}>" for user in data)),
+            title="Memento ping list",
+            description=(
+                "Here is a list of people who want to be pinged when stream starts"
+                "\nUse 'pg!stream ping' to ping them if you start streaming\n"
+                + "\n".join((f"<@{user}>" for user in data))
+            ),
         )
 
     @add_group("stream", "add")
