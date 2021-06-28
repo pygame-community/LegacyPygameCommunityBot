@@ -60,7 +60,7 @@ async def check_bonk(msg: discord.Message):
 
     bonks = msg.content.count(common.BONK)
     if await get("anger") + bonks > 30:
-        await embed_utils.send_2(
+        await embed_utils.send(
             msg.channel,
             title="Did you hit the snek?",
             description="You mortal mammal! How you dare to boncc a snake?",

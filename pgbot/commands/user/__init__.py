@@ -112,7 +112,7 @@ class UserCommand(FunCommand, HelpCommand):
             description=(
                 f"Gonna remind {self.author.name} in {utils.format_timedelta(_delta)}\n"
                 f"And that is on {on} UTC"
-            )
+            ),
         )
 
     @add_group("reminders", "set")

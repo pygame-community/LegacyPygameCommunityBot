@@ -43,7 +43,9 @@ class FunCommand(BaseCommand):
         Implement pg!version, to report bot version
         """
         await embed_utils.replace(
-            self.response_msg, "Current bot's version", f"`{common.__version__}`"
+            self.response_msg,
+            title="Current bot's version",
+            description=f"`{common.__version__}`",
         )
 
     @fun_command
@@ -63,8 +65,8 @@ class FunCommand(BaseCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            random.choice(("Pingy Pongy", "Pong!")),
-            f"The bot's ping is `{utils.format_time(sec, 0)}`\n"
+            title=random.choice(("Pingy Pongy", "Pong!")),
+            description=f"The bot's ping is `{utils.format_time(sec, 0)}`\n"
             f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
         )
 
@@ -112,7 +114,7 @@ class FunCommand(BaseCommand):
                 "Text cannot be empty",
             )
 
-        await embed_utils.replace_2(
+        await embed_utils.replace(
             self.response_msg,
             description=self.author.mention,
             color=0x40E32D,
@@ -161,10 +163,8 @@ class FunCommand(BaseCommand):
         fname = "die.gif" if await emotion.get("anger") > 60 else "pet.gif"
         await embed_utils.replace(
             self.response_msg,
-            "",
-            "",
-            0xFFFFAA,
-            "https://raw.githubusercontent.com/PygameCommunityDiscord/"
+            color=0xFFFFAA,
+            image_url="https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
@@ -235,8 +235,8 @@ class FunCommand(BaseCommand):
         if not anger:
             await embed_utils.replace(
                 self.response_msg,
-                "Ask forgiveness from snek?",
-                "Snek is not angry. Awww, don't be sorry.",
+                title="Ask forgiveness from snek?",
+                description="Snek is not angry. Awww, don't be sorry.",
             )
             return
 
@@ -244,16 +244,16 @@ class FunCommand(BaseCommand):
         if num:
             await embed_utils.replace(
                 self.response_msg,
-                "Ask forgiveness from snek?",
-                "Your pythonic lord accepts your apology.\n"
+                title="Ask forgiveness from snek?",
+                description="Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
             )
             await emotion.update("anger", -num)
         else:
             await embed_utils.replace(
                 self.response_msg,
-                "Ask forgiveness from snek?",
-                "How did you dare to boncc a snake?\nBold of you to assume "
-                + "I would apologize to you, two-feet-standing being!\nThe "
-                + f"Anger level is {anger}",
+                title="Ask forgiveness from snek?",
+                description="How did you dare to boncc a snake?\nBold of you to"
+                + " assume I would apologize to you, two-feet-standing being!\n"
+                + f"The anger level is {anger}",
             )

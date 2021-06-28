@@ -226,7 +226,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await embed_utils.edit_2(message, embed=embed, fields=fields)
+                    await embed_utils.edit(message, embed=embed, fields=fields)
                     break
 
             except (IndexError, AttributeError):
@@ -307,7 +307,7 @@ async def handle_message(msg: discord.Message):
                 color = 0x0000AA
 
             title, fields = format_entries_message(msg, entry_type)
-            await embed_utils.send_2(
+            await embed_utils.send(
                 common.entries_discussion_channel,
                 title=title,
                 color=color,
