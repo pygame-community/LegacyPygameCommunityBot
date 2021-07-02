@@ -254,7 +254,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     except discord.HTTPException:
         return
 
-    if not msg.embeds or common.UNIQUE_POLL_MSG not in str(msg.embeds[0].footer):
+    if not msg.embeds or common.UNIQUE_POLL_MSG not in str(msg.embeds[0].footer.text):
         return
 
     for reaction in msg.reactions:
