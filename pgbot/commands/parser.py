@@ -8,7 +8,7 @@ This file defines the main utility functions for the argument parser
 
 from __future__ import annotations
 
-from typing import Any, Generator, Optional, Union
+from typing import Any, Optional
 
 
 # mapping of all escape characters to their escaped values
@@ -23,6 +23,7 @@ ESCAPES = {
     "\\": "\\",
     '"': '"',
     "'": "'",
+    "`": "`",
 }
 
 
@@ -75,31 +76,15 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, text: str, no_backticks: bool = False):
-        self.lang = None
-        self.text = code = text
+    def __init__(self, text: str):
+        self.lang = ""
 
-        md_bacticks = ("```", "`")
+        if "\n" in text:
+            newline_idx = text.index("\n")
+            self.lang = text[:newline_idx].strip().lower()
+            text = text[newline_idx + 1 :]
 
-        if no_backticks and "\n" in code:
-            newline_idx = code.index("\n")
-            self.lang = code[:newline_idx].strip().lower()
-            self.lang = self.lang if self.lang else None
-            code = code[newline_idx + 1 :]
-
-        elif code.startswith(md_bacticks) or code.endswith(md_bacticks):
-            code = code.strip("`")
-            if code[0].isspace():
-                code = code[1:]
-            elif code[0].isalnum():
-                i = 0
-                for i in range(len(code)):
-                    if code[i].isspace():
-                        break
-                self.lang = code[:i]
-                code = code[i + 1 :]
-
-        self.code: str = code.strip().strip("\\")  # because \\ causes problems
+        self.code = text.strip().strip("\\")  # because \\ causes problems
 
 
 class String:
@@ -145,7 +130,7 @@ class String:
                 else:
                     raise BotException(
                         "Invalid escape character",
-                        "Invalid unicode escape character in string",
+                        f"Unknown escape string `\\{char}`",
                     )
             else:
                 newstr += char
@@ -153,12 +138,7 @@ class String:
         return newstr
 
 
-SPLIT_FLAGS = [
-    ("```", CodeBlock, (True,)),
-    ("`", CodeBlock, (True,)),
-    ('"', String, ()),
-    ("'", String, ()),
-]
+SPLIT_FLAGS = (("`", CodeBlock), ('"', String), ("'", String))
 
 
 def split_anno(anno: str):
@@ -184,7 +164,7 @@ def split_anno(anno: str):
         yield ret
 
 
-def strip_optional_anno(anno: str):
+def strip_optional_anno(anno: str) -> str:
     """
     Helper to strip "Optional" anno
     """
@@ -257,50 +237,89 @@ def get_anno_error(anno: str) -> str:
     return msg
 
 
-def split_args(
-    split_str: str, split_flags: list[tuple[str, Any, tuple]]
-) -> Generator[Union[str, String, CodeBlock], None, None]:
+def split_args(split_str: str):
     """
-    Utility function to do the first parsing step to recursively split
-    string based on seperators
+    Utility function to do the first parsing step to split input string based
+    on seperators like code ticks and quotes (strings).
+    Returns a generator of Codeblock objects, String objects and str.
     """
-    if not split_flags:
-        # we are done with splitting, and got the node at the final depth
-        yield split_str
-        return
+    split_state = -1  # indicates parsing state, -1 means "None" parse state
+    is_multiline = False  # indicates whether the block being parsed is None or not
+    prev = 0  # index of last unparsed character
 
-    splitchar, splitfunc, exargs = split_flags.pop(0)
+    for cnt, char in enumerate(split_str):
+        if prev > cnt:
+            # skipped a few characters, so prev is greater than cnt
+            continue
 
-    cnt = 0
-    prev = ""
-    for substr in split_str.split(splitchar):
-        if cnt % 2:
-            if substr.endswith("\\"):
-                # last split character escaped, do not split on it
-                prev += substr[:-1] + splitchar
+        for state, (matchchar, splitfunc) in enumerate(SPLIT_FLAGS):
+            if split_state != -1 and state != split_state:
+                # if we are parsing one type of split, ignore all other types
                 continue
 
-            yield splitfunc(prev + substr, *exargs)
-            prev = ""
+            if char == "\n" and split_state != -1 and not is_multiline:
+                # got newline while parsing non-multiline block
+                raise BotException(
+                    f"Invalid {splitfunc.__name__} formatting!",
+                    f"Use triple quotes/ticks for multiline blocks",
+                )
 
-        else:
-            # recursively split the remaining substrings
-            yield from split_args(substr, split_flags.copy())
+            if char == matchchar:
+                if cnt and split_str[cnt - 1] == "\\":
+                    # got split char, but is escaped, so break
+                    break
 
-        cnt += 1
+                old_multiline = is_multiline
+                is_multiline = split_str[cnt + 1 : cnt + 3] == 2 * matchchar
 
-    if not cnt % 2 or prev:
+                if split_state != -1:
+                    if is_multiline and not old_multiline:
+                        # got closing triple quote but no opening triple quote
+                        is_multiline = False
+
+                    elif old_multiline and not is_multiline:
+                        # not a close at all
+                        is_multiline = True
+                        continue
+
+                ret = split_str[prev:cnt]
+                if split_state == -1:
+                    # start of new parse state
+                    split_state = state
+                    if ret:
+                        yield ret  # yield any regular string segments
+
+                else:
+                    # end of a parse state, yield token and reset state
+                    split_state = -1
+                    yield splitfunc(ret)
+
+                prev = cnt + 1
+                if is_multiline:
+                    # the next chars are skipped
+                    prev += 2
+
+                break
+
+    if split_state != -1:
+        # we were still in a parse state
+        name = SPLIT_FLAGS[split_state][1].__name__
         raise BotException(
-            f"Invalid {splitfunc.__name__}!",
-            f"{splitfunc.__name__} was not properly closed",
+            f"Invalid {name}!",
+            f"The {name.lower()} was not properly closed",
         )
 
+    # yield trailing string
+    ret = split_str[prev:]
+    if ret:
+        yield ret
 
-def parse_args(cmd_str):
+
+def parse_args(cmd_str: str):
     """
     Custom parser for handling arguments. This function parses the source
     string of the command into the command name, a list of arguments and a
-    dictionary of keyword arguments. Arguments must only contain strings,
+    dictionary of keyword arguments. Arguments will only contain strings,
     'CodeBlock' objects, 'String' objects and tuples.
     """
     args: list[Any] = []
@@ -334,7 +353,7 @@ def parse_args(cmd_str):
                     )
                 args.append(arg)
 
-    for arg in split_args(cmd_str, SPLIT_FLAGS.copy()):
+    for arg in split_args(cmd_str):
         if not isinstance(arg, str):
             append_arg(arg)
             continue
