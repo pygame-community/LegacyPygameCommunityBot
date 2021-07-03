@@ -76,10 +76,19 @@ class CodeBlock:
     Base class to represent code blocks in the argument parser
     """
 
-    def __init__(self, text: str):
+    def __init__(self, text: str, lang: Optional[str] = None):
+        """
+        Initialise codeblock object. The text argument here is the contents of
+        the codeblock. If the optional argument lang is specified, it has to be
+        the language type of the codeblock, if not provided, it is determined
+        from the text argument itself
+        """
         self.lang = ""
 
-        if "\n" in text:
+        if lang is not None:
+            self.lang = lang
+
+        elif "\n" in text:
             newline_idx = text.index("\n")
             self.lang = text[:newline_idx].strip().lower()
             text = text[newline_idx + 1 :]
@@ -116,21 +125,27 @@ class String:
                         n = 4 if char == "u" else 8
 
                     var = string[cnt : cnt + n]
-                    cnt += n
                     try:
+                        if len(var) != n:
+                            n = len(var)
+                            raise ValueError()
+
                         newstr += chr(int(var, base=16))
-                    except ValueError:
+                    except (ValueError, OverflowError):
+                        esc = string[cnt - 2 : cnt + n]
                         raise BotException(
                             "Invalid escape character",
-                            "Invalid unicode escape character in string",
+                            f"Invalid unicode escape: `{esc}` in string",
                         )
+                    cnt += n
+
                 elif char in ESCAPES:
                     # general escapes
                     newstr += ESCAPES[char]
                 else:
                     raise BotException(
                         "Invalid escape character",
-                        f"Unknown escape string `\\{char}`",
+                        f"Unknown escape `\\{char}`",
                     )
             else:
                 newstr += char

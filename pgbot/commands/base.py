@@ -457,11 +457,16 @@ class BaseCommand:
         # If user has put an attachment, check whether it's a text file, and
         # handle as code block
         for attach in self.invoke_msg.attachments:
-            if attach.content_type is not None and attach.content_type.startswith(
-                "text"
+            if attach.content_type is not None and (
+                attach.content_type.startswith("text")
+                or attach.content_type.endswith(("json", "javascript"))
             ):
                 contents = await attach.read()
-                args.append(CodeBlock(contents.decode()))
+                ext = ""
+                if "." in attach.filename:
+                    ext = attach.filename.split(".")[-1]
+
+                args.append(CodeBlock(contents.decode(), ext))
 
         sig = inspect.signature(func)
 
