@@ -1361,14 +1361,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             `quantity: int`
             > The number of messages to get
 
-            `before: int`
-            > The number of messages to get
+            `before: (Time|Message)`
+            > The message or time before which the messages should be shown.
 
-            `after: int`
-            > The number of messages to get
+            `after: (Time|Message)`
+            > The message or time after which the messages should be shown.
 
-            `around: int`
-            > The number of messages to get
+            `around: (Time|Message)`
+            > The message or time around which the messages should be shown.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.

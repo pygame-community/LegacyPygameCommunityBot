@@ -602,22 +602,22 @@ class PagedEmbed:
 
     async def handle_reaction(self, reaction: str):
         """Handle a reaction."""
-        if reaction == self.control_emojis.get("next")[0]:
+        if reaction == self.control_emojis.get("next", ("",))[0]:
             await self.set_page(self.current_page + 1)
 
-        if reaction == self.control_emojis.get("prev")[0]:
+        if reaction == self.control_emojis.get("prev", ("",))[0]:
             await self.set_page(self.current_page - 1)
 
-        if reaction == self.control_emojis.get("first")[0]:
+        if reaction == self.control_emojis.get("first", ("",))[0]:
             await self.set_page(0)
 
-        if reaction == self.control_emojis.get("last")[0]:
+        if reaction == self.control_emojis.get("last", ("",))[0]:
             await self.set_page(len(self.pages) - 1)
 
-        if reaction == self.control_emojis.get("stop")[0]:
+        if reaction == self.control_emojis.get("stop", ("",))[0]:
             self.killed = True
 
-        if reaction == self.control_emojis.get("info")[0]:
+        if reaction == self.control_emojis.get("info", ("",))[0]:
             await self.show_info_page()
 
     async def show_info_page(self):

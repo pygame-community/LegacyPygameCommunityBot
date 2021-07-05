@@ -61,60 +61,41 @@ class MessageBrowser(embed_utils.PagedEmbed):
 
         if not after:
             messages.reverse()
-        self.pages = messages
 
-    async def send_message(self):
-        message = self.pages[self.current_page]
-        desc = message.system_content
-        if desc is None:
-            desc = message.content
+        self.pages = []
+        for message in messages:
+            desc = message.system_content
+            if desc is None:
+                desc = message.content
 
-        if message.embeds:
-            if desc:
-                desc += f"\n{common.ZERO_SPACE}\n"
-            desc += "*Message contains an embed*"
+            if message.embeds:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message contains an embed*"
 
-        if message.attachments:
-            if desc:
-                desc += f"\n{common.ZERO_SPACE}\n"
-            desc += "*Message has one or more attachments*"
+            if message.attachments:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message has one or more attachments*"
 
-        desc += "\n**━━━━━━━━━━━━**"
+            desc += "\n**━━━━━━━━━━━━**"
 
-        timestamp = message.edited_at if message.edited_at else message.created_at
+            timestamp = message.edited_at if message.edited_at else message.created_at
 
-        embed = embed_utils.create(
-            author_icon_url=message.author.avatar,
-            author_name=message.author.display_name,
-            description=desc,
-            timestamp=timestamp,
-            title="Original message",
-            url=message.jump_url,
-            footer_text=self.get_footer_text(self.current_page),
-        )
+            embed = embed_utils.create(
+                author_icon_url=message.author.avatar,
+                author_name=message.author.display_name,
+                description=desc,
+                timestamp=timestamp,
+                title="Original message",
+                url=message.jump_url,
+                footer_text=self.get_footer_text(self.current_page),
+            )
+            self.pages.append(embed)
 
-        await self.message.edit(embed=embed)
-
-    async def _setup(self):
-        await self.set_page(self.current_page)
-        await self.add_control_emojis()
-        return len(self.pages) > 1
-
-    async def set_page(self, num: int):
-        """Set the current page and display it."""
-        self.is_on_info = False
-        self.current_page = num % len(self.pages)
-        await self.send_message()
+        if len(self.pages) < 3:
+            del self.control_emojis["first"]
+            del self.control_emojis["last"]
 
     def get_footer_text(self, page_num: int):
         return super().get_footer_text(page_num) + "\nOriginal message sent"
-
-    async def show_info_page(self):
-        """Create and show the info page."""
-        self.is_on_info = not self.is_on_info
-        if self.is_on_info:
-            info_page_embed = embed_utils.create(description=self.help_text)
-            info_page_embed.set_footer(text=self.get_footer_text(self.current_page))
-            await self.message.edit(embed=info_page_embed)
-        else:
-            await self.send_message()
