@@ -7,17 +7,17 @@ This file is the main file of pgbot subdir
 """
 
 import asyncio
+import io
 import os
 import random
 import signal
 import sys
-import io
 
 import discord
 import pygame
 
 from pgbot import commands, common, db, emotion, routine
-from pgbot.utils import embed_utils
+from pgbot.utils import embed_utils, utils
 
 
 async def _init():
@@ -87,7 +87,7 @@ async def init():
     if common.guild is None:
         raise RuntimeWarning(
             "Primary guild was not set. Some features of bot would not run as usual."
-            " This includes bot reminders and some commands on DM"
+            " People running commands via DMs might face some problems"
         )
 
 
@@ -166,17 +166,21 @@ async def message_delete(msg: discord.Message):
     """
     This function is called for every message deleted by user.
     """
+    # make typecheckers happy
+    if common.bot.user is None:
+        return
+
     if msg.id in common.cmd_logs.keys():
         del common.cmd_logs[msg.id]
 
     elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
-            if msg.id is not None and common.cmd_logs[log].id is not None:
+            if common.cmd_logs[log].id is not None:
                 if common.cmd_logs[log].id == msg.id:
                     del common.cmd_logs[log]
                     return
 
-    if common.GENERIC:
+    if common.GENERIC or common.TEST_MODE:
         return
 
     if msg.channel in common.entry_channels.values():
@@ -207,6 +211,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
         except discord.HTTPException:
             pass
 
+    if common.GENERIC or common.TEST_MODE:
+        return
+
     if new.channel in common.entry_channels.values():
         async for message in common.entries_discussion_channel.history(
             around=old.created_at, limit=5
@@ -219,30 +226,42 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await embed_utils.edit_2(message, embed=embed, fields=fields)
+                    await embed_utils.edit(message, embed=embed, fields=fields)
                     break
 
             except (IndexError, AttributeError):
                 pass
 
 
-async def raw_reaction_add(payload):
-    async with db.DiscordDB("polls") as db_obj:
-        all_poll_info = db_obj.get([])
+async def raw_reaction_add(payload: discord.RawReactionActionEvent):
+    """
+    Helper to handle a raw reaction added on discord
+    """
 
-    if payload.message_id in all_poll_info:
-        channel = await common.bot.fetch_channel(payload.channel_id)
-        msg = await channel.fetch_message(payload.message_id)
+    # Try to fetch channel without API call first
+    channel = common.bot.get_channel(payload.channel_id)
+    if channel is None:
+        try:
+            channel = await common.bot.fetch_channel(payload.channel_id)
+        except discord.HTTPException:
+            return
 
-        all_reactions_user = {
-            reaction: user
-            for reaction in msg.reactions
-            for user in await reaction.users().flatten()
-            if user.id == payload.user_id and reaction.emoji != payload.emoji.name
-        }
+    if not isinstance(channel, discord.TextChannel):
+        return
 
-        if len(all_reactions_user) > 0:
-            for reaction, user in all_reactions_user.items():
+    try:
+        msg: discord.Message = await channel.fetch_message(payload.message_id)
+    except discord.HTTPException:
+        return
+
+    if not msg.embeds or common.UNIQUE_POLL_MSG not in str(msg.embeds[0].footer.text):
+        return
+
+    for reaction in msg.reactions:
+        async for user in reaction.users():
+            if user.id == payload.user_id and not utils.is_emoji_equal(
+                payload.emoji, reaction.emoji
+            ):
                 await reaction.remove(user)
 
 
@@ -289,7 +308,10 @@ async def handle_message(msg: discord.Message):
 
             title, fields = format_entries_message(msg, entry_type)
             await embed_utils.send(
-                common.entries_discussion_channel, title, "", color, fields=fields
+                common.entries_discussion_channel,
+                title=title,
+                color=color,
+                fields=fields,
             )
         elif (
             random.random() < await emotion.get("happy") / 200
@@ -302,7 +324,6 @@ def cleanup(*_):
     """
     Call cleanup functions
     """
-
     common.bot.loop.run_until_complete(db.quit())
     common.bot.loop.run_until_complete(common.bot.close())
     common.bot.loop.close()

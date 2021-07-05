@@ -40,10 +40,51 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         ->skip
         """
+        out = ""
+        if args:
+            out += "__**Args:**__\n"
+
+        for cnt, arg in enumerate(args):
+            if isinstance(arg, CodeBlock):
+                out += f"{cnt} - Codeblock\n" + utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += (
+                    f"{cnt} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
+                )
+            else:
+                out += f"{cnt} - arg\n> {arg}\n"
+
+        out += "\n"
+        if kwargs:
+            out += "__**Kwargs:**__\n\n"
+
+        for name, arg in kwargs.items():
+            if isinstance(arg, CodeBlock):
+                out += f"{name} - Codeblock\n" + utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += (
+                    f"{name} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
+                )
+            else:
+                out += f"{name} - arg\n> {arg}\n"
+
+        out += "\n"
         await embed_utils.replace(
             self.response_msg,
-            "Here are the args and kwargs you passed",
-            utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
+            title="Here are the args and kwargs you passed",
+            description=out,
         )
 
     @add_group("db")
@@ -57,7 +98,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
 
         await embed_utils.replace(
-            self.response_msg, "Tables:", "\n".join(db.db_obj_cache)
+            self.response_msg, title="Tables:", description="\n".join(db.db_obj_cache)
         )
 
     @add_group("db", "read")
@@ -86,6 +127,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         except discord.NotFound:
             pass
 
+    @no_dm
     @add_group("db", "write")
     async def cmd_db_write(self, name: str, data: Union[discord.Message, CodeBlock]):
         """
@@ -95,6 +137,24 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         Implement pg!db_write, to overwrite DB messages
         """
+        # make typecheckers happy
+        if not isinstance(self.author, discord.Member):
+            return
+
+        evalable = False
+        for role in self.author.roles:
+            if role.id in common.ServerConstants.EVAL_ROLES:
+                evalable = True
+
+        if common.TEST_MODE and self.author.id in common.TEST_USER_IDS:
+            evalable = True
+
+        if not evalable:
+            raise BotException(
+                "Insufficient permissions",
+                "You do not have enough permissions to run this command.",
+            )
+
         if isinstance(data, CodeBlock):
             obj_str = data.code
         elif data.attachments:
@@ -105,12 +165,12 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             )
 
         async with db.DiscordDB(name) as db_obj:
-            db_obj.write(eval(obj_str))
+            db_obj.write(eval(obj_str))  # pylint: disable = eval-used
 
         await embed_utils.replace(
             self.response_msg,
-            "DB overwritten!",
-            "DB contents have been overwritten successfully",
+            title="DB overwritten!",
+            description="DB contents have been overwritten successfully",
         )
 
     @add_group("db", "del")
@@ -129,8 +189,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "DB has been deleted!",
-            "DB contents have been deleted successfully",
+            title="DB has been deleted!",
+            description="DB contents have been deleted successfully",
         )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
@@ -153,8 +213,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Whitelisted!",
-            f"Successfully whitelisted {cnt} command(s)",
+            title="Whitelisted!",
+            description=f"Successfully whitelisted {cnt} command(s)",
         )
 
     async def cmd_blacklist_cmd(self, *cmds: str):
@@ -178,8 +238,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            "Blacklisted!",
-            f"Successfully blacklisted {cnt} command(s)",
+            title="Blacklisted!",
+            description=f"Successfully blacklisted {cnt} command(s)",
         )
 
     async def cmd_clock(
@@ -225,8 +285,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not evalable:
             raise BotException(
-                "Insufficient perms",
-                "The `eval` command needs Server Admin or Mage level perms",
+                "Insufficient permissions",
+                "You do not have enough permissions to run this command.",
             )
 
         try:
@@ -246,8 +306,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await embed_utils.replace(
             self.response_msg,
-            f"Return output (code executed in {utils.format_time(total)}):",
-            utils.code_block(repr(eval_output)),
+            title=f"Return output (code executed in {utils.format_time(total)}):",
+            description=utils.code_block(repr(eval_output)),
         )
 
     async def cmd_heap(self):
@@ -261,8 +321,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         mem = process.memory_info().rss
         await embed_utils.replace(
             self.response_msg,
-            "Total memory used:",
-            f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
+            title="Total memory used:",
+            description=f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
         )
 
     async def cmd_stop(self):
@@ -284,9 +344,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         quantity: int,
         mode: int = 0,
         destination: Optional[common.Channel] = None,
-        before: Optional[Union[discord.Message, datetime.datetime]] = None,
-        after: Optional[Union[discord.Message, datetime.datetime]] = None,
-        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        before: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        after: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        around: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
@@ -329,23 +389,28 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        tz_utc = datetime.timezone.utc
         datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
-        if isinstance(before, discord.Message) and before.channel.id != origin.id:
+        if (
+            isinstance(before, discord.PartialMessage)
+            and before.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `before` argument",
                 "`before` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(after, discord.Message) and after.channel.id != origin.id:
+        if isinstance(after, discord.PartialMessage) and after.channel.id != origin.id:
             raise BotException(
                 "Invalid `after` argument",
                 "`after` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(around, discord.Message) and around.channel.id != origin.id:
+        if (
+            isinstance(around, discord.PartialMessage)
+            and around.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `around` argument",
                 "`around` has to be an ID to a message from the origin channel",
@@ -459,7 +524,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 color=0x36393F,
                                 footer_text="\nISO Time: "
                                 f"{msg.created_at.replace(tzinfo=None).isoformat()}",
-                                timestamp=msg.created_at.replace(tzinfo=tz_utc),
+                                timestamp=msg.created_at.replace(
+                                    tzinfo=datetime.timezone.utc
+                                ),
                                 footer_icon_url=str(author.avatar_url),
                             )
 
@@ -555,7 +622,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                     file=discord.File(fobj, "messagedata.txt"),
                                 )
                         else:
-                            await embed_utils.send_2(
+                            await embed_utils.send(
                                 self.channel,
                                 description="```\n{0}```".format(escaped_msg_content),
                             )
@@ -662,7 +729,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_pin(
         self,
         channel: discord.TextChannel,
-        *msgs: discord.Message,
+        *msgs: discord.PartialMessage,
         delete_system_messages: bool = True,
         flush_bottom: bool = True,
     ):
@@ -700,12 +767,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Each ID must be from a message in the given target channel",
             )
 
-        input_msgs = msgs
-
         pinned_msgs = await channel.pins()
 
-        unpin_count = max((len(pinned_msgs) + len(input_msgs)) - 50, 0)
-
+        unpin_count = max((len(pinned_msgs) + len(msgs)) - 50, 0)
         if unpin_count > 0:
             for i in range(unpin_count):
                 try:
@@ -717,8 +781,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
-        msg_count = len(input_msgs)
-        for i, msg in enumerate(input_msgs):
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -768,7 +832,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_pin_remove(
         self,
         channel: discord.TextChannel,
-        *msgs: discord.Message,
+        *msgs: discord.PartialMessage,
     ):
         """
         ->type Admin commands
@@ -803,8 +867,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Each ID must be from a message in the given target channel",
             )
 
-        input_msgs = msgs
-
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
@@ -813,8 +875,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             fields=(("\u2800", "`...`", False),),
         )
 
-        msg_count = len(input_msgs)
-        for i, msg in enumerate(input_msgs):
+        msg_count = len(msgs)
+        for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
                     self.response_msg,
@@ -971,24 +1033,23 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         desc: String,
         *emojis: tuple[str, String],
         destination: Optional[common.Channel] = None,
-        unique: bool = True,
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
         img_url: Optional[String] = None,
         thumbnail: Optional[String] = None,
+        multi_votes: bool = False,
     ):
         """
         ->type Other commands
-        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail] [unique=True]
+        ->signature pg!poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail] [multi_votes=True]
         ->description Start a poll.
         ->extended description
         The args must series of two element tuples, first element being emoji,
         and second being the description (see example command).
         The emoji must be a default emoji or one from this server. To close the poll see pg!close_poll.
         Additionally admins can specify some keyword arguments to improve the appearance of the poll
-        A `unique` arg can also be passed indicating if the poll should be unique or not.
-        If unique is True, then users can only vote once.
+        A `multi_votes` arg can also be passed indicating if the user can cast multiple votes in a poll or not
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
 
@@ -1026,7 +1087,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             *emojis,
             _destination=destination,
             _admin_embed_dict=embed_dict,
-            unique=unique,
+            multi_votes=multi_votes,
         )
 
     @no_dm
@@ -1202,7 +1263,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         """
         if guild is None:
-            guild = self.guild
+            guild = self.get_guild()
 
         description = (
             f"Server Name: `{guild.name}`\n"
@@ -1236,9 +1297,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             "description": description,
         }
 
-        await embed_utils.replace_2(self.response_msg, **kwargs)
+        await embed_utils.replace(self.response_msg, **kwargs)
 
-    async def cmd_react(self, message: discord.Message, *emojis: str):
+    async def cmd_react(self, message: discord.PartialMessage, *emojis: str):
         """
         ->type More admin commands
         ->signature pg!react <message> <emojis>
@@ -1336,6 +1397,49 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
         await browse_embed.setup(channel, quantity, before, after, around)
         await browse_embed.mainloop()
+
+    async def cmd_feature(
+        self, name: str, *channels: common.Channel, disable: bool = True
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!feature <name> [*channels] [enable=True]
+        ->description Per channel finer control on bot features
+
+        ->extended description
+
+        __Args__:
+            `name: (str)`
+            > The name of the feature
+
+            `*channels: (common.Channel)`
+            > Series of channel mentions to apply the
+            > settings to. If empty, applies the feature
+            > to the current channel
+
+            `disable: bool = True`
+            > Bool that controls whether to disable the
+            > feature or not (enable). `True` by default
+        -----
+        """
+        if not channels:
+            channels = (self.channel,)
+
+        async with db.DiscordDB("feature") as db_obj:
+            db_dict = db_obj.get({})
+            if name not in db_dict:
+                db_dict[name] = {}
+
+            for chan in channels:
+                db_dict[name][chan.id] = disable
+
+            db_obj.write(db_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully executed command!",
+            description=f"Changed settings on {len(channels)} channel(s)",
+        )
 
 
 # monkey-patch admin command names into tuple

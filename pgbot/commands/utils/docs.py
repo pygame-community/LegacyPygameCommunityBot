@@ -92,7 +92,9 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
     if splits[0] not in doc_module_dict and not is_builtin:
         await embed_utils.replace(
-            original_msg, "Unknown module!", "No such module was found."
+            original_msg,
+            title="Unknown module!",
+            description="No such module was found.",
         )
         return None, None
 
@@ -108,21 +110,22 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
             module_objs = {}
             for i in dir(obj):
-                module_objs[i] = getattr(obj, i)
+                if i != "__abstractmethods__":
+                    module_objs[i] = getattr(obj, i)
         except KeyError:
             await embed_utils.replace(
                 original_msg,
-                "Class/function/sub-module not found!",
-                f"There's no such thing here named `{name}`",
+                title="Class/function/sub-module not found!",
+                description=f"There's no such thing here named `{name}`",
             )
             return None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
         await embed_utils.replace(
             original_msg,
-            f"Documentation for `{name}`",
-            f"{name} is a constant with a type of `{obj.__class__.__name__}`"
-            " which does not have documentation.",
+            title=f"Documentation for `{name}`",
+            description=f"{name} is a constant with a type of "
+            f"`{obj.__class__.__name__}` which does not have documentation.",
         )
         return None, None
 
@@ -177,8 +180,8 @@ async def put_main_doc(name: str, original_msg: discord.Message):
     if not embeds:
         await embed_utils.replace(
             original_msg,
-            "Class/function/sub-module not found!",
-            f"There's no such thing here named `{name}`",
+            title="Class/function/sub-module not found!",
+            description=f"There's no such thing here named `{name}`",
         )
         return None, None
 

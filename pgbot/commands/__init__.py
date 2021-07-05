@@ -63,30 +63,30 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             if response_msg is None:
                 await embed_utils.send(
                     invoke_msg.channel,
-                    "Invalid arguments!",
-                    "All arguments must be integer IDs or member mentions",
-                    0xFF0000,
+                    title="Invalid arguments!",
+                    description="All arguments must be integer IDs or member mentions",
+                    color=0xFF0000,
                 )
             else:
                 await embed_utils.replace(
                     response_msg,
-                    "Invalid arguments!",
-                    "All arguments must be integer IDs or member mentions",
-                    0xFF0000,
+                    title="Invalid arguments!",
+                    description="All arguments must be integer IDs or member mentions",
+                    color=0xFF0000,
                 )
             return
 
         if response_msg is None:
             await embed_utils.send(
                 invoke_msg.channel,
-                "Stopping bot...",
-                "Change da world,\nMy final message,\nGoodbye.",
+                title="Stopping bot...",
+                description="Change da world,\nMy final message,\nGoodbye.",
             )
         else:
             await embed_utils.replace(
                 response_msg,
-                "Stopping bot...",
-                "Change da world,\nMy final message,\nGoodbye.",
+                title="Stopping bot...",
+                description="Change da world,\nMy final message,\nGoodbye.",
             )
         sys.exit(0)
 
@@ -98,7 +98,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         return
 
     if response_msg is None:
-        response_msg = await embed_utils.send_2(
+        response_msg = await embed_utils.send(
             invoke_msg.channel,
             title="Your command is being processed:",
             fields=(("\u2800", "`Loading...`", False),),

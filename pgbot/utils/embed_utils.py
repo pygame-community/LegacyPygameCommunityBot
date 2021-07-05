@@ -589,11 +589,10 @@ class PagedEmbed:
         self.killed = False
         self.caller = caller
 
-        newline = "\n"
         self.help_text = ""
         for emoji, desc in self.control_emojis.values():
             if emoji:
-                self.help_text += f"{emoji}: {desc}{newline}"
+                self.help_text += f"{emoji}: {desc}\n"
 
     async def add_control_emojis(self):
         """Add the control reactions to the message."""
@@ -642,9 +641,9 @@ class PagedEmbed:
         if not self.pages:
             await replace(
                 self.message,
-                "Internal error occured!",
-                "Got empty embed list for PagedEmbed",
-                0xFF0000,
+                title="Internal error occured!",
+                description="Got empty embed list for PagedEmbed",
+                color=0xFF0000,
             )
             return False
 
@@ -703,56 +702,6 @@ class PagedEmbed:
                 self.killed = True
 
         await self.message.clear_reactions()
-
-
-async def replace(
-    message: discord.Message,
-    title: str = "",
-    description: str = "",
-    color: int = 0xFFFFAA,
-    url_image: Optional[str] = None,
-    fields: list = [],
-):
-    """
-    Edits the embed of a message with a much more tight function
-    """
-    embed = discord.Embed(
-        title=title,
-        description=description,
-        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
-    )
-    if url_image:
-        embed.set_image(url=url_image)
-
-    for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
-
-    return await message.edit(embed=embed)
-
-
-async def send(
-    channel: common.Channel,
-    title: str = "",
-    description: str = "",
-    color: int = 0xFFFFAA,
-    url_image: Optional[str] = None,
-    fields: list = [],
-):
-    """
-    Sends an embed with a much more tight function
-    """
-    embed = discord.Embed(
-        title=title,
-        description=description,
-        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
-    )
-    if url_image:
-        embed.set_image(url=url_image)
-
-    for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
-
-    return await channel.send(embed=embed)
 
 
 def parse_condensed_embed_list(embed_list: Union[list, tuple]):
@@ -1149,7 +1098,7 @@ def create(
     return embed
 
 
-async def send_2(
+async def send(
     channel: common.Channel,
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
@@ -1189,7 +1138,7 @@ async def send_2(
     return await channel.send(embed=embed)
 
 
-async def replace_2(
+async def replace(
     message: discord.Message,
     author_name=EmptyEmbed,
     author_url=EmptyEmbed,
@@ -1226,7 +1175,7 @@ async def replace_2(
     return await message.edit(embed=embed)
 
 
-async def edit_2(
+async def edit(
     message: discord.Message,
     embed: discord.Embed,
     author_name=EmptyEmbed,
@@ -1994,7 +1943,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             title="__Message & Author Info__",
             description="".join(
                 (
-                    f"__Text"
+                    "__Text"
                     + (" (Shortened)" if len(msg.content) > 2000 else "")
                     + "__:",
                     f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
@@ -2031,7 +1980,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         author_icon_url=str(member.avatar_url),
         description="".join(
             (
-                f"__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
+                "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
                 f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
                 if len(msg.content) > 2000
                 else "\n\u2800",

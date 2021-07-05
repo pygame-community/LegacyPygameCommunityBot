@@ -48,7 +48,7 @@ db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 
-VERSION = "1.5.2"
+__version__ = "1.5.3"
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
@@ -83,6 +83,8 @@ DOC_EMBED_LIMIT = 3
 # when you are testing the bot on other servers. Generic mode limits features of
 # the bot that requires access to server specific stuff
 GENERIC = False
+
+UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
 
 
 class ServerConstants:
@@ -140,6 +142,14 @@ class ServerConstants:
         799339620810358885,
         819537779847200809,
     )
+
+    # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
+    #       if you want to remove more, add the ID to the set below
+    MSGS_TO_FILTER = {
+        817137523905527889,
+        810942002114986045,
+        810942043488256060,
+    }
 
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
@@ -266,12 +276,12 @@ BYDARIO_QUOTE = """
 SHAKESPEARE_QUOTES = (
     """
 To be, or not to be, that is the question
-— SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet 
+— SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet
 """,
     """
 All the world's a stage,
 And all the men and women merely players
-— SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions 
+— SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions
 """,
     """
 We are such stuff
@@ -287,20 +297,20 @@ That struts and frets his hour upon the stage.
 — SHAKESPEARE, _Macbeth_, Act 5 Scene 5, Lines 23-25; Macbeth to Seyton
 """,
     """
-Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatnessthrust upon 'em.
-— SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio 
+Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatness thrust upon 'em.
+— SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio
 """,
     """
 When we are born we cry that we are come
 To this great stage of fools
-— SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester 
+— SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester
 """,
     """
 The web of our life is of a mingled yarn, good and ill together
-— SHAKESPEARE, _All's Well That Ends Well_, Act 4 Scene 3, lines 68-69; One lord to another 
+— SHAKESPEARE, _All's Well That Ends Well_, Act 4 Scene 3, lines 68-69; One lord to another
 """,
     """
 You cannot, sir, take from me anything that I will not more willingly part withal - except my life, except my life, except my life
-— SHAKESPEARE, _Hamlet_, Act 2 Scene 2, lines 213-17; Hamlet 
+— SHAKESPEARE, _Hamlet_, Act 2 Scene 2, lines 213-17; Hamlet
 """,
 )
