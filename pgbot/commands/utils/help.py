@@ -158,9 +158,9 @@ async def send_help_message(
                 # function found, but does not have help.
                 return await embed_utils.replace(
                     original_msg,
-                    "Could not get docs",
-                    "Command has no documentation",
-                    0xFF0000,
+                    title="Could not get docs",
+                    description="Command has no documentation",
+                    color=0xFF0000,
                 )
 
             body = f"`{doc['signature']}`\n`Category: {doc['type']}`\n\n"
@@ -212,9 +212,9 @@ async def send_help_message(
     if not embeds:
         return await embed_utils.replace(
             original_msg,
-            "Command not found",
-            "No such command exists",
-            0xFF0000,
+            title="Command not found",
+            description="No such command exists",
+            color=0xFF0000,
         )
 
     await embed_utils.PagedEmbed(

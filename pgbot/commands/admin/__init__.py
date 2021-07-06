@@ -39,10 +39,51 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         """
         ->skip
         """
+        out = ""
+        if args:
+            out += "__**Args:**__\n"
+
+        for cnt, arg in enumerate(args):
+            if isinstance(arg, CodeBlock):
+                out += f"{cnt} - Codeblock\n" + utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += (
+                    f"{cnt} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
+                )
+            else:
+                out += f"{cnt} - arg\n> {arg}\n"
+
+        out += "\n"
+        if kwargs:
+            out += "__**Kwargs:**__\n\n"
+
+        for name, arg in kwargs.items():
+            if isinstance(arg, CodeBlock):
+                out += f"{name} - Codeblock\n" + utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += (
+                    f"{name} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
+                )
+            else:
+                out += f"{name} - arg\n> {arg}\n"
+
+        out += "\n"
         await embed_utils.replace(
             self.response_msg,
             title="Here are the args and kwargs you passed",
-            description=utils.code_block(f"Args: {args}\n\nKwargs: {kwargs}"),
+            description=out,
         )
 
     @add_group("db")
