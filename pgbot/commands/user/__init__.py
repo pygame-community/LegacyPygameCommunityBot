@@ -301,6 +301,7 @@ class UserCommand(FunCommand, HelpCommand):
             )
             dur = returned.duration  # the execution time of the script alone
             embed_dict = {
+                "color": embed_utils.DEFAULT_EMBED_COLOR,
                 "description": "",
                 "author": {
                     "name": f"Code executed in {utils.format_time(dur)}",

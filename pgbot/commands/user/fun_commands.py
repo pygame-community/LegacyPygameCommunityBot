@@ -163,7 +163,7 @@ class FunCommand(BaseCommand):
         fname = "die.gif" if await emotion.get("anger") > 60 else "pet.gif"
         await embed_utils.replace(
             self.response_msg,
-            color=0xFFFFAA,
+            color=embed_utils.DEFAULT_EMBED_COLOR,
             image_url="https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
