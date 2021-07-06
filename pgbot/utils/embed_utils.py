@@ -257,18 +257,18 @@ def create_embed_mask_dict(
 ):
     embed_top_level_attrib_dict = EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
     embed_top_level_attrib_dict = {
-        k: embed_top_level_attrib_dict[k].copy()
-        if isinstance(embed_top_level_attrib_dict[k], dict)
-        else embed_top_level_attrib_dict[k]
-        for k in embed_top_level_attrib_dict
+        k: v.copy()
+        if isinstance(v, dict)
+        else v
+        for k, v in embed_top_level_attrib_dict.items()
     }
 
     system_attribs_dict = EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
     system_attribs_dict = {
-        k: system_attribs_dict[k].copy()
-        if isinstance(system_attribs_dict[k], dict)
-        else system_attribs_dict[k]
-        for k in system_attribs_dict
+        k: v.copy()
+        if isinstance(v, dict)
+        else v
+        for k, v in system_attribs_dict.items()
     }
 
     all_system_attribs_set = EMBED_SYSTEM_ATTRIBUTES_SET
@@ -491,8 +491,8 @@ def handle_embed_dict_timestamp(embed_dict: dict):
 def copy_embed_dict(embed_dict: dict):
     # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
-        k: embed_dict[k].copy() if isinstance(embed_dict[k], dict) else embed_dict[k]
-        for k in embed_dict
+        k: v.copy() if isinstance(v, dict) else v
+        for k, v in embed_dict.items()
     }
 
     if "fields" in embed_dict:
@@ -855,8 +855,8 @@ def create_as_dict(
     thumbnail_url: Optional[str] = EmptyEmbed,
     description: Optional[str] = EmptyEmbed,
     image_url: Optional[str] = EmptyEmbed,
-    color=-1,
-    fields=(),
+    color: int = -1,
+    fields: Union[list, tuple] = (),
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
@@ -1046,8 +1046,8 @@ def create(
     thumbnail_url: Optional[str] = EmptyEmbed,
     description: Optional[str] = EmptyEmbed,
     image_url: Optional[str] = EmptyEmbed,
-    color=0xFFFFAA,
-    fields=(),
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[Union[str, datetime.datetime]] = EmptyEmbed,
@@ -1108,8 +1108,8 @@ async def send(
     thumbnail_url: Optional[str] = EmptyEmbed,
     description: Optional[str] = EmptyEmbed,
     image_url: Optional[str] = EmptyEmbed,
-    color=0xFFFFAA,
-    fields=[],
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
@@ -1148,8 +1148,8 @@ async def replace(
     thumbnail_url: Optional[str] = EmptyEmbed,
     description: Optional[str] = EmptyEmbed,
     image_url: Optional[str] = EmptyEmbed,
-    color=0xFFFFAA,
-    fields=[],
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
@@ -1249,7 +1249,7 @@ async def edit(
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
-def create_from_dict(data):
+def create_from_dict(data: dict):
     """
     Creates an embed from a dictionary with a much more tight function
     """
@@ -1257,14 +1257,14 @@ def create_from_dict(data):
     return discord.Embed.from_dict(data)
 
 
-async def send_from_dict(channel: common.Channel, data):
+async def send_from_dict(channel: common.Channel, data: dict):
     """
     Sends an embed from a dictionary with a much more tight function
     """
     return await channel.send(embed=create_from_dict(data))
 
 
-async def replace_from_dict(message: discord.Message, data):
+async def replace_from_dict(message: discord.Message, data: dict):
     """
     Replaces the embed of a message from a dictionary with a much more
     tight function
