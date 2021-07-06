@@ -257,17 +257,13 @@ def create_embed_mask_dict(
 ):
     embed_top_level_attrib_dict = EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
     embed_top_level_attrib_dict = {
-        k: v.copy()
-        if isinstance(v, dict)
-        else v
+        k: v.copy() if isinstance(v, dict) else v
         for k, v in embed_top_level_attrib_dict.items()
     }
 
     system_attribs_dict = EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
     system_attribs_dict = {
-        k: v.copy()
-        if isinstance(v, dict)
-        else v
+        k: v.copy() if isinstance(v, dict) else v
         for k, v in system_attribs_dict.items()
     }
 
@@ -491,8 +487,7 @@ def handle_embed_dict_timestamp(embed_dict: dict):
 def copy_embed_dict(embed_dict: dict):
     # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
-        k: v.copy() if isinstance(v, dict) else v
-        for k, v in embed_dict.items()
+        k: v.copy() if isinstance(v, dict) else v for k, v in embed_dict.items()
     }
 
     if "fields" in embed_dict:
