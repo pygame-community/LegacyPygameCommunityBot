@@ -261,7 +261,6 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                 await reaction.remove(user)
 
 
-
 async def handle_message(msg: discord.Message):
     """
     Handle a message posted by user
