@@ -166,10 +166,6 @@ async def message_delete(msg: discord.Message):
     """
     This function is called for every message deleted by user.
     """
-    # make typecheckers happy
-    if common.bot.user is None:
-        return
-
     if msg.id in common.cmd_logs.keys():
         del common.cmd_logs[msg.id]
 
