@@ -26,7 +26,6 @@ from pgbot.commands.admin.sudo import SudoCommand
 from pgbot.commands.base import BotException, CodeBlock, String, add_group, no_dm
 from pgbot.commands.user import UserCommand
 from pgbot.utils import embed_utils, utils
-from pgbot.commands.utils import browse
 
 process = psutil.Process(os.getpid())
 
@@ -1340,10 +1339,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     async def cmd_browse(
         self,
         channel: discord.TextChannel,
-        quantity: int,
+        quantity: Optional[int] = None,
         before: Optional[Union[discord.Message, datetime.datetime]] = None,
         after: Optional[Union[discord.Message, datetime.datetime]] = None,
         around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        controllers: Optional[tuple[discord.Member, ...]] = None,
     ):
         """
         ->type More admin commands
@@ -1360,20 +1360,28 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             `quantity: int`
             > The number of messages to get
 
-            `before: (Time|Message)`
+            `before: Time | Message`
             > The message or time before which the messages should be shown.
 
-            `after: (Time|Message)`
+            `after: Time | Message`
             > The message or time after which the messages should be shown.
 
-            `around: (Time|Message)`
+            `around: Time | Message`
             > The message or time around which the messages should be shown.
+
+            `controllers: User | tuple[user]`
+            > The user(s) who can control the embed.
 
         __Raises__:
             > `BotException`: One or more given arguments are invalid.
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
+
+        max_messages = 500
         if not utils.check_channel_permissions(
             self.author,
             channel,
@@ -1384,17 +1392,116 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "You do not have enough permissions to run this command on the specified channel(s).",
             )
 
-        if bool(after) + bool(before) + bool(around) > 1:
+        if not (before and after) and quantity is None:
             raise BotException(
-                "Too many arguments",
-                "Please, only set one of the following arguments:\n"
-                "`before`, `around`, `after`",
+                "Missing argument.",
+                "Argument quantity must be specified.",
             )
 
-        browse_embed = browse.MessageBrowser(
-            self.response_msg, self.author, self.cmd_str, self.page
+        if isinstance(before, discord.Message) and before.channel.id != channel.id:
+            raise BotException(
+                "Invalid `before` argument",
+                "`before` has to be an ID to a message from the origin channel",
+            )
+
+        if isinstance(after, discord.Message) and after.channel.id != channel.id:
+            raise BotException(
+                "Invalid `after` argument",
+                "`after` has to be an ID to a message from the origin channel",
+            )
+
+        if isinstance(around, discord.Message) and around.channel.id != channel.id:
+            raise BotException(
+                "Invalid `around` argument",
+                "`around` has to be an ID to a message from the origin channel",
+            )
+
+        if quantity is not None:
+            if quantity <= 0:
+                if quantity == 0 and not after:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "`quantity` must be above 0 when `after=` is not specified.",
+                    )
+                elif quantity != 0:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "Quantity has to be a positive integer (or `0` when `after=` is specified).",
+                    )
+            elif quantity > max_messages:
+                raise BotException(
+                    "Too many messages",
+                    f"{quantity} messages are more than the maximum allowed ({max_messages}).",
+                )
+
+        messages = await channel.history(
+            limit=quantity if quantity != 0 else None,
+            before=before,
+            after=after,
+            around=around,
+        ).flatten()
+
+        if not messages:
+            raise BotException(
+                "Invalid time range",
+                "No messages were found for the specified timestamps.",
+            )
+        if len(messages) > max_messages:
+            raise BotException(
+                "Too many messages",
+                f"{len(messages)} messages are more than the maximum allowed ({max_messages}).",
+            )
+
+        if not after:
+            messages.reverse()
+
+        pages = []
+        for message in messages:
+            desc = message.system_content
+            if desc is None:
+                desc = message.content
+
+            if message.embeds:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message contains an embed*"
+
+            if message.attachments:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message has one or more attachments*"
+
+            desc += "\n**━━━━━━━━━━━━**"
+
+            if message.edited_at:
+                desc += f"\n Last edited on {utils.format_datetime(message.edited_at)}"
+            else:
+                desc += f"\n Sent on {utils.format_datetime(message.created_at)}"
+
+            if message.reference:
+                desc += f"\nReplying to [this]({message.reference.jump_url}) message"
+
+            embed = embed_utils.create(
+                author_icon_url=message.author.avatar,
+                author_name=message.author.display_name,
+                description=desc,
+                title="Original message",
+                url=message.jump_url,
+            )
+            pages.append(embed)
+
+        if controllers:
+            if isinstance(controllers, tuple):
+                controllers = controllers + (self.author,)
+            else:
+                controllers = (controllers, self.author)
+        else:
+            controllers = self.author
+
+        browse_embed = embed_utils.PagedEmbed(
+            self.response_msg, pages, controllers, self.cmd_str, self.page
         )
-        await browse_embed.setup(channel, quantity, before, after, around)
+
         await browse_embed.mainloop()
 
     async def cmd_feature(

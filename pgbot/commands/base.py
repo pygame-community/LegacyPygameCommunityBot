@@ -171,7 +171,7 @@ class BaseCommand:
                 timestamp = re.search(r"\d+", arg)
                 if timestamp is not None:
                     timestamp = float(arg[timestamp.start() : timestamp.end()])
-                    return datetime.datetime.fromtimestamp(timestamp)
+                    return datetime.datetime.utcfromtimestamp(timestamp)
 
                 raise ValueError()
 
