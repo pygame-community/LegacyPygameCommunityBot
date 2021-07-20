@@ -326,18 +326,20 @@ class BaseCommand:
 
             if len(tupled) == 2 and tupled[1] == "...":
                 # variable length tuple
-                return tuple(
+                ret = [
                     await self.cast_arg(tupled[0], elem, cmd, key, False)
                     for elem in arg
-                )
+                ]
+                return tuple(ret)
 
             # fixed length tuple
             if len(tupled) != len(arg):
                 raise ValueError()
 
-            return tuple(
+            ret = [
                 await self.cast_arg(i, j, cmd, key, False) for i, j in zip(tupled, arg)
-            )
+            ]
+            return tuple(ret)
 
         except ValueError:
             if not convert_error:
