@@ -24,6 +24,7 @@ from discord.embeds import EmptyEmbed
 
 from pgbot import common
 from pgbot.utils import utils
+from pgbot.commands.parser import BotException
 
 EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
     "provider": None,
@@ -538,12 +539,7 @@ class PagedEmbed:
         self,
         message: discord.Message,
         pages: list[discord.Embed],
-        caller: Optional[
-            Union[
-                Union[discord.Member, discord.User],
-                Iterable[Union[discord.Member, discord.User]],
-            ]
-        ] = None,
+        caller: Optional[Union[discord.Member, Iterable[discord.Member]]] = None,
         command: Optional[str] = None,
         start_page: int = 0,
     ):
@@ -588,11 +584,10 @@ class PagedEmbed:
             self.control_emojis["last"] = ("⏩", "Go to the last page")
 
         self.killed = False
-        try:
-            _ = iter(caller)
-        except TypeError:
-            if caller:
-                caller = (caller,)
+
+        if isinstance(caller, discord.Member):
+            caller = (caller,)
+
         self.caller = caller
 
         self.help_text = ""
@@ -682,6 +677,14 @@ class PagedEmbed:
         """Check if the event from `raw_reaction_add` can be passed down to `handle_rection`"""
         if event.message_id != self.message.id:
             return False
+
+        if event.member is None:
+            raise BotException(
+                "Paged embeds are not supported in DMs.",
+                "If you are seeing this in a public channel"
+                ", please report this as a bug.",
+            )
+
         if event.member.bot:
             return False
 

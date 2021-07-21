@@ -1347,7 +1347,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!browse <channel> <quantity> [before=] [after=] [around=]
+        ->signature pg!browse <channel> [quantity=] [before=] [after=] [around=] [controllers=]
         ->description Browse through Discord messages
 
         ->extended description
@@ -1355,21 +1355,21 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         __Args__:
             `channel: discord.TextChannel`
-            > A Discord message that reactions should be added to.
+            > The discord channel to browse the messages from.
 
-            `quantity: int`
+            `quantity: Optional[int]`
             > The number of messages to get
 
-            `before: Time | Message`
+            `before: Optional[Time | Message]`
             > The message or time before which the messages should be shown.
 
-            `after: Time | Message`
+            `after: Optional[Time | Message]`
             > The message or time after which the messages should be shown.
 
-            `around: Time | Message`
+            `around: Optional[Time | Message]`
             > The message or time around which the messages should be shown.
 
-            `controllers: User | tuple[user]`
+            `controllers: Optional[User | tuple[user]]`
             > The user(s) who can control the embed.
 
         __Raises__:
@@ -1381,7 +1381,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if isinstance(self.author, discord.User):
             return
 
-        max_messages = 500
         if not utils.check_channel_permissions(
             self.author,
             channel,
@@ -1428,10 +1427,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         "Invalid `quantity` argument",
                         "Quantity has to be a positive integer (or `0` when `after=` is specified).",
                     )
-            elif quantity > max_messages:
+            elif quantity > common.BROWSE_MESSAGE_LIMIT:
                 raise BotException(
                     "Too many messages",
-                    f"{quantity} messages are more than the maximum allowed ({max_messages}).",
+                    f"{quantity} messages are more than the maximum allowed"
+                    f" ({common.BROWSE_MESSAGE_LIMIT}).",
                 )
 
         messages = await channel.history(
@@ -1446,10 +1446,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Invalid time range",
                 "No messages were found for the specified timestamps.",
             )
-        if len(messages) > max_messages:
+        if len(messages) > common.BROWSE_MESSAGE_LIMIT:
             raise BotException(
                 "Too many messages",
-                f"{len(messages)} messages are more than the maximum allowed ({max_messages}).",
+                f"{len(messages)} messages are more than the maximum allowed"
+                f" ({common.BROWSE_MESSAGE_LIMIT}).",
             )
 
         if not after:
@@ -1481,20 +1482,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             if message.reference:
                 desc += f"\nReplying to [this]({message.reference.jump_url}) message"
 
+            desc += f"\nLink to [Original message]({message.jump_url})"
+            desc += "\n**━━━━━━━━━━━━**"
+
             embed = embed_utils.create(
                 author_icon_url=message.author.avatar,
                 author_name=message.author.display_name,
                 description=desc,
-                title="Original message",
-                url=message.jump_url,
             )
             pages.append(embed)
 
         if controllers:
-            if isinstance(controllers, tuple):
-                controllers = controllers + (self.author,)
-            else:
-                controllers = (controllers, self.author)
+            controllers = controllers + (self.author,)
         else:
             controllers = self.author
 
