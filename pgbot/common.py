@@ -74,10 +74,10 @@ CMD_FUNC_PREFIX = "cmd_"
 
 BASIC_MAX_FILE_SIZE = 8_000_000  # bytes
 
-ESC_BACKTICK_3X = "\u200b`\u200b`\u200b`\u200b"  # U+200B
 ZERO_SPACE = "\u200b"  # U+200B
 
 DOC_EMBED_LIMIT = 3
+BROWSE_MESSAGE_LIMIT = 500
 
 # indicates whether the bot is in generic mode or not. Generic mode is useful
 # when you are testing the bot on other servers. Generic mode limits features of

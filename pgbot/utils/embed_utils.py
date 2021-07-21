@@ -16,7 +16,7 @@ import json
 import re
 from ast import literal_eval
 from collections.abc import Mapping
-from typing import Union, Optional, Any
+from typing import Iterable, Union, Optional, Any
 
 import black
 import discord
@@ -24,6 +24,7 @@ from discord.embeds import EmptyEmbed
 
 from pgbot import common
 from pgbot.utils import utils
+from pgbot.commands.parser import BotException
 
 EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
     "provider": None,
@@ -538,7 +539,7 @@ class PagedEmbed:
         self,
         message: discord.Message,
         pages: list[discord.Embed],
-        caller: Optional[discord.Member] = None,
+        caller: Optional[Union[discord.Member, Iterable[discord.Member]]] = None,
         command: Optional[str] = None,
         start_page: int = 0,
     ):
@@ -555,8 +556,8 @@ class PagedEmbed:
             pages (list[discord.Embed]): The list of embeds to change
             pages between
 
-            caller (Optional[discord.Member]): The user that can control
-            the embed. Defaults to None (everyone can control it).
+            caller (Optional[discord.Member]): The user (or list of users) that can
+            control the embed. Defaults to None (everyone can control it).
 
             command (Optional[str]): Optional argument to support pg!refresh.
             Defaults to None.
@@ -583,6 +584,10 @@ class PagedEmbed:
             self.control_emojis["last"] = ("⏩", "Go to the last page")
 
         self.killed = False
+
+        if isinstance(caller, discord.Member):
+            caller = (caller,)
+
         self.caller = caller
 
         self.help_text = ""
@@ -598,31 +603,32 @@ class PagedEmbed:
 
     async def handle_reaction(self, reaction: str):
         """Handle a reaction."""
-        if reaction == self.control_emojis.get("next")[0]:
+        if reaction == self.control_emojis.get("next", ("",))[0]:
             await self.set_page(self.current_page + 1)
 
-        if reaction == self.control_emojis.get("prev")[0]:
+        if reaction == self.control_emojis.get("prev", ("",))[0]:
             await self.set_page(self.current_page - 1)
 
-        if reaction == self.control_emojis.get("first")[0]:
+        if reaction == self.control_emojis.get("first", ("",))[0]:
             await self.set_page(0)
 
-        if reaction == self.control_emojis.get("last")[0]:
+        if reaction == self.control_emojis.get("last", ("",))[0]:
             await self.set_page(len(self.pages) - 1)
 
-        if reaction == self.control_emojis.get("stop")[0]:
+        if reaction == self.control_emojis.get("stop", ("",))[0]:
             self.killed = True
 
-        if reaction == self.control_emojis.get("info")[0]:
+        if reaction == self.control_emojis.get("info", ("",))[0]:
             await self.show_info_page()
 
     async def show_info_page(self):
         """Create and show the info page."""
         self.is_on_info = not self.is_on_info
         if self.is_on_info:
-            info_page_embed = create(description=self.help_text)
-            footer = self.get_footer_text(self.current_page)
-            info_page_embed.set_footer(text=footer)
+            info_page_embed = create(
+                description=self.help_text,
+                footer_text=self.get_footer_text(self.current_page),
+            )
             await self.message.edit(embed=info_page_embed)
         else:
             await self.message.edit(embed=self.pages[self.current_page])
@@ -633,7 +639,7 @@ class PagedEmbed:
         self.current_page = num % len(self.pages)
         await self.message.edit(embed=self.pages[self.current_page])
 
-    async def setup(self):
+    async def _setup(self):
         if not self.pages:
             await replace(
                 self.message,
@@ -668,23 +674,33 @@ class PagedEmbed:
         return footer
 
     async def check(self, event):
-        """Check if the event from "raw_reaction_add" can be passed down to `handle_rection`"""
+        """Check if the event from `raw_reaction_add` can be passed down to `handle_rection`"""
+        if event.message_id != self.message.id:
+            return False
+
+        if event.member is None:
+            raise BotException(
+                "Paged embeds are not supported in DMs.",
+                "If you are seeing this in a public channel"
+                ", please report this as a bug.",
+            )
+
         if event.member.bot:
             return False
 
         await self.message.remove_reaction(str(event.emoji), event.member)
-        if self.caller and self.caller.id != event.user_id:
+        if self.caller:
+            for member in self.caller:
+                if member.id == event.user_id:
+                    return True
+
             for role in event.member.roles:
                 if not common.GENERIC and role.id in common.ServerConstants.ADMIN_ROLES:
-                    break
-            else:
-                return False
-
-        return event.message_id == self.message.id
+                    return True
 
     async def mainloop(self):
         """Start the mainloop. This checks for reactions and handles them."""
-        if not await self.setup():
+        if not await self._setup():
             return
 
         while not self.killed:
