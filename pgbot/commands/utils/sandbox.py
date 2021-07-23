@@ -150,6 +150,8 @@ disallowed_builtins = (
     "globals",
     "locals",
     "vars",
+    "SystemExit",
+    "KeyboardInterrupt"
 )
 
 for key in dir(builtins):
