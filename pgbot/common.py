@@ -48,7 +48,7 @@ db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 
-VERSION = "1.5.2"
+__version__ = "1.5.3"
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"
@@ -83,6 +83,8 @@ DOC_EMBED_LIMIT = 3
 # when you are testing the bot on other servers. Generic mode limits features of
 # the bot that requires access to server specific stuff
 GENERIC = False
+
+UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
 
 
 class ServerConstants:
@@ -140,6 +142,14 @@ class ServerConstants:
         799339620810358885,
         819537779847200809,
     )
+
+    # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
+    #       if you want to remove more, add the ID to the set below
+    MSGS_TO_FILTER = {
+        817137523905527889,
+        810942002114986045,
+        810942043488256060,
+    }
 
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
@@ -287,7 +297,7 @@ That struts and frets his hour upon the stage.
 — SHAKESPEARE, _Macbeth_, Act 5 Scene 5, Lines 23-25; Macbeth to Seyton
 """,
     """
-Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatnessthrust upon 'em.
+Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatness thrust upon 'em.
 — SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio
 """,
     """

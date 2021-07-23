@@ -167,7 +167,7 @@ CONDENSED_EMBED_DATA_LIST_SYNTAX = """
 
 def recursive_update(
     old_dict: dict,
-    update_dict: Mapping,
+    update_dict: dict,
     add_new_keys: bool = True,
     skip_value: str = "\0",
 ):
@@ -199,7 +199,7 @@ def recursive_update(
 
 def recursive_delete(
     old_dict: dict,
-    update_dict: Optional[Mapping],
+    update_dict: dict,
     skip_value: str = "\0",
     inverse: bool = False,
 ):
@@ -211,7 +211,7 @@ def recursive_delete(
     """
     if inverse:
         for k, v in tuple(old_dict.items()):
-            if isinstance(v, Mapping):
+            if isinstance(v, dict):
                 lower_update_dict = None
                 if isinstance(update_dict, dict):
                     lower_update_dict = update_dict.get(k, {})
@@ -236,7 +236,7 @@ def recursive_delete(
                     del old_dict[k]
     else:
         for k, v in update_dict.items():
-            if isinstance(v, Mapping):
+            if isinstance(v, dict):
                 new_value = recursive_delete(
                     old_dict.get(k, {}), v, skip_value=skip_value
                 )
@@ -257,18 +257,14 @@ def create_embed_mask_dict(
 ):
     embed_top_level_attrib_dict = EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
     embed_top_level_attrib_dict = {
-        k: embed_top_level_attrib_dict[k].copy()
-        if isinstance(embed_top_level_attrib_dict[k], dict)
-        else embed_top_level_attrib_dict[k]
-        for k in embed_top_level_attrib_dict
+        k: v.copy() if isinstance(v, dict) else v
+        for k, v in embed_top_level_attrib_dict.items()
     }
 
     system_attribs_dict = EMBED_SYSTEM_ATTRIBUTES_MASK_DICT
     system_attribs_dict = {
-        k: system_attribs_dict[k].copy()
-        if isinstance(system_attribs_dict[k], dict)
-        else system_attribs_dict[k]
-        for k in system_attribs_dict
+        k: v.copy() if isinstance(v, dict) else v
+        for k, v in system_attribs_dict.items()
     }
 
     all_system_attribs_set = EMBED_SYSTEM_ATTRIBUTES_SET
@@ -491,8 +487,7 @@ def handle_embed_dict_timestamp(embed_dict: dict):
 def copy_embed_dict(embed_dict: dict):
     # prevents shared reference bugs to attributes shared by the outputs of discord.Embed.to_dict()
     copied_embed_dict = {
-        k: embed_dict[k].copy() if isinstance(embed_dict[k], dict) else embed_dict[k]
-        for k in embed_dict
+        k: v.copy() if isinstance(v, dict) else v for k, v in embed_dict.items()
     }
 
     if "fields" in embed_dict:
@@ -589,11 +584,10 @@ class PagedEmbed:
         self.killed = False
         self.caller = caller
 
-        newline = "\n"
         self.help_text = ""
         for emoji, desc in self.control_emojis.values():
             if emoji:
-                self.help_text += f"{emoji}: {desc}{newline}"
+                self.help_text += f"{emoji}: {desc}\n"
 
     async def add_control_emojis(self):
         """Add the control reactions to the message."""
@@ -642,9 +636,9 @@ class PagedEmbed:
         if not self.pages:
             await replace(
                 self.message,
-                "Internal error occured!",
-                "Got empty embed list for PagedEmbed",
-                0xFF0000,
+                title="Internal error occured!",
+                description="Got empty embed list for PagedEmbed",
+                color=0xFF0000,
             )
             return False
 
@@ -703,56 +697,6 @@ class PagedEmbed:
                 self.killed = True
 
         await self.message.clear_reactions()
-
-
-async def replace(
-    message: discord.Message,
-    title: str = "",
-    description: str = "",
-    color: int = 0xFFFFAA,
-    url_image: Optional[str] = None,
-    fields: list = [],
-):
-    """
-    Edits the embed of a message with a much more tight function
-    """
-    embed = discord.Embed(
-        title=title,
-        description=description,
-        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
-    )
-    if url_image:
-        embed.set_image(url=url_image)
-
-    for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
-
-    return await message.edit(embed=embed)
-
-
-async def send(
-    channel: common.Channel,
-    title: str = "",
-    description: str = "",
-    color: int = 0xFFFFAA,
-    url_image: Optional[str] = None,
-    fields: list = [],
-):
-    """
-    Sends an embed with a much more tight function
-    """
-    embed = discord.Embed(
-        title=title,
-        description=description,
-        color=color if 0 <= color < 0x1000000 else DEFAULT_EMBED_COLOR,
-    )
-    if url_image:
-        embed.set_image(url=url_image)
-
-    for field in fields:
-        embed.add_field(name=field[0], value=field[1], inline=field[2])
-
-    return await channel.send(embed=embed)
 
 
 def parse_condensed_embed_list(embed_list: Union[list, tuple]):
@@ -898,19 +842,19 @@ def parse_condensed_embed_list(embed_list: Union[list, tuple]):
 
 
 def create_as_dict(
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
-    color=-1,
-    fields=(),
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
+    author_name: Optional[str] = EmptyEmbed,
+    author_url: Optional[str] = EmptyEmbed,
+    author_icon_url: Optional[str] = EmptyEmbed,
+    title: Optional[str] = EmptyEmbed,
+    url: Optional[str] = EmptyEmbed,
+    thumbnail_url: Optional[str] = EmptyEmbed,
+    description: Optional[str] = EmptyEmbed,
+    image_url: Optional[str] = EmptyEmbed,
+    color: int = -1,
+    fields: Union[list, tuple] = (),
+    footer_text: Optional[str] = EmptyEmbed,
+    footer_icon_url: Optional[str] = EmptyEmbed,
+    timestamp: Optional[str] = EmptyEmbed,
 ):
     embed_dict = {}
 
@@ -1089,19 +1033,19 @@ def clean_embed_dict(embed_dict: dict):
 
 
 def create(
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
-    color=0xFFFFAA,
-    fields=(),
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
+    author_name: Optional[str] = EmptyEmbed,
+    author_url: Optional[str] = EmptyEmbed,
+    author_icon_url: Optional[str] = EmptyEmbed,
+    title: Optional[str] = EmptyEmbed,
+    url: Optional[str] = EmptyEmbed,
+    thumbnail_url: Optional[str] = EmptyEmbed,
+    description: Optional[str] = EmptyEmbed,
+    image_url: Optional[str] = EmptyEmbed,
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
+    footer_text: Optional[str] = EmptyEmbed,
+    footer_icon_url: Optional[str] = EmptyEmbed,
+    timestamp: Optional[Union[str, datetime.datetime]] = EmptyEmbed,
 ):
     """
     Creates an embed with a much more tight function.
@@ -1149,21 +1093,21 @@ def create(
     return embed
 
 
-async def send_2(
+async def send(
     channel: common.Channel,
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
-    color=0xFFFFAA,
-    fields=[],
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
+    author_name: Optional[str] = EmptyEmbed,
+    author_url: Optional[str] = EmptyEmbed,
+    author_icon_url: Optional[str] = EmptyEmbed,
+    title: Optional[str] = EmptyEmbed,
+    url: Optional[str] = EmptyEmbed,
+    thumbnail_url: Optional[str] = EmptyEmbed,
+    description: Optional[str] = EmptyEmbed,
+    image_url: Optional[str] = EmptyEmbed,
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
+    footer_text: Optional[str] = EmptyEmbed,
+    footer_icon_url: Optional[str] = EmptyEmbed,
+    timestamp: Optional[str] = EmptyEmbed,
 ):
     """
     Sends an embed with a much more tight function. If the channel is
@@ -1189,21 +1133,21 @@ async def send_2(
     return await channel.send(embed=embed)
 
 
-async def replace_2(
+async def replace(
     message: discord.Message,
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
-    color=0xFFFFAA,
-    fields=[],
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
+    author_name: Optional[str] = EmptyEmbed,
+    author_url: Optional[str] = EmptyEmbed,
+    author_icon_url: Optional[str] = EmptyEmbed,
+    title: Optional[str] = EmptyEmbed,
+    url: Optional[str] = EmptyEmbed,
+    thumbnail_url: Optional[str] = EmptyEmbed,
+    description: Optional[str] = EmptyEmbed,
+    image_url: Optional[str] = EmptyEmbed,
+    color: int = DEFAULT_EMBED_COLOR,
+    fields: Union[list, tuple] = (),
+    footer_text: Optional[str] = EmptyEmbed,
+    footer_icon_url: Optional[str] = EmptyEmbed,
+    timestamp: Optional[str] = EmptyEmbed,
 ):
     """
     Replaces the embed of a message with a much more tight function
@@ -1226,23 +1170,23 @@ async def replace_2(
     return await message.edit(embed=embed)
 
 
-async def edit_2(
+async def edit(
     message: discord.Message,
     embed: discord.Embed,
-    author_name=EmptyEmbed,
-    author_url=EmptyEmbed,
-    author_icon_url=EmptyEmbed,
-    title=EmptyEmbed,
-    url=EmptyEmbed,
-    thumbnail_url=EmptyEmbed,
-    description=EmptyEmbed,
-    image_url=EmptyEmbed,
+    author_name: Optional[str] = EmptyEmbed,
+    author_url: Optional[str] = EmptyEmbed,
+    author_icon_url: Optional[str] = EmptyEmbed,
+    title: Optional[str] = EmptyEmbed,
+    url: Optional[str] = EmptyEmbed,
+    thumbnail_url: Optional[str] = EmptyEmbed,
+    description: Optional[str] = EmptyEmbed,
+    image_url: Optional[str] = EmptyEmbed,
     color=-1,
     fields=[],
-    footer_text=EmptyEmbed,
-    footer_icon_url=EmptyEmbed,
-    timestamp=EmptyEmbed,
-    add_attributes=False,
+    footer_text: Optional[str] = EmptyEmbed,
+    footer_icon_url: Optional[str] = EmptyEmbed,
+    timestamp: Optional[str] = EmptyEmbed,
+    add_attributes: bool = False,
     inner_fields: bool = False,
 ):
     """
@@ -1300,7 +1244,7 @@ async def edit_2(
     return await message.edit(embed=discord.Embed.from_dict(old_embed_dict))
 
 
-def create_from_dict(data):
+def create_from_dict(data: dict):
     """
     Creates an embed from a dictionary with a much more tight function
     """
@@ -1308,14 +1252,14 @@ def create_from_dict(data):
     return discord.Embed.from_dict(data)
 
 
-async def send_from_dict(channel: common.Channel, data):
+async def send_from_dict(channel: common.Channel, data: dict):
     """
     Sends an embed from a dictionary with a much more tight function
     """
     return await channel.send(embed=create_from_dict(data))
 
 
-async def replace_from_dict(message: discord.Message, data):
+async def replace_from_dict(message: discord.Message, data: dict):
     """
     Replaces the embed of a message from a dictionary with a much more
     tight function
@@ -1677,11 +1621,11 @@ async def clear_fields(
 
 def import_embed_data(
     source: Union[str, io.StringIO],
-    from_string=False,
-    from_json=False,
-    from_json_string=False,
-    as_string=False,
-    as_dict=True,
+    from_string: bool = False,
+    from_json: bool = False,
+    from_json_string: bool = False,
+    as_string: bool = False,
+    as_dict: bool = True,
 ):
     """
     Import embed data from a file or a string containing JSON
@@ -1780,10 +1724,10 @@ def import_embed_data(
 
 def export_embed_data(
     data: Union[dict, tuple, list],
-    fp: Union[str, io.StringIO] = None,
-    indent=None,
-    as_json=True,
-    always_return=False,
+    fp: Optional[Union[str, io.StringIO]] = None,
+    indent: Optional[int] = None,
+    as_json: bool = True,
+    always_return: bool = False,
 ):
     """
     Export embed data to serialized JSON or a Python dictionary and store it in a file or a string.
@@ -1994,7 +1938,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             title="__Message & Author Info__",
             description="".join(
                 (
-                    f"__Text"
+                    "__Text"
                     + (" (Shortened)" if len(msg.content) > 2000 else "")
                     + "__:",
                     f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
@@ -2031,7 +1975,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         author_icon_url=str(member.avatar_url),
         description="".join(
             (
-                f"__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
+                "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
                 f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
                 if len(msg.content) > 2000
                 else "\n\u2800",

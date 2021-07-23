@@ -19,7 +19,28 @@ from typing import Callable, Iterable, Union
 import discord
 import pygame
 
-from pgbot import common
+from pgbot import common, db
+
+
+async def get_channel_feature(
+    name: str, channel: common.Channel, defaultret: bool = False
+):
+    """
+    Get the channel feature. Returns True if the feature name is disabled on
+    that channel, False otherwise. Also handles category channel
+    """
+    async with db.DiscordDB("feature") as db_obj:
+        db_dict: dict[int, bool] = db_obj.get({}).get(name, {})
+
+    if channel.id in db_dict:
+        return db_dict[channel.id]
+
+    if isinstance(channel, discord.TextChannel):
+        if channel.category_id is None:
+            return defaultret
+        return db_dict.get(channel.category_id, defaultret)
+
+    return defaultret
 
 
 def clamp(value, min_, max_):
@@ -41,12 +62,23 @@ def color_to_rgb_int(col: pygame.Color, alpha: bool = False):
     )
 
 
-def discordify(text: str):
+def is_emoji_equal(
+    partial_emoji: discord.PartialEmoji,
+    emoji: Union[str, discord.Emoji, discord.PartialEmoji],
+):
     """
-    Converts normal string into "discord" string that includes backspaces to
-    cancel out unwanted changes
+    Utility to compare a partial emoji with any other kind of emoji
     """
-    return discord.utils.escape_markdown(text)
+    if isinstance(emoji, discord.PartialEmoji):
+        return partial_emoji == emoji
+
+    if isinstance(emoji, discord.Emoji):
+        if partial_emoji.is_unicode_emoji():
+            return False
+
+        return emoji.id == partial_emoji.id
+
+    return str(partial_emoji) == emoji
 
 
 def format_discord_link(link: str, guild_id: int):

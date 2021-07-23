@@ -68,7 +68,7 @@ async def check_bonk(msg: discord.Message):
 
     bonks = msg.content.count(common.BONK)
     if await get("anger") + bonks > 30:
-        await embed_utils.send_2(
+        await embed_utils.send(
             msg.channel,
             title="Did you hit the snek?",
             description="You mortal mammal! How you dare to boncc a snake?",
@@ -84,11 +84,12 @@ async def dad_joke(msg: discord.Message, mode: str = "happy"):
     """
     Utility to handle the bot making dad jokes
     """
-    async with db.DiscordDB("feature") as db_obj:
-        db_dict: dict[str, dict[int, bool]] = db_obj.get({})
-        dadjokes = db_dict.get("dadjokes", {})
-        if dadjokes.get(msg.channel.id, False):
-            return
+    # make typecheckers happy
+    if common.bot.user is None:
+        return
+
+    if await utils.get_channel_feature("dadjokes", msg.channel):
+        return
 
     lowered = unidecode.unidecode(msg.content.lower().strip())
     for trigger in ("i am", "i'm"):
