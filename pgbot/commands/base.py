@@ -14,6 +14,7 @@ import asyncio
 import datetime
 import inspect
 import random
+import re
 from typing import Any, Optional, Union
 
 import discord
@@ -160,7 +161,18 @@ class BaseCommand:
             raise ValueError()
 
         elif isinstance(arg, str):
-            if anno in ["CodeBlock", "String", "datetime.datetime", "datetime"]:
+            if anno in ["CodeBlock", "String"]:
+                raise ValueError()
+
+            elif anno in ["datetime.datetime", "datetime"]:
+                if not arg.startswith("<t:") or not arg.endswith(">"):
+                    raise ValueError()
+
+                timestamp = re.search(r"\d+", arg)
+                if timestamp is not None:
+                    timestamp = float(arg[timestamp.start() : timestamp.end()])
+                    return datetime.datetime.utcfromtimestamp(timestamp)
+
                 raise ValueError()
 
             elif anno == "str":
@@ -287,11 +299,12 @@ class BaseCommand:
         """
         if isinstance(param, str):
             anno = param
-        else:
-            if param.annotation == param.empty:
-                # no checking/converting, do a direct return
-                return arg
 
+        elif param.annotation == param.empty:
+            # no checking/converting, do a direct return
+            return arg
+
+        else:
             anno: str = param.annotation
 
         if anno == "Any":
@@ -325,23 +338,20 @@ class BaseCommand:
 
             if len(tupled) == 2 and tupled[1] == "...":
                 # variable length tuple
-                return tuple(
-                    [
-                        await self.cast_arg(tupled[0], elem, cmd, key, False)
-                        for elem in arg
-                    ]
-                )
+                ret = [
+                    await self.cast_arg(tupled[0], elem, cmd, key, False)
+                    for elem in arg
+                ]
+                return tuple(ret)
 
             # fixed length tuple
             if len(tupled) != len(arg):
                 raise ValueError()
 
-            return tuple(
-                [
-                    await self.cast_arg(i, j, cmd, key, False)
-                    for i, j in zip(tupled, arg)
-                ]
-            )
+            ret = [
+                await self.cast_arg(i, j, cmd, key, False) for i, j in zip(tupled, arg)
+            ]
+            return tuple(ret)
 
         except ValueError:
             if not convert_error:
@@ -487,6 +497,7 @@ class BaseCommand:
             if (
                 i == 0
                 and isinstance(param.annotation, str)
+                and self.invoke_msg.reference is not None
                 and (
                     "discord.Message" in param.annotation
                     or "discord.PartialMessage" in param.annotation
@@ -494,12 +505,11 @@ class BaseCommand:
             ):
                 # first arg is expected to be a Message object, handle reply into
                 # the first argument
-                if self.invoke_msg.reference is not None:
-                    msg = str(self.invoke_msg.reference.message_id)
-                    if self.invoke_msg.reference.channel_id != self.channel.id:
-                        msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
+                msg = str(self.invoke_msg.reference.message_id)
+                if self.invoke_msg.reference.channel_id != self.channel.id:
+                    msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
 
-                    args.insert(0, msg)
+                args.insert(0, msg)
 
             if param.kind == param.VAR_POSITIONAL:
                 is_var_pos = True

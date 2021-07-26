@@ -150,6 +150,8 @@ disallowed_builtins = (
     "globals",
     "locals",
     "vars",
+    "SystemExit",
+    "KeyboardInterrupt",
 )
 
 for key in dir(builtins):
@@ -277,9 +279,8 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
             "statements."
         )
 
-    except Exception as err:
+    except (Exception, BaseException) as err:
         output.exc = utils.format_code_exception(err)
-
     finally:
         output.duration = time.perf_counter() - script_start
 
