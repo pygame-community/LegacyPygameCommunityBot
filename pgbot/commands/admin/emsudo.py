@@ -872,7 +872,7 @@ class EmsudoCommand(BaseCommand):
 
         __Args__:
             `msg: (Message|(Message, Message, ...))`
-            > A single message or a sequece of messages whose first embeds
+            > A single message or a tuple of messages whose first embeds
             > should be modified.
 
             `*datas: (Message|CodeBlock|String|bool)`
