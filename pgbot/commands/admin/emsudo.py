@@ -871,10 +871,10 @@ class EmsudoCommand(BaseCommand):
         Edit the embeds of the given messages using the given inputs.
 
         __Args__:
-            `msg: (Message|list[Message])`
+            `msg: (Message|(Message, Message, ...))`
             > A single message or a sequece of messages whose first embeds
             > should be modified.
-             
+
             `*datas: (Message|CodeBlock|String|bool)`
             > A sequence of data to modify the target embed from.
             > Each can be a discord message whose first attachment contains
@@ -927,7 +927,6 @@ class EmsudoCommand(BaseCommand):
         """
 
         target_msgs = msg
-        target_msg_embeds = None
 
         if not isinstance(msg, tuple):
             target_msgs = (msg,)
