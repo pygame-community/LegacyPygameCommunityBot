@@ -231,7 +231,7 @@ class EmsudoCommand(BaseCommand):
             send_embed_args = dict(description=EmptyEmbed)
 
             attachment_msg = None
-            only_description = False
+            edit_description_only = False
 
             if data is False:
                 attachment_msg = self.invoke_msg
@@ -240,7 +240,7 @@ class EmsudoCommand(BaseCommand):
                 if not data.string:
                     attachment_msg = self.invoke_msg
                 else:
-                    only_description = True
+                    edit_description_only = True
                     send_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
@@ -293,7 +293,7 @@ class EmsudoCommand(BaseCommand):
 
                 output_embeds.append(embed_utils.create_from_dict(embed_dict))
 
-            elif not only_description:
+            elif not edit_description_only:
                 if data.lang == "json":
                     try:
                         embed_dict = embed_utils.import_embed_data(
@@ -744,7 +744,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         attachment_msg = None
-        only_description = False
+        edit_description_only = False
 
         if data is None or data is False:
             attachment_msg = self.invoke_msg
@@ -753,7 +753,7 @@ class EmsudoCommand(BaseCommand):
             if not data.string:
                 attachment_msg = self.invoke_msg
             else:
-                only_description = True
+                edit_description_only = True
                 replace_embed_args.update(description=data.string)
 
         elif isinstance(data, discord.Message):
@@ -802,7 +802,7 @@ class EmsudoCommand(BaseCommand):
 
             await embed_utils.replace_from_dict(msg, embed_dict)
 
-        elif not only_description:
+        elif not edit_description_only:
             if data.lang == "json":
                 try:
                     embed_dict = embed_utils.import_embed_data(
@@ -858,19 +858,23 @@ class EmsudoCommand(BaseCommand):
     @add_group("emsudo", "edit")
     async def cmd_emsudo_edit(
         self,
-        msg: discord.Message,
+        msg: Union[discord.Message, tuple[discord.Message, ...]],
         *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
-        inner_fields: bool = False,
+        edit_inner_fields: bool = False,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo edit <message> <*datas> [add_atributes=True] [inner_fields=False]
-        ->description Edit an embed through the bot
+        ->signature pg!emsudo edit <message|messages> <*datas> [add_atributes=True] [edit_inner_fields=False]
+        ->description Edit embeds through the bot
         ->extended description
-        Edit the embed of a message using the given inputs.
+        Edit the embeds of the given messages using the given inputs.
 
         __Args__:
+            `msg: (Message|list[Message])`
+            > A single message or a sequece of messages whose first embeds
+            > should be modified.
+             
             `*datas: (Message|CodeBlock|String|bool)`
             > A sequence of data to modify the target embed from.
             > Each can be a discord message whose first attachment contains
@@ -894,7 +898,7 @@ class EmsudoCommand(BaseCommand):
             > If set to `False`, only the attributes present
             > in the target embed will be changed.
 
-            `inner_fields: (bool) = False`
+            `edit_inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
             > embed (if present) will be able to be
             > individually modified by the given input
@@ -922,15 +926,31 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
-        if not utils.check_channel_permissions(
-            self.author,
-            msg.channel,
-            permissions=("view_channel", "send_messages"),
-        ):
-            raise BotException(
-                "Not enough permissions",
-                "You do not have enough permissions to run this command with the specified arguments.",
-            )
+        target_msgs = msg
+        target_msg_embeds = None
+
+        if not isinstance(msg, tuple):
+            target_msgs = (msg,)
+
+        for i, msg in enumerate(target_msgs):
+            if not utils.check_channel_permissions(
+                self.author,
+                msg.channel,
+                permissions=("view_channel", "send_messages"),
+            ):
+                raise BotException(
+                    "Not enough permissions",
+                    "You do not have enough permissions to run this command with the specified arguments.",
+                )
+
+            if not msg.embeds:
+                raise BotException(
+                    f"Input Target Message {i}: Cannot execute command:",
+                    "No embed data found in message.",
+                )
+
+            if not i % 50:
+                await asyncio.sleep(0)
 
         for i, data in enumerate(datas):
             if isinstance(data, discord.Message):
@@ -943,23 +963,20 @@ class EmsudoCommand(BaseCommand):
                         "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
+            
             if not i % 50:
                 await asyncio.sleep(0)
 
-        if not msg.embeds:
-            raise BotException(
-                "Cannot execute command:",
-                "No embed data found in message.",
-            )
 
         msg_embed = msg.embeds[0]
-        edited_embed_dict = msg_embed.to_dict()
+        target_embed_dicts = tuple( msg.embeds[0].to_dict() for msg in target_msgs )
         data_count = len(datas)
 
         load_embed = embed_utils.create(
             title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
+        
         for i, data in enumerate(datas):
             if data_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
@@ -980,7 +997,7 @@ class EmsudoCommand(BaseCommand):
             )
 
             attachment_msg: Optional[discord.Message] = None
-            only_description = False
+            edit_description_only = False
 
             if not data:
                 attachment_msg = self.invoke_msg
@@ -989,7 +1006,7 @@ class EmsudoCommand(BaseCommand):
                 if not data.string:
                     attachment_msg = self.invoke_msg
                 else:
-                    only_description = True
+                    edit_description_only = True
                     edit_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
@@ -1040,14 +1057,15 @@ class EmsudoCommand(BaseCommand):
                         embed_data, from_string=True
                     )
 
-                edited_embed_dict = embed_utils.edit_dict_from_dict(
-                    edited_embed_dict,
-                    embed_dict,
-                    add_attributes=add_attributes,
-                    inner_fields=inner_fields,
-                )
+                for target_embed_dict in target_embed_dicts:
+                    embed_utils.edit_dict_from_dict(
+                        target_embed_dict,
+                        embed_dict,
+                        add_attributes=add_attributes,
+                        edit_inner_fields=edit_inner_fields,
+                    )
 
-            elif not only_description:
+            elif not edit_description_only:
                 if data.lang == "json":
                     try:
                         embed_dict = embed_utils.import_embed_data(
@@ -1058,12 +1076,14 @@ class EmsudoCommand(BaseCommand):
                             f"Input {i}: Invalid JSON data",
                             f"```\n{j.args[0]}\n```",
                         )
-                    edited_embed_dict = embed_utils.edit_dict_from_dict(
-                        edited_embed_dict,
-                        embed_dict,
-                        add_attributes=add_attributes,
-                        inner_fields=inner_fields,
-                    )
+
+                    for target_embed_dict in target_embed_dicts:
+                        embed_utils.edit_dict_from_dict(
+                            target_embed_dict,
+                            embed_dict,
+                            add_attributes=add_attributes,
+                            edit_inner_fields=edit_inner_fields,
+                        )
                 else:
                     try:
                         args = literal_eval(data.code)
@@ -1071,12 +1091,13 @@ class EmsudoCommand(BaseCommand):
                         raise BotException(f"Input {i}: Invalid arguments!", e.args[0])
 
                     if isinstance(args, dict):
-                        edited_embed_dict = embed_utils.edit_dict_from_dict(
-                            edited_embed_dict,
-                            args,
-                            add_attributes=add_attributes,
-                            inner_fields=inner_fields,
-                        )
+                        for target_embed_dict in target_embed_dicts:
+                            embed_utils.edit_dict_from_dict(
+                                target_embed_dict,
+                                args,
+                                add_attributes=add_attributes,
+                                edit_inner_fields=edit_inner_fields,
+                            )
 
                     elif isinstance(args, (list, tuple)):
                         try:
@@ -1096,12 +1117,13 @@ class EmsudoCommand(BaseCommand):
                         embed_dict = embed_utils.create_as_dict(
                             **edit_embed_args,
                         )
-                        edited_embed_dict = embed_utils.edit_dict_from_dict(
-                            edited_embed_dict,
-                            embed_dict,
-                            add_attributes=add_attributes,
-                            inner_fields=inner_fields,
-                        )
+                        for target_embed_dict in target_embed_dicts:
+                            embed_utils.edit_dict_from_dict(
+                                target_embed_dict,
+                                embed_dict,
+                                add_attributes=add_attributes,
+                                edit_inner_fields=edit_inner_fields,
+                            )
 
                     else:
                         raise BotException(
@@ -1117,12 +1139,13 @@ class EmsudoCommand(BaseCommand):
                     description=edit_embed_args["description"],
                     color=-1,
                 )
-                edited_embed_dict = embed_utils.edit_dict_from_dict(
-                    edited_embed_dict,
-                    embed_dict,
-                    add_attributes=add_attributes,
-                    inner_fields=inner_fields,
-                )
+                for target_embed_dict in target_embed_dicts:
+                    embed_utils.edit_dict_from_dict(
+                        target_embed_dict,
+                        embed_dict,
+                        add_attributes=add_attributes,
+                        edit_inner_fields=edit_inner_fields,
+                    )
 
             await asyncio.sleep(0)
 
@@ -1160,23 +1183,26 @@ class EmsudoCommand(BaseCommand):
             else:
                 embed_dict = embed_utils.import_embed_data(embed_data, from_string=True)
 
-            edited_embed_dict = embed_utils.edit_dict_from_dict(
-                edited_embed_dict,
-                embed_dict,
-                add_attributes=add_attributes,
-                inner_fields=inner_fields,
-            )
-
-            await embed_utils.edit_from_dict(
-                msg,
-                msg_embed,
-                edited_embed_dict,
-                add_attributes=add_attributes,
-                inner_fields=inner_fields,
-            )
+            for target_embed_dict in target_embed_dicts:
+                embed_utils.edit_dict_from_dict(
+                    target_embed_dict,
+                    embed_dict,
+                    add_attributes=add_attributes,
+                    edit_inner_fields=edit_inner_fields,
+                )
+            
+            for i, msg in enumerate(target_msgs):
+                await embed_utils.edit_from_dict(
+                    msg,
+                    msg.embeds[0],
+                    target_embed_dicts[i],
+                    add_attributes=add_attributes,
+                    edit_inner_fields=edit_inner_fields,
+                )
 
         else:
-            await msg.edit(embed=discord.Embed.from_dict(edited_embed_dict))
+            for i, msg in enumerate(target_msgs):
+                await msg.edit(embed=discord.Embed.from_dict(embed_utils.clean_embed_dict(target_embed_dicts[i])))
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
@@ -1189,6 +1215,7 @@ class EmsudoCommand(BaseCommand):
                 ),
                 0,
             )
+        
         try:
             await self.invoke_msg.delete()
             await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
@@ -1200,13 +1227,13 @@ class EmsudoCommand(BaseCommand):
         self,
         *msgs: discord.Message,
         destination: Optional[common.Channel] = None,
-        inner_fields: bool = False,
+        edit_inner_fields: bool = False,
         in_place: bool = False,
         remove_inputs: bool = False,
     ):
         """
         ->type emsudo commands
-        ->signature pg!emsudo sum <*messages> [destination=] [inner_fields=False] [in_place=False] [remove_inputs=False]
+        ->signature pg!emsudo sum <*messages> [destination=] [edit_inner_fields=False] [in_place=False] [remove_inputs=False]
         ->description Combine several embeds into one
         ->extended description
         Create a new embed representing the sum of all embed messages
@@ -1222,7 +1249,7 @@ class EmsudoCommand(BaseCommand):
             > If omitted, the destination will be the channel where
             > this command was invoked.
 
-            `inner_fields: (bool) = False`
+            `edit_inner_fields: (bool) = False`
             > If set to `True`, the individual embed fields
             > of the embeds given as input will be considered
             > in the joining process, otherwise they will all
@@ -1325,7 +1352,7 @@ class EmsudoCommand(BaseCommand):
             embed_dict = embed.to_dict()
 
             if output_embed_dict:
-                if inner_fields and "fields" in output_embed_dict:
+                if edit_inner_fields and "fields" in output_embed_dict:
                     output_embed_dict["fields"].extend(embed_dict["fields"])
                     del embed_dict["fields"]
 
@@ -1465,7 +1492,7 @@ class EmsudoCommand(BaseCommand):
             `*messages: (Message)`
             > A sequence of discord messages whose embeds should be cloned
 
-            `inner_fields: (bool) = False`
+            `edit_inner_fields: (bool) = False`
             > If set to `True`, the embed fields of the target
             > embed (if present) will be able to be
             > individually modified by the given input
