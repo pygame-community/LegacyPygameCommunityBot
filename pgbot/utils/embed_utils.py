@@ -977,65 +977,118 @@ def validate_embed_dict(embed_dict: dict):
         return False
 
     embed_dict_len = len(embed_dict)
-    for k in tuple(embed_dict.keys()):
-        if (
-            embed_dict_len == 1
-            and (k == "color" or k == "timestamp")
-            or embed_dict_len == 2
-            and ("color" in embed_dict and "timestamp" in embed_dict)
-        ):
-            return False
-        elif (
-            not embed_dict[k]
-            or k == "footer"
-            and "text" not in embed_dict[k]
-            or k == "author"
-            and "name" not in embed_dict[k]
-            or k in ("thumbnail", "image")
-            and "url" not in embed_dict[k]
-        ):
-            return False
+    try:
+        for k, v in tuple(embed_dict.items()):
+            if (
+                embed_dict_len == 1
+                and (k == "color" or k == "timestamp")
+                or embed_dict_len == 2
+                and ("color" in embed_dict and "timestamp" in embed_dict)
+            ):
+                return False
+            elif (
+                not v
+                or not isinstance(v, (str, list, dict, int))
+                or (
+                    k == "footer"
+                    and "text" not in v
+                )
+                or (
+                    k == "author"
+                    and "name" not in v
+                )
+                or (
+                    k in ("thumbnail", "image")
+                    and "url" not in v
+                )
+                or (
+                    k == "color" and
+                    not isinstance(v, int)
+                )
+            ):
+                return False
 
-        elif k == "fields":
-            for i in range(len(embed_dict["fields"])):
-                if (
-                    "name" not in embed_dict["fields"][i]
-                    or "value" not in embed_dict["fields"][i]
-                ):
+            elif k == "fields":
+                if isinstance(v, list):
+                    for i in reversed(range(len(v))):
+                        if (
+                            not isinstance(v, dict)
+                            or (
+                                "name" not in v[i]
+                                or "value" not in v[i]
+                            )
+                        ):
+                            return False
+                else:
                     return False
 
-        elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
-            return False
-
-        elif k == "timestamp":
-            try:
-                datetime.datetime.fromisoformat(embed_dict[k])
-            except ValueError:
+            elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
                 return False
+
+            elif k == "timestamp":
+                try:
+                    datetime.datetime.fromisoformat(embed_dict[k])
+                except ValueError:
+                    return False
+    except TypeError:
+        return False
 
     return True
 
 
 def clean_embed_dict(embed_dict: dict):
-    for k in tuple(embed_dict.keys()):
+    """
+    Cleans up an embed dictionary by deleting
+    invalid attributes that would cause
+    errors not related to a discord.HTTPException.
+
+    Args:
+        embed_dict: The target embed dictionary
+
+    Returns:
+        The same embed dictionary given as input
+
+    """
+
+    for k, v in tuple(embed_dict.items()):
         if (
-            not embed_dict[k]
-            or k == "footer"
-            and "text" not in embed_dict[k]
-            or k == "author"
-            and "name" not in embed_dict[k]
-            or k in ("thumbnail", "image")
-            and "url" not in embed_dict[k]
+            not v
+            or not isinstance(v, (str, list, dict, int))
+            or (
+                k == "footer"
+                and (
+                    "text" not in v or
+                    not isinstance(v, dict)
+                )
+            )
+            or (
+                k == "author"
+                and "name" not in v
+            )
+            or (
+                k in ("thumbnail", "image")
+                and "url" not in v
+            )
+            or (
+                k == "color" and
+                not isinstance(v, int)
+            )
         ):
             del embed_dict[k]
 
         elif k == "fields":
-            for i in reversed(range(len(embed_dict["fields"]))):
-                if (
-                    "name" not in embed_dict["fields"][i]
-                    or "value" not in embed_dict["fields"][i]
-                ):
-                    embed_dict["fields"].pop(i)
+            if isinstance(v, list):
+                for i in reversed(range(len(v))):
+                    if (
+                        not isinstance(v, dict)
+                        or (
+                            "name" not in v[i]
+                            or "value" not in v[i]
+                        )
+                    ):
+                        v.pop(i)
+            else:
+                del embed_dict[k]
 
         elif k == "color":
             embed_dict["color"] = min(max(0, embed_dict["color"]), 0xFFFFFF)
@@ -1204,7 +1257,7 @@ async def edit(
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
     add_attributes: bool = False,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
     Updates the changed attributes of the embed of a message with a
@@ -1227,7 +1280,7 @@ async def edit(
         timestamp=timestamp,
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1243,7 +1296,7 @@ async def edit(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
@@ -1290,15 +1343,24 @@ async def edit_from_dict(
     embed: discord.Embed,
     update_embed_dict: dict,
     add_attributes: bool = True,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
-    Edits the changed attributes of the embed of a message from a
-    dictionary with a much more tight function
+    Edits the attributes of a given embed from an embed
+    dictionary, and applies them as new embed to the message given as input.
+
+    Args:
+        message (discord.Message): The target message to apply the modified embed to.
+        embed (discord.Embed): The target embed to make a new, modified embed from.
+        update_embed_dict (dict): The embed dictionary used for modification.
+        add_attributes (bool): Whether the embed attributes in 'update_embed_dict'
+            should be added to the new modified embed if not present.
+        edit_inner_fields (bool): Whether to modify the 'fields' attribute of an embed
+        as one unit or to modify the embeds fields themselves, one by one.
     """
     old_embed_dict = embed.to_dict()
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1314,7 +1376,7 @@ async def edit_from_dict(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
@@ -1335,13 +1397,13 @@ def edit_dict_from_dict(
     old_embed_dict: dict,
     update_embed_dict: dict,
     add_attributes: bool = True,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
     Edits the changed attributes of an embed dictionary using another
     dictionary
     """
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1357,7 +1419,7 @@ def edit_dict_from_dict(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
