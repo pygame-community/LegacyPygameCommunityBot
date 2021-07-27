@@ -858,7 +858,7 @@ class EmsudoCommand(BaseCommand):
     @add_group("emsudo", "edit")
     async def cmd_emsudo_edit(
         self,
-        msg: Union[discord.Message, tuple[discord.Message, ...]],
+        msg: tuple[discord.Message, ...],
         *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
         edit_inner_fields: bool = False,
