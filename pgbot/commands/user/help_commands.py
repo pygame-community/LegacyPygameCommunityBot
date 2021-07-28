@@ -9,17 +9,17 @@ This file defines the command handler class for the "help" commands of the bot
 from __future__ import annotations
 
 import os
+import random
 import re
 import time
 from typing import Optional
 
 import discord
 import pygame
-
 from pgbot import common, db
 from pgbot.commands.base import BaseCommand, BotException, String, no_dm
 from pgbot.commands.utils import clock, docs, help
-from pgbot.utils import utils, embed_utils
+from pgbot.utils import embed_utils, utils
 
 
 class HelpCommand(BaseCommand):
@@ -105,7 +105,7 @@ class HelpCommand(BaseCommand):
     async def cmd_clock(
         self,
         action: str = "",
-        timezone: float = 0,
+        timezone: Optional[float] = None,
         color: Optional[pygame.Color] = None,
         *,
         _member: Optional[discord.Member] = None,
@@ -140,21 +140,28 @@ class HelpCommand(BaseCommand):
                     member = _member
 
                 if action == "update":
-                    if abs(timezone) > 12:
+                    if timezone is not None and abs(timezone) > 12:
                         raise BotException(
                             "Failed to update clock!", "Timezone offset out of range"
                         )
 
                     if member.id in timezones:
-                        timezones[member.id][0] = timezone
+                        if timezone is not None:
+                            timezones[member.id][0] = timezone
                         if color is not None:
                             timezones[member.id][1] = utils.color_to_rgb_int(color)
                     else:
-                        if color is None:
+                        if timezone is None:
                             raise BotException(
                                 "Failed to update clock!",
-                                "Color argument is required when adding new people",
+                                "Timezone is required when adding new people",
                             )
+
+                        if color is None:
+                            color = pygame.Color(
+                                (random.randint(0, 0xFFFFFF) << 8) | 0xFF
+                            )
+
                         timezones[member.id] = [timezone, utils.color_to_rgb_int(color)]
 
                     # sort timezones dict after an update operation
