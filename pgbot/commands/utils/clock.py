@@ -95,7 +95,7 @@ async def user_clock(t: float, clock_timezones: dict, guild: discord.Guild):
     Generate a 24 hour clock for special server roles
     """
     font_size = 58
-    names_per_column = 6
+    names_per_column = math.ceil(len(clock_timezones) / 2)
     image_height = 1280 + font_size * names_per_column
     image = pygame.Surface((1280, image_height)).convert_alpha()
     font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), font_size - 10)
@@ -136,7 +136,13 @@ async def user_clock(t: float, clock_timezones: dict, guild: discord.Guild):
         else:
             name = mem.name[:14]
 
-        color = pygame.Color(color)
+        if color > 0xFFFFFF:
+            # color has alpha component
+            color = pygame.Color(color)
+        else:
+            # fill in the alpha component
+            color = pygame.Color((color << 8) | 0xFF)
+
         if offset in tz_and_col:
             color = tz_and_col[offset]
         else:

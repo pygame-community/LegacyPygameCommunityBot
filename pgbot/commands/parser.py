@@ -93,7 +93,8 @@ class CodeBlock:
             self.lang = text[:newline_idx].strip().lower()
             text = text[newline_idx + 1 :]
 
-        self.code = text.strip().strip("\\")  # because \\ causes problems
+        # because \\ causes problems
+        self.code = text.strip().strip("\\").replace("\\`", "`")
 
 
 class String:
