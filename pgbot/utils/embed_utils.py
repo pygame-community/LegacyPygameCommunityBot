@@ -1010,12 +1010,12 @@ def validate_embed_dict(embed_dict: dict):
 
             elif k == "fields":
                 if isinstance(v, list):
-                    for i in reversed(range(len(v))):
+                    for d in v:
                         if (
-                            not isinstance(v, dict)
+                            not isinstance(d, dict)
                             or (
-                                "name" not in v[i]
-                                or "value" not in v[i]
+                                "name" not in d
+                                or "value" not in d
                             )
                         ):
                             return False
