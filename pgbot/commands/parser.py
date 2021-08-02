@@ -94,7 +94,7 @@ class CodeBlock:
             text = text[newline_idx + 1 :]
 
         # because \\ causes problems
-        self.code = text.strip().strip("\\").replace("\\`", "`")
+        self.code = text.strip().replace("\\`", "`").strip("\\")
 
 
 class String:
