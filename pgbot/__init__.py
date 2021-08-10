@@ -16,7 +16,7 @@ import sys
 import discord
 import pygame
 
-from pgbot import commands, common, db, emotion, routine
+from pgbot import commands, common, db, emotion, routine, tasks
 from pgbot.utils import embed_utils, utils
 
 
@@ -66,6 +66,8 @@ async def _init():
             for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
+
+    common.task_manager = tasks.core.BotTaskManager(*tasks.defaults.EXPORTS)
 
 
 async def init():

@@ -112,7 +112,7 @@ async def handle_console():
 @tasks.loop(seconds=3)
 async def routine():
     """
-    Function that gets called routinely. This function inturn, calles other
+    Function that gets called routinely, to call other
     routine functions to handle stuff
     """
     async with db.DiscordDB("reminders") as db_obj:
