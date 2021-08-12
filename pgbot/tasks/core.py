@@ -28,11 +28,29 @@ class TaskNamespace(SimpleNamespace):
 
 
 class BotTask:
+    def __init__(
+        self,
+        data: Optional[TaskNamespace] = None,
+    ):
+        self.manager = None
+        self.data = TaskNamespace() if data is None else data
+        self._is_waiting = False
+        self.task_loop = None
+
     async def error(self, exc: Exception):
         print(
             f"An Exception occured while running task {self.__class__}:\n\n",
             utils.format_code_exception(exc),
         )
+
+    def is_waiting(self):
+        return self._is_waiting
+
+    async def wait_for(self, coro):
+        self._is_waiting = True
+        result = await coro
+        self._is_waiting = False
+        return result
 
     def kill(self):
         self.task_loop.cancel()
@@ -41,7 +59,6 @@ class BotTask:
 
 
 class IntervalTask(BotTask):
-
     """Base class for interval based tasks.
     Subclasses are expected to override the class variables and the run(self, *args **kwargs) method.
     before_run(self) and after_run(self) and error(self, exc) can optionally be implemented.
@@ -52,19 +69,17 @@ class IntervalTask(BotTask):
     hours = 0
     count = None
     reconnect = True
-    loop = None
 
     def __init__(
         self,
-        manager: Optional[BotTaskManager] = None,
         seconds: Optional[int] = None,
         minutes: Optional[int] = None,
         hours: Optional[int] = None,
         count: Optional[int] = None,
         reconnect: Optional[bool] = None,
-        loop=None,
-        data: Optional[TaskNamespace] = None,
+        **kwargs,
     ):
+        super().__init__(**kwargs)
         self.instance_seconds = self.seconds if seconds is None else seconds
         self.instance_minutes = self.minutes if minutes is None else minutes
         self.instance_hours = self.hours if hours is None else hours
@@ -79,9 +94,6 @@ class IntervalTask(BotTask):
             reconnect=self.instance_reconnect,
         )(self.run)
 
-        self.manager = manager
-        self.data = TaskNamespace() if data is None else data
-
         if hasattr(self, "before_run"):
             self.task_loop.before_loop(self.before_run)
         if hasattr(self, "after_run"):
@@ -89,42 +101,42 @@ class IntervalTask(BotTask):
         if hasattr(self, "error"):
             self.task_loop.error(self.error)
 
-    async def run(self, *args, **kwargs):
+    async def run(self):
         pass
-
 
 class ClientEventTask(BotTask):
     event_classes = (events.ClientEvent,)
-    count = None
     reconnect = True
 
     def __init__(
         self,
-        manager: Optional[BotTaskManager] = None,
         count: Optional[int] = None,
+        manager: Optional[BotTaskManager] = None,
         reconnect: Optional[bool] = None,
-        data: Optional[TaskNamespace] = None,
+        **kwargs,
     ):
-        self.manager = manager
-        self.data = TaskNamespace() if data is None else data
+        super().__init__(**kwargs)
         self._event_queue = deque()
-        self.instance_count = self.count if count is None else count
         self.instance_reconnect = self.reconnect if reconnect is None else reconnect
 
+        self._is_waiting = False
+
         self.task_loop = tasks.loop(
-            seconds=0, count=self.instance_count, reconnect=self.instance_reconnect
+            seconds=0, reconnect=self.instance_reconnect
         )(self._run)
+
         if hasattr(self, "before_run"):
-            self.task_loop.before_loop(self.before_run)
+            self.task_loop.before_loop(getattr(self, "before_run"))
         if hasattr(self, "after_run"):
-            self.task_loop.after_loop(self.after_run)
+            self.task_loop.after_loop(getattr(self, "after_run"))
         if hasattr(self, "error"):
-            self.task_loop.error(self.error)
+            self.task_loop.error(getattr(self, "error"))
 
     def _add_event(self, event: events.ClientEvent):
-        self._event_queue.append(event)
-        if not self.task_loop.is_running():
-            self.task_loop.start()
+        if not self._is_waiting:
+            self._event_queue.append(event)
+            if not self.task_loop.is_running():
+                self.task_loop.start()
 
     def kill(self):
         self.task_loop.cancel()
@@ -136,9 +148,21 @@ class ClientEventTask(BotTask):
             self.task_loop.stop()
             return
 
+        elif self._is_waiting:
+            return
+
         return await self.run(self._event_queue.popleft())
 
-    async def run(self, event: events.ClientEvent, *args, **kwargs):
+    def is_waiting(self):
+        return self._is_waiting
+
+    async def wait_for(self, coro):
+        self._is_waiting = True
+        result = await coro
+        self._is_waiting = False
+        return result
+
+    async def run(self, event: events.ClientEvent):
         pass
 
 
@@ -146,6 +170,7 @@ class BotTaskManager:
     def __init__(self, *tasks: Union[ClientEventTask, IntervalTask]):
         self._client_event_task_pool = set()
         self._interval_task_pool = set()
+        self._seek_queue = deque()
         if tasks:
             self.add_tasks(*tasks)
 
@@ -182,7 +207,7 @@ class BotTaskManager:
                     task.task_loop.start()
 
     def __iter__(self):
-        return itertools.chain(self._client_event_task_pool, self._interval_task_pool)
+        return itertools.chain(tuple(self._client_event_task_pool), tuple(self._interval_task_pool))
 
     def add_task(self, task: Union[ClientEventTask, IntervalTask], start=True):
         is_client_event_task = False
@@ -232,12 +257,37 @@ class BotTaskManager:
             self.remove_task(task, cancel=cancel)
 
     async def dispatch_client_event(self, event: events.ClientEvent):
-        for i, client_event_task in enumerate(self._client_event_task_pool):
+        for i, client_event_task in enumerate(tuple(self._client_event_task_pool)):
             if isinstance(event, client_event_task.event_classes):
                 client_event_task._add_event(event)
-
             if i % 50:
                 await asyncio.sleep(0)
+
+
+        for i, seek_list in enumerate(tuple(self._seek_queue)):
+            if isinstance(event, seek_list[0]):
+                seek_list[1] = event
+            if i % 50:
+                await asyncio.sleep(0)
+
+    async def wait_for_client_event(
+        self,
+        event_classes: Union[events.ClientEvent, Iterable[events.ClientEvent]],
+        check: Optional[Callable[[events.ClientEvent], bool]] = None,
+    ):
+        seek_list = [event_classes, None]
+        self._seek_queue.append(seek_list)
+        check_is_callable = callable(check)
+
+        while seek_list[1] is None:
+            await asyncio.sleep(0)
+            if seek_list[1] is not None and (check_is_callable and check(seek_list[1])):
+                break
+            else:
+                seek_list[1] = None
+
+        self._seek_queue.remove(seek_list)
+        return seek_list[1]
 
     async def kill_all(self):
         for i, task in enumerate(

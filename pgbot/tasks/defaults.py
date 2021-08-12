@@ -13,7 +13,7 @@ from pgbot.tasks import events, core
 from pgbot.utils import embed_utils
 
 
-class MessagingTests(core.ClientEventTask):
+class MessagingTest1(core.ClientEventTask):
     event_classes = (events.OnMessageBase,)
 
     async def before_run(self):
@@ -88,4 +88,46 @@ class IntervalTaskTest(core.IntervalTask):
             await self.data.target_channel.send("*Are you annoyed yet?*")
 
 
-EXPORTS = (MessagingTests(),)
+class MessagingTest2(core.ClientEventTask):
+    event_classes = (events.OnMessage,)
+
+    async def before_run(self):
+        if "target_channel" not in self.data:
+            self.data.target_channel = common.guild.get_channel(822650791303053342)
+
+    async def run(self, event: events.OnMessage, *args, **kwargs):
+        if event.message.channel == self.data.target_channel:
+            if event.message.content.lower().startswith("hi"):
+                await self.data.target_channel.send("Hi, what's your name?")
+
+                author = event.message.author
+                user_name = None
+
+                check = lambda x: x.message.author == author and x.message.channel == self.data.target_channel and x.message.content
+
+                while user_name is None:
+                    name_event = await self.wait_for(self.manager.wait_for_client_event(events.OnMessage, check=check))
+                    user_name = name_event.message.content
+
+                await self.data.target_channel.send(
+                    f"Hi, {user_name}"
+                )
+
+class MessageTestSpawner(core.IntervalTask):
+    async def run(self):
+        self.manager.add_tasks(
+            MessagingTest2(data=core.TaskNamespace(target_channel=common.guild.get_channel(822650791303053342))),
+            MessagingTest2(data=core.TaskNamespace(target_channel=common.guild.get_channel(841726972841558056))),
+            MessagingTest2(data=core.TaskNamespace(target_channel=common.guild.get_channel(844492573912465408))),
+            MessagingTest2(data=core.TaskNamespace(target_channel=common.guild.get_channel(849259216195420170))),
+            MessagingTest2(data=core.TaskNamespace(target_channel=common.guild.get_channel(844492623636725820)))
+        )
+        self.kill()
+
+        
+
+
+
+EXPORTS = (
+MessageTestSpawner(),    
+)
