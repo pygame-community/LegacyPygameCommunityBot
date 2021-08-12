@@ -58,7 +58,7 @@ class _BotTask:
             self.manager.remove_task(self)
 
 
-class IntervalTask(BotTask):
+class IntervalTask(_BotTask):
     """Base class for interval based tasks.
     Subclasses are expected to override the class variables and the run(self, *args **kwargs) method.
     before_run(self) and after_run(self) and error(self, exc) can optionally be implemented.
@@ -104,14 +104,13 @@ class IntervalTask(BotTask):
     async def run(self):
         pass
 
-class ClientEventTask(BotTask):
+class ClientEventTask(_BotTask):
     event_classes = (events.ClientEvent,)
     reconnect = True
 
     def __init__(
         self,
         count: Optional[int] = None,
-        manager: Optional[BotTaskManager] = None,
         reconnect: Optional[bool] = None,
         **kwargs,
     ):
