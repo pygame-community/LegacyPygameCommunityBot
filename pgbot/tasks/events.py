@@ -17,11 +17,18 @@ from discord.ext import tasks
 
 
 class ClientEvent:
+    """The base class for all discord API websocket event wrapper objects."""
+
     def __init__(
         self, client: discord.Client = None, timestamp: datetime.datetime = None
     ):
         self.client = client
         self.timestamp = timestamp
+
+    def copy(self):
+        return self.__class__(**self.__dict__)
+
+    __copy__ = copy
 
 
 class OnReady(ClientEvent):
