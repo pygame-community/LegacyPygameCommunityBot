@@ -27,7 +27,7 @@ class TaskNamespace(SimpleNamespace):
         return k in self.__dict__
 
 
-class BotTask:
+class _BotTask:
     def __init__(
         self,
         data: Optional[TaskNamespace] = None,
@@ -291,7 +291,7 @@ class BotTaskManager:
 
     async def kill_all(self):
         for i, task in enumerate(
-            itertools.chain(self._client_event_task_pool, self._interval_task_pool)
+            itertools.chain(tuple(self._client_event_task_pool), tuple(self._interval_task_pool))
         ):
             task.task_loop.cancel()
             self.remove_task(task)
@@ -299,14 +299,14 @@ class BotTaskManager:
                 await asyncio.sleep(0)
 
     async def kill_all_interval_tasks(self):
-        for i, task in enumerate(self._interval_task_pool):
+        for i, task in enumerate(tuple(self._interval_task_pool)):
             task.task_loop.cancel()
             self.remove_task(task)
             if i % 50:
                 await asyncio.sleep(0)
 
     async def kill_all_client_event_tasks(self):
-        for i, task in enumerate(self._client_event_task_pool):
+        for i, task in enumerate(tuple(self._client_event_task_pool)):
             task.task_loop.cancel()
             self.remove_task(task)
             if i % 50:
