@@ -1080,7 +1080,7 @@ def clean_embed_dict(embed_dict: dict):
             if isinstance(v, list):
                 for i in reversed(range(len(v))):
                     if (
-                        not isinstance(v, dict)
+                        not isinstance(v[i], dict)
                         or (
                             "name" not in v[i]
                             or "value" not in v[i]
@@ -1091,7 +1091,7 @@ def clean_embed_dict(embed_dict: dict):
                 del embed_dict[k]
 
         elif k == "color":
-            embed_dict["color"] = min(max(0, embed_dict["color"]), 0xFFFFFF)
+            embed_dict["color"] = min(max(0, embed_dict["color"]), 0x1000000)
 
         elif k == "timestamp":
             try:

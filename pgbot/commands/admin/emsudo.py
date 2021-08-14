@@ -1172,7 +1172,7 @@ class EmsudoCommand(BaseCommand):
                     " or a `.json` file containing embed data.",
                 )
 
-            embed_data = await attachment_obj.read()
+            embed_data: bytes = await attachment_obj.read()
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
