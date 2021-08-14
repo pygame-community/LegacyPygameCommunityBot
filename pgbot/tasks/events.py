@@ -23,7 +23,9 @@ class ClientEvent:
         self, _client: discord.Client = None, _timestamp: datetime.datetime = None
     ):
         self._client = _client
-        self._timestamp = _timestamp or datetime.datetime.now().astimezone(datetime.timezone.utc)
+        self._timestamp = _timestamp or datetime.datetime.now().astimezone(
+            datetime.timezone.utc
+        )
 
     @property
     def timestamp(self):
@@ -62,7 +64,7 @@ class OnTyping(OnTypingBase):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, timestamp=when, **kwargs)
+        super().__init__(*args, _timestamp=when, **kwargs)
         self.channel = channel
         self.user = user
         self.when = when
@@ -503,20 +505,27 @@ class OnInviteCreate(_OnInviteLifeCycle):
 class OnInviteDelete(_OnInviteLifeCycle):
     pass
 
+
 class OnGroupBase(ClientEvent):
     pass
 
+
 class _OnGroupLifeCycle(OnGroupBase):
-    def __init__(self, channel: discord.GroupChannel, user: discord.User, *args, **kwargs):
+    def __init__(
+        self, channel: discord.GroupChannel, user: discord.User, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.channel = channel
         self.user = user
 
+
 class OnGroupJoin(_OnGroupLifeCycle):
     pass
 
+
 class OnGroupRemove(_OnGroupLifeCycle):
     pass
+
 
 class OnRelationshipBase(ClientEvent):
     pass
@@ -531,8 +540,10 @@ class _OnRelationshipLifeCycle(OnInviteBase):
 class OnRelationshipAdd(_OnRelationshipLifeCycle):
     pass
 
+
 class OnRelationshipRemove(_OnRelationshipLifeCycle):
     pass
+
 
 class OnRelationshipUpdate(OnRelationshipBase):
     def __init__(

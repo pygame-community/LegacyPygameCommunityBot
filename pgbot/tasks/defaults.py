@@ -152,6 +152,4 @@ class MessageTestSpawner(core.IntervalTask):
         self.kill()
 
 
-EXPORTS = (
-    MessageTestSpawner(),
-)
+EXPORTS = (MessageTestSpawner(),)
