@@ -19,6 +19,8 @@ import pygame
 from pgbot import commands, common, db, emotion, routine, tasks
 from pgbot.utils import embed_utils, utils
 
+common.task_manager = tasks.core.BotTaskManager()
+
 
 async def _init():
     """
@@ -67,7 +69,7 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    common.task_manager = tasks.core.BotTaskManager(*tasks.defaults.EXPORTS)
+    common.task_manager.add_tasks(*tasks.defaults.EXPORTS)
 
 
 async def init():

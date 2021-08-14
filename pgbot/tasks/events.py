@@ -14,15 +14,15 @@ from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 import discord
 from discord.ext import tasks
+from pgbot.common import bot
+
+client = bot
 
 
 class ClientEvent:
     """The base class for all discord API websocket event wrapper objects."""
 
-    def __init__(
-        self, _client: discord.Client = None, _timestamp: datetime.datetime = None
-    ):
-        self._client = _client
+    def __init__(self, _timestamp: datetime.datetime = None):
         self._timestamp = _timestamp or datetime.datetime.now().astimezone(
             datetime.timezone.utc
         )
@@ -148,13 +148,13 @@ class _OnRawReactionToggle(OnRawReactionBase):
         ):
             user = self.payload.member
         else:
-            user = self._client.get_user(self.payload.user_id)
+            user = client.get_user(self.payload.user_id)
             if not user:
-                user = await self._client.fetch_user(self.payload.user_id)
+                user = await client.fetch_user(self.payload.user_id)
             discord.Emoji
-            channel = self._client.get_channel(self.payload.channel_id)
+            channel = client.get_channel(self.payload.channel_id)
             if not channel:
-                channel = await self._client.fetch_channel(self.payload.channel_id)
+                channel = await client.fetch_channel(self.payload.channel_id)
 
             message = await channel.fetch_message(self.payload.message_id)
             partial_emoji = self.payload.emoji
@@ -168,9 +168,7 @@ class _OnRawReactionToggle(OnRawReactionBase):
                 raise LookupError("Cannot find reaction object.")
 
         if self.payload.event_type == "REACTION_ADD":
-            return OnReactionAdd(
-                reaction, user, _client=self._client, _timestamp=self._timestamp
-            )
+            return OnReactionAdd(reaction, user, _timestamp=self._timestamp)
         elif self.payload.event_type == "REACTION_REMOVE":
             return OnReactionRemove(
                 reaction, user, _client=self._client, _timestamp=self._timestamp
@@ -360,7 +358,7 @@ class OnMemberUpdate(OnMemberBase):
     def __init__(self, before: discord.Member, after: discord.Member, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
-        self.after = self.after
+        self.after = after
 
 
 class OnUserUpdate(ClientEvent):
