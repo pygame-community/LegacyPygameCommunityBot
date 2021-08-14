@@ -1048,7 +1048,7 @@ def clean_embed_dict(embed_dict: dict):
         elif k == "fields":
             if isinstance(v, list):
                 for i in reversed(range(len(v))):
-                    if not isinstance(v, dict) or (
+                    if not isinstance(v[i], dict) or (
                         "name" not in v[i] or "value" not in v[i]
                     ):
                         v.pop(i)
