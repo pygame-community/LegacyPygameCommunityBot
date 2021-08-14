@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 import datetime
-from typing import Any, Callable, Coroutine, Iterable, Sequence, Union
+from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 import discord
 from discord.ext import tasks
@@ -20,10 +20,14 @@ class ClientEvent:
     """The base class for all discord API websocket event wrapper objects."""
 
     def __init__(
-        self, client: discord.Client = None, timestamp: datetime.datetime = None
+        self, _client: discord.Client = None, _timestamp: datetime.datetime = None
     ):
-        self.client = client
-        self.timestamp = timestamp
+        self._client = _client
+        self._timestamp = _timestamp or datetime.datetime.now().astimezone(datetime.timezone.utc)
+
+    @property
+    def timestamp(self):
+        return self._timestamp
 
     def copy(self):
         return self.__class__(**self.__dict__)
@@ -142,13 +146,13 @@ class _OnRawReactionToggle(OnRawReactionBase):
         ):
             user = self.payload.member
         else:
-            user = self.client.get_user(self.payload.user_id)
+            user = self._client.get_user(self.payload.user_id)
             if not user:
-                user = await self.client.fetch_user(self.payload.user_id)
+                user = await self._client.fetch_user(self.payload.user_id)
             discord.Emoji
-            channel = self.client.get_channel(self.payload.channel_id)
+            channel = self._client.get_channel(self.payload.channel_id)
             if not channel:
-                channel = await self.client.fetch_channel(self.payload.channel_id)
+                channel = await self._client.fetch_channel(self.payload.channel_id)
 
             message = await channel.fetch_message(self.payload.message_id)
             partial_emoji = self.payload.emoji
@@ -157,14 +161,17 @@ class _OnRawReactionToggle(OnRawReactionBase):
             for msg_reaction in message.reactions:
                 if msg_reaction.emoji == partial_emoji:
                     reaction = msg_reaction
+                    break
+            else:
+                raise LookupError("Cannot find reaction object.")
 
         if self.payload.event_type == "REACTION_ADD":
             return OnReactionAdd(
-                reaction, user, client=self.client, timestamp=self.timestamp
+                reaction, user, _client=self._client, _timestamp=self._timestamp
             )
         elif self.payload.event_type == "REACTION_REMOVE":
             return OnReactionRemove(
-                reaction, user, client=self.client, timestamp=self.timestamp
+                reaction, user, _client=self._client, _timestamp=self._timestamp
             )
 
 
@@ -439,10 +446,10 @@ class OnGuildUnavailable(OnGuildAvailability):
     pass
 
 
-class OnGuildVoiceStateUpdate(OnGuildBase):
+class OnVoiceStateUpdate(OnGuildBase):
     def __init__(
         self,
-        member,
+        member: discord.Member,
         before: discord.VoiceState,
         after: discord.VoiceState,
         *args,
@@ -495,3 +502,45 @@ class OnInviteCreate(_OnInviteLifeCycle):
 
 class OnInviteDelete(_OnInviteLifeCycle):
     pass
+
+class OnGroupBase(ClientEvent):
+    pass
+
+class _OnGroupLifeCycle(OnGroupBase):
+    def __init__(self, channel: discord.GroupChannel, user: discord.User, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.channel = channel
+        self.user = user
+
+class OnGroupJoin(_OnGroupLifeCycle):
+    pass
+
+class OnGroupRemove(_OnGroupLifeCycle):
+    pass
+
+class OnRelationshipBase(ClientEvent):
+    pass
+
+
+class _OnRelationshipLifeCycle(OnInviteBase):
+    def __init__(self, relationship: discord.Relationship, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.relationship = relationship
+
+
+class OnRelationshipAdd(_OnRelationshipLifeCycle):
+    pass
+
+class OnRelationshipRemove(_OnRelationshipLifeCycle):
+    pass
+
+class OnRelationshipUpdate(OnRelationshipBase):
+    def __init__(
+        self,
+        before: discord.Relationship,
+        after: discord.Relationship,
+        *args,
+        **kwargs,
+    ):
+        self.before = before
+        self.after = after
