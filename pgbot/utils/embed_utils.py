@@ -989,34 +989,18 @@ def validate_embed_dict(embed_dict: dict):
             elif (
                 not v
                 or not isinstance(v, (str, list, dict, int))
-                or (
-                    k == "footer"
-                    and "text" not in v
-                )
-                or (
-                    k == "author"
-                    and "name" not in v
-                )
-                or (
-                    k in ("thumbnail", "image")
-                    and "url" not in v
-                )
-                or (
-                    k == "color" and
-                    not isinstance(v, int)
-                )
+                or (k == "footer" and "text" not in v)
+                or (k == "author" and "name" not in v)
+                or (k in ("thumbnail", "image") and "url" not in v)
+                or (k == "color" and not isinstance(v, int))
             ):
                 return False
 
             elif k == "fields":
                 if isinstance(v, list):
                     for d in v:
-                        if (
-                            not isinstance(d, dict)
-                            or (
-                                "name" not in d
-                                or "value" not in d
-                            )
+                        if not isinstance(d, dict) or (
+                            "name" not in d or "value" not in d
                         ):
                             return False
                 else:
@@ -1054,37 +1038,18 @@ def clean_embed_dict(embed_dict: dict):
         if (
             not v
             or not isinstance(v, (str, list, dict, int))
-            or (
-                k == "footer"
-                and (
-                    "text" not in v or
-                    not isinstance(v, dict)
-                )
-            )
-            or (
-                k == "author"
-                and "name" not in v
-            )
-            or (
-                k in ("thumbnail", "image")
-                and "url" not in v
-            )
-            or (
-                k == "color" and
-                not isinstance(v, int)
-            )
+            or (k == "footer" and ("text" not in v or not isinstance(v, dict)))
+            or (k == "author" and "name" not in v)
+            or (k in ("thumbnail", "image") and "url" not in v)
+            or (k == "color" and not isinstance(v, int))
         ):
             del embed_dict[k]
 
         elif k == "fields":
             if isinstance(v, list):
                 for i in reversed(range(len(v))):
-                    if (
-                        not isinstance(v, dict)
-                        or (
-                            "name" not in v[i]
-                            or "value" not in v[i]
-                        )
+                    if not isinstance(v[i], dict) or (
+                        "name" not in v[i] or "value" not in v[i]
                     ):
                         v.pop(i)
             else:

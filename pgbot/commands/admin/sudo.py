@@ -904,9 +904,7 @@ class SudoCommand(BaseCommand):
                 await asyncio.sleep(0)
 
             output_str += (
-                sep.join(
-                    f"{messages[j].id}" for j in range(end_idx + 1, msg_count)
-                )
+                sep.join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
                 + suffix
             )
 

@@ -962,20 +962,19 @@ class EmsudoCommand(BaseCommand):
                         "Not enough permissions",
                         "You do not have enough permissions to run this command with the specified arguments.",
                     )
-            
+
             if not i % 50:
                 await asyncio.sleep(0)
 
-
         msg_embed = msg.embeds[0]
-        target_embed_dicts = tuple( msg.embeds[0].to_dict() for msg in target_msgs )
+        target_embed_dicts = tuple(msg.embeds[0].to_dict() for msg in target_msgs)
         data_count = len(datas)
 
         load_embed = embed_utils.create(
             title="Your command is being processed:",
             fields=(("\u2800", "`...`", False),),
         )
-        
+
         for i, data in enumerate(datas):
             if data_count > 2 and not i % 3:
                 await embed_utils.edit_field_from_dict(
@@ -1189,7 +1188,7 @@ class EmsudoCommand(BaseCommand):
                     add_attributes=add_attributes,
                     edit_inner_fields=edit_inner_fields,
                 )
-            
+
             for i, msg in enumerate(target_msgs):
                 await embed_utils.edit_from_dict(
                     msg,
@@ -1201,7 +1200,11 @@ class EmsudoCommand(BaseCommand):
 
         else:
             for i, msg in enumerate(target_msgs):
-                await msg.edit(embed=discord.Embed.from_dict(embed_utils.clean_embed_dict(target_embed_dicts[i])))
+                await msg.edit(
+                    embed=discord.Embed.from_dict(
+                        embed_utils.clean_embed_dict(target_embed_dicts[i])
+                    )
+                )
 
         if data_count > 2:
             await embed_utils.edit_field_from_dict(
@@ -1214,7 +1217,7 @@ class EmsudoCommand(BaseCommand):
                 ),
                 0,
             )
-        
+
         try:
             await self.invoke_msg.delete()
             await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
