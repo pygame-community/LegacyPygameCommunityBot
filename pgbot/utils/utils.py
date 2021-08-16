@@ -368,10 +368,7 @@ def format_datetime(dt: Union[int, float, datetime.datetime], tformat: str = "f"
     if isinstance(dt, datetime.datetime):
         dt = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
 
-    if isinstance(dt, float):
-        dt = int(dt)
-
-    return f"<t:{dt}:{tformat}>"
+    return f"<t:{int(dt)}:{tformat}>"
 
 
 async def make_message_deletable(
