@@ -626,10 +626,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                         reference=msg_reference_id,
                                     ))
                             else:
-                                await embed_utils.send(
-                                    self.channel,
-                                    description=f"```\n{escaped_msg_content}```",
-                                )
+                                message_id_cache[msg.id] = (await destination.send(
+                                    embed=embed_utils.create(
+                                        color=0x36393F,
+                                        description=f"```\n{escaped_msg_content}```",
+                                    ),
+                                    reference=msg_reference_id,
+                                ))
 
                         if attached_files:
                             for i in range(len(attached_files)):
