@@ -23,9 +23,7 @@ class ClientEvent:
     """The base class for all discord API websocket event wrapper objects."""
 
     def __init__(self, _timestamp: datetime.datetime = None):
-        self._timestamp = _timestamp or datetime.datetime.now().astimezone(
-            datetime.timezone.utc
-        )
+        self._timestamp = _timestamp or datetime.datetime.utcnow()
 
     @property
     def timestamp(self):
@@ -171,7 +169,7 @@ class _OnRawReactionToggle(OnRawReactionBase):
             return OnReactionAdd(reaction, user, _timestamp=self._timestamp)
         elif self.payload.event_type == "REACTION_REMOVE":
             return OnReactionRemove(
-                reaction, user, _client=self._client, _timestamp=self._timestamp
+                reaction, user, _timestamp=self._timestamp
             )
 
 
