@@ -14,7 +14,7 @@ import os
 import platform
 import sys
 import traceback
-from typing import Callable, Iterable, Union
+from typing import Callable, Iterable, List, Optional, Union
 
 import discord
 import pygame
@@ -372,3 +372,39 @@ def format_datetime(dt: Union[int, float, datetime.datetime], tformat: str = "f"
         dt = int(dt)
 
     return f"<t:{dt}:{tformat}>"
+
+
+async def make_message_deletable(
+    *messages: discord.Message,
+    author: Optional[Union[discord.Member, discord.User]] = None,
+    timeout: int = 3600,
+    reaction: Union[str, discord.Emoji] = "❌",
+):
+
+    if not messages:
+        return
+
+    all_messages: List[discord.Message] = list(messages)
+    timeout = max(timeout, 10)
+    for message in all_messages:
+        await message.add_reaction(reaction)
+
+    while True:
+        try:
+            event = await common.bot.wait_for("raw_reaction_add", timeout=timeout)
+            if (
+                getattr(author, "id", event.user_id) == event.user_id
+                and str(event.emoji) == reaction
+            ):
+                for message in all_messages:
+                    if message.id == event.message_id:
+                        await message.delete()
+                        all_messages.remove(message)
+                        break
+
+            if not all_messages:
+                return
+
+        except asyncio.TimeoutError:
+            for message in all_messages:
+                await message.clear_reaction(reaction)

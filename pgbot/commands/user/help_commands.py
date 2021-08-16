@@ -188,9 +188,7 @@ class HelpCommand(BaseCommand):
         pygame.image.save(
             await clock.user_clock(t, timezones, self.get_guild()), f"temp{t}.png"
         )
-        common.cmd_logs[self.invoke_msg.id] = await self.channel.send(
-            file=discord.File(f"temp{t}.png")
-        )
+        await self.channel.send(file=discord.File(f"temp{t}.png"))
         os.remove(f"temp{t}.png")
 
         try:

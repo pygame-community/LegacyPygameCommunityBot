@@ -573,6 +573,13 @@ class BaseCommand:
                     raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
+        if not self.response_msg.reactions:
+            try:
+                await utils.make_message_deletable(
+                    self.response_msg, author=self.author
+                )
+            except discord.errors.NotFound:
+                pass
 
     async def handle_cmd(self):
         """
@@ -639,10 +646,12 @@ class BaseCommand:
             )
         except discord.NotFound:
             # response message was deleted, send a new message
-            await embed_utils.send(
+            self.response_msg = await embed_utils.send(
                 self.channel,
                 title=title,
                 description=msg,
                 color=0xFF0000,
                 footer_text=excname,
             )
+
+        await utils.make_message_deletable(self.response_msg, author=self.author)

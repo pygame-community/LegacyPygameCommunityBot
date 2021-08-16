@@ -348,7 +348,9 @@ class UserCommand(FunCommand, HelpCommand):
             pass
 
         embed = embed_utils.create_from_dict(embed_dict)
-        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+        msgs = [
+            await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+        ]
 
         if len(returned.text) > 1500:
             with io.StringIO(
@@ -356,7 +358,11 @@ class UserCommand(FunCommand, HelpCommand):
                 if len(returned.text) - 40 < self.filesize_limit
                 else returned.text[: self.filesize_limit - 40]
             ) as fobj:
-                await self.channel.send(file=discord.File(fobj, filename="output.txt"))
+                msgs.append(
+                    await self.channel.send(
+                        file=discord.File(fobj, filename="output.txt")
+                    )
+                )
 
         if file:
             file.close()
@@ -364,6 +370,7 @@ class UserCommand(FunCommand, HelpCommand):
         for extension in ("gif", "png"):
             if os.path.isfile(f"temp{tstamp}.{extension}"):
                 os.remove(f"temp{tstamp}.{extension}")
+        await utils.make_message_deletable(*msgs, author=self.author)
 
     @no_dm
     async def cmd_refresh(self, msg: discord.Message):
