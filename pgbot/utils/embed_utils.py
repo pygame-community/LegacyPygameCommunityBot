@@ -1143,6 +1143,7 @@ async def send(
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
+    reference: Optional[Union[discord.Message, discord.MessageReference]] = None
 ):
     """
     Sends an embed with a much more tight function. If the channel is
@@ -1165,7 +1166,7 @@ async def send(
         timestamp=timestamp,
     )
 
-    return await channel.send(embed=embed)
+    return await channel.send(embed=embed, reference=reference)
 
 
 async def replace(

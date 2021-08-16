@@ -435,6 +435,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             around=around,
         ).flatten()
 
+        message_id_cache = {}
+
         if not messages:
             raise BotException(
                 "Invalid time range",
@@ -449,17 +451,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             end_date = messages[-1].created_at
 
             if start_date == end_date:
-                msg = f"On {utils.format_datetime(start_date)}"
+                header_fields = ([f"On: {utils.format_datetime(start_date)}", "\u200b", True],)
             else:
-                msg = (
-                    f"From\n> {utils.format_datetime(start_date)}\n"
-                    f"To\n> {utils.format_datetime(end_date)}"
+                header_fields = (
+                    [f"From: {utils.format_datetime(start_date)}", "\u200b", True],
+                    [f"To: {utils.format_datetime(end_date)}", "\u200b", True]
                 )
 
             archive_header_msg_embed = embed_utils.create(
                 title=f"__Archive of `#{origin.name}`__",
-                description=f"\nAn archive of **{origin.mention}** "
-                f"({len(messages)} message(s))\n\n" + msg,
+                description=f"\nAn archive of **{origin.mention}**"
+                f"({len(messages)} message(s))\n\u200b",
+                fields=header_fields,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete",
             )
@@ -474,6 +477,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
+            msg: discord.Message
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
@@ -490,6 +494,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         0,
                     )
                 author = msg.author
+                msg_reference_id = None
+                if msg.reference and not isinstance(msg.reference, discord.DeletedReferencedMessage):
+                    msg_reference_id = message_id_cache.get(msg.reference.message_id)
+
                 await destination.trigger_typing()
 
                 fobj.seek(0)
@@ -511,20 +519,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             and i > 0
                             and messages[i - 1].author == author
                         ):
-                            # no author info or divider for mesmages next to each other sharing an author
+                            # no author info or divider for messages next to each other sharing an author
                             current_divider_str = None
                         else:
+                            msg_created_at = msg.created_at.strftime("%d %b %Y %H:%M")
                             author_embed = embed_utils.create(
-                                description=f"{author.mention}"
-                                f" (`{author.name}#{author.discriminator}`)\n"
-                                f"ID: `{author.id}`\u2800|\u2800**[View Original]({msg.jump_url})**",
+                                description=f"{author.mention} "
+                                f"[View Original]({msg.jump_url})",
                                 color=0x36393F,
-                                footer_text="\nISO Time: "
-                                f"{msg.created_at.replace(tzinfo=None).isoformat()}",
-                                timestamp=msg.created_at.replace(
-                                    tzinfo=datetime.timezone.utc
-                                ),
-                                footer_icon_url=str(author.avatar_url),
+                                author_name=f"{author.name}#{author.discriminator}  |  {msg_created_at}",
+                                author_icon_url=f"{author.avatar_url}"
                             )
 
                         if author_embed or current_divider_str:
@@ -543,8 +547,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         if (
                             msg_embed_dict
-                            and "type" in msg_embed_dict
-                            and msg_embed_dict["type"] == "gifv"
+                            and msg_embed_dict.get("type") == "gifv"
                         ):
                             msg_embed = None
 
@@ -556,10 +559,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 stop_idx = 2000 + 2000 * i
 
                                 if not i:
-                                    await destination.send(
+                                    message_id_cache[msg.id] = (await destination.send(
                                         content=msg.content[start_idx:stop_idx],
                                         allowed_mentions=no_mentions,
-                                    )
+                                        reference=msg_reference_id,
+                                    ))
                                 else:
                                     await destination.send(
                                         content=msg.content[start_idx:stop_idx],
@@ -581,12 +585,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 file=attached_files[0] if attached_files else None,
                             )
                         else:
-                            await destination.send(
+                            message_id_cache[msg.id] = (await destination.send(
                                 content=msg.content,
                                 embed=msg_embed,
                                 file=attached_files[0] if attached_files else None,
                                 allowed_mentions=no_mentions,
-                            )
+                                reference=msg_reference_id,
+                            ))
 
                     elif msg.type == discord.MessageType.pins_add:
                         await destination.send(
@@ -610,65 +615,46 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             await destination.trigger_typing()
                         await destination.send(embed=msg.embeds[i])
 
-                elif mode == 1:
-                    if msg.content:
-                        escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
-                        if len(msg.content) > 2000 or len(escaped_msg_content) > 2000:
-                            with io.StringIO(msg.content) as fobj:
+                elif mode == 1 or mode == 2:
+                    if mode == 1:
+                        if msg.content:
+                            escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
+                            if len(msg.content) > 2000 or len(escaped_msg_content) + 7 > 2000:
+                                with io.StringIO(msg.content) as fobj:
+                                    message_id_cache[msg.id] = (await destination.send(
+                                        file=discord.File(fobj, "messagedata.txt"),
+                                        reference=msg_reference_id,
+                                    ))
+                            else:
+                                message_id_cache[msg.id] = (await destination.send(
+                                    embed=embed_utils.create(
+                                        color=0x36393F,
+                                        description=f"```\n{escaped_msg_content}```",
+                                    ),
+                                    reference=msg_reference_id,
+                                ))
+
+                        if attached_files:
+                            for i in range(len(attached_files)):
                                 await destination.send(
-                                    file=discord.File(fobj, "messagedata.txt"),
+                                    content=f"**Message attachment** ({i + 1}):",
+                                    file=attached_files[i],
                                 )
-                        else:
-                            await embed_utils.send(
-                                self.channel,
-                                description="```\n{0}```".format(escaped_msg_content),
-                            )
+                    else:
+                        if msg.content:
+                            with io.StringIO(msg.content) as fobj2:
+                                message_id_cache[msg.id] = (await destination.send(
+                                    file=discord.File(fobj2, filename="messagedata.txt"),
+                                    allowed_mentions=no_mentions,
+                                    reference=msg_reference_id,
+                                ))
 
-                    if attached_files:
-                        for i in range(len(attached_files)):
-                            await destination.send(
-                                content=f"**Message attachment** ({i + 1}):",
-                                file=attached_files[i],
-                            )
-
-                    if msg.embeds:
-                        embed_data_fobjs = []
-                        for embed in msg.embeds:
-                            embed_data_fobj = io.StringIO()
-                            embed_utils.export_embed_data(
-                                embed.to_dict(),
-                                fp=embed_data_fobj,
-                                indent=4,
-                                as_json=True,
-                            )
-                            embed_data_fobj.seek(0)
-                            embed_data_fobjs.append(embed_data_fobj)
-
-                        for i in range(len(embed_data_fobjs)):
-                            await destination.send(
-                                content=f"**Message embed** ({i + 1}):",
-                                file=discord.File(
-                                    embed_data_fobjs[i], filename="embeddata.json"
-                                ),
-                            )
-
-                        for embed_data_fobj in embed_data_fobjs:
-                            embed_data_fobj.close()
-
-                elif mode == 2:
-                    if msg.content:
-                        with io.StringIO(msg.content) as fobj2:
-                            await destination.send(
-                                file=discord.File(fobj2, filename="messagedata.txt"),
-                                allowed_mentions=no_mentions,
-                            )
-
-                    if attached_files:
-                        for i in range(len(attached_files)):
-                            await destination.send(
-                                content=f"**Message attachment** ({i + 1}):",
-                                file=attached_files[i],
-                            )
+                        if attached_files:
+                            for i in range(len(attached_files)):
+                                await destination.send(
+                                    content=f"**Message attachment** ({i + 1}):",
+                                    file=attached_files[i],
+                                )
 
                     if msg.embeds:
                         embed_data_fobjs = []
