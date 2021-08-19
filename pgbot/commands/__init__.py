@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import io
 import sys
-from typing import Union
+from typing import Union, Optional
 
 import discord
 
@@ -42,6 +42,67 @@ def get_perms(mem: Union[discord.Member, discord.User]):
     return False, is_priv
 
 
+def add_command_to_log(
+    invoke_msg: discord.Message, response: Optional[discord.Message]
+):
+    """
+    Add a command to `common.cmd_logs`. Delete the least recent if there are
+    more than 100 commands in the log
+    """
+    common.cmd_logs[invoke_msg.id] = response
+    if len(common.cmd_logs) > 100:
+        del common.cmd_logs[list(common.cmd_logs.keys())[0]]
+
+
+async def handle_stop_command(
+    invoke_msg: discord.Message, response_msg: Optional[discord.Message]
+):
+    """
+    Handle the stop command that can shut down other people's test bot without
+    access to it.
+    """
+    splits = invoke_msg.content.strip().split(" ")
+    splits.pop(0)
+    try:
+        if splits:
+            for uid in map(utils.filter_id, splits):
+                if uid in common.TEST_USER_IDS:
+                    break
+            else:
+                return True
+
+    except ValueError:
+        if response_msg is None:
+            await embed_utils.send(
+                invoke_msg.channel,
+                title="Invalid arguments!",
+                description="All arguments must be integer IDs or member mentions",
+                color=0xFF0000,
+            )
+        else:
+            await embed_utils.replace(
+                response_msg,
+                title="Invalid arguments!",
+                description="All arguments must be integer IDs or member mentions",
+                color=0xFF0000,
+            )
+        return True
+
+    if response_msg is None:
+        await embed_utils.send(
+            invoke_msg.channel,
+            title="Stopping bot...",
+            description="Change da world,\nMy final message,\nGoodbye.",
+        )
+    else:
+        await embed_utils.replace(
+            response_msg,
+            title="Stopping bot...",
+            description="Change da world,\nMy final message,\nGoodbye.",
+        )
+    sys.exit(0)
+
+
 async def handle(invoke_msg: discord.Message, response_msg: discord.Message = None):
     """
     Handle a pg! command posted by a user
@@ -49,46 +110,8 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
     is_admin, is_priv = get_perms(invoke_msg.author)
 
     if is_admin and invoke_msg.content.startswith(f"{common.PREFIX}stop"):
-        splits = invoke_msg.content.strip().split(" ")
-        splits.pop(0)
-        try:
-            if splits:
-                for uid in map(utils.filter_id, splits):
-                    if uid in common.TEST_USER_IDS:
-                        break
-                else:
-                    return
-
-        except ValueError:
-            if response_msg is None:
-                await embed_utils.send(
-                    invoke_msg.channel,
-                    title="Invalid arguments!",
-                    description="All arguments must be integer IDs or member mentions",
-                    color=0xFF0000,
-                )
-            else:
-                await embed_utils.replace(
-                    response_msg,
-                    title="Invalid arguments!",
-                    description="All arguments must be integer IDs or member mentions",
-                    color=0xFF0000,
-                )
+        if await handle_stop_command(invoke_msg, response_msg):
             return
-
-        if response_msg is None:
-            await embed_utils.send(
-                invoke_msg.channel,
-                title="Stopping bot...",
-                description="Change da world,\nMy final message,\nGoodbye.",
-            )
-        else:
-            await embed_utils.replace(
-                response_msg,
-                title="Stopping bot...",
-                description="Change da world,\nMy final message,\nGoodbye.",
-            )
-        sys.exit(0)
 
     if (
         common.TEST_MODE
@@ -134,5 +157,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         else user.UserCommand(invoke_msg, response_msg)
     )
     cmd.is_priv = is_priv
+    add_command_to_log(invoke_msg, response_msg)
+
     await cmd.handle_cmd()
     return response_msg

@@ -710,10 +710,13 @@ class PagedEmbed:
                 if await self.check(event):
                     await self.handle_reaction(str(event.emoji))
 
-            except asyncio.TimeoutError:
+            except (asyncio.TimeoutError, discord.errors.NotFound):
                 self.killed = True
 
-        await self.message.clear_reactions()
+        try:
+            await self.message.clear_reactions()
+        except discord.errors.NotFound:
+            pass
 
 
 def parse_condensed_embed_list(embed_list: Union[list, tuple]):
@@ -1143,7 +1146,7 @@ async def send(
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
-    reference: Optional[Union[discord.Message, discord.MessageReference]] = None
+    reference: Optional[Union[discord.Message, discord.MessageReference]] = None,
 ):
     """
     Sends an embed with a much more tight function. If the channel is

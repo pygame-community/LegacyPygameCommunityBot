@@ -573,13 +573,6 @@ class BaseCommand:
                     raise KwargError(f"Received invalid keyword argument `{key}`", cmd)
 
         await func(*args, **kwargs)
-        if not self.response_msg.reactions:
-            try:
-                await utils.make_message_deletable(
-                    self.response_msg, author=self.author
-                )
-            except discord.errors.NotFound:
-                pass
 
     async def handle_cmd(self):
         """

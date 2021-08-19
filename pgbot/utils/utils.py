@@ -377,11 +377,22 @@ async def make_message_deletable(
     timeout: int = 3600,
     reaction: Union[str, discord.Emoji] = "❌",
 ):
+    """React to a message with `reaction` and if another user (or `author`, if set)
+    reacts to it with the same reaction, the message will be deleted. Has a timeout of
+    `timeout`, in seconds. After timeout the reactions are removed.
+
+    Args:
+        *messages: The messages to mark as "deletable"
+        author: The user who can delete the message. Defaults to None (everyone can delete it).
+        timeout : The timeout of the reactions. After this time is over, the message
+        wont be deletable. Defaults to 3600.
+        reaction: The emoji to react with. Defaults to "❌".
+    """
 
     if not messages:
         return
 
-    all_messages: List[discord.Message] = list(messages)
+    all_messages: list[discord.Message] = list(messages)
     timeout = max(timeout, 10)
     for message in all_messages:
         await message.add_reaction(reaction)
@@ -389,12 +400,15 @@ async def make_message_deletable(
     while True:
         try:
             event = await common.bot.wait_for("raw_reaction_add", timeout=timeout)
-            if (
-                getattr(author, "id", event.user_id) == event.user_id
-                and str(event.emoji) == reaction
-            ):
-                for message in all_messages:
-                    if message.id == event.message_id:
+            for message in all_messages:
+                if message.id == event.message_id:
+                    if event.member is not None and not event.member.bot:
+                        await message.remove_reaction(reaction, event.member)
+
+                    if (
+                        getattr(author, "id", event.user_id) == event.user_id
+                        and str(event.emoji) == reaction
+                    ):
                         await message.delete()
                         all_messages.remove(message)
                         break

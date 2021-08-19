@@ -12,6 +12,7 @@ import os
 import random
 import signal
 import sys
+from typing import Optional, Union
 
 import discord
 import pygame
@@ -118,6 +119,21 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     return title, fields
 
 
+async def make_cmd_deletable(
+    msg: Optional[discord.Message], author: Union[discord.Member, discord.User]
+):
+    """
+    Use `utils.make_message_deletable` to mark the message as deletable.
+    This function won't do anything if msg does not exist, is None, or
+    has reactions
+    """
+    if msg is not None and not msg.reactions:
+        try:
+            await utils.make_message_deletable(msg, author=author)
+        except discord.errors.NotFound:
+            pass
+
+
 async def member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
@@ -171,7 +187,7 @@ async def message_delete(msg: discord.Message):
 
     elif msg.author.id == common.bot.user.id:
         for log in common.cmd_logs.keys():
-            if common.cmd_logs[log].id is not None:
+            if common.cmd_logs[log] is not None:
                 if common.cmd_logs[log].id == msg.id:
                     common.cmd_logs[log] = None
                     return
@@ -203,7 +219,8 @@ async def message_edit(old: discord.Message, new: discord.Message):
     if new.content.startswith(common.PREFIX):
         try:
             if new.id in common.cmd_logs.keys():
-                await commands.handle(new, common.cmd_logs[new.id])
+                ret = await commands.handle(new, common.cmd_logs[new.id])
+                await make_cmd_deletable(ret, new.author)
         except discord.HTTPException:
             pass
 
@@ -270,13 +287,9 @@ async def handle_message(msg: discord.Message):
 
     if msg.content.startswith(common.PREFIX):
         ret = await commands.handle(msg)
-        if ret is not None:
-            common.cmd_logs[msg.id] = ret
-
-        if len(common.cmd_logs) > 100:
-            del common.cmd_logs[list(common.cmd_logs.keys())[0]]
 
         await emotion.update("bored", -10)
+        await make_cmd_deletable(ret, msg.author)
 
     elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
