@@ -756,7 +756,8 @@ class SudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
-        output_str = prefix.string
+        prefix, sep, suffix = prefix.string, sep.string, suffix.string
+        output_str = prefix
         destination = self.channel
 
         if pinned:
@@ -857,15 +858,15 @@ class SudoCommand(BaseCommand):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += sep.string.join(
+                output_str += sep.join(
                     messages[j].jump_url
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                "".join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
-                + suffix.string
+                sep.join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
+                + suffix
             )
 
         elif channel_ids:
@@ -875,18 +876,18 @@ class SudoCommand(BaseCommand):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += sep.string.join(
+                output_str += sep.join(
                     f"{messages[j].channel.id}/{messages[j].id}"
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                sep.string.join(
+                sep.join(
                     f"{messages[j].channel.id}/{messages[j].id}"
                     for j in range(end_idx + 1, msg_count)
                 )
-                + suffix.string
+                + suffix
             )
 
         else:
@@ -896,17 +897,15 @@ class SudoCommand(BaseCommand):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += sep.string.join(
+                output_str += sep.join(
                     f"{messages[j].id}"
                     for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                sep.string.join(
-                    f"{messages[j].id}" for j in range(end_idx + 1, msg_count)
-                )
-                + suffix.string
+                sep.join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
+                + suffix
             )
 
         with io.StringIO(output_str) as fobj:

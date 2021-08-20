@@ -16,13 +16,15 @@ import json
 import re
 from ast import literal_eval
 from collections.abc import Mapping
-from typing import Union, Optional, Any
+from typing import Iterable, Union, Optional, Any
 
 import black
 import discord
 from discord.embeds import EmptyEmbed
 
 from pgbot import common
+from pgbot.utils import utils
+from pgbot.commands.parser import BotException
 
 EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
     "provider": None,
@@ -537,7 +539,7 @@ class PagedEmbed:
         self,
         message: discord.Message,
         pages: list[discord.Embed],
-        caller: Optional[discord.Member] = None,
+        caller: Optional[Union[discord.Member, Iterable[discord.Member]]] = None,
         command: Optional[str] = None,
         start_page: int = 0,
     ):
@@ -554,8 +556,8 @@ class PagedEmbed:
             pages (list[discord.Embed]): The list of embeds to change
             pages between
 
-            caller (Optional[discord.Member]): The user that can control
-            the embed. Defaults to None (everyone can control it).
+            caller (Optional[discord.Member]): The user (or list of users) that can
+            control the embed. Defaults to None (everyone can control it).
 
             command (Optional[str]): Optional argument to support pg!refresh.
             Defaults to None.
@@ -582,6 +584,10 @@ class PagedEmbed:
             self.control_emojis["last"] = ("⏩", "Go to the last page")
 
         self.killed = False
+
+        if isinstance(caller, discord.Member):
+            caller = (caller,)
+
         self.caller = caller
 
         self.help_text = ""
@@ -597,31 +603,32 @@ class PagedEmbed:
 
     async def handle_reaction(self, reaction: str):
         """Handle a reaction."""
-        if reaction == self.control_emojis.get("next")[0]:
+        if reaction == self.control_emojis.get("next", ("",))[0]:
             await self.set_page(self.current_page + 1)
 
-        if reaction == self.control_emojis.get("prev")[0]:
+        if reaction == self.control_emojis.get("prev", ("",))[0]:
             await self.set_page(self.current_page - 1)
 
-        if reaction == self.control_emojis.get("first")[0]:
+        if reaction == self.control_emojis.get("first", ("",))[0]:
             await self.set_page(0)
 
-        if reaction == self.control_emojis.get("last")[0]:
+        if reaction == self.control_emojis.get("last", ("",))[0]:
             await self.set_page(len(self.pages) - 1)
 
-        if reaction == self.control_emojis.get("stop")[0]:
+        if reaction == self.control_emojis.get("stop", ("",))[0]:
             self.killed = True
 
-        if reaction == self.control_emojis.get("info")[0]:
+        if reaction == self.control_emojis.get("info", ("",))[0]:
             await self.show_info_page()
 
     async def show_info_page(self):
         """Create and show the info page."""
         self.is_on_info = not self.is_on_info
         if self.is_on_info:
-            info_page_embed = create(description=self.help_text)
-            footer = self.get_footer_text(self.current_page)
-            info_page_embed.set_footer(text=footer)
+            info_page_embed = create(
+                description=self.help_text,
+                footer_text=self.get_footer_text(self.current_page),
+            )
             await self.message.edit(embed=info_page_embed)
         else:
             await self.message.edit(embed=self.pages[self.current_page])
@@ -632,7 +639,7 @@ class PagedEmbed:
         self.current_page = num % len(self.pages)
         await self.message.edit(embed=self.pages[self.current_page])
 
-    async def setup(self):
+    async def _setup(self):
         if not self.pages:
             await replace(
                 self.message,
@@ -667,23 +674,33 @@ class PagedEmbed:
         return footer
 
     async def check(self, event):
-        """Check if the event from "raw_reaction_add" can be passed down to `handle_rection`"""
+        """Check if the event from `raw_reaction_add` can be passed down to `handle_rection`"""
+        if event.message_id != self.message.id:
+            return False
+
+        if event.member is None:
+            raise BotException(
+                "Paged embeds are not supported in DMs.",
+                "If you are seeing this in a public channel"
+                ", please report this as a bug.",
+            )
+
         if event.member.bot:
             return False
 
         await self.message.remove_reaction(str(event.emoji), event.member)
-        if self.caller and self.caller.id != event.user_id:
+        if self.caller:
+            for member in self.caller:
+                if member.id == event.user_id:
+                    return True
+
             for role in event.member.roles:
                 if not common.GENERIC and role.id in common.ServerConstants.ADMIN_ROLES:
-                    break
-            else:
-                return False
-
-        return event.message_id == self.message.id
+                    return True
 
     async def mainloop(self):
         """Start the mainloop. This checks for reactions and handles them."""
-        if not await self.setup():
+        if not await self._setup():
             return
 
         while not self.killed:
@@ -960,65 +977,83 @@ def validate_embed_dict(embed_dict: dict):
         return False
 
     embed_dict_len = len(embed_dict)
-    for k in tuple(embed_dict.keys()):
-        if (
-            embed_dict_len == 1
-            and (k == "color" or k == "timestamp")
-            or embed_dict_len == 2
-            and ("color" in embed_dict and "timestamp" in embed_dict)
-        ):
-            return False
-        elif (
-            not embed_dict[k]
-            or k == "footer"
-            and "text" not in embed_dict[k]
-            or k == "author"
-            and "name" not in embed_dict[k]
-            or k in ("thumbnail", "image")
-            and "url" not in embed_dict[k]
-        ):
-            return False
+    try:
+        for k, v in tuple(embed_dict.items()):
+            if (
+                embed_dict_len == 1
+                and (k == "color" or k == "timestamp")
+                or embed_dict_len == 2
+                and ("color" in embed_dict and "timestamp" in embed_dict)
+            ):
+                return False
+            elif (
+                not v
+                or not isinstance(v, (str, list, dict, int))
+                or (k == "footer" and "text" not in v)
+                or (k == "author" and "name" not in v)
+                or (k in ("thumbnail", "image") and "url" not in v)
+                or (k == "color" and not isinstance(v, int))
+            ):
+                return False
 
-        elif k == "fields":
-            for i in range(len(embed_dict["fields"])):
-                if (
-                    "name" not in embed_dict["fields"][i]
-                    or "value" not in embed_dict["fields"][i]
-                ):
+            elif k == "fields":
+                if isinstance(v, list):
+                    for d in v:
+                        if not isinstance(d, dict) or (
+                            "name" not in d or "value" not in d
+                        ):
+                            return False
+                else:
                     return False
 
-        elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
-            return False
-
-        elif k == "timestamp":
-            try:
-                datetime.datetime.fromisoformat(embed_dict[k])
-            except ValueError:
+            elif k == "color" and not 0 <= embed_dict["color"] <= 0xFFFFFF:
                 return False
+
+            elif k == "timestamp":
+                try:
+                    datetime.datetime.fromisoformat(embed_dict[k])
+                except ValueError:
+                    return False
+    except TypeError:
+        return False
 
     return True
 
 
 def clean_embed_dict(embed_dict: dict):
-    for k in tuple(embed_dict.keys()):
+    """
+    Cleans up an embed dictionary by deleting
+    invalid attributes that would cause
+    errors not related to a discord.HTTPException.
+
+    Args:
+        embed_dict: The target embed dictionary
+
+    Returns:
+        The same embed dictionary given as input
+
+    """
+
+    for k, v in tuple(embed_dict.items()):
         if (
-            not embed_dict[k]
-            or k == "footer"
-            and "text" not in embed_dict[k]
-            or k == "author"
-            and "name" not in embed_dict[k]
-            or k in ("thumbnail", "image")
-            and "url" not in embed_dict[k]
+            not v
+            or not isinstance(v, (str, list, dict, int))
+            or (k == "footer" and ("text" not in v or not isinstance(v, dict)))
+            or (k == "author" and "name" not in v)
+            or (k in ("thumbnail", "image") and "url" not in v)
+            or (k == "color" and not isinstance(v, int))
         ):
             del embed_dict[k]
 
         elif k == "fields":
-            for i in reversed(range(len(embed_dict["fields"]))):
-                if (
-                    "name" not in embed_dict["fields"][i]
-                    or "value" not in embed_dict["fields"][i]
-                ):
-                    embed_dict["fields"].pop(i)
+            if isinstance(v, list):
+                for i in reversed(range(len(v))):
+                    if not isinstance(v[i], dict) or (
+                        "name" not in v[i] or "value" not in v[i]
+                    ):
+                        v.pop(i)
+            else:
+                del embed_dict[k]
 
         elif k == "color":
             embed_dict["color"] = min(max(0, embed_dict["color"]), 0xFFFFFF)
@@ -1108,6 +1143,7 @@ async def send(
     footer_text: Optional[str] = EmptyEmbed,
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
+    reference: Optional[Union[discord.Message, discord.MessageReference]] = None
 ):
     """
     Sends an embed with a much more tight function. If the channel is
@@ -1130,7 +1166,7 @@ async def send(
         timestamp=timestamp,
     )
 
-    return await channel.send(embed=embed)
+    return await channel.send(embed=embed, reference=reference)
 
 
 async def replace(
@@ -1187,7 +1223,7 @@ async def edit(
     footer_icon_url: Optional[str] = EmptyEmbed,
     timestamp: Optional[str] = EmptyEmbed,
     add_attributes: bool = False,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
     Updates the changed attributes of the embed of a message with a
@@ -1210,7 +1246,7 @@ async def edit(
         timestamp=timestamp,
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1226,7 +1262,7 @@ async def edit(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
@@ -1273,15 +1309,24 @@ async def edit_from_dict(
     embed: discord.Embed,
     update_embed_dict: dict,
     add_attributes: bool = True,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
-    Edits the changed attributes of the embed of a message from a
-    dictionary with a much more tight function
+    Edits the attributes of a given embed from an embed
+    dictionary, and applies them as new embed to the message given as input.
+
+    Args:
+        message (discord.Message): The target message to apply the modified embed to.
+        embed (discord.Embed): The target embed to make a new, modified embed from.
+        update_embed_dict (dict): The embed dictionary used for modification.
+        add_attributes (bool): Whether the embed attributes in 'update_embed_dict'
+            should be added to the new modified embed if not present.
+        edit_inner_fields (bool): Whether to modify the 'fields' attribute of an embed
+        as one unit or to modify the embeds fields themselves, one by one.
     """
     old_embed_dict = embed.to_dict()
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1297,7 +1342,7 @@ async def edit_from_dict(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
@@ -1318,13 +1363,13 @@ def edit_dict_from_dict(
     old_embed_dict: dict,
     update_embed_dict: dict,
     add_attributes: bool = True,
-    inner_fields: bool = False,
+    edit_inner_fields: bool = False,
 ):
     """
     Edits the changed attributes of an embed dictionary using another
     dictionary
     """
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = {
                 str(i): old_embed_dict["fields"][i]
@@ -1340,7 +1385,7 @@ def edit_dict_from_dict(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
-    if inner_fields:
+    if edit_inner_fields:
         if "fields" in old_embed_dict:
             old_embed_dict["fields"] = [
                 old_embed_dict["fields"][i]
@@ -1794,8 +1839,6 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     """
     Get member info in a string, utility function for the embed functions
     """
-    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
-
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
     if hasattr(member, "nick") and member.display_name:
         member_nick = (
@@ -1810,21 +1853,13 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     else:
         member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
 
-    member_created_at_fdtime = member.created_at.astimezone(
-        tz=datetime.timezone.utc
-    ).strftime(datetime_format_str)
     member_created_at_info = (
-        f"*Created On*:\n`{member.created_at.isoformat()}`\n"
-        + f"> {member_created_at_fdtime}\n\n"
+        f"*Created On*:\n> {utils.format_datetime(member.created_at)}\n\n"
     )
 
     if isinstance(member, discord.Member) and member.joined_at:
-        member_joined_at_fdtime = member.joined_at.astimezone(
-            tz=datetime.timezone.utc
-        ).strftime(datetime_format_str)
         member_joined_at_info = (
-            f"*Joined On*:\n`{member.joined_at.isoformat()}`\n"
-            + f"> {member_joined_at_fdtime}\n\n"
+            f"*Joined On*:\n> {utils.format_datetime(member.joined_at)}\n\n"
         )
     else:
         member_joined_at_info = "*Joined On*: \n> `...`\n\n"
@@ -1888,26 +1923,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     """
     member: Union[discord.Member, discord.User] = msg.author
 
-    datetime_format_str = "`%a, %d %b %Y`\n> `%H:%M:%S (UTC)  `"
-    msg_created_at_fdtime = msg.created_at.astimezone(
-        tz=datetime.timezone.utc
-    ).strftime(datetime_format_str)
-
     msg_created_at_info = (
-        "\u200b\n"
-        if author
-        else ""
-        + f"*Created On:*\n`{msg.created_at.isoformat()}`\n"
-        + f"> {msg_created_at_fdtime}\n\n"
+        f"*Created On:*\n> {utils.format_datetime(msg.created_at)}\n\n"
     )
 
     if msg.edited_at:
-        msg_edited_at_fdtime = msg.edited_at.astimezone(
-            tz=datetime.timezone.utc
-        ).strftime(datetime_format_str)
         msg_edited_at_info = (
-            f"*Last Edited On*:\n`{msg.edited_at.isoformat()}`\n"
-            + f"> {msg_edited_at_fdtime}\n\n"
+            f"*Last Edited On*: \n> {utils.format_datetime(msg.edited_at)}\n\n"
         )
 
     else:
@@ -1936,14 +1958,15 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     if author:
         return create(
             title="__Message & Author Info__",
-            description="".join(
+            description="\n".join(
                 (
                     "__Text"
                     + (" (Shortened)" if len(msg.content) > 2000 else "")
                     + "__:",
-                    f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
+                    f"\n {msg.content[:2001]}" + "\n\n[...]"
                     if len(msg.content) > 2000
-                    else "\n\u2800",
+                    else msg.content,
+                    "\u2800",
                 )
             ),
             thumbnail_url=str(member.avatar_url),
@@ -1973,12 +1996,13 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         title="__Message Info__",
         author_name=f"{member.name}#{member.discriminator}",
         author_icon_url=str(member.avatar_url),
-        description="".join(
+        description="\n".join(
             (
                 "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
-                f"\n\n {msg.content[:2001]}" + "\n\n[...]\n\u2800"
+                f"\n {msg.content[:2001]}" + "\n[...]"
                 if len(msg.content) > 2000
-                else "\n\u2800",
+                else msg.content,
+                "\u2800",
             )
         ),
         fields=[

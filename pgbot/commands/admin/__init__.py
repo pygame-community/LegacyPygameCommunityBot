@@ -435,6 +435,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             around=around,
         ).flatten()
 
+        message_id_cache = {}
+
         if not messages:
             raise BotException(
                 "Invalid time range",
@@ -445,23 +447,22 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             messages.reverse()
 
         if show_header and not raw:
-            start_date = messages[0].created_at.replace(tzinfo=None)
-            end_date = messages[-1].created_at.replace(tzinfo=None)
-            start_date_str = start_date.strftime(datetime_format_str)
-            end_date_str = end_date.strftime(datetime_format_str)
+            start_date = messages[0].created_at
+            end_date = messages[-1].created_at
 
             if start_date == end_date:
-                msg = f"On `{start_date_str} | {start_date.isoformat()}`"
+                header_fields = ([f"On: {utils.format_datetime(start_date)}", "\u200b", True],)
             else:
-                msg = (
-                    f"From\n> `{start_date_str} | {start_date.isoformat()}`\n"
-                    + f"To\n> `{end_date_str} | {end_date.isoformat()}`"
+                header_fields = (
+                    [f"From: {utils.format_datetime(start_date)}", "\u200b", True],
+                    [f"To: {utils.format_datetime(end_date)}", "\u200b", True]
                 )
 
             archive_header_msg_embed = embed_utils.create(
                 title=f"__Archive of `#{origin.name}`__",
-                description=f"\nAn archive of **{origin.mention}** "
-                f"({len(messages)} message(s))\n\n" + msg,
+                description=f"\nAn archive of **{origin.mention}**"
+                f"({len(messages)} message(s))\n\u200b",
+                fields=header_fields,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete",
             )
@@ -476,6 +477,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
+            msg: discord.Message
             for i, msg in enumerate(
                 reversed(messages) if not oldest_first else messages
             ):
@@ -492,6 +494,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         0,
                     )
                 author = msg.author
+                msg_reference_id = None
+                if msg.reference and not isinstance(msg.reference, discord.DeletedReferencedMessage):
+                    msg_reference_id = message_id_cache.get(msg.reference.message_id)
+
                 await destination.trigger_typing()
 
                 fobj.seek(0)
@@ -513,20 +519,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             and i > 0
                             and messages[i - 1].author == author
                         ):
-                            # no author info or divider for mesmages next to each other sharing an author
+                            # no author info or divider for messages next to each other sharing an author
                             current_divider_str = None
                         else:
+                            msg_created_at = msg.created_at.strftime("%d %b %Y %H:%M")
                             author_embed = embed_utils.create(
-                                description=f"{author.mention}"
-                                f" (`{author.name}#{author.discriminator}`)\n"
-                                f"ID: `{author.id}`\u2800|\u2800**[View Original]({msg.jump_url})**",
+                                description=f"{author.mention} "
+                                f"[View Original]({msg.jump_url})",
                                 color=0x36393F,
-                                footer_text="\nISO Time: "
-                                f"{msg.created_at.replace(tzinfo=None).isoformat()}",
-                                timestamp=msg.created_at.replace(
-                                    tzinfo=datetime.timezone.utc
-                                ),
-                                footer_icon_url=str(author.avatar_url),
+                                author_name=f"{author.name}#{author.discriminator}  |  {msg_created_at}",
+                                author_icon_url=f"{author.avatar_url}"
                             )
 
                         if author_embed or current_divider_str:
@@ -545,8 +547,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
                         if (
                             msg_embed_dict
-                            and "type" in msg_embed_dict
-                            and msg_embed_dict["type"] == "gifv"
+                            and msg_embed_dict.get("type") == "gifv"
                         ):
                             msg_embed = None
 
@@ -558,10 +559,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 stop_idx = 2000 + 2000 * i
 
                                 if not i:
-                                    await destination.send(
+                                    message_id_cache[msg.id] = (await destination.send(
                                         content=msg.content[start_idx:stop_idx],
                                         allowed_mentions=no_mentions,
-                                    )
+                                        reference=msg_reference_id,
+                                    ))
                                 else:
                                     await destination.send(
                                         content=msg.content[start_idx:stop_idx],
@@ -583,12 +585,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 file=attached_files[0] if attached_files else None,
                             )
                         else:
-                            await destination.send(
+                            message_id_cache[msg.id] = (await destination.send(
                                 content=msg.content,
                                 embed=msg_embed,
                                 file=attached_files[0] if attached_files else None,
                                 allowed_mentions=no_mentions,
-                            )
+                                reference=msg_reference_id,
+                            ))
 
                     elif msg.type == discord.MessageType.pins_add:
                         await destination.send(
@@ -612,65 +615,46 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             await destination.trigger_typing()
                         await destination.send(embed=msg.embeds[i])
 
-                elif mode == 1:
-                    if msg.content:
-                        escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
-                        if len(msg.content) > 2000 or len(escaped_msg_content) > 2000:
-                            with io.StringIO(msg.content) as fobj:
+                elif mode == 1 or mode == 2:
+                    if mode == 1:
+                        if msg.content:
+                            escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
+                            if len(msg.content) > 2000 or len(escaped_msg_content) + 7 > 2000:
+                                with io.StringIO(msg.content) as fobj:
+                                    message_id_cache[msg.id] = (await destination.send(
+                                        file=discord.File(fobj, "messagedata.txt"),
+                                        reference=msg_reference_id,
+                                    ))
+                            else:
+                                message_id_cache[msg.id] = (await destination.send(
+                                    embed=embed_utils.create(
+                                        color=0x36393F,
+                                        description=f"```\n{escaped_msg_content}```",
+                                    ),
+                                    reference=msg_reference_id,
+                                ))
+
+                        if attached_files:
+                            for i in range(len(attached_files)):
                                 await destination.send(
-                                    file=discord.File(fobj, "messagedata.txt"),
+                                    content=f"**Message attachment** ({i + 1}):",
+                                    file=attached_files[i],
                                 )
-                        else:
-                            await embed_utils.send(
-                                self.channel,
-                                description="```\n{0}```".format(escaped_msg_content),
-                            )
+                    else:
+                        if msg.content:
+                            with io.StringIO(msg.content) as fobj2:
+                                message_id_cache[msg.id] = (await destination.send(
+                                    file=discord.File(fobj2, filename="messagedata.txt"),
+                                    allowed_mentions=no_mentions,
+                                    reference=msg_reference_id,
+                                ))
 
-                    if attached_files:
-                        for i in range(len(attached_files)):
-                            await destination.send(
-                                content=f"**Message attachment** ({i + 1}):",
-                                file=attached_files[i],
-                            )
-
-                    if msg.embeds:
-                        embed_data_fobjs = []
-                        for embed in msg.embeds:
-                            embed_data_fobj = io.StringIO()
-                            embed_utils.export_embed_data(
-                                embed.to_dict(),
-                                fp=embed_data_fobj,
-                                indent=4,
-                                as_json=True,
-                            )
-                            embed_data_fobj.seek(0)
-                            embed_data_fobjs.append(embed_data_fobj)
-
-                        for i in range(len(embed_data_fobjs)):
-                            await destination.send(
-                                content=f"**Message embed** ({i + 1}):",
-                                file=discord.File(
-                                    embed_data_fobjs[i], filename="embeddata.json"
-                                ),
-                            )
-
-                        for embed_data_fobj in embed_data_fobjs:
-                            embed_data_fobj.close()
-
-                elif mode == 2:
-                    if msg.content:
-                        with io.StringIO(msg.content) as fobj2:
-                            await destination.send(
-                                file=discord.File(fobj2, filename="messagedata.txt"),
-                                allowed_mentions=no_mentions,
-                            )
-
-                    if attached_files:
-                        for i in range(len(attached_files)):
-                            await destination.send(
-                                content=f"**Message attachment** ({i + 1}):",
-                                file=attached_files[i],
-                            )
+                        if attached_files:
+                            for i in range(len(attached_files)):
+                                await destination.send(
+                                    content=f"**Message attachment** ({i + 1}):",
+                                    file=attached_files[i],
+                                )
 
                     if msg.embeds:
                         embed_data_fobjs = []
@@ -1267,7 +1251,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         description = (
             f"Server Name: `{guild.name}`\n"
             f"Server ID: `{guild.id}`\n"
-            f"Created At: `{guild.created_at.strftime('%a %b %d %Y, %I:%M:%S %p')} UTC`\n"
+            f"Created At: {utils.format_datetime(guild.created_at)}\n"
         )
 
         description += f"Number of Members: `{guild.member_count}`\n"
@@ -1286,9 +1270,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 f"Number of Server Boosts: `{guild.premium_subscription_count}`\n"
             )
 
-        description += (
-            f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
-        )
+        if guild.owner is not None:
+            description += (
+                f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
+            )
 
         kwargs = {
             "title": f"Server information for {guild.name}:",
@@ -1335,6 +1320,174 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await self.response_msg.delete()
         except discord.NotFound:
             pass
+
+    @no_dm
+    async def cmd_browse(
+        self,
+        channel: discord.TextChannel,
+        quantity: Optional[int] = None,
+        before: Optional[Union[discord.Message, datetime.datetime]] = None,
+        after: Optional[Union[discord.Message, datetime.datetime]] = None,
+        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        controllers: Optional[tuple[discord.Member, ...]] = None,
+    ):
+        """
+        ->type More admin commands
+        ->signature pg!browse <channel> [quantity=] [before=] [after=] [around=] [controllers=]
+        ->description Browse through Discord messages
+
+        ->extended description
+        Function to help browse through discord messages
+
+        __Args__:
+            `channel: discord.TextChannel`
+            > The discord channel to browse the messages from.
+
+            `quantity: Optional[int]`
+            > The number of messages to get
+
+            `before: Optional[Time | Message]`
+            > The message or time before which the messages should be shown.
+
+            `after: Optional[Time | Message]`
+            > The message or time after which the messages should be shown.
+
+            `around: Optional[Time | Message]`
+            > The message or time around which the messages should be shown.
+
+            `controllers: Optional[User | tuple[user]]`
+            > The user(s) who can control the embed.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        -----
+        """
+        # needed for typecheckers to know that self.author is a member
+        if isinstance(self.author, discord.User):
+            return
+
+        if not utils.check_channel_permissions(
+            self.author,
+            channel,
+            permissions=("view_channel",),
+        ):
+            raise BotException(
+                f"Not enough permissions",
+                "You do not have enough permissions to run this command on the specified channel(s).",
+            )
+
+        if not (before and after) and quantity is None:
+            raise BotException(
+                "Missing argument.",
+                "Argument quantity must be specified.",
+            )
+
+        if isinstance(before, discord.Message) and before.channel.id != channel.id:
+            raise BotException(
+                "Invalid `before` argument",
+                "`before` has to be an ID to a message from the origin channel",
+            )
+
+        if isinstance(after, discord.Message) and after.channel.id != channel.id:
+            raise BotException(
+                "Invalid `after` argument",
+                "`after` has to be an ID to a message from the origin channel",
+            )
+
+        if isinstance(around, discord.Message) and around.channel.id != channel.id:
+            raise BotException(
+                "Invalid `around` argument",
+                "`around` has to be an ID to a message from the origin channel",
+            )
+
+        if quantity is not None:
+            if quantity <= 0:
+                if quantity == 0 and not after:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "`quantity` must be above 0 when `after=` is not specified.",
+                    )
+                elif quantity != 0:
+                    raise BotException(
+                        "Invalid `quantity` argument",
+                        "Quantity has to be a positive integer (or `0` when `after=` is specified).",
+                    )
+            elif quantity > common.BROWSE_MESSAGE_LIMIT:
+                raise BotException(
+                    "Too many messages",
+                    f"{quantity} messages are more than the maximum allowed"
+                    f" ({common.BROWSE_MESSAGE_LIMIT}).",
+                )
+
+        messages = await channel.history(
+            limit=quantity if quantity != 0 else None,
+            before=before,
+            after=after,
+            around=around,
+        ).flatten()
+
+        if not messages:
+            raise BotException(
+                "Invalid time range",
+                "No messages were found for the specified timestamps.",
+            )
+        if len(messages) > common.BROWSE_MESSAGE_LIMIT:
+            raise BotException(
+                "Too many messages",
+                f"{len(messages)} messages are more than the maximum allowed"
+                f" ({common.BROWSE_MESSAGE_LIMIT}).",
+            )
+
+        if not after:
+            messages.reverse()
+
+        pages = []
+        for message in messages:
+            desc = message.system_content
+            if desc is None:
+                desc = message.content
+
+            if message.embeds:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message contains an embed*"
+
+            if message.attachments:
+                if desc:
+                    desc += f"\n{common.ZERO_SPACE}\n"
+                desc += "*Message has one or more attachments*"
+
+            desc += "\n**━━━━━━━━━━━━**"
+
+            if message.edited_at:
+                desc += f"\n Last edited on {utils.format_datetime(message.edited_at)}"
+            else:
+                desc += f"\n Sent on {utils.format_datetime(message.created_at)}"
+
+            if message.reference:
+                desc += f"\nReplying to [this]({message.reference.jump_url}) message"
+
+            desc += f"\nLink to [Original message]({message.jump_url})"
+            desc += "\n**━━━━━━━━━━━━**"
+
+            embed = embed_utils.create(
+                author_icon_url=message.author.avatar,
+                author_name=message.author.display_name,
+                description=desc,
+            )
+            pages.append(embed)
+
+        if controllers:
+            controllers = controllers + (self.author,)
+        else:
+            controllers = self.author
+
+        browse_embed = embed_utils.PagedEmbed(
+            self.response_msg, pages, controllers, self.cmd_str, self.page
+        )
+
+        await browse_embed.mainloop()
 
     async def cmd_feature(
         self, name: str, *channels: common.Channel, disable: bool = True
