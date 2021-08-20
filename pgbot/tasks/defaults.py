@@ -9,7 +9,7 @@ This file includes task classes that run at bot startup.
 import discord
 
 from pgbot import common
-from pgbot.tasks import events, core
+from pgbot.tasks import events, core, util
 from pgbot.utils import embed_utils
 
 
@@ -124,27 +124,27 @@ class MessageTestSpawner(core.IntervalTask):
     async def run(self):
         self.manager.add_tasks(
             MessagingTest2(
-                data=core.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(822650791303053342)
                 )
             ),
             MessagingTest2(
-                data=core.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(841726972841558056)
                 )
             ),
             MessagingTest2(
-                data=core.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(844492573912465408)
                 )
             ),
             MessagingTest2(
-                data=core.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(849259216195420170)
                 )
             ),
             MessagingTest2(
-                data=core.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(844492623636725820)
                 )
             ),
@@ -152,4 +152,12 @@ class MessageTestSpawner(core.IntervalTask):
         self.kill()
 
 
-EXPORTS = (MessageTestSpawner(),)
+EXPORTS = (
+    core.DelayTask(
+        10.0,
+        util.messaging.SendMessage(
+            channel_id=822650791303053342, content="This will only happen once."
+        ),
+    ),
+    MessageTestSpawner(),
+)

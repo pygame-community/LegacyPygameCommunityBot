@@ -24,7 +24,7 @@ from pgbot.tasks import events
 
 class TaskNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by bot task objects
-    to store instance specific data.
+    to store instance-specific data.
     """
 
     def __contains__(self, k: str):
@@ -36,13 +36,28 @@ class _BotTask:
 
     def __init__(
         self,
-        data: Optional[TaskNamespace] = None,
+        task_data: Optional[TaskNamespace] = None,
     ):
         self.manager = None
         self.created = datetime.datetime.now().astimezone(datetime.timezone.utc)
-        self.data = TaskNamespace() if data is None else data
+        self.data = (
+            TaskNamespace()
+            if task_data is None
+            else TaskNamespace(**task_data.__dict__)
+        )
         self._is_waiting = False
         self._task_loop = None
+
+    def setup(self, **kwargs):
+        """This method allows subclasses to define specific
+        keyword arguments that get added to their `.data` namespace
+        as variables.
+
+        Returns:
+            This task object.
+        """
+        self.data.__dict__.update(**kwargs)
+        return self
 
     async def error(self, exc: Exception):
         print(
@@ -76,16 +91,24 @@ class _BotTask:
         return result
 
     def kill(self):
-        """Stop this task object and remove it from its bot task manager."""
+        """Stops this task object and removes it from its `BotTaskManager`."""
         self._task_loop.cancel()
         if self.manager is not None:
             self.manager.remove_task(self)
 
+    def is_running(self):
+        """Whether this task is currently running.
+
+        Returns:
+            bool: True/False
+        """
+        return self._task_loop.is_running()
+
 
 class IntervalTask(_BotTask):
     """Base class for interval based tasks.
-    Subclasses are expected to override the run(self) method.
-    before_run(self) and after_run(self) and error(self, exc) can optionally be implemented.
+    Subclasses are expected to override the `run()` method.
+    `before_run()` and `after_run()` and `error(exc)` can optionally be implemented.
 
     One can override the class variables `default_seconds`, `default_minutes`,
     `default_hours`, `default_count` and `default_reconnect` in subclasses. They are derived
@@ -94,7 +117,7 @@ class IntervalTask(_BotTask):
     created from them.
     Each interval task object can recieve a `data=` keyword argument during initiation, which takes
     a `TaskNamespace()` object as input, which may be used to customize task behavior at runtime, by
-    overriding the default namespace object in `.data`.
+    overriding the default namespace object in `.data`, which is the namespace to store bot information.
 
 
     Attributes:
@@ -209,8 +232,30 @@ class IntervalTask(_BotTask):
 
 
 class ClientEventTask(_BotTask):
+    """A task class for tasks that run in reaction to specific client events
+    (Discord API events) passed to them by their BotTaskManager object.
+    Subclasses are expected to override the `run(self, event)` method.
+    `before_run(self)` and `after_run(self)` and `error(self, exc)` can
+    optionally be implemented.
+    One can also override the class variables `default_count` and `default_reconnect`
+    in subclasses. They are derived from the keyword arguments of the
+    `discord.ext.tasks.loop` decorator. Unlike `IntervalTask` class instances,
+    the instances of this class depend on their `BotTaskManager` to trigger
+    the execution of their `.run()` method, and will stop running if
+    all ClientEvent objects passed to them have been processed.
+
+    Attributes:
+        EVENT_TYPES:
+            A tuple denoting the set of `ClientEvent` classes whose instances
+            should be recieved after their corresponding event is registered
+            by the `BotTaskManager` of an instance of this class.
+
+        data: A namespace object that is used by task objects to hold data.
+    """
+
     EVENT_TYPES = (events.ClientEvent,)
     default_reconnect = True
+    default_count = None
 
     def __init__(
         self,
@@ -220,10 +265,10 @@ class ClientEventTask(_BotTask):
     ):
         super().__init__(**kwargs)
         self._event_queue = deque()
+        self._count = self.default_count if count is None else count
+        self._current_loop = 0
         self._reconnect = self.default_reconnect if reconnect is None else reconnect
-
         self._is_waiting = False
-
         self._task_loop = tasks.loop(reconnect=self._reconnect)(self._run)
 
         if hasattr(self, "before_run"):
@@ -240,13 +285,14 @@ class ClientEventTask(_BotTask):
                 self._task_loop.start()
 
     async def _run(self):
-        if not self._event_queue:
+        if not self._event_queue or self._current_loop == self._count:
             self._task_loop.stop()
             return
 
         elif self._is_waiting:
             return
 
+        self._current_loop += 1
         return await self.run(self._event_queue.popleft())
 
     async def run(self, event: events.ClientEvent):
@@ -271,6 +317,51 @@ class ClientEventTask(_BotTask):
             Any: The result of the given coroutine.
         """
         return await super().wait_for(coro)
+
+
+class SingletonTask(IntervalTask):
+    """A subclass of `IntervalTask` whose subclasses's
+    task objects will only run once, before stopping
+    automatically.
+    """
+
+    def __init__(self, task_data: Optional[TaskNamespace] = None, **kwargs):
+        super().__init__(count=1, task_data=task_data)
+
+
+class DelayTask(SingletonTask):
+    """A subclass of `IntervalTask` that
+    adds a given set of task objects to its `BotTaskManager`
+    only after a given period of time in seconds.
+
+    Attributes:
+        delay (float):
+            The delay for the input tasks in seconds.
+    """
+
+    def __init__(
+        self, delay: float, *tasks: Union[ClientEventTask, IntervalTask], **kwargs
+    ):
+        """Create a new DelayTask instance.
+
+        Args:
+            delay (float):
+                The delay for the input tasks in seconds.
+            *tasks Union[ClientEventTask, IntervalTask]:
+                The tasks to be delayed.
+        """
+        super().__init__(**kwargs)
+        self.data.delay = delay
+        self.data.tasks = tasks
+
+    async def before_run(self):
+        await asyncio.sleep(self.data.delay)
+
+    async def run(self):
+        self.manager.add_tasks(*self.data.tasks)
+
+    async def after_run(self):
+        self.kill()
 
 
 class BotTaskManager:

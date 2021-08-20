@@ -168,9 +168,7 @@ class _OnRawReactionToggle(OnRawReactionBase):
         if self.payload.event_type == "REACTION_ADD":
             return OnReactionAdd(reaction, user, _timestamp=self._timestamp)
         elif self.payload.event_type == "REACTION_REMOVE":
-            return OnReactionRemove(
-                reaction, user, _timestamp=self._timestamp
-            )
+            return OnReactionRemove(reaction, user, _timestamp=self._timestamp)
 
 
 class OnReactionAdd(_OnReactionToggle):
