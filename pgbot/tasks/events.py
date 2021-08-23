@@ -26,7 +26,7 @@ class ClientEvent:
         self._timestamp = _timestamp or datetime.datetime.utcnow()
 
     @property
-    def timestamp(self):
+    def created(self):
         return self._timestamp
 
     def copy(self):
@@ -62,7 +62,7 @@ class OnTyping(OnTypingBase):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, _timestamp=when, **kwargs)
+        super().__init__(_timestamp=when)
         self.channel = channel
         self.user = user
         self.when = when

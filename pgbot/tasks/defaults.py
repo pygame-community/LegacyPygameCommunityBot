@@ -9,11 +9,11 @@ This file includes task classes that run at bot startup.
 import discord
 
 from pgbot import common
-from pgbot.tasks import events, core, util
+from pgbot.tasks import events, base, util
 from pgbot.utils import embed_utils
 
 
-class MessagingTest1(core.ClientEventTask):
+class MessagingTest1(base.ClientEventTask):
     EVENT_TYPES = (events.OnMessageBase,)
 
     async def before_run(self):
@@ -72,7 +72,7 @@ class MessagingTest1(core.ClientEventTask):
                 )
 
 
-class IntervalTaskTest(core.IntervalTask):
+class IntervalTaskTest(base.IntervalTask):
     default_seconds = 10
 
     async def before_run(self):
@@ -88,63 +88,65 @@ class IntervalTaskTest(core.IntervalTask):
             await self.data.target_channel.send("*Are you annoyed yet?*")
 
 
-class MessagingTest2(core.ClientEventTask):
+class MessagingTest2(base.ClientEventTask):
     EVENT_TYPES = (events.OnMessage,)
 
     async def before_run(self):
         if "target_channel" not in self.data:
             self.data.target_channel = common.guild.get_channel(822650791303053342)
 
+    def check(self, event: events.ClientEvent):
+        return event.message.channel.id == self.data.target_channel.id
+
     async def run(self, event: events.OnMessage, *args, **kwargs):
-        if event.message.channel == self.data.target_channel:
-            if event.message.content.lower().startswith("hi"):
-                await self.data.target_channel.send("Hi, what's your name?")
+        if event.message.content.lower().startswith("hi"):
+            await self.data.target_channel.send("Hi, what's your name?")
 
-                author = event.message.author
-                user_name = None
+            author = event.message.author
+            user_name = None
 
-                check = (
-                    lambda x: x.message.author == author
-                    and x.message.channel == self.data.target_channel
-                    and x.message.content
-                )
+            check = (
+                lambda x: x.message.author == author
+                and x.message.channel == self.data.target_channel
+                and x.message.content
+            )
 
-                while user_name is None:
-                    name_event = await self.wait_for(
-                        self.manager.wait_for_client_event(
-                            events.OnMessage, check=check
-                        )
+            while user_name is None:
+                name_event = await self.wait_for(
+                    self.manager.wait_for_client_event(
+                        events.OnMessage, check=check
                     )
-                    user_name = name_event.message.content
+                )
+                user_name = name_event.message.content
 
-                await self.data.target_channel.send(f"Hi, {user_name}")
+            await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MessageTestSpawner(core.IntervalTask):
+class MessageTestSpawner(base.IntervalTask):
     async def run(self):
         self.manager.add_tasks(
             MessagingTest2(
-                task_data=core.TaskNamespace(
+                task_data=base.TaskNamespace(
                     target_channel=common.guild.get_channel(822650791303053342)
                 )
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
+                task_data=base.TaskNamespace(
                     target_channel=common.guild.get_channel(841726972841558056)
                 )
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
+                task_data=base.TaskNamespace(
                     target_channel=common.guild.get_channel(844492573912465408)
                 )
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
+                task_data=base.TaskNamespace(
                     target_channel=common.guild.get_channel(849259216195420170)
                 )
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
+                task_data=base.TaskNamespace(
                     target_channel=common.guild.get_channel(844492623636725820)
                 )
             ),
@@ -153,9 +155,9 @@ class MessageTestSpawner(core.IntervalTask):
 
 
 EXPORTS = (
-    core.DelayTask(
+    base.DelayTask(
         10.0,
-        util.messaging.SendMessage(
+        util.messaging.MessageSend(
             channel_id=822650791303053342, content="This will only happen once."
         ),
     ),

@@ -59,6 +59,17 @@ class _BotTask:
         self.data.__dict__.update(**kwargs)
         return self
 
+    async def before_run(self):
+        """A method subclasses can use to initialize their task objects
+        when their internal task loops start.
+        """
+        pass
+
+    async def after_run(self):
+        """A method subclasses can use to initialize their task objects
+        when their internal task loops end.
+        """
+
     async def error(self, exc: Exception):
         print(
             f"An Exception occured while running task {self.__class__}:\n\n",
@@ -173,12 +184,9 @@ class IntervalTask(_BotTask):
             loop=None,
         )
 
-        if hasattr(self, "before_run"):
-            self._task_loop.before_loop(getattr(self, "before_run"))
-        if hasattr(self, "after_run"):
-            self._task_loop.after_loop(getattr(self, "after_run"))
-        if hasattr(self, "error"):
-            self._task_loop.error(getattr(self, "error"))
+        self._task_loop.before_loop(self.before_run)
+        self._task_loop.after_loop(self.after_run)
+        self._task_loop.error(self.error)
 
     def next_iteration(self):
         """When the next iteration of this task will occur.
@@ -253,7 +261,7 @@ class ClientEventTask(_BotTask):
         data: A namespace object that is used by task objects to hold data.
     """
 
-    EVENT_TYPES = (events.ClientEvent,)
+    EVENT_TYPES: tuple = (events.ClientEvent,)
     default_reconnect = True
     default_count = None
 
@@ -271,18 +279,25 @@ class ClientEventTask(_BotTask):
         self._is_waiting = False
         self._task_loop = tasks.loop(reconnect=self._reconnect)(self._run)
 
-        if hasattr(self, "before_run"):
-            self._task_loop.before_loop(getattr(self, "before_run"))
-        if hasattr(self, "after_run"):
-            self._task_loop.after_loop(getattr(self, "after_run"))
-        if hasattr(self, "error"):
-            self._task_loop.error(getattr(self, "error"))
+        self._task_loop.before_loop(self.before_run)
+        self._task_loop.after_loop(self.after_run)
+        self._task_loop.error(self.error)
 
     def _add_event(self, event: events.ClientEvent):
         if not self._is_waiting:
             self._event_queue.append(event)
             if not self._task_loop.is_running():
                 self._task_loop.start()
+
+    def check(self, event: events.ClientEvent):
+        """A method for subclasses can override to perform validations on a ClientEvent
+        object that is passed to them. Must return a boolean value indicating the
+        validaiton result.
+
+        Args:
+            event (events.ClientEvent): The ClientEvent object to run checks upon.
+        """
+        return True
 
     async def _run(self):
         if not self._event_queue or self._current_loop == self._count:
@@ -378,11 +393,14 @@ class BotTaskManager:
             *tasks: Union[ClientEventTask, IntervalTask]:
                 The task objects to add during initiation.
         """
-        self._client_event_task_pool = set()
+        self._client_event_task_pool = {}
         self._interval_task_pool = set()
-        self._event_waiting_queue = deque()
+        self._event_waiting_queues = {}
         if tasks:
             self.add_tasks(*tasks)
+
+    def start_task_scheduling(self):
+        pass
 
     def add_tasks(
         self,
@@ -401,7 +419,7 @@ class BotTaskManager:
             TypeError: An invalid object was given as a task.
         """
         for task in tasks:
-            self.add_task(task)
+            self.add_task(task, start=start)
 
     def __iter__(self):
         return itertools.chain(
@@ -423,7 +441,11 @@ class BotTaskManager:
         is_client_event_task = False
         if isinstance(task, ClientEventTask):
             is_client_event_task = True
-            self._client_event_task_pool.add(task)
+            for ce_type in task.EVENT_TYPES:
+                if ce_type.__name__ not in self._client_event_task_pool:
+                    self._client_event_task_pool[ce_type.__name__] = set()
+                self._client_event_task_pool[ce_type.__name__].add(task)
+
         elif isinstance(task, IntervalTask):
             self._interval_task_pool.add(task)
         else:
@@ -449,7 +471,18 @@ class BotTaskManager:
         Returns:
             bool: True/False
         """
-        return task in self._client_event_task_pool or task in self._interval_task_pool
+        if task in self._interval_task_pool:
+            return True
+        elif isinstance(task, events.ClientEvent):
+            return any(
+                task in ce_set
+                for ce_set in (
+                    self._client_event_task_pool[ce_type.__name__]
+                    for ce_type in task.EVENT_TYPES
+                    if ce_type.__name__ in self._client_event_task_pool
+                )
+            )
+        return False
 
     def __contains__(self, task: Union[ClientEventTask, IntervalTask]):
         return self.has_task(task)
@@ -471,10 +504,18 @@ class BotTaskManager:
                 f"expected an instance of class ClientEventTask or IntervalTask, not {task.__class__.__name__}"
             )
 
-        if task in self._client_event_task_pool:
-            self._client_event_task_pool.remove(task)
-        elif task in self._interval_task_pool:
+        if isinstance(task, IntervalTask) and task in self._interval_task_pool:
             self._interval_task_pool.remove(task)
+
+        elif isinstance(task, ClientEventTask):
+            for ce_type in task.EVENT_TYPES:
+                if (
+                    ce_type.__name__ in self._client_event_task_pool
+                    and task in self._client_event_task_pool[ce_type.__name__]
+                ):
+                    self._client_event_task_pool[ce_type.__name__].remove(task)
+                if not self._client_event_task_pool[ce_type.__name__]:
+                    del self._client_event_task_pool[ce_type.__name__]
 
         if task.manager is self:
             task.manager = None
@@ -503,56 +544,90 @@ class BotTaskManager:
         Args:
             event (events.ClientEvent): The subclass to be dispatched.
         """
-        for i, client_event_task in enumerate(tuple(self._client_event_task_pool)):
-            if isinstance(event, client_event_task.EVENT_TYPES):
-                client_event_task._add_event(event.copy())
-            if i % 50:
-                await asyncio.sleep(0)
+        event_class_name = type(event).__name__
 
-        for i, seek_list in enumerate(tuple(self._event_waiting_queue)):
-            if isinstance(event, seek_list[0]):
-                seek_list[1] = event.copy()
-            if i % 50:
-                await asyncio.sleep(0)
+        if event_class_name in self._client_event_task_pool:
+            for i, client_event_task in enumerate(
+                tuple(self._client_event_task_pool[event_class_name])
+            ):
+                if isinstance(event, client_event_task.EVENT_TYPES) and client_event_task.check(event):
+                    client_event_task._add_event(event.copy())
+                if i % 50:
+                    await asyncio.sleep(0)
+
+        if event_class_name in self._event_waiting_queues:
+            for i, wait_list in enumerate(
+                tuple(self._event_waiting_queues[event_class_name])
+            ):
+                if isinstance(event, wait_list[0]):
+                    wait_list[1] = event.copy()
+                if i % 50:
+                    await asyncio.sleep(0)
 
     async def wait_for_client_event(
         self,
-        event_types: Union[events.ClientEvent, Iterable[events.ClientEvent]],
+        *event_types: events.ClientEvent,
         check: Optional[Callable[[events.ClientEvent], bool]] = None,
     ):
         """Wait for specific type of client event to be dispatched, and return that.
 
         Args:
-            event_types (Union[events.ClientEvent, Iterable[events.ClientEvent]]):
+            *event_types (events.ClientEvent):
                 The client event type/types to wait for. If any of its/their
                 instances is dispatched, that instance will be returned.
             check (Optional[Callable[[events.ClientEvent], bool]], optional):
-                A callable obejct to validate if a valid client event that was recieved meets specific conditions.
+                A callable obejct used to validate if a valid client event that was recieved meets specific conditions.
                 Defaults to None.
 
         Returns:
             ClientEvent: A valid client event object
         """
-        seek_list = [event_types, None]
-        self._event_waiting_queue.append(seek_list)
+
+        wait_list = [event_types, None]
+
+        for event_type in event_types:
+            if not issubclass(event_type, events.ClientEvent):
+                raise TypeError(
+                    "Argument 'event_types' must contain only subclasses of 'ClientEvent'"
+                )
+
+        for event_type in event_types:
+            if event_type.__name__ not in self._event_waiting_queues:
+                self._event_waiting_queues[event_type.__name__] = deque()
+
+            self._event_waiting_queues[event_type.__name__].append(wait_list)
+
         check_is_callable = callable(check)
 
-        while seek_list[1] is None:
-            await asyncio.sleep(0)
-            if seek_list[1] is not None:
-                if check_is_callable and check(seek_list[1]):
+        while wait_list[1] is None:
+            await asyncio.sleep(
+                0
+            )  # sleep until a ClientEvent object is passed to wait_list[1]
+            if wait_list[1] is not None:
+                if check_is_callable and check(wait_list[1]):
                     break
                 else:
-                    seek_list[1] = None
+                    wait_list[1] = None
 
-        self._event_waiting_queue.remove(seek_list)
-        return seek_list[1]
+        for event_type in event_types:
+            d = self._event_waiting_queues[event_type.__name__]
+            d.remove(wait_list)
+            if not d:
+                del self._event_waiting_queues[event_type.__name__]
+
+        return wait_list[1]
 
     async def kill_all(self):
         """Kill all task objects that are in this bot task manager."""
         for i, task in enumerate(
             itertools.chain(
-                tuple(self._client_event_task_pool), tuple(self._interval_task_pool)
+                tuple(
+                    t
+                    for t in (
+                        ce_set for ce_set in self._client_event_task_pool.values()
+                    )
+                ),
+                tuple(self._interval_task_pool),
             )
         ):
             task._task_loop.cancel()
@@ -570,7 +645,11 @@ class BotTaskManager:
 
     async def kill_all_client_event_tasks(self):
         """Kill all client event task objects that are in this bot task manager."""
-        for i, task in enumerate(tuple(self._client_event_task_pool)):
+        for i, task in enumerate(
+            tuple(
+                t for t in (ce_set for ce_set in self._client_event_task_pool.values())
+            )
+        ):
             task._task_loop.cancel()
             self.remove_task(task)
             if i % 50:

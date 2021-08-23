@@ -39,6 +39,7 @@ stdout: Optional[io.StringIO] = None
 admin_commands = ()
 
 task_manager: object
+task_class_map = {}
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
