@@ -17,9 +17,10 @@ import discord
 import pygame
 
 from pgbot import commands, common, db, emotion, routine, tasks
+from pgbot.tasks import core, main
 from pgbot.utils import embed_utils, utils
 
-common.task_manager = tasks.core.BotTaskManager()
+common.task_manager = core.BotTaskManager()
 
 
 async def _init():
@@ -70,7 +71,7 @@ async def _init():
                     common.entry_channels[key] = channel
 
     common.task_manager.start_task_scheduling()
-    common.task_manager.add_tasks(*tasks.defaults.EXPORTS)
+    common.task_manager.add_task(main.Main())
 
 
 async def init():

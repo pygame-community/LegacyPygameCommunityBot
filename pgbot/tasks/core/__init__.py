@@ -6,7 +6,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file implements the base classes for a task object system that
 can be used to implement background processes for the bot. 
 """
-
 from __future__ import annotations
 import asyncio
 from collections import deque
@@ -19,8 +18,8 @@ import discord
 from discord.ext import tasks
 
 from pgbot.utils import utils
-from pgbot.tasks import events
 
+from . import events
 
 class TaskNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by bot task objects

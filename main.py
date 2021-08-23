@@ -11,7 +11,7 @@ import discord
 
 from pgbot.common import bot
 from pgbot import common
-from pgbot.tasks import events
+from pgbot.tasks.core import events
 import pgbot
 
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union

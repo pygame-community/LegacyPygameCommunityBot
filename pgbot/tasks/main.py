@@ -9,7 +9,9 @@ This file includes task classes that run at bot startup.
 import discord
 
 from pgbot import common
-from pgbot.tasks import events, core, util
+from pgbot.tasks import core
+from pgbot.tasks.core import events
+from pgbot.tasks import messaging
 from pgbot.utils import embed_utils
 
 
@@ -153,13 +155,18 @@ class MessageTestSpawner(core.IntervalTask):
         )
         self.kill()
 
+class Main(core.SingletonTask):
+    async def run(self):
+        self.manager.add_tasks(
+            core.DelayTask(
+                10.0,
+                messaging.MessageSend(
+                    channel_id=822650791303053342, content="This will only happen once."
+                ),
+            ),
+            MessageTestSpawner(),
+        )
 
-EXPORTS = (
-    core.DelayTask(
-        10.0,
-        util.messaging.MessageSend(
-            channel_id=822650791303053342, content="This will only happen once."
-        ),
-    ),
-    MessageTestSpawner(),
-)
+__all__ = [
+    "Main",
+]
