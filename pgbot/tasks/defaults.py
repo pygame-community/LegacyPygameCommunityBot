@@ -9,11 +9,11 @@ This file includes task classes that run at bot startup.
 import discord
 
 from pgbot import common
-from pgbot.tasks import events, base, util
+from pgbot.tasks import events, core, util
 from pgbot.utils import embed_utils
 
 
-class MessagingTest1(base.ClientEventTask):
+class MessagingTest1(core.ClientEventTask):
     EVENT_TYPES = (events.OnMessageBase,)
 
     async def before_run(self):
@@ -72,7 +72,7 @@ class MessagingTest1(base.ClientEventTask):
                 )
 
 
-class IntervalTaskTest(base.IntervalTask):
+class IntervalTaskTest(core.IntervalTask):
     default_seconds = 10
 
     async def before_run(self):
@@ -88,7 +88,7 @@ class IntervalTaskTest(base.IntervalTask):
             await self.data.target_channel.send("*Are you annoyed yet?*")
 
 
-class MessagingTest2(base.ClientEventTask):
+class MessagingTest2(core.ClientEventTask):
     EVENT_TYPES = (events.OnMessage,)
 
     async def before_run(self):
@@ -122,31 +122,31 @@ class MessagingTest2(base.ClientEventTask):
             await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MessageTestSpawner(base.IntervalTask):
+class MessageTestSpawner(core.IntervalTask):
     async def run(self):
         self.manager.add_tasks(
             MessagingTest2(
-                task_data=base.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(822650791303053342)
                 )
             ),
             MessagingTest2(
-                task_data=base.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(841726972841558056)
                 )
             ),
             MessagingTest2(
-                task_data=base.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(844492573912465408)
                 )
             ),
             MessagingTest2(
-                task_data=base.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(849259216195420170)
                 )
             ),
             MessagingTest2(
-                task_data=base.TaskNamespace(
+                task_data=core.TaskNamespace(
                     target_channel=common.guild.get_channel(844492623636725820)
                 )
             ),
@@ -155,7 +155,7 @@ class MessageTestSpawner(base.IntervalTask):
 
 
 EXPORTS = (
-    base.DelayTask(
+    core.DelayTask(
         10.0,
         util.messaging.MessageSend(
             channel_id=822650791303053342, content="This will only happen once."

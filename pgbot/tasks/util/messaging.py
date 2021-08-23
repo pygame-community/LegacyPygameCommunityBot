@@ -1,7 +1,7 @@
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 import discord
-from pgbot.tasks.base import IntervalTask
+from pgbot.tasks.core import IntervalTask
 from pgbot import common
 
 __all__ = []

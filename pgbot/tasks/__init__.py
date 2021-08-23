@@ -6,4 +6,4 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file exports the task class system. 
 """
 
-from . import base, defaults, events
+from . import core, defaults, events
