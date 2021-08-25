@@ -11,7 +11,7 @@ import discord
 from pgbot import common
 from pgbot.tasks import core
 from pgbot.tasks.core import events
-from pgbot.tasks import messaging
+from pgbot.tasks.utils import messaging
 from pgbot.utils import embed_utils
 
 
@@ -161,7 +161,7 @@ class Main(core.SingletonTask):
             core.DelayTask(
                 10.0,
                 messaging.MessageSend(
-                    channel_id=822650791303053342, content="This will only happen once."
+                    channel=822650791303053342, content="This will only happen once."
                 ),
             ),
             MessageTestSpawner(),

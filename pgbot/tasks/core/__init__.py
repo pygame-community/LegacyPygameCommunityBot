@@ -11,6 +11,8 @@ import asyncio
 from collections import deque
 import datetime
 import itertools
+import pickle
+import time
 from types import SimpleNamespace
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
@@ -18,8 +20,12 @@ import discord
 from discord.ext import tasks
 
 from pgbot.utils import utils
+from pgbot.db import DiscordDB
+from pgbot import common
 
-from . import events
+from . import events, serializers
+
+task_class_map = {}
 
 class TaskNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by bot task objects
@@ -29,9 +35,15 @@ class TaskNamespace(SimpleNamespace):
     def __contains__(self, k: str):
         return k in self.__dict__
 
+    def __iter__(self):
+        return iter(self.__dict__.items())
+
 
 class _BotTask:
     """The base class of all bot task objects."""
+
+    def __init_subclass__(cls):
+        task_class_map[cls.__name__] = cls
 
     def __init__(
         self,
@@ -113,7 +125,7 @@ class _BotTask:
             bool: True/False
         """
         return self._task_loop.is_running()
-
+        
 
 class IntervalTask(_BotTask):
     """Base class for interval based tasks.
@@ -395,16 +407,90 @@ class BotTaskManager:
         self._client_event_task_pool = {}
         self._interval_task_pool = set()
         self._event_waiting_queues = {}
+        self._schedule_dict = {}
+        self._running = True
+        self._schedule_init = False
+
         if tasks:
             self.add_tasks(*tasks)
 
-    def start_task_scheduling(self):
-        pass
+    def is_running(self):
+        return self._running
+
+    @tasks.loop(seconds=5, reconnect=False)
+    async def task_scheduling_loop(self):
+        for i, unix_timestamp in enumerate(tuple(self._schedule_dict.keys())):
+            print(datetime.datetime.fromtimestamp(time.time()).astimezone(datetime.timezone.utc), (datetime.datetime.fromtimestamp(unix_timestamp/1000).astimezone(datetime.timezone.utc)))
+            if int(time.time()*1000) > unix_timestamp:
+                for d in self._schedule_dict[unix_timestamp]:
+                    try:
+                        task = task_class_map[d["class"]](*d["init_args"], **d["init_kwargs"])
+                        task.setup(**d["data"])
+                    except Exception as e:
+                        print("Task initiation failed due to an exception:", e.__class__.__name__+":", e)
+                        continue
+                    else:
+                        if not isinstance(task, (ClientEventTask, IntervalTask)):
+                            raise TypeError(f"Invalid type found in task class map: '{type(task).__name__}'")
+                        self.add_task(task)
+
+                del self._schedule_dict[unix_timestamp]
+
+            if i % 10:
+                await asyncio.sleep(0)
+
+    @task_scheduling_loop.before_loop
+    async def _task_scheduling_start(self):
+        if not self._schedule_init:
+            async with DiscordDB("task_schedule") as db_obj:
+                self._schedule_dict = db_obj.get({})
+            self._schedule_init = True
+
+    @task_scheduling_loop.after_loop
+    async def _task_scheduling_end(self):
+        async with DiscordDB("task_schedule") as db_obj:
+            db_obj.write(self._schedule_dict)
+
+    async def schedule_task(self, task_type: type, timestamp: datetime.datetime, init_args: tuple = (), init_kwargs: dict = None, data: dict = None):
+        if self._schedule_dict is None:
+            raise RuntimeError("BotTaskManager scheduling has not been initiated")
+
+        unix_timestamp = int(timestamp.timestamp()*1000)
+        if unix_timestamp not in self._schedule_dict:
+            self._schedule_dict[unix_timestamp] = []
+
+        if not isinstance(init_args, (list, tuple)):
+            if init_args is None:
+                init_args = ()
+            else:
+                raise TypeError(f"'init_args' must be of type 'tuple', not {type(init_args)}")
+
+        elif not isinstance(init_kwargs, dict):
+            if init_kwargs is None:
+                init_kwargs = {}
+            else:
+                raise TypeError(f"'init_kwargs' must be of type 'dict', not {type(init_kwargs)}")
+
+        elif not isinstance(data, dict):
+            if data is None:
+                data = {}
+            else:
+                raise TypeError(f"'data' must be of type 'dict', not {type(data)}")
+        
+        new_data = {
+            "class": task_type.__name__,
+            "init_args": tuple(init_args),
+            "init_kwargs": init_kwargs,
+            "data": data,
+        }
+
+        pickle.dumps(new_data) # validation
+
+        self._schedule_dict[unix_timestamp].append(new_data)
 
     def add_tasks(
         self,
         *tasks: Union[ClientEventTask, IntervalTask],
-        start=True,
     ):
         """Add the given task objects to this bot task manager.
 
@@ -418,14 +504,20 @@ class BotTaskManager:
             TypeError: An invalid object was given as a task.
         """
         for task in tasks:
-            self.add_task(task, start=start)
+            self.add_task(task)
 
     def __iter__(self):
         return itertools.chain(
-            tuple(self._client_event_task_pool), tuple(self._interval_task_pool)
+            tuple(
+                t
+                for t in (
+                    ce_set for ce_set in self._client_event_task_pool.values()
+                )
+            ),
+            tuple(self._interval_task_pool),
         )
 
-    def add_task(self, task: Union[ClientEventTask, IntervalTask], start=True):
+    def add_task(self, task: Union[ClientEventTask, IntervalTask]):
         """Add the given task object to this bot task manager.
 
         Args:
@@ -437,9 +529,7 @@ class BotTaskManager:
         Raises:
             TypeError: An invalid object was given as a task.
         """
-        is_client_event_task = False
         if isinstance(task, ClientEventTask):
-            is_client_event_task = True
             for ce_type in task.EVENT_TYPES:
                 if ce_type.__name__ not in self._client_event_task_pool:
                     self._client_event_task_pool[ce_type.__name__] = set()
@@ -453,13 +543,8 @@ class BotTaskManager:
             )
 
         task.manager = self
-        if (
-            start
-            and not is_client_event_task
-            or (is_client_event_task and task._event_queue)
-        ):
-            if not task._task_loop.is_running():
-                task._task_loop.start()
+        if not task._task_loop.is_running():
+            task._task_loop.start()
 
     def has_task(self, task: Union[ClientEventTask, IntervalTask]):
         """Whether a task is contained in this bot task manager.
@@ -486,13 +571,13 @@ class BotTaskManager:
     def __contains__(self, task: Union[ClientEventTask, IntervalTask]):
         return self.has_task(task)
 
-    def remove_task(self, task: Union[ClientEventTask, IntervalTask], cancel=True):
+    def remove_task(self, task: Union[ClientEventTask, IntervalTask]):
         """Remove the given task object from this bot task manager.
 
         Args:
             *tasks: Union[ClientEventTask, IntervalTask]:
                 The task to be removed, if present.
-            start (bool, optional):
+            cancel (bool, optional):
                 Whether the given interval task object should be cancelled immediately after being removed.
                 Defaults to True.
         Raises:
@@ -518,23 +603,21 @@ class BotTaskManager:
 
         if task.manager is self:
             task.manager = None
-        if cancel:
-            task._task_loop.cancel()
 
-    def remove_tasks(self, *tasks: Union[ClientEventTask, IntervalTask], cancel=True):
+    def remove_tasks(self, *tasks: Union[ClientEventTask, IntervalTask]):
         """Remove the given task objects from this bot task manager.
 
         Args:
             *tasks: Union[ClientEventTask, IntervalTask]:
                 The tasks to be removed, if present.
-            start (bool, optional):
+            cancel (bool, optional):
                 Whether the given interval task objects should be cancelled immediately after being removed.
                 Defaults to True.
         Raises:
             TypeError: An invalid object was given as a task.
         """
         for task in tasks:
-            self.remove_task(task, cancel=cancel)
+            self.remove_task(task)
 
     async def dispatch_client_event(self, event: events.ClientEvent):
         """Dispatch a `ClientEvent` subclass to all client event task objects
@@ -565,7 +648,7 @@ class BotTaskManager:
 
     async def wait_for_client_event(
         self,
-        *event_types: events.ClientEvent,
+        *event_types: type,
         check: Optional[Callable[[events.ClientEvent], bool]] = None,
     ):
         """Wait for specific type of client event to be dispatched, and return that.
@@ -585,7 +668,7 @@ class BotTaskManager:
         wait_list = [event_types, None]
 
         for event_type in event_types:
-            if not issubclass(event_type, events.ClientEvent):
+            if not issubclass(event_type, events.ClientEvent) and event_type is not events.ClientEvent:
                 raise TypeError(
                     "Argument 'event_types' must contain only subclasses of 'ClientEvent'"
                 )
@@ -653,3 +736,9 @@ class BotTaskManager:
             self.remove_task(task)
             if i % 50:
                 await asyncio.sleep(0)
+
+    def quit(self, kill_all_tasks=True):
+        self._running = False
+        self.task_scheduling_loop.stop()
+        if kill_all_tasks:
+            self.kill_all()

@@ -34,6 +34,10 @@ class ClientEvent:
 
     __copy__ = copy
 
+    def __repr__(self):
+        attrs = ' '.join(f"{attr}={val}" for attr, val in self.__dict__.items())
+        return f"<{self.__class__.__name__}({attrs})>"
+
 
 class OnReady(ClientEvent):
     def __init__(self, *args, **kwargs):
@@ -454,7 +458,7 @@ class OnVoiceStateUpdate(OnGuildBase):
         super().__init__(*args, **kwargs)
         self.member = member
         self.before = before
-        self.after = self.after
+        self.after = after
 
 
 class OnMemberBanBase(OnGuildBase):

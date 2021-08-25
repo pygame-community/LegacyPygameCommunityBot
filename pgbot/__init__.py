@@ -70,7 +70,7 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    common.task_manager.start_task_scheduling()
+    common.task_manager.task_scheduling_loop.start()
     common.task_manager.add_task(main.Main())
 
 

@@ -39,7 +39,6 @@ stdout: Optional[io.StringIO] = None
 admin_commands = ()
 
 task_manager: object
-task_class_map = {}
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
@@ -49,6 +48,10 @@ console_channel: discord.TextChannel
 db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
+
+def register_task_type(*task_classes):
+    for task_class in task_classes:
+        task_class_map[task_class.__name__] = task_class
 
 __version__ = "1.5.3"
 

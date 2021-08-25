@@ -1,11 +1,9 @@
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
+import io
 import discord
 from pgbot.tasks.core import IntervalTask
 from pgbot import common
-
-__all__ = []
-
 
 class MessageSend(IntervalTask):
     """A task class for sending a message into a
@@ -14,21 +12,53 @@ class MessageSend(IntervalTask):
     default_count = 1
     default_reconnect = False
 
-    def __init__(self, channel_id: int, **kwargs):
+    def __init__(self, channel: Union[int, discord.abc.Messageable], **kwargs):
         """Setup this task ojbect's namespace.
 
         Args:
-            channel_id (int): The ID of a channel to message to.
-            **kwargs: the keyword arguments to pass to the `.send()`
+            channel (Union[int, discord.abc.Messageable]):
+                The channel/channel ID to message to.
+            **kwargs:
+                The keyword arguments to pass to the `.send()`
             coroutine method of the channel.
         """
         super().__init__()
-        super().setup(channel_id=channel_id, kwargs=kwargs)
+        super().setup(channel=channel, kwargs=kwargs)
 
     async def before_run(self):
-        self.data.channel = common.bot.get_channel(self.data.channel_id)
-        if self.data.channel is None:
-            self.data.channel = await common.bot.fetch_channel(self.data.channel_id)
+        if isinstance(self.data.channel, int):
+            channel_id = self.data.channel
+            self.data.channel = common.bot.get_channel(channel_id)
+            if self.data.channel is None:
+                self.data.channel = await common.bot.fetch_channel(channel_id)
+        elif not isinstance(self.data.channel, discord.abc.Messageable):
+            raise TypeError("no valid object passed for `.data` attribute")
+
+        if "embed" in self.data.kwargs and isinstance(self.data.kwargs["embed"], dict):
+            self.data.kwargs["embed"] = discord.Embed.from_dict(self.data.kwargs["embed"])
+
+        if "embeds" in self.data.kwargs and all(isinstance(embed, dict) for embed in self.data.kwargs["embeds"]):
+            self.data.kwargs["embeds"] = [discord.Embed.from_dict(embed_dict) for embed_dict in self.data.kwargs["embeds"]]
+
+        if "file" in self.data.kwargs:
+            if isinstance(self.data.kwargs["file"], bytes):
+                self.data.kwargs["file"] = discord.File(io.BytesIO(self.data.kwargs["file"]))
+
+            if isinstance(self.data.kwargs["file"], dict):
+                file_dict = self.data.kwargs["file"]
+                self.data.kwargs["file"] = discord.File(fp=io.BytesIO(file_dict["fp"]), filename=file_dict["filename"], spoiler=file_dict["spoiler"])
+
+            if not self.data.kwargs["file"]:
+                del self.data.kwargs["file"]
+        
+        if "files" in self.data.kwargs:
+            for file_dict in self.data.kwargs["files"]:
+                if isinstance(file_dict, dict):
+                    self.data.kwargs["files"] = [discord.File(fp=io.BytesIO(file_dict["fp"]), filename=file_dict["filename"], spoiler=file_dict["spoiler"]) for file_dict in self.data.kwargs["files"] if isinstance(file_dict, dict)]
+            
+            if not self.data.kwargs["files"]:
+                del self.data.kwargs["files"]
+
         self.data.message = None
 
     async def run(self):
@@ -45,7 +75,7 @@ class _MessageModify(IntervalTask):
     default_count = 1
     default_reconnect = False
 
-    def __init__(self, channel_id: int, message_id: int, **kwargs):
+    def __init__(self, channel: Union[int, discord.abc.Messageable], message: Union[int, discord.Message], **kwargs):
         """Setup this task ojbect.
 
         Args:
@@ -58,13 +88,23 @@ class _MessageModify(IntervalTask):
                 coroutine methods of the message.
         """
         super().__init__()
-        super().setup(channel_id=channel_id, message_id=message_id, kwargs=kwargs)
+        super().setup(channel=channel, message=message, kwargs=kwargs)
 
     async def before_run(self):
-        channel: discord.abc.Messageable = common.bot.get_channel(self.data.channel_id)
-        if channel is None:
-            channel = await common.bot.fetch_channel(self.data.channel_id)
-        self.data.message = await channel.fetch_message(self.data.message_id)
+        if isinstance(self.data.channel, int):
+            channel_id = self.data.channel
+            self.data.channel = common.bot.get_channel(channel_id)
+            if self.data.channel is None:
+                self.data.channel = await common.bot.fetch_channel(channel_id)
+        elif not isinstance(self.data.channel, discord.abc.Messageable):
+            raise TypeError("Invalid object for `.data.channel` attribute")
+        
+        if isinstance(self.data.message, int):
+            message_id = self.data.message
+            self.data.message = await self.data.channel.fetch_message(message_id)
+
+        elif not isinstance(self.data.message, discord.Message):
+            raise TypeError("Invalid object for `.data.message` attribute")
 
     async def after_run(self):
         self.kill()
@@ -93,8 +133,8 @@ class ReactionAdd(_MessageModify):
 
     def __init__(
         self,
-        channel_id: int,
-        message_id: int,
+        channel: Union[int, discord.abc.Messageable],
+        message: Union[int, discord.Message],
         emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
     ):
         """Setup this task ojbect.
@@ -114,7 +154,7 @@ class ReactionAdd(_MessageModify):
             ):
                 The emoji to react with.
         """
-        super().__init__(channel_id=channel_id, message_id=message_id)
+        super().__init__(channel=channel, message=message)
         super().setup(emoji=emoji)
 
     async def run(self):
@@ -126,10 +166,11 @@ class ReactionRemove(_MessageModify):
 
     def __init__(
         self,
-        channel_id: int,
-        message_id: int,
+        channel: Union[int, discord.abc.Messageable],
+        message: Union[int, discord.Message],
         emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
         member: discord.abc.Snowflake,
+        
     ):
         """Setup this task ojbect.
 
@@ -150,7 +191,7 @@ class ReactionRemove(_MessageModify):
             member: (discord.abc.Snowflake):
                 The member whose reaction should be removed.
         """
-        super().__init__(channel_id=channel_id, message_id=message_id)
+        super().__init__(channel=channel, message=message)
         super().setup(emoji=emoji, member=member)
 
     async def run(self):
@@ -162,8 +203,8 @@ class ReactionClearEmoji(_MessageModify):
 
     def __init__(
         self,
-        channel_id: int,
-        message_id: int,
+        channel: Union[int, discord.abc.Messageable],
+        message: Union[int, discord.Message],
         emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
     ):
         """Setup this task ojbect.
@@ -183,7 +224,7 @@ class ReactionClearEmoji(_MessageModify):
             ):
                 The emoji to clear.
         """
-        super().__init__(channel_id=channel_id, message_id=message_id)
+        super().__init__(channel=channel, message=message)
         super().setup(emoji=emoji)
 
     async def run(self):
@@ -195,16 +236,3 @@ class ReactionClear(_MessageModify):
 
     async def run(self):
         self.data.message.clear_reactions()
-
-
-for task_class in (
-    MessageSend,
-    MessageEdit,
-    MessageDelete,
-    ReactionAdd,
-    ReactionRemove,
-    ReactionClearEmoji,
-    ReactionClear,
-):
-    common.task_class_map[task_class.__name__] = task_class
-    __all__.append(task_class.__name__)
