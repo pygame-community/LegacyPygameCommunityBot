@@ -47,7 +47,7 @@ class OnReady(ClientEvent):
         super().__init__(*args, **kwargs)
 
 
-class OnTyping(OnTypingBase):
+class OnTyping(ClientEvent):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_typing
     """
     def __init__(
