@@ -1,8 +1,17 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This file implements task classes for scheduling messaging events as tasks. 
+"""
+
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 import io
 import discord
 from pgbot.tasks.core import IntervalTask
+from pgbot.tasks.core import serializers
 from pgbot import common
 
 class MessageSend(IntervalTask):
@@ -12,7 +21,7 @@ class MessageSend(IntervalTask):
     default_count = 1
     default_reconnect = False
 
-    def __init__(self, channel: Union[int, discord.abc.Messageable], **kwargs):
+    def __init__(self, channel: Union[int, discord.abc.Messageable, serializers.ChannelSerial], **kwargs):
         """Setup this task ojbect's namespace.
 
         Args:
@@ -31,6 +40,10 @@ class MessageSend(IntervalTask):
             self.data.channel = common.bot.get_channel(channel_id)
             if self.data.channel is None:
                 self.data.channel = await common.bot.fetch_channel(channel_id)
+
+        elif isinstance(self.data.channel, serializers.ChannelSerial):
+            self.data.channel = await self.data.channel.deserialize()
+
         elif not isinstance(self.data.channel, discord.abc.Messageable):
             raise TypeError("no valid object passed for `.data` attribute")
 
@@ -44,7 +57,10 @@ class MessageSend(IntervalTask):
             if isinstance(self.data.kwargs["file"], bytes):
                 self.data.kwargs["file"] = discord.File(io.BytesIO(self.data.kwargs["file"]))
 
-            if isinstance(self.data.kwargs["file"], dict):
+            elif isinstance(self.data.kwargs["file"], serializers.FileSerial):
+                self.data.kwargs["file"] = await self.data.kwargs["file"].deserialize()
+
+            elif isinstance(self.data.kwargs["file"], dict):
                 file_dict = self.data.kwargs["file"]
                 self.data.kwargs["file"] = discord.File(fp=io.BytesIO(file_dict["fp"]), filename=file_dict["filename"], spoiler=file_dict["spoiler"])
 

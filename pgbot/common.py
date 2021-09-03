@@ -49,10 +49,6 @@ db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 
-def register_task_type(*task_classes):
-    for task_class in task_classes:
-        task_class_map[task_class.__name__] = task_class
-
 __version__ = "1.5.3"
 
 # BONCC quiky stuff

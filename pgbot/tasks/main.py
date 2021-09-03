@@ -5,7 +5,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 
 This file includes task classes that run at bot startup.
 """
-
+import datetime
 import discord
 
 from pgbot import common
@@ -155,7 +155,7 @@ class MessageTestSpawner(core.IntervalTask):
         )
         self.kill()
 
-class Main(core.SingletonTask):
+class Main(core.OneTimeTask):
     async def run(self):
         self.manager.add_tasks(
             core.DelayTask(
@@ -165,6 +165,14 @@ class Main(core.SingletonTask):
                 ),
             ),
             MessageTestSpawner(),
+        )
+
+        self.manager.schedule_task(
+            messaging.MessageSend,
+            timestamp=datetime.datetime.now(),
+            recur_interval=datetime.timedelta(seconds=10),
+            max_recurrences=5,
+            init_kwargs=dict(channel=822650791303053342, content="This will occur every 10 seconds, but only 5 times.")
         )
 
 __all__ = [

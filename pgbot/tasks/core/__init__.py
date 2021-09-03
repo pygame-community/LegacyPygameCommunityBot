@@ -25,7 +25,7 @@ from pgbot import common
 
 from . import events, serializers
 
-task_class_map = {}
+TASK_CLASS_MAP = {}
 
 class TaskNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by bot task objects
@@ -39,11 +39,15 @@ class TaskNamespace(SimpleNamespace):
         return iter(self.__dict__.items())
 
 
+class TaskWarning(RuntimeWarning):
+    pass
+
+
 class _BotTask:
     """The base class of all bot task objects."""
 
     def __init_subclass__(cls):
-        task_class_map[cls.__name__] = cls
+        TASK_CLASS_MAP[cls.__name__] = cls
 
     def __init__(
         self,
@@ -345,7 +349,7 @@ class ClientEventTask(_BotTask):
         return await super().wait_for(coro)
 
 
-class SingletonTask(IntervalTask):
+class OneTimeTask(IntervalTask):
     """A subclass of `IntervalTask` whose subclasses's
     task objects will only run once, before stopping
     automatically.
@@ -355,8 +359,8 @@ class SingletonTask(IntervalTask):
         super().__init__(count=1, task_data=task_data)
 
 
-class DelayTask(SingletonTask):
-    """A subclass of `IntervalTask` that
+class DelayTask(OneTimeTask):
+    """A subclass of `OneTimeTask` that
     adds a given set of task objects to its `BotTaskManager`
     only after a given period of time in seconds.
 
@@ -417,24 +421,46 @@ class BotTaskManager:
     def is_running(self):
         return self._running
 
-    @tasks.loop(seconds=5, reconnect=False)
+    @tasks.loop(seconds=2.5, reconnect=False)
     async def task_scheduling_loop(self):
-        for i, unix_timestamp in enumerate(tuple(self._schedule_dict.keys())):
-            print(datetime.datetime.fromtimestamp(time.time()).astimezone(datetime.timezone.utc), (datetime.datetime.fromtimestamp(unix_timestamp/1000).astimezone(datetime.timezone.utc)))
-            if int(time.time()*1000) > unix_timestamp:
-                for d in self._schedule_dict[unix_timestamp]:
-                    try:
-                        task = task_class_map[d["class"]](*d["init_args"], **d["init_kwargs"])
-                        task.setup(**d["data"])
-                    except Exception as e:
-                        print("Task initiation failed due to an exception:", e.__class__.__name__+":", e)
-                        continue
-                    else:
-                        if not isinstance(task, (ClientEventTask, IntervalTask)):
-                            raise TypeError(f"Invalid type found in task class map: '{type(task).__name__}'")
-                        self.add_task(task)
+        deletion_queue = []
+        for i, timestamp in enumerate(tuple(self._schedule_dict.keys())):
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if now >= timestamp:
+                for j, d in enumerate(self._schedule_dict[timestamp]):
+                    if d["recur_interval"] is not None:
+                        try:
+                            if now < (timestamp + (d["recur_interval"] * d["recurrences"])):
+                                continue
+                        except OverflowError:
+                            deletion_queue.append(j)
+                            continue
 
-                del self._schedule_dict[unix_timestamp]
+                    if d["class"] in TASK_CLASS_MAP:
+                        try:
+                            task = TASK_CLASS_MAP[d["class"]](*d["init_args"], **d["init_kwargs"])
+                            task.setup(**d["data"])
+                        except Exception as e:
+                            print("Task initiation failed due to an exception:", e.__class__.__name__+":", e)
+                            continue
+                        else:
+                            if not isinstance(task, (ClientEventTask, IntervalTask)):
+                                raise TypeError(f"Invalid type found in task class map: '{type(task).__name__}'")
+                            self.add_task(task)
+                            d["recurrences"] += 1
+                    else:
+                        print(f"Task initiation failed: Could not find task type called '{d['class']}'")
+
+                    if not d["recur_interval"] or ( d["max_recurrences"] is not None and d["recurrences"] >= d["max_recurrences"] ):
+                        deletion_queue.append(j)
+                    
+                
+                for idx in deletion_queue:
+                    del self._schedule_dict[timestamp][idx]
+
+                deletion_queue *= 0
+                if not self._schedule_dict[timestamp]:
+                    del self._schedule_dict[timestamp]
 
             if i % 10:
                 await asyncio.sleep(0)
@@ -451,13 +477,30 @@ class BotTaskManager:
         async with DiscordDB("task_schedule") as db_obj:
             db_obj.write(self._schedule_dict)
 
-    async def schedule_task(self, task_type: type, timestamp: datetime.datetime, init_args: tuple = (), init_kwargs: dict = None, data: dict = None):
+    def schedule_task(self, task_type: type, timestamp: Union[datetime.datetime, datetime.timedelta], recur_interval: Optional[datetime.timedelta] = None, max_recurrences: Optional[int] = None, init_args: tuple = (), init_kwargs: dict = None, data: dict = None):
+        
+        NoneType = type(None)
+        
         if self._schedule_dict is None:
             raise RuntimeError("BotTaskManager scheduling has not been initiated")
 
-        unix_timestamp = int(timestamp.timestamp()*1000)
-        if unix_timestamp not in self._schedule_dict:
-            self._schedule_dict[unix_timestamp] = []
+        elif isinstance(timestamp, datetime.timedelta):
+            timestamp = datetime.datetime.now(datetime.timezone.utc) + timestamp
+        if isinstance(timestamp, datetime.datetime):
+            timestamp = timestamp.astimezone(datetime.timezone.utc)
+        elif isinstance(timestamp, datetime.timedelta):
+            timestamp = datetime.datetime.now(datetime.timezone.utc) + timestamp
+        else:
+            raise TypeError("argument 'timestamp' must be a datetime.datetime or datetime.timedelta object")
+
+        if timestamp not in self._schedule_dict:
+            self._schedule_dict[timestamp] = []
+
+        if not isinstance(recur_interval, datetime.timedelta):
+            raise TypeError("argument 'recur_interval' must be None or a datetime.timedelta object")
+
+        if not isinstance(max_recurrences, (int, float, NoneType)):
+            raise TypeError("argument 'max_recurrences' must be None or an int/float object")
 
         if not isinstance(init_args, (list, tuple)):
             if init_args is None:
@@ -478,6 +521,9 @@ class BotTaskManager:
                 raise TypeError(f"'data' must be of type 'dict', not {type(data)}")
         
         new_data = {
+            "recur_interval": recur_interval,
+            "recurrences": 0,
+            "max_recurrences": max_recurrences,
             "class": task_type.__name__,
             "init_args": tuple(init_args),
             "init_kwargs": init_kwargs,
@@ -486,7 +532,7 @@ class BotTaskManager:
 
         pickle.dumps(new_data) # validation
 
-        self._schedule_dict[unix_timestamp].append(new_data)
+        self._schedule_dict[timestamp].append(new_data)
 
     def add_tasks(
         self,

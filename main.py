@@ -80,7 +80,6 @@ async def on_message(message: discord.Message):
         return
 
     await pgbot.handle_message(message)
-    print(isinstance(message.guild, discord.abc.Snowflake), isinstance(message.channel, discord.abc.Snowflake))
     await task_manager.dispatch_client_event(
         events.OnMessage(
             message,
