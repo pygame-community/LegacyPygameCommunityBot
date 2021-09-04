@@ -14,14 +14,20 @@ from pgbot.tasks.core import IntervalTask
 from pgbot.tasks.core import serializers
 from pgbot import common
 
+
 class MessageSend(IntervalTask):
     """A task class for sending a message into a
     discord text channel.
     """
+
     default_count = 1
     default_reconnect = False
 
-    def __init__(self, channel: Union[int, discord.abc.Messageable, serializers.ChannelSerial], **kwargs):
+    def __init__(
+        self,
+        channel: Union[int, discord.abc.Messageable, serializers.ChannelSerial],
+        **kwargs
+    ):
         """Setup this task ojbect's namespace.
 
         Args:
@@ -48,30 +54,51 @@ class MessageSend(IntervalTask):
             raise TypeError("no valid object passed for `.data` attribute")
 
         if "embed" in self.data.kwargs and isinstance(self.data.kwargs["embed"], dict):
-            self.data.kwargs["embed"] = discord.Embed.from_dict(self.data.kwargs["embed"])
+            self.data.kwargs["embed"] = discord.Embed.from_dict(
+                self.data.kwargs["embed"]
+            )
 
-        if "embeds" in self.data.kwargs and all(isinstance(embed, dict) for embed in self.data.kwargs["embeds"]):
-            self.data.kwargs["embeds"] = [discord.Embed.from_dict(embed_dict) for embed_dict in self.data.kwargs["embeds"]]
+        if "embeds" in self.data.kwargs and all(
+            isinstance(embed, dict) for embed in self.data.kwargs["embeds"]
+        ):
+            self.data.kwargs["embeds"] = [
+                discord.Embed.from_dict(embed_dict)
+                for embed_dict in self.data.kwargs["embeds"]
+            ]
 
         if "file" in self.data.kwargs:
             if isinstance(self.data.kwargs["file"], bytes):
-                self.data.kwargs["file"] = discord.File(io.BytesIO(self.data.kwargs["file"]))
+                self.data.kwargs["file"] = discord.File(
+                    io.BytesIO(self.data.kwargs["file"])
+                )
 
             elif isinstance(self.data.kwargs["file"], serializers.FileSerial):
                 self.data.kwargs["file"] = await self.data.kwargs["file"].deserialize()
 
             elif isinstance(self.data.kwargs["file"], dict):
                 file_dict = self.data.kwargs["file"]
-                self.data.kwargs["file"] = discord.File(fp=io.BytesIO(file_dict["fp"]), filename=file_dict["filename"], spoiler=file_dict["spoiler"])
+                self.data.kwargs["file"] = discord.File(
+                    fp=io.BytesIO(file_dict["fp"]),
+                    filename=file_dict["filename"],
+                    spoiler=file_dict["spoiler"],
+                )
 
             if not self.data.kwargs["file"]:
                 del self.data.kwargs["file"]
-        
+
         if "files" in self.data.kwargs:
             for file_dict in self.data.kwargs["files"]:
                 if isinstance(file_dict, dict):
-                    self.data.kwargs["files"] = [discord.File(fp=io.BytesIO(file_dict["fp"]), filename=file_dict["filename"], spoiler=file_dict["spoiler"]) for file_dict in self.data.kwargs["files"] if isinstance(file_dict, dict)]
-            
+                    self.data.kwargs["files"] = [
+                        discord.File(
+                            fp=io.BytesIO(file_dict["fp"]),
+                            filename=file_dict["filename"],
+                            spoiler=file_dict["spoiler"],
+                        )
+                        for file_dict in self.data.kwargs["files"]
+                        if isinstance(file_dict, dict)
+                    ]
+
             if not self.data.kwargs["files"]:
                 del self.data.kwargs["files"]
 
@@ -88,10 +115,16 @@ class _MessageModify(IntervalTask):
     """A task class for modifying a message in a
     Discord text channel.
     """
+
     default_count = 1
     default_reconnect = False
 
-    def __init__(self, channel: Union[int, discord.abc.Messageable], message: Union[int, discord.Message], **kwargs):
+    def __init__(
+        self,
+        channel: Union[int, discord.abc.Messageable],
+        message: Union[int, discord.Message],
+        **kwargs
+    ):
         """Setup this task ojbect.
 
         Args:
@@ -114,7 +147,7 @@ class _MessageModify(IntervalTask):
                 self.data.channel = await common.bot.fetch_channel(channel_id)
         elif not isinstance(self.data.channel, discord.abc.Messageable):
             raise TypeError("Invalid object for `.data.channel` attribute")
-        
+
         if isinstance(self.data.message, int):
             message_id = self.data.message
             self.data.message = await self.data.channel.fetch_message(message_id)
@@ -186,7 +219,6 @@ class ReactionRemove(_MessageModify):
         message: Union[int, discord.Message],
         emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
         member: discord.abc.Snowflake,
-        
     ):
         """Setup this task ojbect.
 

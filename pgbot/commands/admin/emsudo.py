@@ -2329,7 +2329,7 @@ class EmsudoCommand(BaseCommand):
                     "It must be a `.txt`, `.py` file containing a Python dictionary,"
                     " or a `.json` file containing embed data.",
                 )
-            
+
             embed_data = await attachment_obj.read()
             embed_data = embed_data.decode()
 

@@ -26,17 +26,19 @@ from pgbot import common
 
 from . import events
 
+
 class DeserializationError(Exception):
-   pass
+    pass
+
 
 class SerializationError(Exception):
-   pass
+    pass
 
 
 class BaseSerial:
     def __init__(self):
         self._dict = None
-    
+
     def __getstate__(self):
         return self._dict
 
@@ -52,6 +54,7 @@ class BaseSerial:
     def serialize(self):
         return self._dict.copy()
 
+
 class UserSerial(BaseSerial):
     def __init__(self, user: discord.User):
         self._dict = {
@@ -61,6 +64,7 @@ class UserSerial(BaseSerial):
     async def deserialize(self):
         user = await common.bot.fetch_user(self._dict["id"])
         return user
+
 
 class GuildSerial(BaseSerial):
     def __init__(self, guild: discord.Guild):
@@ -74,7 +78,9 @@ class GuildSerial(BaseSerial):
             if always_fetch:
                 guild = await common.bot.fetch_guild(self._dict["id"])
             else:
-                raise DeserializationError(f'could not restore Guild object with ID {self._dict["id"]}')
+                raise DeserializationError(
+                    f'could not restore Guild object with ID {self._dict["id"]}'
+                )
         return guild
 
 
@@ -87,10 +93,12 @@ class EmojiSerial(BaseSerial):
     async def deserialize(self):
         emoji = common.bot.get_emoji(self._dict["id"])
         if emoji is None:
-            raise DeserializationError(f'could not restore Emoji object with ID {self._dict["id"]}')
-        
+            raise DeserializationError(
+                f'could not restore Emoji object with ID {self._dict["id"]}'
+            )
+
         return emoji
-    
+
 
 class FileSerial(BaseSerial):
     def __init__(self, file: discord.File):
@@ -101,10 +109,7 @@ class FileSerial(BaseSerial):
                 data=None,
             )
         elif isinstance(file.fp, (io.StringIO, io.BytesIO)):
-            self._dict.update(
-                fp=None,
-                data=file.fp.getvalue()
-            )
+            self._dict.update(fp=None, data=file.fp.getvalue())
 
         elif isinstance(file.fp, io.IOBase):
             if hasattr(file.fp, "read"):
@@ -113,7 +118,9 @@ class FileSerial(BaseSerial):
                     data=file.fp.read(),
                 )
             else:
-                raise ValueError("Could not serialize File object into pickleable dictionary")
+                raise ValueError(
+                    "Could not serialize File object into pickleable dictionary"
+                )
 
     async def deserialize(self):
         if self._dict["fp"] is None:
@@ -125,20 +132,25 @@ class FileSerial(BaseSerial):
             elif isinstance(data, (bytes, bytearray)):
                 fp = io.BytesIO(data)
             else:
-                raise DeserializationError("Could not deserialize File object into pickleable dictionary")
-            
-            return discord.File(fp=fp, filename=self._dict["filename"], spoiler=self._dict["spoiler"])
+                raise DeserializationError(
+                    "Could not deserialize File object into pickleable dictionary"
+                )
+
+            return discord.File(
+                fp=fp, filename=self._dict["filename"], spoiler=self._dict["spoiler"]
+            )
 
         elif isinstance(self._dict["fp"], str):
-            return discord.File(fp=self._dict["fp"], filename=self._dict["filename"], spoiler=self._dict["spoiler"])
+            return discord.File(
+                fp=self._dict["fp"],
+                filename=self._dict["filename"],
+                spoiler=self._dict["spoiler"],
+            )
 
 
 class RoleSerial(BaseSerial):
     def __init__(self, role: discord.Role):
-        self._dict = {
-            "id": role.id,
-            "guild_id": role.guild.id
-        }
+        self._dict = {"id": role.id, "guild_id": role.guild.id}
 
     async def deserialize(self, always_fetch=False):
         guild = common.bot.get_guild(self._dict["guild_id"])
@@ -147,7 +159,9 @@ class RoleSerial(BaseSerial):
             if always_fetch:
                 guild = await common.bot.fetch_guild(self._dict["guild_id"])
         else:
-            raise DeserializationError(f'could not restore Guild object with ID {self._dict["guild_id"]} for Role object with ID {self._dict["id"]}')
+            raise DeserializationError(
+                f'could not restore Guild object with ID {self._dict["guild_id"]} for Role object with ID {self._dict["id"]}'
+            )
 
         role = guild.get_role(self._dict["id"])
         if role is None:
@@ -155,70 +169,82 @@ class RoleSerial(BaseSerial):
                 roles = await guild.fetch_roles()
                 role = tuple(r for r in roles if r.id == self._dict["id"])[0]
             else:
-                raise DeserializationError(f'could not restore Role object with ID {self._dict["id"]}')
-        
+                raise DeserializationError(
+                    f'could not restore Role object with ID {self._dict["id"]}'
+                )
+
         return role
+
 
 class PermissionSerial(BaseSerial):
     def __init__(self, permissions: discord.Permissions):
-        self._dict = {
-            "value": permissions.value
-        }
+        self._dict = {"value": permissions.value}
 
     async def deserialize(self):
         return discord.Permissions(permissions=self._dict["value"])
 
+
 class PermissionOverwriteSerial(BaseSerial):
     def __init__(self, permission_overwrite: discord.PermissionOverwrite):
-        self._dict = {
-            "_values": permission_overwrite._values
-        }
+        self._dict = {"_values": permission_overwrite._values}
 
     async def deserialize(self):
         permission_overwrite = discord.PermissionOverwrite()
         permission_overwrite._values = self._dict["_values"].copy()
         return permission_overwrite
 
+
 class AllowedMentionsSerial(BaseSerial):
     def __init__(self, allowed_mentions: discord.AllowedMentions):
         self._dict = {
             "everyone": bool(allowed_mentions.everyone),
             "replied_user": bool(allowed_mentions.replied_user),
-            "roles": bool(allowed_mentions.roles) if not isinstance(allowed_mentions.roles, list) else [ RoleSerial(role).serialize() for role in allowed_mentions.roles ],
-            "users": bool(allowed_mentions.users) if not isinstance(allowed_mentions.users, list) else [ UserSerial(user).serialize() for user in allowed_mentions.users ],
+            "roles": bool(allowed_mentions.roles)
+            if not isinstance(allowed_mentions.roles, list)
+            else [RoleSerial(role).serialize() for role in allowed_mentions.roles],
+            "users": bool(allowed_mentions.users)
+            if not isinstance(allowed_mentions.users, list)
+            else [UserSerial(user).serialize() for user in allowed_mentions.users],
         }
 
     async def deserialize(self):
         return discord.AllowedMentions(
             everyone=self._dict["everyone"],
             replied_user=self._dict["replied_user"],
-            roles=[ (await RoleSerial.from_dict(role_data).deserialize()) for role_data in self._dict["roles"] ] if isinstance(self._dict["roles"], list) else self._dict["roles"],
-            users=[ (await UserSerial.from_dict(user_data).deserialize()) for user_data in self._dict["users"] ] if isinstance(self._dict["users"], list) else self._dict["users"],
+            roles=[
+                (await RoleSerial.from_dict(role_data).deserialize())
+                for role_data in self._dict["roles"]
+            ]
+            if isinstance(self._dict["roles"], list)
+            else self._dict["roles"],
+            users=[
+                (await UserSerial.from_dict(user_data).deserialize())
+                for user_data in self._dict["users"]
+            ]
+            if isinstance(self._dict["users"], list)
+            else self._dict["users"],
         )
+
 
 class ColorSerial(BaseSerial):
     def __init__(self, color: discord.Color):
-        self._dict = {
-            "value": color.value
-        }
+        self._dict = {"value": color.value}
 
     async def deserialize(self):
         return discord.Color(self._dict["value"])
 
+
 class ActivitySerial(BaseSerial):
     def __init__(self, activity: discord.Activity):
-        self._dict = {
-            "dict": activity.to_dict()
-        }
+        self._dict = {"dict": activity.to_dict()}
 
     async def deserialize(self):
         return discord.Activity(**self._dict["dict"])
 
+
 class GameSerial(BaseSerial):
     def __init__(self, game: discord.Game):
-        self._dict = {
-            "dict": game.to_dict()
-        }
+        self._dict = {"dict": game.to_dict()}
 
     async def deserialize(self):
         return discord.Game(**self._dict["dict"])
@@ -226,15 +252,13 @@ class GameSerial(BaseSerial):
 
 class StreamingSerial(BaseSerial):
     def __init__(self, streaming: discord.Streaming):
-        self._dict = {
-            "dict": streaming.to_dict()
-        }
+        self._dict = {"dict": streaming.to_dict()}
 
     async def deserialize(self):
         return discord.Streaming(**self._dict["dict"])
 
-class MessageSerial(BaseSerial):
 
+class MessageSerial(BaseSerial):
     def __init__(self, message: discord.Message):
         self._dict = {
             "id": message.id,
@@ -248,7 +272,9 @@ class MessageSerial(BaseSerial):
             if always_fetch:
                 channel = await common.bot.fetch_channel(self._dict["channel_id"])
             else:
-                raise DeserializationError(f'could not restore Messageable object (channel) with ID {self._dict["channel_id"]} for Message with ID {self._dict["id"]}')
+                raise DeserializationError(
+                    f'could not restore Messageable object (channel) with ID {self._dict["channel_id"]} for Message with ID {self._dict["id"]}'
+                )
 
             message = await channel.fetch_message(self._dict["id"])
 
@@ -267,8 +293,11 @@ class ChannelSerial(BaseSerial):
             if always_fetch:
                 channel = await common.bot.fetch_channel(self._dict["id"])
             else:
-                raise DeserializationError(f'could not restore Messageable object (channel) with ID {self._dict["id"]}')
+                raise DeserializationError(
+                    f'could not restore Messageable object (channel) with ID {self._dict["id"]}'
+                )
         return channel
+
 
 class GuildChannelSerial(ChannelSerial):
     def __init__(self, channel: discord.abc.GuildChannel):
@@ -281,7 +310,9 @@ class GuildChannelSerial(ChannelSerial):
             if always_fetch:
                 guild = await common.bot.fetch_guild(self._dict["guild_id"])
             else:
-                raise DeserializationError(f'could not restore Guild object with ID {self._dict["guild_id"]} for GuildChannel object with ID {self._dict["id"]}')
+                raise DeserializationError(
+                    f'could not restore Guild object with ID {self._dict["guild_id"]} for GuildChannel object with ID {self._dict["id"]}'
+                )
 
         channel = guild.get_channel(self._dict["id"])
         if channel is None:
@@ -291,32 +322,41 @@ class GuildChannelSerial(ChannelSerial):
                     if ch.id == self._dict["id"]:
                         channel = ch
             else:
-                raise DeserializationError(f'could not restore GuildChannel object with ID {self._dict["id"]}')
+                raise DeserializationError(
+                    f'could not restore GuildChannel object with ID {self._dict["id"]}'
+                )
         return channel
+
 
 class TextChannelSerial(GuildChannelSerial):
     def __init__(self, channel: discord.TextChannel):
         super().__init__(channel=channel)
 
+
 class VoiceChannelSerial(GuildChannelSerial):
     def __init__(self, channel: discord.VoiceChannel):
         super().__init__(channel=channel)
+
 
 class StageChannelSerial(GuildChannelSerial):
     def __init__(self, channel: discord.StageChannel):
         super().__init__(channel=channel)
 
+
 class StoreChannelSerial(GuildChannelSerial):
     def __init__(self, channel: discord.StoreChannel):
         super().__init__(channel=channel)
+
 
 class PrivateChannelSerial(ChannelSerial):
     def __init__(self, channel: discord.abc.PrivateChannel):
         super().__init__(channel=channel)
 
+
 class GroupChannelSerial(PrivateChannelSerial):
     def __init__(self, channel: discord.GroupChannel):
         super().__init__(channel=channel)
+
 
 class DMChannelSerial(PrivateChannelSerial):
     def __init__(self, channel: discord.DMChannel):

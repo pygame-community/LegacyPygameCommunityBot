@@ -11,6 +11,7 @@ import asyncio
 from collections import deque
 import datetime
 import itertools
+import inspect
 import pickle
 import time
 from types import SimpleNamespace
@@ -26,6 +27,7 @@ from pgbot import common
 from . import events, serializers
 
 TASK_CLASS_MAP = {}
+
 
 class TaskNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by bot task objects
@@ -53,14 +55,16 @@ class _BotTask:
         self,
         task_data: Optional[TaskNamespace] = None,
     ):
-        self.manager = None
+        self.manager: BotTaskManager = None
         self.created = datetime.datetime.now().astimezone(datetime.timezone.utc)
         self.data = (
             TaskNamespace()
             if task_data is None
             else TaskNamespace(**task_data.__dict__)
         )
+        self._task_loop = None
         self._is_waiting = False
+        self._is_idle = False
         self._task_loop = None
 
     def setup(self, **kwargs):
@@ -74,31 +78,39 @@ class _BotTask:
         self.data.__dict__.update(**kwargs)
         return self
 
+    async def _before_run(self):
+        """A method subclasses can use to initialize their task objects
+        when their internal task loops start.
+        """
+        self._is_idle = False
+        output = await self.before_run()
+        return output
+
     async def before_run(self):
         """A method subclasses can use to initialize their task objects
         when their internal task loops start.
         """
         pass
 
+    async def _after_run(self):
+        """A method subclasses can use to initialize their task objects
+        when their internal task loops end.
+        """
+        output = await self.after_run()
+        self._is_idle = True
+        return output
+
     async def after_run(self):
         """A method subclasses can use to initialize their task objects
         when their internal task loops end.
         """
+        pass
 
-    async def error(self, exc: Exception):
+    async def on_error(self, exc: Exception):
         print(
             f"An Exception occured while running task {self.__class__}:\n\n",
             utils.format_code_exception(exc),
         )
-
-    def is_waiting(self):
-        """Whether this task is currently waiting
-        for a coroutine to complete, which was triggered using `.wait_for()`.
-
-        Returns:
-            bool: True/False
-        """
-        return self._is_waiting
 
     async def wait_for(self, coro):
         """Wait for a given coroutine to complete.
@@ -111,25 +123,60 @@ class _BotTask:
         Returns:
             Any: The result of the given coroutine.
         """
-        self._is_waiting = True
-        result = await coro
-        self._is_waiting = False
-        return result
+        if inspect.iscoroutine(coro):
+            self._is_waiting = True
+            result = await coro
+            self._is_waiting = False
+            return result
+
+        raise TypeError("argument 'coro' must be a coroutine")
+
+    def restart(self):
+        if isinstance(self.manager, BotTaskManager):
+            self._task_loop.restart()
+        raise RuntimeError("Cannot restart task without being in a BotTaskManager")
 
     def kill(self):
-        """Stops this task object and removes it from its `BotTaskManager`."""
+        """Stops this task object and makes it idle, before removing it from its `BotTaskManager`."""
         self._task_loop.cancel()
+        self._is_idle = True
         if self.manager is not None:
             self.manager.remove_task(self)
 
-    def is_running(self):
-        """Whether this task is currently running.
+    def is_waiting(self):
+        """Whether this task is currently waiting
+        for a coroutine to complete, which was triggered using `.wait_for()`.
+
+        Returns:
+            bool: True/False
+        """
+        return self._is_waiting
+
+    def is_alive(self):
+        """Whether this task is currently alive and bound to a task manager.
 
         Returns:
             bool: True/False
         """
         return self._task_loop.is_running()
-        
+
+    def is_running(self):
+        """Whether this task is currently running (alive and not idle).
+
+        Returns:
+            bool: True/False
+        """
+        return self._task_loop.is_running() and not self._is_idle
+
+    def failed(self):
+        """Whether this task failed an execution attempt, usually due to an
+        exception.
+
+        Returns:
+            bool: True/False
+        """
+        return self._task_loop.failed()
+
 
 class IntervalTask(_BotTask):
     """Base class for interval based tasks.
@@ -144,7 +191,6 @@ class IntervalTask(_BotTask):
     Each interval task object can recieve a `data=` keyword argument during initiation, which takes
     a `TaskNamespace()` object as input, which may be used to customize task behavior at runtime, by
     overriding the default namespace object in `.data`, which is the namespace to store bot information.
-
 
     Attributes:
         seconds (property):
@@ -199,9 +245,9 @@ class IntervalTask(_BotTask):
             loop=None,
         )
 
-        self._task_loop.before_loop(self.before_run)
-        self._task_loop.after_loop(self.after_run)
-        self._task_loop.error(self.error)
+        self._task_loop.before_loop(self._before_run)
+        self._task_loop.after_loop(self._after_run)
+        self._task_loop.error(self.on_error)
 
     def next_iteration(self):
         """When the next iteration of this task will occur.
@@ -276,9 +322,23 @@ class ClientEventTask(_BotTask):
         data: A namespace object that is used by task objects to hold data.
     """
 
-    EVENT_TYPES: tuple = (events.ClientEvent,)
+    EVENT_TYPES: Union[tuple, list] = (events.ClientEvent,)
     default_reconnect = True
     default_count = None
+
+    def __init_subclass__(cls):
+        if not isinstance(cls.EVENT_TYPES, (list, tuple)):
+            raise TypeError(
+                "the 'EVENT_TYPES' class attribute must be of type 'list'/'tuple' and"
+                " must contain one or more subclasses of `ClientEvent`"
+            )
+        elif not cls.EVENT_TYPES or not all(
+            isinstance(et, events.ClientEvent) for et in cls.EVENT_TYPES
+        ):
+            raise ValueError(
+                "the 'EVENT_TYPES' class attribute"
+                " must contain one or more subclasses of `ClientEvent`"
+            )
 
     def __init__(
         self,
@@ -292,11 +352,18 @@ class ClientEventTask(_BotTask):
         self._current_loop = 0
         self._reconnect = self.default_reconnect if reconnect is None else reconnect
         self._is_waiting = False
-        self._task_loop = tasks.loop(reconnect=self._reconnect)(self._run)
-
+        self._task_loop = tasks.Loop(
+            self._run,
+            seconds=0,
+            minutes=0,
+            hours=0,
+            count=0,
+            reconnect=self._reconnect,
+            loop=None,
+        )
         self._task_loop.before_loop(self.before_run)
         self._task_loop.after_loop(self.after_run)
-        self._task_loop.error(self.error)
+        self._task_loop.error(self.on_error)
 
     def _add_event(self, event: events.ClientEvent):
         if not self._is_waiting:
@@ -317,13 +384,20 @@ class ClientEventTask(_BotTask):
     async def _run(self):
         if not self._event_queue or self._current_loop == self._count:
             self._task_loop.stop()
+            self._is_idle = True
             return
 
         elif self._is_waiting:
             return
 
+        self._is_idle = False
         self._current_loop += 1
-        return await self.run(self._event_queue.popleft())
+        output = await self.run(self._event_queue.popleft())
+
+        if not self._event_queue or self._current_loop == self._count:
+            self._task_loop.stop()
+            self._is_idle = True
+        return output
 
     async def run(self, event: events.ClientEvent):
         """The code to run whenever a client event is registered.
@@ -430,7 +504,9 @@ class BotTaskManager:
                 for j, d in enumerate(self._schedule_dict[timestamp]):
                     if d["recur_interval"] is not None:
                         try:
-                            if now < (timestamp + (d["recur_interval"] * d["recurrences"])):
+                            if now < (
+                                timestamp + (d["recur_interval"] * d["recurrences"])
+                            ):
                                 continue
                         except OverflowError:
                             deletion_queue.append(j)
@@ -438,23 +514,35 @@ class BotTaskManager:
 
                     if d["class"] in TASK_CLASS_MAP:
                         try:
-                            task = TASK_CLASS_MAP[d["class"]](*d["init_args"], **d["init_kwargs"])
+                            task = TASK_CLASS_MAP[d["class"]](
+                                *d["init_args"], **d["init_kwargs"]
+                            )
                             task.setup(**d["data"])
                         except Exception as e:
-                            print("Task initiation failed due to an exception:", e.__class__.__name__+":", e)
+                            print(
+                                "Task initiation failed due to an exception:",
+                                e.__class__.__name__ + ":",
+                                e,
+                            )
                             continue
                         else:
                             if not isinstance(task, (ClientEventTask, IntervalTask)):
-                                raise TypeError(f"Invalid type found in task class map: '{type(task).__name__}'")
+                                raise TypeError(
+                                    f"Invalid type found in task class map: '{type(task).__name__}'"
+                                )
                             self.add_task(task)
                             d["recurrences"] += 1
                     else:
-                        print(f"Task initiation failed: Could not find task type called '{d['class']}'")
+                        print(
+                            f"Task initiation failed: Could not find task type called '{d['class']}'"
+                        )
 
-                    if not d["recur_interval"] or ( d["max_recurrences"] is not None and d["recurrences"] >= d["max_recurrences"] ):
+                    if not d["recur_interval"] or (
+                        d["max_recurrences"] is not None
+                        and d["recurrences"] >= d["max_recurrences"]
+                    ):
                         deletion_queue.append(j)
-                    
-                
+
                 for idx in deletion_queue:
                     del self._schedule_dict[timestamp][idx]
 
@@ -477,10 +565,19 @@ class BotTaskManager:
         async with DiscordDB("task_schedule") as db_obj:
             db_obj.write(self._schedule_dict)
 
-    def schedule_task(self, task_type: type, timestamp: Union[datetime.datetime, datetime.timedelta], recur_interval: Optional[datetime.timedelta] = None, max_recurrences: Optional[int] = None, init_args: tuple = (), init_kwargs: dict = None, data: dict = None):
-        
+    def schedule_task(
+        self,
+        task_type: type,
+        timestamp: Union[datetime.datetime, datetime.timedelta],
+        recur_interval: Optional[datetime.timedelta] = None,
+        max_recurrences: Optional[int] = None,
+        init_args: tuple = (),
+        init_kwargs: dict = None,
+        data: dict = None,
+    ):
+
         NoneType = type(None)
-        
+
         if self._schedule_dict is None:
             raise RuntimeError("BotTaskManager scheduling has not been initiated")
 
@@ -491,35 +588,45 @@ class BotTaskManager:
         elif isinstance(timestamp, datetime.timedelta):
             timestamp = datetime.datetime.now(datetime.timezone.utc) + timestamp
         else:
-            raise TypeError("argument 'timestamp' must be a datetime.datetime or datetime.timedelta object")
+            raise TypeError(
+                "argument 'timestamp' must be a datetime.datetime or datetime.timedelta object"
+            )
 
         if timestamp not in self._schedule_dict:
             self._schedule_dict[timestamp] = []
 
         if not isinstance(recur_interval, datetime.timedelta):
-            raise TypeError("argument 'recur_interval' must be None or a datetime.timedelta object")
+            raise TypeError(
+                "argument 'recur_interval' must be None or a datetime.timedelta object"
+            )
 
         if not isinstance(max_recurrences, (int, float, NoneType)):
-            raise TypeError("argument 'max_recurrences' must be None or an int/float object")
+            raise TypeError(
+                "argument 'max_recurrences' must be None or an int/float object"
+            )
 
         if not isinstance(init_args, (list, tuple)):
             if init_args is None:
                 init_args = ()
             else:
-                raise TypeError(f"'init_args' must be of type 'tuple', not {type(init_args)}")
+                raise TypeError(
+                    f"'init_args' must be of type 'tuple', not {type(init_args)}"
+                )
 
         elif not isinstance(init_kwargs, dict):
             if init_kwargs is None:
                 init_kwargs = {}
             else:
-                raise TypeError(f"'init_kwargs' must be of type 'dict', not {type(init_kwargs)}")
+                raise TypeError(
+                    f"'init_kwargs' must be of type 'dict', not {type(init_kwargs)}"
+                )
 
         elif not isinstance(data, dict):
             if data is None:
                 data = {}
             else:
                 raise TypeError(f"'data' must be of type 'dict', not {type(data)}")
-        
+
         new_data = {
             "recur_interval": recur_interval,
             "recurrences": 0,
@@ -530,7 +637,7 @@ class BotTaskManager:
             "data": data,
         }
 
-        pickle.dumps(new_data) # validation
+        pickle.dumps(new_data)  # validation
 
         self._schedule_dict[timestamp].append(new_data)
 
@@ -555,10 +662,7 @@ class BotTaskManager:
     def __iter__(self):
         return itertools.chain(
             tuple(
-                t
-                for t in (
-                    ce_set for ce_set in self._client_event_task_pool.values()
-                )
+                t for t in (ce_set for ce_set in self._client_event_task_pool.values())
             ),
             tuple(self._interval_task_pool),
         )
@@ -678,7 +782,9 @@ class BotTaskManager:
             for i, client_event_task in enumerate(
                 tuple(self._client_event_task_pool[event_class_name])
             ):
-                if isinstance(event, client_event_task.EVENT_TYPES) and client_event_task.check(event):
+                if isinstance(
+                    event, client_event_task.EVENT_TYPES
+                ) and client_event_task.check(event):
                     client_event_task._add_event(event.copy())
                 if i % 50:
                     await asyncio.sleep(0)
@@ -714,7 +820,10 @@ class BotTaskManager:
         wait_list = [event_types, None]
 
         for event_type in event_types:
-            if not issubclass(event_type, events.ClientEvent) and event_type is not events.ClientEvent:
+            if (
+                not issubclass(event_type, events.ClientEvent)
+                and event_type is not events.ClientEvent
+            ):
                 raise TypeError(
                     "Argument 'event_types' must contain only subclasses of 'ClientEvent'"
                 )

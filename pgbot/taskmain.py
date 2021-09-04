@@ -115,9 +115,7 @@ class MessagingTest2(core.ClientEventTask):
 
             while user_name is None:
                 name_event = await self.wait_for(
-                    self.manager.wait_for_client_event(
-                        events.OnMessage, check=check
-                    )
+                    self.manager.wait_for_client_event(events.OnMessage, check=check)
                 )
                 user_name = name_event.message.content
 
@@ -155,6 +153,7 @@ class MessageTestSpawner(core.IntervalTask):
         )
         self.kill()
 
+
 class Main(core.OneTimeTask):
     async def run(self):
         self.manager.add_tasks(
@@ -172,8 +171,12 @@ class Main(core.OneTimeTask):
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
             max_recurrences=5,
-            init_kwargs=dict(channel=822650791303053342, content="This will occur every 10 seconds, but only 5 times.")
+            init_kwargs=dict(
+                channel=822650791303053342,
+                content="This will occur every 10 seconds, but only 5 times.",
+            ),
         )
+
 
 __all__ = [
     "Main",
