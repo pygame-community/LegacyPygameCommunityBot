@@ -746,3 +746,83 @@ class UserCommand(FunCommand, HelpCommand):
         except discord.errors.NotFound:
             pass
         await self.channel.send(f"<@!{self.author.id}> is gonna stream!\n{msg}\n{ping}")
+
+    @add_group("events")
+    async def cmd_events(self):
+        """
+        ->type Events
+        ->signature pg!events
+        ->description Command for keeping up with the events of the server
+        -----
+        """
+        await embed_utils.replace(
+            self.response_msg,
+            title="Pygame Community Discord Server Events!",
+            description=(
+                "Check out Weekly Challenges!\n"
+                "Run `pg!events wc` to check out the scoreboard for this event!"
+            ),
+        )
+
+    @add_group("events", "wc")
+    async def cmd_events_wc(self, round_no: Optional[int] = None):
+        """
+        ->type Events
+        ->signature pg!events wc [round_no]
+        ->description Show scoreboard of WC along with some info about the event
+        ->extended description
+        Argument `round_no` is an optional integer, that specifies which round
+        of the event, the scoreboard should be displayed. If unspecified, shows
+        the final scoreboard of all rounds combined.
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict: dict[str, Any] = db_obj.get({})
+
+        if not wc_dict.get("rounds"):
+            raise BotException(
+                "Could not check scoreboard!",
+                "The Weekly Challenges Event has not started yet!",
+            )
+
+        fields = []
+        if round_no is None:
+            score_dict: dict[int, int] = {}
+            for round_dict in wc_dict["rounds"]:
+                for mem, scores in round_dict["scores"].items():
+                    try:
+                        score_dict[mem] += sum(scores)
+                    except KeyError:
+                        score_dict[mem] = sum(scores)
+
+        else:
+            try:
+                rounds_dict = wc_dict["rounds"][round_no - 1]
+            except IndexError:
+                raise BotException(
+                    "Could not check scoreboard!",
+                    f"The Weekly Challenges event does not have round {round_no} (yet)!",
+                ) from None
+
+            score_dict = {
+                mem: sum(scores) for mem, scores in rounds_dict["scores"].items()
+            }
+            fields.append((rounds_dict["name"], rounds_dict["description"], False))
+
+        if score_dict:
+            fields.extend(utils.split_wc_scores(score_dict))
+
+        else:
+            fields.append(
+                ("There are no scores yet!", "Check back after sometime!", False)
+            )
+
+        await embed_utils.replace(
+            self.response_msg,
+            title=f"Event: Weekly Challenges (WC)",
+            description=wc_dict.get(
+                "description", "Upcoming Event! Prepare your peepers!"
+            ),
+            fields=fields,
+            color=0xFF8C00,
+        )

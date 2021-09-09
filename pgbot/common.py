@@ -86,6 +86,13 @@ GENERIC = False
 
 UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
 
+WC_SCORING = (
+    ("Legendary Guardian ⚜️💫", 42),
+    ("Elite Guardian ⚜️", 30),
+    ("Guardian ⚜️", 15),
+    ("Apprentice ⚜️", 1),
+)
+
 
 class ServerConstants:
     """
