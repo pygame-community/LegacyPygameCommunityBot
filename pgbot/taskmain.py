@@ -11,6 +11,7 @@ import discord
 from pgbot import common
 from pgbot.tasks import core
 from pgbot.tasks.core import events
+from pgbot.tasks.core import serializers as serials
 from pgbot.tasks.utils import messaging
 from pgbot.utils import embed_utils
 
@@ -18,57 +19,57 @@ from pgbot.utils import embed_utils
 class MessagingTest1(core.ClientEventTask):
     EVENT_TYPES = (events.OnMessageBase,)
 
-    async def before_run(self):
-        if "target_channel" not in self.data:
-            self.data.target_channel = common.guild.get_channel(822650791303053342)
-            self.data.response_count = 0
-            self.data.interval_task_test = None
+    async def on_init(self):
+        if "target_channel" not in self.DATA:
+            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
+            self.DATA.response_count = 0
+            self.DATA.interval_task_test = None
 
-    async def run(self, event: events.OnMessageBase, *args, **kwargs):
+    async def on_run(self, event: events.OnMessageBase, *args, **kwargs):
         if isinstance(event, events.OnMessage):
-            if event.message.channel == self.data.target_channel:
+            if event.message.channel == self.DATA.target_channel:
                 event: events.OnMessage
                 if event.message.content.lower().startswith("hi"):
-                    await self.data.target_channel.send(
+                    await self.DATA.target_channel.send(
                         f"Hi, {event.message.author.mention}"
                     )
 
-                    self.data.response_count += 1
-                    if self.data.response_count == 3:
-                        self.data.interval_task_test = IntervalTaskTest()
-                        self.manager.add_task(self.data.interval_task_test)
+                    self.DATA.response_count += 1
+                    if self.DATA.response_count == 3:
+                        self.DATA.interval_task_test = IntervalTaskTest()
+                        self.manager.add_task(self.DATA.interval_task_test)
 
                 elif (
                     event.message.content.lower().startswith(("shut up", "shutup"))
-                    and self.data.response_count >= 3
+                    and self.DATA.response_count >= 3
                 ):
-                    self.data.interval_task_test.kill()
-                    await self.data.target_channel.send(
+                    self.DATA.interval_task_test.kill()
+                    await self.DATA.target_channel.send(
                         f"Sorry, {event.message.author.mention}, I won't annoy you anymore, {event.message.author.mention}"
                     )
                     self.kill()
 
         elif isinstance(event, events.OnMessageEdit):
             event: events.OnMessageEdit
-            if event.before.channel == self.data.target_channel:
-                await self.data.target_channel.send(
+            if event.before.channel == self.DATA.target_channel:
+                await self.DATA.target_channel.send(
                     f"Hi, {event.before.author.mention}, did you just change this message to:",
                     reference=event.before,
                 )
                 await embed_utils.send(
-                    self.data.target_channel,
+                    self.DATA.target_channel,
                     title="...this?",
                     description=event.after.content,
                 )
 
         elif isinstance(event, events.OnMessageDelete):
             event: events.OnMessageDelete
-            if event.message.channel == self.data.target_channel:
-                await self.data.target_channel.send(
+            if event.message.channel == self.DATA.target_channel:
+                await self.DATA.target_channel.send(
                     f"Hi, {event.message.author.mention}, did you just delete:"
                 )
                 await embed_utils.send(
-                    self.data.target_channel,
+                    self.DATA.target_channel,
                     title="...this?",
                     description=event.message.content,
                 )
@@ -77,103 +78,117 @@ class MessagingTest1(core.ClientEventTask):
 class IntervalTaskTest(core.IntervalTask):
     default_seconds = 10
 
-    async def before_run(self):
-        if "target_channel" not in self.data:
-            self.data.target_channel = common.guild.get_channel(822650791303053342)
-            self.data.introduced = False
+    async def on_init(self):
+        if "target_channel" not in self.DATA:
+            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
+            self.DATA.introduced = False
 
-    async def run(self, *args, **kwargs):
-        if not self.data.introduced:
-            await self.data.target_channel.send("Hello everyone!")
-            self.data.introduced = True
+    async def on_run(self, *args, **kwargs):
+        if not self.DATA.introduced:
+            await self.DATA.target_channel.send("Hello everyone!")
+            self.DATA.introduced = True
         else:
-            await self.data.target_channel.send("*Are you annoyed yet?*")
+            await self.DATA.target_channel.send("*Are you annoyed yet?*")
 
 
 class MessagingTest2(core.ClientEventTask):
     EVENT_TYPES = (events.OnMessage,)
 
-    async def before_run(self):
-        if "target_channel" not in self.data:
-            self.data.target_channel = common.guild.get_channel(822650791303053342)
+    def __init__(self, target_channel: discord.TextChannel):
+        super().__init__()
+        self.DATA.target_channel = target_channel
 
-    def check(self, event: events.ClientEvent):
-        return event.message.channel.id == self.data.target_channel.id
+    async def on_init(self):
+        if "target_channel" not in self.DATA:
+            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
 
-    async def run(self, event: events.OnMessage, *args, **kwargs):
+    def check_event(self, event: events.ClientEvent):
+        return event.message.channel.id == self.DATA.target_channel.id
+
+    async def on_run(self, event: events.OnMessage, *args, **kwargs):
         if event.message.content.lower().startswith("hi"):
-            await self.data.target_channel.send("Hi, what's your name?")
+            await self.DATA.target_channel.send("Hi, what's your name?")
 
             author = event.message.author
             user_name = None
 
             check = (
                 lambda x: x.message.author == author
-                and x.message.channel == self.data.target_channel
+                and x.message.channel == self.DATA.target_channel
                 and x.message.content
             )
 
-            while user_name is None:
-                name_event = await self.wait_for(
-                    self.manager.wait_for_client_event(events.OnMessage, check=check)
-                )
-                user_name = name_event.message.content
+            name_event = await self.wait_for_event(events.OnMessage, check=check)
+            user_name = name_event.message.content
 
-            await self.data.target_channel.send(f"Hi, {user_name}")
+            await self.DATA.target_channel.send(f"Hi, {user_name}")
 
 
-class MessageTestSpawner(core.IntervalTask):
-    async def run(self):
-        self.manager.add_tasks(
+class MessageTestSpawner(core.OneTimeTask):
+    async def on_run(self):
+        for task in (
             MessagingTest2(
-                task_data=core.TaskNamespace(
-                    target_channel=common.guild.get_channel(822650791303053342)
-                )
+                target_channel=common.guild.get_channel(822650791303053342)
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
-                    target_channel=common.guild.get_channel(841726972841558056)
-                )
+                target_channel=common.guild.get_channel(841726972841558056)
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
-                    target_channel=common.guild.get_channel(844492573912465408)
-                )
+                target_channel=common.guild.get_channel(844492573912465408)
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
-                    target_channel=common.guild.get_channel(849259216195420170)
-                )
+                target_channel=common.guild.get_channel(849259216195420170)
             ),
             MessagingTest2(
-                task_data=core.TaskNamespace(
-                    target_channel=common.guild.get_channel(844492623636725820)
-                )
+                target_channel=common.guild.get_channel(844492623636725820)
             ),
-        )
-        self.kill()
+        ):
+            await task.initialize()
+        
+            self.manager.add_task(task)
 
 
 class Main(core.OneTimeTask):
-    async def run(self):
+    async def on_run(self):
         self.manager.add_tasks(
-            core.DelayTask(
+            await core.DelayTask(
                 10.0,
                 messaging.MessageSend(
                     channel=822650791303053342, content="This will only happen once."
                 ),
-            ),
-            MessageTestSpawner(),
+            ).as_initialized(),
+            await MessageTestSpawner().as_initialized(),
         )
 
         self.manager.schedule_task(
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
-            max_recurrences=5,
+            max_recurrences=2,
             init_kwargs=dict(
                 channel=822650791303053342,
-                content="This will occur every 10 seconds, but only 5 times.",
+                content="This will occur every 10 seconds, but only 2 times.",
+            ),
+        )
+
+        self.manager.schedule_task(
+            messaging.MessageSend,
+            timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
+            init_kwargs=dict(
+                channel=841726972841558056,
+                content="Say 'I am cool.'",
+            ),
+        )
+
+        msg_event: events.OnMessage = await self.manager.wait_for_client_event(events.OnMessage, check=(lambda x: x.message.channel.id == 841726972841558056 and x.message.content == "I am cool."))
+
+        self.manager.schedule_task(
+            messaging.ReactionAdd,
+            timestamp=datetime.datetime.now(),
+            init_kwargs=dict(
+                channel=None,
+                message=serials.MessageSerial(msg_event.message),
+                emoji=853327268474126356,
             ),
         )
 

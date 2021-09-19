@@ -9,7 +9,6 @@ starts the bot
 import datetime
 import discord
 import pickle
-from pgbot.common import bot
 from pgbot import common
 from pgbot.tasks.core import events
 import pgbot
@@ -17,6 +16,7 @@ import pgbot
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 task_manager = common.task_manager
+bot = common.bot
 
 
 @bot.event

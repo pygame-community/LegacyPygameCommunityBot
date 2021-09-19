@@ -71,8 +71,9 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
+    common.task_manager.set_event_loop(asyncio.get_running_loop())
     common.task_manager.task_scheduling_loop.start()
-    common.task_manager.add_task(taskmain.Main())
+    common.task_manager.add_task(await taskmain.Main().as_initialized())
 
 
 async def init():

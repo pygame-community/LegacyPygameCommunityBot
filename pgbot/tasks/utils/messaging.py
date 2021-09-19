@@ -6,14 +6,18 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file implements task classes for scheduling messaging events as tasks. 
 """
 
+from __future__ import annotations
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
-
 import io
 import discord
 from pgbot.tasks.core import IntervalTask
-from pgbot.tasks.core import serializers
+from pgbot.tasks.core import serializers as serials
+from pgbot.tasks.core.base_tasks import chain_to_method
+from pgbot.utils import embed_utils
 from pgbot import common
 
+NoneType = type(None)
+client = common.bot
 
 class MessageSend(IntervalTask):
     """A task class for sending a message into a
@@ -25,8 +29,25 @@ class MessageSend(IntervalTask):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serializers.ChannelSerial],
-        **kwargs
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial],
+        content: Optional[str] = None,
+        tts: bool = False,
+        embed: Union[discord.Embed, serials.EmbedSerial, dict] = None,
+        file: Union[discord.File, serials.FileSerial] = None,
+        files: list[Union[discord.File, serials.FileSerial]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[int] = None,
+        allowed_mentions: Optional[
+            discord.AllowedMentions,
+            serials.AllowedMentionsSerial,
+        ] = None,
+        reference: Union[
+            discord.Message,
+            discord.MessageReference,
+            serials.MessageSerial,
+            serials.MessageReferenceSerial,
+        ] = None,
+        mention_author: Optional[bool] = None,
     ):
         """Setup this task ojbect's namespace.
 
@@ -38,82 +59,109 @@ class MessageSend(IntervalTask):
             coroutine method of the channel.
         """
         super().__init__()
-        super().setup(channel=channel, kwargs=kwargs)
+        self.DATA.channel = channel
+        self.DATA.kwargs = dict(
+            content=content,
+            tts=tts,
+            embed=embed,
+            file=file,
+            files=files,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            reference=reference,
+            mention_author=mention_author,
+        )
 
-    async def before_run(self):
-        if isinstance(self.data.channel, int):
-            channel_id = self.data.channel
-            self.data.channel = common.bot.get_channel(channel_id)
-            if self.data.channel is None:
-                self.data.channel = await common.bot.fetch_channel(channel_id)
+    async def on_init(self):
+        if not isinstance(self.DATA.channel, discord.abc.Messageable):
+            if isinstance(self.DATA.channel, int):
+                channel_id = self.DATA.channel
+                self.DATA.channel = client.get_channel(channel_id)
+                if self.DATA.channel is None:
+                    self.DATA.channel = await client.fetch_channel(channel_id)
+            elif isinstance(self.DATA.channel, serials.ChannelSerial):
+                self.DATA.channel = await self.DATA.channel.reconstructed(True)
+            else:
+                raise TypeError("Invalid type for argument 'channel'")
 
-        elif isinstance(self.data.channel, serializers.ChannelSerial):
-            self.data.channel = await self.data.channel.deserialize()
-
-        elif not isinstance(self.data.channel, discord.abc.Messageable):
-            raise TypeError("no valid object passed for `.data` attribute")
-
-        if "embed" in self.data.kwargs and isinstance(self.data.kwargs["embed"], dict):
-            self.data.kwargs["embed"] = discord.Embed.from_dict(
-                self.data.kwargs["embed"]
-            )
-
-        if "embeds" in self.data.kwargs and all(
-            isinstance(embed, dict) for embed in self.data.kwargs["embeds"]
-        ):
-            self.data.kwargs["embeds"] = [
-                discord.Embed.from_dict(embed_dict)
-                for embed_dict in self.data.kwargs["embeds"]
-            ]
-
-        if "file" in self.data.kwargs:
-            if isinstance(self.data.kwargs["file"], bytes):
-                self.data.kwargs["file"] = discord.File(
-                    io.BytesIO(self.data.kwargs["file"])
+        if not isinstance(self.DATA.kwargs["embed"], (discord.Embed, NoneType)):
+            if isinstance(self.DATA.kwargs["embed"], dict):
+                if embed_utils.validate_embed_dict(self.DATA.kwargs["embed"]):
+                    self.DATA.kwargs["embed"] = discord.Embed.from_dict(
+                        self.DATA.kwargs["embed"]
+                    )
+                else:
+                    raise ValueError("Invalid embed dictionary structure")
+            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerial):
+                self.DATA.kwargs["embed"] = discord.Embed.from_dict(
+                    self.DATA.kwargs["embed"]
                 )
 
-            elif isinstance(self.data.kwargs["file"], serializers.FileSerial):
-                self.data.kwargs["file"] = await self.data.kwargs["file"].deserialize()
+        if not isinstance(self.DATA.kwargs["file"], (discord.File, NoneType)):
+            if isinstance(self.DATA.kwargs["file"], bytes):
+                self.DATA.kwargs["file"] = discord.File(
+                    io.BytesIO(self.DATA.kwargs["file"])
+                )
 
-            elif isinstance(self.data.kwargs["file"], dict):
-                file_dict = self.data.kwargs["file"]
-                self.data.kwargs["file"] = discord.File(
+            elif isinstance(self.DATA.kwargs["file"], serials.FileSerial):
+                self.DATA.kwargs["file"] = await self.DATA.kwargs["file"].reconstructed()
+
+            elif isinstance(self.DATA.kwargs["file"], dict):
+                file_dict = self.DATA.kwargs["file"]
+                self.DATA.kwargs["file"] = discord.File(
                     fp=io.BytesIO(file_dict["fp"]),
                     filename=file_dict["filename"],
                     spoiler=file_dict["spoiler"],
                 )
 
-            if not self.data.kwargs["file"]:
-                del self.data.kwargs["file"]
+        if self.DATA.kwargs["files"] is not None:
+            file_list = []
+            for i, obj in enumerate(self.DATA.kwargs["files"]):
+                if isinstance(obj, discord.File):
+                    file_list.append(obj)
+                elif isinstance(obj, serials.FileSerial):
+                    file_list.append(obj.reconstructed())
+                else:
+                    raise TypeError(f"Invalid object at index {i} in iterable given as 'files' argument")                    
 
-        if "files" in self.data.kwargs:
-            for file_dict in self.data.kwargs["files"]:
-                if isinstance(file_dict, dict):
-                    self.data.kwargs["files"] = [
-                        discord.File(
-                            fp=io.BytesIO(file_dict["fp"]),
-                            filename=file_dict["filename"],
-                            spoiler=file_dict["spoiler"],
-                        )
-                        for file_dict in self.data.kwargs["files"]
-                        if isinstance(file_dict, dict)
-                    ]
+        if not isinstance(
+            self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
+        ):  
+            if isinstance(self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial):
+                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs["allowed_mentions"].reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'allowed_mentions'")
 
-            if not self.data.kwargs["files"]:
-                del self.data.kwargs["files"]
+        if not isinstance(
+            self.DATA.kwargs["reference"],
+            (discord.Message, discord.MessageReference, NoneType),
+        ):
+            if isinstance(self.DATA.kwargs["reference"], (serials.MessageSerial, serials.MessageReferenceSerial)):
+                if self.DATA.kwargs["reference"].IS_ASYNC:
+                    self.DATA.kwargs["reference"] = await self.DATA.kwargs[
+                        "reference"
+                    ].reconstructed(True)
+                else:
+                    self.DATA.kwargs["reference"] = self.DATA.kwargs[
+                        "reference"
+                    ].reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'reference'")
 
-        self.data.message = None
 
-    async def run(self):
-        self.data.message = await self.data.channel.send(**self.data.kwargs)
+        self.DATA.OUTPUT.message = None
 
-    async def after_run(self):
-        self.kill()
+    async def on_run(self):
+        self.DATA.OUTPUT.message = await self.DATA.channel.send(**self.DATA.kwargs)
+
+    async def on_post_run(self):
+        self.END()
 
 
 class _MessageModify(IntervalTask):
-    """A task class for modifying a message in a
-    Discord text channel.
+    """A intermediary task class for modifying a message in a
+    Discord text channel. Does not do anything on its own.
     """
 
     default_count = 1
@@ -121,9 +169,66 @@ class _MessageModify(IntervalTask):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable],
-        message: Union[int, discord.Message],
-        **kwargs
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+    ):
+        """Create a bot task instance.
+
+        Args:
+            channel (Union[int, discord.abc.Messageable, serials.ChannelSerial]): The target channel.
+            message (Union[int, discord.Message, serials.MessageSerial]): [description]
+        """
+        super().__init__()
+        self.DATA.channel = channel
+        self.DATA.message = message
+
+    async def on_init(self):
+        if not isinstance(self.DATA.channel, discord.abc.Messageable):
+            if isinstance(self.DATA.channel, int):
+                channel_id = self.DATA.channel
+                self.DATA.channel = client.get_channel(channel_id)
+                if self.DATA.channel is None:
+                    self.DATA.channel = await client.fetch_channel(channel_id)
+            elif isinstance(self.DATA.channel, serials.ChannelSerial):
+                self.DATA.channel = await self.DATA.channel.reconstructed(True)
+            elif self.DATA.channel is None:
+                if not isinstance(self.DATA.message, (discord.Message, serials.MessageSerial)):
+                    raise TypeError("argument 'channel' cannot be None when 'message' is an integer ID")
+            else:
+                raise TypeError("Invalid type for argument 'channel'")
+
+        if not isinstance(self.DATA.message, discord.Message):
+            if isinstance(self.DATA.message, int):
+                channel = client.get_channel(self.DATA.channel.id)
+                if channel is None:
+                    channel = await client.fetch_channel(self.DATA.channel.id)
+            elif isinstance(self.DATA.message, serials.MessageSerial):
+                self.DATA.message = await self.DATA.message.reconstructed(True)
+            else:
+                raise TypeError("Invalid type for argument 'message'")
+
+    async def on_post_run(self):
+        self.END()
+
+
+class MessageEdit(_MessageModify):
+    """A task class for editing a message in a
+    Discord text channel.
+    """
+
+    default_count = 1
+
+    def __init__(
+        self,
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+        content: Optional[str] = None,
+        embed: Union[discord.Embed, serials.EmbedSerial, dict] = None,
+        delete_after: Optional[float] = None,
+        allowed_mentions: Optional[
+            discord.AllowedMentions,
+            serials.AllowedMentionsSerial,
+        ] = None,
     ):
         """Setup this task ojbect.
 
@@ -136,36 +241,42 @@ class _MessageModify(IntervalTask):
                 The keyword arguments to pass to the
                 coroutine methods of the message.
         """
-        super().__init__()
-        super().setup(channel=channel, message=message, kwargs=kwargs)
+        super().__init__(channel=channel, message=message)
+        self.DATA.kwargs = dict(
+                content=content,
+                embed=embed,
+                delete_after=delete_after,
+                allowed_mentions=allowed_mentions,
+        )
 
-    async def before_run(self):
-        if isinstance(self.data.channel, int):
-            channel_id = self.data.channel
-            self.data.channel = common.bot.get_channel(channel_id)
-            if self.data.channel is None:
-                self.data.channel = await common.bot.fetch_channel(channel_id)
-        elif not isinstance(self.data.channel, discord.abc.Messageable):
-            raise TypeError("Invalid object for `.data.channel` attribute")
+    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    async def on_init(self):
+        if not isinstance(self.DATA.kwargs["embed"], (discord.Embed, NoneType)):
+            if isinstance(self.DATA.kwargs["embed"], dict):
+                if embed_utils.validate_embed_dict(self.DATA.kwargs["embed"]):
+                    self.DATA.kwargs["embed"] = discord.Embed.from_dict(
+                        self.DATA.kwargs["embed"]
+                    )
+                else:
+                    raise ValueError("Invalid embed dictionary structure")
+            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerial):
+                self.DATA.kwargs["embed"] = discord.Embed.from_dict(
+                    self.DATA.kwargs["embed"]
+                )
 
-        if isinstance(self.data.message, int):
-            message_id = self.data.message
-            self.data.message = await self.data.channel.fetch_message(message_id)
+        if not isinstance(
+            self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
+        ):  
+            if isinstance(self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial):
+                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs["allowed_mentions"].reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'allowed_mentions'")
 
-        elif not isinstance(self.data.message, discord.Message):
-            raise TypeError("Invalid object for `.data.message` attribute")
+    async def on_run(self):
+        await self.DATA.message.edit(**self.DATA.kwargs)
 
-    async def after_run(self):
-        self.kill()
-
-
-class MessageEdit(_MessageModify):
-    """A task class for editing a message in a
-    Discord text channel.
-    """
-
-    async def run(self):
-        await self.data.message.edit(**self.data.kwargs)
+    async def on_post_run(self):
+        self.END()
 
 
 class MessageDelete(_MessageModify):
@@ -173,8 +284,40 @@ class MessageDelete(_MessageModify):
     Discord text channel.
     """
 
-    async def run(self):
-        await self.data.message.delete(**self.data.kwargs)
+    default_count = 1
+
+    def __init__(
+        self,
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+        delay: Optional[float] = None,
+    ):
+        """Setup this task ojbect.
+
+        Args:
+            channel_id (int):
+                The ID of a channel to get
+                a message from.
+            message_id (int): The ID of a message.
+            **kwargs:
+                The keyword arguments to pass to the
+                coroutine methods of the message.
+        """
+        super().__init__(channel=channel, message=message)
+        self.DATA.kwargs = dict(delay=delay)
+
+    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    async def on_init(self):
+        if not isinstance(self.DATA.kwargs["delay"], (int, float)):
+            raise TypeError("Invalid type given for argument 'delay'")
+        
+        self.DATA.kwargs["delay"] = float(self.DATA.kwargs["delay"])
+
+    async def on_run(self):
+        await self.DATA.message.delete(**self.DATA.kwargs)
+
+    async def on_post_run(self):
+        self.END()
 
 
 class ReactionAdd(_MessageModify):
@@ -182,9 +325,9 @@ class ReactionAdd(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable],
-        message: Union[int, discord.Message],
-        emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
     ):
         """Setup this task ojbect.
 
@@ -204,10 +347,23 @@ class ReactionAdd(_MessageModify):
                 The emoji to react with.
         """
         super().__init__(channel=channel, message=message)
-        super().setup(emoji=emoji)
+        self.DATA.emoji = emoji
 
-    async def run(self):
-        self.data.message.add_reaction(self.data.emoji)
+    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    async def on_init(self):
+        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+            if isinstance(self.DATA.emoji, int):
+                emoji = client.get_emoji(self.DATA.emoji)
+                if emoji is None:
+                    raise ValueError("invalid integer ID for 'emoji' argument")
+                self.DATA.emoji = emoji
+            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+                self.DATA.emoji = self.DATA.emoji.reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'emoji'")
+
+    async def on_run(self):
+        await self.DATA.message.add_reaction(self.DATA.emoji)
 
 
 class ReactionRemove(_MessageModify):
@@ -215,10 +371,10 @@ class ReactionRemove(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable],
-        message: Union[int, discord.Message],
-        emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
-        member: discord.abc.Snowflake,
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
+        member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerial],
     ):
         """Setup this task ojbect.
 
@@ -240,10 +396,32 @@ class ReactionRemove(_MessageModify):
                 The member whose reaction should be removed.
         """
         super().__init__(channel=channel, message=message)
-        super().setup(emoji=emoji, member=member)
+        self.DATA.emoji = emoji
+        self.DATA.member = member
 
-    async def run(self):
-        self.data.message.remove_reaction(self.data.emoji, self.data.member)
+
+    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    async def on_init(self):
+        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+            if isinstance(self.DATA.emoji, int):
+                emoji = client.get_emoji(self.DATA.emoji)
+                if emoji is None:
+                    raise ValueError("invalid integer ID for 'emoji' argument")
+                self.DATA.emoji = emoji
+            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+                self.DATA.emoji = self.DATA.emoji.reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'emoji'")
+
+        if not isinstance(self.DATA.member, (discord.abc.Snowflake, discord.Member)):
+            if isinstance(self.DATA.member, serials.MemberSerial):
+                self.DATA.member = await self.DATA.member.reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'member'")
+
+
+    async def on_run(self):
+        await self.DATA.message.remove_reaction(self.DATA.emoji, self.DATA.member)
 
 
 class ReactionClearEmoji(_MessageModify):
@@ -251,9 +429,9 @@ class ReactionClearEmoji(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable],
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
         message: Union[int, discord.Message],
-        emoji: Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
+        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
     ):
         """Setup this task ojbect.
 
@@ -273,14 +451,27 @@ class ReactionClearEmoji(_MessageModify):
                 The emoji to clear.
         """
         super().__init__(channel=channel, message=message)
-        super().setup(emoji=emoji)
+        self.DATA.emoji = emoji
 
-    async def run(self):
-        self.data.message.clear_reaction(self.data.emoji)
+    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    async def on_init(self):
+        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+            if isinstance(self.DATA.emoji, int):
+                emoji = client.get_emoji(self.DATA.emoji)
+                if emoji is None:
+                    raise ValueError("invalid integer ID for 'emoji' argument")
+                self.DATA.emoji = emoji
+            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+                self.DATA.emoji = self.DATA.emoji.reconstructed()
+            else:
+                raise TypeError("Invalid type for argument 'emoji'")
+
+    async def on_run(self):
+        await self.DATA.message.clear_reaction(self.DATA.emoji)
 
 
 class ReactionClear(_MessageModify):
     """Clears all reactions from a message."""
 
-    async def run(self):
-        self.data.message.clear_reactions()
+    async def on_run(self):
+        await self.DATA.message.clear_reactions()
