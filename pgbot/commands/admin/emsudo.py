@@ -966,7 +966,6 @@ class EmsudoCommand(BaseCommand):
             if not i % 50:
                 await asyncio.sleep(0)
 
-        msg_embed = msg.embeds[0]
         target_embed_dicts = tuple(msg.embeds[0].to_dict() for msg in target_msgs)
         data_count = len(datas)
 
