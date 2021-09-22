@@ -16,12 +16,12 @@ import sys
 import discord
 import pygame
 
-from pgbot import commands, common, db, emotion, routine, tasks
-from pgbot.tasks import core
-from pgbot import taskmain
+from pgbot import commands, common, db, emotion, routine, jobs
+from pgbot.jobs import core
+from pgbot import jobmain
 from pgbot.utils import embed_utils, utils
 
-common.task_manager = core.BotTaskManager()
+common.job_manager = core.BotJobManager()
 
 
 async def _init():
@@ -71,9 +71,9 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    common.task_manager.set_event_loop(asyncio.get_running_loop())
-    common.task_manager.task_scheduling_loop.start()
-    common.task_manager.add_task(await taskmain.Main().as_initialized())
+    common.job_manager.set_event_loop(asyncio.get_running_loop())
+    common.job_manager.job_scheduling_loop.start()
+    common.job_manager.add_job(await jobmain.Main().as_initialized())
 
 
 async def init():

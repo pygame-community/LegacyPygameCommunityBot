@@ -3,24 +3,25 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file implements task classes for scheduling messaging events as tasks. 
+This file implements job classes for scheduling messaging events as jobs. 
 """
 
 from __future__ import annotations
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 import io
 import discord
-from pgbot.tasks.core import IntervalTask
-from pgbot.tasks.core import serializers as serials
-from pgbot.tasks.core.base_tasks import chain_to_method
+from pgbot.jobs.core import IntervalJob
+from pgbot.jobs.core import serializers as serials
+from pgbot.jobs.core.base_jobs import call_with_method
 from pgbot.utils import embed_utils
 from pgbot import common
 
 NoneType = type(None)
 client = common.bot
 
-class MessageSend(IntervalTask):
-    """A task class for sending a message into a
+
+class MessageSend(IntervalJob):
+    """A job class for sending a message into a
     discord text channel.
     """
 
@@ -49,7 +50,7 @@ class MessageSend(IntervalTask):
         ] = None,
         mention_author: Optional[bool] = None,
     ):
-        """Setup this task ojbect's namespace.
+        """Setup this job ojbect's namespace.
 
         Args:
             channel (Union[int, discord.abc.Messageable]):
@@ -105,7 +106,9 @@ class MessageSend(IntervalTask):
                 )
 
             elif isinstance(self.DATA.kwargs["file"], serials.FileSerial):
-                self.DATA.kwargs["file"] = await self.DATA.kwargs["file"].reconstructed()
+                self.DATA.kwargs["file"] = await self.DATA.kwargs[
+                    "file"
+                ].reconstructed()
 
             elif isinstance(self.DATA.kwargs["file"], dict):
                 file_dict = self.DATA.kwargs["file"]
@@ -123,13 +126,19 @@ class MessageSend(IntervalTask):
                 elif isinstance(obj, serials.FileSerial):
                     file_list.append(obj.reconstructed())
                 else:
-                    raise TypeError(f"Invalid object at index {i} in iterable given as 'files' argument")                    
+                    raise TypeError(
+                        f"Invalid object at index {i} in iterable given as 'files' argument"
+                    )
 
         if not isinstance(
             self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
-        ):  
-            if isinstance(self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial):
-                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs["allowed_mentions"].reconstructed()
+        ):
+            if isinstance(
+                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial
+            ):
+                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs[
+                    "allowed_mentions"
+                ].reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'allowed_mentions'")
 
@@ -137,7 +146,10 @@ class MessageSend(IntervalTask):
             self.DATA.kwargs["reference"],
             (discord.Message, discord.MessageReference, NoneType),
         ):
-            if isinstance(self.DATA.kwargs["reference"], (serials.MessageSerial, serials.MessageReferenceSerial)):
+            if isinstance(
+                self.DATA.kwargs["reference"],
+                (serials.MessageSerial, serials.MessageReferenceSerial),
+            ):
                 if self.DATA.kwargs["reference"].IS_ASYNC:
                     self.DATA.kwargs["reference"] = await self.DATA.kwargs[
                         "reference"
@@ -149,7 +161,6 @@ class MessageSend(IntervalTask):
             else:
                 raise TypeError("Invalid type for argument 'reference'")
 
-
         self.DATA.OUTPUT.message = None
 
     async def on_run(self):
@@ -159,8 +170,8 @@ class MessageSend(IntervalTask):
         self.END()
 
 
-class _MessageModify(IntervalTask):
-    """A intermediary task class for modifying a message in a
+class _MessageModify(IntervalJob):
+    """A intermediary job class for modifying a message in a
     Discord text channel. Does not do anything on its own.
     """
 
@@ -172,7 +183,7 @@ class _MessageModify(IntervalTask):
         channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
         message: Union[int, discord.Message, serials.MessageSerial],
     ):
-        """Create a bot task instance.
+        """Create a bot job instance.
 
         Args:
             channel (Union[int, discord.abc.Messageable, serials.ChannelSerial]): The target channel.
@@ -192,8 +203,12 @@ class _MessageModify(IntervalTask):
             elif isinstance(self.DATA.channel, serials.ChannelSerial):
                 self.DATA.channel = await self.DATA.channel.reconstructed(True)
             elif self.DATA.channel is None:
-                if not isinstance(self.DATA.message, (discord.Message, serials.MessageSerial)):
-                    raise TypeError("argument 'channel' cannot be None when 'message' is an integer ID")
+                if not isinstance(
+                    self.DATA.message, (discord.Message, serials.MessageSerial)
+                ):
+                    raise TypeError(
+                        "argument 'channel' cannot be None when 'message' is an integer ID"
+                    )
             else:
                 raise TypeError("Invalid type for argument 'channel'")
 
@@ -212,7 +227,7 @@ class _MessageModify(IntervalTask):
 
 
 class MessageEdit(_MessageModify):
-    """A task class for editing a message in a
+    """A job class for editing a message in a
     Discord text channel.
     """
 
@@ -230,7 +245,7 @@ class MessageEdit(_MessageModify):
             serials.AllowedMentionsSerial,
         ] = None,
     ):
-        """Setup this task ojbect.
+        """Setup this job ojbect.
 
         Args:
             channel_id (int):
@@ -243,13 +258,13 @@ class MessageEdit(_MessageModify):
         """
         super().__init__(channel=channel, message=message)
         self.DATA.kwargs = dict(
-                content=content,
-                embed=embed,
-                delete_after=delete_after,
-                allowed_mentions=allowed_mentions,
+            content=content,
+            embed=embed,
+            delete_after=delete_after,
+            allowed_mentions=allowed_mentions,
         )
 
-    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    @call_with_method(_MessageModify, name="on_init", mode="after")
     async def on_init(self):
         if not isinstance(self.DATA.kwargs["embed"], (discord.Embed, NoneType)):
             if isinstance(self.DATA.kwargs["embed"], dict):
@@ -266,9 +281,13 @@ class MessageEdit(_MessageModify):
 
         if not isinstance(
             self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
-        ):  
-            if isinstance(self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial):
-                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs["allowed_mentions"].reconstructed()
+        ):
+            if isinstance(
+                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial
+            ):
+                self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs[
+                    "allowed_mentions"
+                ].reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'allowed_mentions'")
 
@@ -280,7 +299,7 @@ class MessageEdit(_MessageModify):
 
 
 class MessageDelete(_MessageModify):
-    """A task class for deleting a message in a
+    """A job class for deleting a message in a
     Discord text channel.
     """
 
@@ -292,7 +311,7 @@ class MessageDelete(_MessageModify):
         message: Union[int, discord.Message, serials.MessageSerial],
         delay: Optional[float] = None,
     ):
-        """Setup this task ojbect.
+        """Setup this job ojbect.
 
         Args:
             channel_id (int):
@@ -306,11 +325,11 @@ class MessageDelete(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.kwargs = dict(delay=delay)
 
-    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    @call_with_method(_MessageModify, name="on_init", mode="after")
     async def on_init(self):
         if not isinstance(self.DATA.kwargs["delay"], (int, float)):
             raise TypeError("Invalid type given for argument 'delay'")
-        
+
         self.DATA.kwargs["delay"] = float(self.DATA.kwargs["delay"])
 
     async def on_run(self):
@@ -327,9 +346,17 @@ class ReactionAdd(_MessageModify):
         self,
         channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
         message: Union[int, discord.Message, serials.MessageSerial],
-        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
+        emoji: Union[
+            int,
+            discord.Reaction,
+            discord.Emoji,
+            serials.EmojiSerial,
+            discord.PartialEmoji,
+            serials.PartialEmojiSerial,
+            str,
+        ],
     ):
-        """Setup this task ojbect.
+        """Setup this job ojbect.
 
         Args:
             channel_id (int):
@@ -349,15 +376,20 @@ class ReactionAdd(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    @call_with_method(_MessageModify, name="on_init", mode="after")
     async def on_init(self):
-        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+        if not isinstance(
+            self.DATA.emoji,
+            (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
+        ):
             if isinstance(self.DATA.emoji, int):
                 emoji = client.get_emoji(self.DATA.emoji)
                 if emoji is None:
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
-            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+            elif isinstance(
+                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+            ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
@@ -373,10 +405,18 @@ class ReactionRemove(_MessageModify):
         self,
         channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
         message: Union[int, discord.Message, serials.MessageSerial],
-        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
+        emoji: Union[
+            int,
+            discord.Reaction,
+            discord.Emoji,
+            serials.EmojiSerial,
+            discord.PartialEmoji,
+            serials.PartialEmojiSerial,
+            str,
+        ],
         member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerial],
     ):
-        """Setup this task ojbect.
+        """Setup this job ojbect.
 
         Args:
             channel_id (int):
@@ -399,16 +439,20 @@ class ReactionRemove(_MessageModify):
         self.DATA.emoji = emoji
         self.DATA.member = member
 
-
-    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    @call_with_method(_MessageModify, name="on_init", mode="after")
     async def on_init(self):
-        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+        if not isinstance(
+            self.DATA.emoji,
+            (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
+        ):
             if isinstance(self.DATA.emoji, int):
                 emoji = client.get_emoji(self.DATA.emoji)
                 if emoji is None:
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
-            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+            elif isinstance(
+                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+            ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
@@ -418,7 +462,6 @@ class ReactionRemove(_MessageModify):
                 self.DATA.member = await self.DATA.member.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'member'")
-
 
     async def on_run(self):
         await self.DATA.message.remove_reaction(self.DATA.emoji, self.DATA.member)
@@ -431,9 +474,17 @@ class ReactionClearEmoji(_MessageModify):
         self,
         channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
         message: Union[int, discord.Message],
-        emoji: Union[int, discord.Reaction, discord.Emoji, serials.EmojiSerial, discord.PartialEmoji, serials.PartialEmojiSerial, str],
+        emoji: Union[
+            int,
+            discord.Reaction,
+            discord.Emoji,
+            serials.EmojiSerial,
+            discord.PartialEmoji,
+            serials.PartialEmojiSerial,
+            str,
+        ],
     ):
-        """Setup this task ojbect.
+        """Setup this job ojbect.
 
         Args:
             channel_id (int):
@@ -453,15 +504,20 @@ class ReactionClearEmoji(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @chain_to_method(_MessageModify, name="on_init", mode="after")
+    @call_with_method(_MessageModify, name="on_init", mode="after")
     async def on_init(self):
-        if not isinstance(self.DATA.emoji, (discord.Reaction, discord.Emoji, discord.PartialEmoji, str)):
+        if not isinstance(
+            self.DATA.emoji,
+            (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
+        ):
             if isinstance(self.DATA.emoji, int):
                 emoji = client.get_emoji(self.DATA.emoji)
                 if emoji is None:
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
-            elif isinstance(self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)):
+            elif isinstance(
+                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+            ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")

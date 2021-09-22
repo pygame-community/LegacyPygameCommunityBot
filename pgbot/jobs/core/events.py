@@ -15,9 +15,9 @@ from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 import discord
 from discord.ext import tasks
-from pgbot.common import bot
+from pgbot import common
 
-client = bot
+client = common.bot
 CLIENT_EVENT_MAP = {}
 
 

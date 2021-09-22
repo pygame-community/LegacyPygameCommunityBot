@@ -3,27 +3,27 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file includes task classes that run at bot startup.
+This file includes job classes that run at bot startup.
 """
 import datetime
 import discord
 
 from pgbot import common
-from pgbot.tasks import core
-from pgbot.tasks.core import events
-from pgbot.tasks.core import serializers as serials
-from pgbot.tasks.utils import messaging
+from pgbot.jobs import core
+from pgbot.jobs.core import events
+from pgbot.jobs.core import serializers as serials
+from pgbot.jobs.utils import messaging
 from pgbot.utils import embed_utils
 
 
-class MessagingTest1(core.ClientEventTask):
+class MessagingTest1(core.ClientEventJob):
     EVENT_TYPES = (events.OnMessageBase,)
 
     async def on_init(self):
         if "target_channel" not in self.DATA:
             self.DATA.target_channel = common.guild.get_channel(822650791303053342)
             self.DATA.response_count = 0
-            self.DATA.interval_task_test = None
+            self.DATA.interval_job_test = None
 
     async def on_run(self, event: events.OnMessageBase, *args, **kwargs):
         if isinstance(event, events.OnMessage):
@@ -36,14 +36,14 @@ class MessagingTest1(core.ClientEventTask):
 
                     self.DATA.response_count += 1
                     if self.DATA.response_count == 3:
-                        self.DATA.interval_task_test = IntervalTaskTest()
-                        self.manager.add_task(self.DATA.interval_task_test)
+                        self.DATA.interval_job_test = IntervalJobTest()
+                        self.manager.add_job(self.DATA.interval_job_test)
 
                 elif (
                     event.message.content.lower().startswith(("shut up", "shutup"))
                     and self.DATA.response_count >= 3
                 ):
-                    self.DATA.interval_task_test.kill()
+                    self.DATA.interval_job_test.kill()
                     await self.DATA.target_channel.send(
                         f"Sorry, {event.message.author.mention}, I won't annoy you anymore, {event.message.author.mention}"
                     )
@@ -75,7 +75,7 @@ class MessagingTest1(core.ClientEventTask):
                 )
 
 
-class IntervalTaskTest(core.IntervalTask):
+class IntervalJobTest(core.IntervalJob):
     default_seconds = 10
 
     async def on_init(self):
@@ -91,7 +91,7 @@ class IntervalTaskTest(core.IntervalTask):
             await self.DATA.target_channel.send("*Are you annoyed yet?*")
 
 
-class MessagingTest2(core.ClientEventTask):
+class MessagingTest2(core.ClientEventJob):
     EVENT_TYPES = (events.OnMessage,)
 
     def __init__(self, target_channel: discord.TextChannel):
@@ -124,34 +124,24 @@ class MessagingTest2(core.ClientEventTask):
             await self.DATA.target_channel.send(f"Hi, {user_name}")
 
 
-class MessageTestSpawner(core.OneTimeTask):
+class MessageTestSpawner(core.OneTimeJob):
     async def on_run(self):
-        for task in (
-            MessagingTest2(
-                target_channel=common.guild.get_channel(822650791303053342)
-            ),
-            MessagingTest2(
-                target_channel=common.guild.get_channel(841726972841558056)
-            ),
-            MessagingTest2(
-                target_channel=common.guild.get_channel(844492573912465408)
-            ),
-            MessagingTest2(
-                target_channel=common.guild.get_channel(849259216195420170)
-            ),
-            MessagingTest2(
-                target_channel=common.guild.get_channel(844492623636725820)
-            ),
+        for job in (
+            MessagingTest2(target_channel=common.guild.get_channel(822650791303053342)),
+            MessagingTest2(target_channel=common.guild.get_channel(841726972841558056)),
+            MessagingTest2(target_channel=common.guild.get_channel(844492573912465408)),
+            MessagingTest2(target_channel=common.guild.get_channel(849259216195420170)),
+            MessagingTest2(target_channel=common.guild.get_channel(844492623636725820)),
         ):
-            await task.initialize()
-        
-            self.manager.add_task(task)
+            await job.initialize()
+
+            self.manager.add_job(job)
 
 
-class Main(core.OneTimeTask):
+class Main(core.OneTimeJob):
     async def on_run(self):
-        self.manager.add_tasks(
-            await core.DelayTask(
+        self.manager.add_jobs(
+            await core.DelayJob(
                 10.0,
                 messaging.MessageSend(
                     channel=822650791303053342, content="This will only happen once."
@@ -160,32 +150,38 @@ class Main(core.OneTimeTask):
             await MessageTestSpawner().as_initialized(),
         )
 
-        self.manager.schedule_task(
+        self.manager.schedule_job(
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
             max_recurrences=2,
-            init_kwargs=dict(
+            job_kwargs=dict(
                 channel=822650791303053342,
                 content="This will occur every 10 seconds, but only 2 times.",
             ),
         )
 
-        self.manager.schedule_task(
+        self.manager.schedule_job(
             messaging.MessageSend,
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
-            init_kwargs=dict(
+            job_kwargs=dict(
                 channel=841726972841558056,
                 content="Say 'I am cool.'",
             ),
         )
 
-        msg_event: events.OnMessage = await self.manager.wait_for_client_event(events.OnMessage, check=(lambda x: x.message.channel.id == 841726972841558056 and x.message.content == "I am cool."))
+        msg_event: events.OnMessage = await self.manager.wait_for_client_event(
+            events.OnMessage,
+            check=(
+                lambda x: x.message.channel.id == 841726972841558056
+                and x.message.content == "I am cool."
+            ),
+        )
 
-        self.manager.schedule_task(
+        self.manager.schedule_job(
             messaging.ReactionAdd,
             timestamp=datetime.datetime.now(),
-            init_kwargs=dict(
+            job_kwargs=dict(
                 channel=None,
                 message=serials.MessageSerial(msg_event.message),
                 emoji=853327268474126356,

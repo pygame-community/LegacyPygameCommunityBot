@@ -50,11 +50,13 @@ class BaseSerial:
     @classmethod
     def from_dict(cls, data: dict):
         if not isinstance(data, dict):
-            raise TypeError(f"argument data must be of type 'dict', not {type(data).__name__}")
+            raise TypeError(
+                f"argument data must be of type 'dict', not {type(data).__name__}"
+            )
 
         elif data.get("_class_name") != cls.__name__:
             raise ValueError("Cannot identify format of the given 'data' dictionary")
-        
+
         instance = cls.__new__(cls)
         instance._data = data.copy()
         return instance
@@ -63,8 +65,6 @@ class BaseSerial:
         return dict(_class_name=self.__class__.__name__, **self._dict)
 
     serialized = to_dict
-
-    
 
 
 class UserSerial(BaseSerial):
@@ -91,10 +91,7 @@ class MemberSerial(BaseSerial):
     IS_ASYNC = True
 
     def __init__(self, member: discord.Member):
-        self._dict = {
-            "id": member.id,
-            "guild_id": member.guild.id
-        }
+        self._dict = {"id": member.id, "guild_id": member.guild.id}
 
     async def reconstructed(self, always_fetch=False):
         guild: discord.Guild = client.get_guild(self._dict["guild_id"])
@@ -105,7 +102,7 @@ class MemberSerial(BaseSerial):
                 raise DeserializationError(
                     f'could not restore Guild object with ID {self._dict["guild_id"]} for Member object with ID {self._dict["id"]}'
                 )
-        
+
         member = guild.get_member(self._dict["id"])
         if member is None:
             if always_fetch:
@@ -136,6 +133,7 @@ class GuildSerial(BaseSerial):
                 )
         return guild
 
+
 class EmojiSerial(BaseSerial):
     def __init__(self, emoji: discord.Emoji):
         self._dict = {
@@ -151,6 +149,7 @@ class EmojiSerial(BaseSerial):
 
         return emoji
 
+
 class PartialEmojiSerial(BaseSerial):
     def __init__(self, emoji: discord.PartialEmoji):
         self._dict = {
@@ -159,6 +158,7 @@ class PartialEmojiSerial(BaseSerial):
 
     def reconstructed(self):
         return discord.PartialEmoji.from_dict(self._dict["dict"])
+
 
 class FileSerial(BaseSerial):
     def __init__(self, file: discord.File):
@@ -236,8 +236,8 @@ class RoleSerial(BaseSerial):
 
                 if role is None:
                     raise DeserializationError(
-                    f'could not find Role object with ID {self._dict["id"]}'
-                )
+                        f'could not find Role object with ID {self._dict["id"]}'
+                    )
             else:
                 raise DeserializationError(
                     f'could not restore Role object with ID {self._dict["id"]}'

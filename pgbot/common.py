@@ -38,7 +38,7 @@ stdout: Optional[io.StringIO] = None
 # Tuple containing all admin commands, gets monkey-patched later
 admin_commands = ()
 
-task_manager: object
+job_manager: object
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
