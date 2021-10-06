@@ -163,7 +163,7 @@ class ServerConstants:
         418: "Drink a tea",
         429: "Relax a bit",
         451: "FBI, open up",
-        500: "I have some problems right now, sorry :sweat:"
+        500: "I have some problems right now, sorry :sweat:",
         501: "This rule is still undecided",
         505: "Update PyGame to version 2.1",
         507: "Download more HDD",
