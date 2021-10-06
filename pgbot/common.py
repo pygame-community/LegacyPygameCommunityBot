@@ -142,6 +142,33 @@ class ServerConstants:
         799339620810358885,
         819537779847200809,
     )
+    
+    # Data from https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+    HTTP_RULES = {
+        100: "Continue...",
+        200: "OK :+1:",
+        204: "?",
+        301: "Rule moved permanently!",
+        302: "Rule found!",
+        303: "See other rules!",
+        304: "Rule is still the same!",
+        400: "I Don't understand!",
+        401: "You must login to Discord to see this rule",
+        402: "Support PyGame Community Server on Patreon",
+        403: "Only for specific users!",
+        404: "Not found",
+        409: "Oops, I have some problems, taking timeout",
+        410: "This rule has been deleted",
+        413: "This rule is too big to be displayed",
+        418: "Drink a tea",
+        429: "Relax a bit",
+        451: "FBI, open up",
+        500: "I have some problems right now, sorry :sweat:"
+        501: "This rule is still undecided",
+        505: "Update PyGame to version 2.1",
+        507: "Download more HDD",
+        508: "Write pg!rules 508",
+    }
 
     # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
     #       if you want to remove more, add the ID to the set below
