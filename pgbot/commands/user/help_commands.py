@@ -56,8 +56,8 @@ class HelpCommand(BaseCommand):
                     "Click [here](https://bitly.com/98K8eH) to gain the most "
                     "secret and ultimate info!"
                 )
-            elif rule in HTTP_RULES:
-                value = HTTP_RULES[rule]
+            elif rule in common.ServerConstants.HTTP_RULES:
+                value = common.ServerConstants.HTTP_RULES[rule]
 
             else:
                 value = "Does not exist lol"
