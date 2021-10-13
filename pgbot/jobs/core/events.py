@@ -20,15 +20,29 @@ from pgbot import common
 client = common.bot
 CLIENT_EVENT_MAP = {}
 
+def get_all_slot_names(cls):
+	slots_list = []
+	cls_slot_values = getattr(cls, "__slots__", None)
+	if cls_slot_values:
+		slots_list.extend(cls_slot_values)
+	for base_cls in cls.__bases__:
+		slots_list.extend(get_all_slot_names(base_cls))
+	return slots_list
 
 class ClientEvent:
     """The base class for all discord API websocket event wrapper objects, with values as returned by discord.py."""
 
     alt_name: str = None
 
+    __slots__ = ("_timestamp",)
+
+    __base_slots__ = ("_timestamp",)
+
     def __init_subclass__(cls):
         if isinstance(cls.alt_name, str):
             CLIENT_EVENT_MAP[cls.alt_name] = cls
+
+        cls.__base_slots__ = tuple(get_all_slot_names(cls))
 
     def __init__(self, _timestamp: datetime.datetime = None):
         self._timestamp = _timestamp or datetime.datetime.utcnow()
@@ -53,7 +67,10 @@ class ClientEvent:
         return names
 
     def copy(self):
-        return self.__class__(**self.__dict__)
+        new_obj = self.__class__.__new__(self.__class__)
+        for attr in self.__base_slots__:
+            setattr(new_obj, attr, getattr(self, attr))
+        return new_obj
 
     __copy__ = copy
 
@@ -66,6 +83,7 @@ class OnReady(ClientEvent):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_ready"""
 
     alt_name = "ready"
+    __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,6 +93,8 @@ class OnTyping(ClientEvent):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_typing"""
 
     alt_name = "typing"
+
+    __slots__ = ("channel", "user", "when")
 
     def __init__(
         self,
@@ -107,7 +127,7 @@ class OnMessageBase(ClientEvent):
         `OnMessageDelete`
         `OnBulkMessageDelete`
     """
-
+    __slots__ = ()
     pass
 
 
@@ -118,15 +138,14 @@ class OnRawMessageBase(ClientEvent):
         `OnRawMessageDelete`
         `OnRawBulkMessageDelete`
     """
-
+    __slots__ = ()
     pass
 
 
 class OnMessage(OnMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message"""
-
+    __slots__ = ("message",)
     alt_name = "message"
-
     def __init__(self, message: discord.Message, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -134,9 +153,8 @@ class OnMessage(OnMessageBase):
 
 class OnMessageDelete(OnMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
-
+    __slots__ = ("message",)
     alt_name = "message_delete"
-
     def __init__(self, message: discord.Message, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -144,9 +162,8 @@ class OnMessageDelete(OnMessageBase):
 
 class OnRawMessageDelete(OnRawMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_message_delete"""
-
+    __slots__ = ("payload",)
     alt_name = "raw_message_delete"
-
     def __init__(
         self,
         payload: discord.RawMessageDeleteEvent,
@@ -161,7 +178,7 @@ class OnBulkMessageDelete(OnMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
 
     alt_name = "bulk_message_delete"
-
+    __slots__ = ("messages",)
     def __init__(self, messages: list[discord.Message], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.messages = messages
@@ -169,9 +186,8 @@ class OnBulkMessageDelete(OnMessageBase):
 
 class OnRawBulkMessageDelete(OnRawMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_bulk_message_delete"""
-
+    __slots__ = ("payload",)
     alt_name = "raw_bulk_message_delete"
-
     def __init__(
         self,
         payload: discord.RawBulkMessageDeleteEvent,
@@ -184,9 +200,8 @@ class OnRawBulkMessageDelete(OnRawMessageBase):
 
 class OnMessageEdit(OnMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
-
+    __slots__ = ("before", "after")
     alt_name = "message_edit"
-
     def __init__(
         self, before: discord.Message, after: discord.Message, *args, **kwargs
     ):
@@ -197,9 +212,8 @@ class OnMessageEdit(OnMessageBase):
 
 class OnRawMessageEdit(OnRawMessageBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_message_edit"""
-
+    __slots__ = ("payload",)
     alt_name = "raw_message_edit"
-
     def __init__(
         self,
         payload: discord.RawMessageUpdateEvent,
@@ -218,7 +232,7 @@ class OnReactionBase(ClientEvent):
         `OnReactionclear`
         `OnReactionClearEmoji`
     """
-
+    __slots__ = ()
     pass
 
 
@@ -230,11 +244,12 @@ class OnRawReactionBase(ClientEvent):
         `OnRawReactionclear`
         `OnRawReactionClearEmoji`
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnReactionToggle(OnReactionBase):
+    __slots__ = ("reaction", "user")
     def __init__(
         self,
         reaction: discord.Reaction,
@@ -251,6 +266,7 @@ class _OnReactionToggle(OnReactionBase):
 
 
 class _OnRawReactionToggle(OnRawReactionBase):
+    __slots__ = ("payload",)
     def __init__(
         self,
         payload: discord.RawReactionActionEvent,
@@ -296,37 +312,38 @@ class _OnRawReactionToggle(OnRawReactionBase):
 
 class OnReactionAdd(_OnReactionToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
-
+    __slots__ = ()
     alt_name = "reaction_add"
+    
     pass
 
 
 class OnReactionRemove(_OnReactionToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
-
+    __slots__ = ()
     alt_name = "reaction_remove"
+    
     pass
 
 
 class OnRawReactionAdd(_OnRawReactionToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_reaction_add"""
-
+    __slots__ = ()
     alt_name = "raw_reaction_add"
     pass
 
 
 class OnRawReactionRemove(_OnRawReactionToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_reaction_remove"""
-
+    __slots__ = ()
     alt_name = "raw_reaction_remove"
     pass
 
 
 class OnReactionClear(OnReactionBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear"""
-
+    __slots__ = ("message", "reactions")
     alt_name = "reaction_clear"
-
     def __init__(
         self,
         message: discord.Message,
@@ -341,9 +358,8 @@ class OnReactionClear(OnReactionBase):
 
 class OnReactionClearEmoji(OnReactionBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear_emoji"""
-
+    __slots__ = ("reaction",)
     alt_name = "reaction_clear_emoji"
-
     def __init__(self, reaction: discord.Reaction, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reaction = reaction
@@ -351,9 +367,8 @@ class OnReactionClearEmoji(OnReactionBase):
 
 class OnRawReactionClearEmoji(OnRawReactionBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_reaction_clear_emoji"""
-
+    __slots__ = ("payload",)
     alt_name = "raw_reaction_clear_emoji"
-
     def __init__(
         self,
         payload: discord.RawReactionClearEmojiEvent,
@@ -366,9 +381,8 @@ class OnRawReactionClearEmoji(OnRawReactionBase):
 
 class OnRawReactionClear(OnRawReactionBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_reaction_clear"""
-
+    __slots__ = ("payload",)
     alt_name = "raw_reaction_clear"
-
     def __init__(
         self,
         payload: discord.RawReactionClearEvent,
@@ -387,11 +401,12 @@ class OnPrivateChannelBase(ClientEvent):
         `OnPrivateChannelUpdate`
         `OnPrivateChannelPinsUpdate`
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnPrivateChannelLifeCycle(OnPrivateChannelBase):
+    __slots__ = ("channel",)
     def __init__(self, channel: discord.abc.PrivateChannel, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.channel = channel
@@ -399,23 +414,22 @@ class _OnPrivateChannelLifeCycle(OnPrivateChannelBase):
 
 class OnPrivateChannelCreate(_OnPrivateChannelLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_private_channel_create"""
-
+    __slots__ = ()
     alt_name = "private_channel_create"
     pass
 
 
 class OnPrivateChannelDelete(_OnPrivateChannelLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_private_channel_delete"""
-
+    __slots__ = ()
     alt_name = "private_channel_delete"
     pass
 
 
 class OnPrivateChannelUpdate(OnPrivateChannelBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_private_channel_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "private_channel_update"
-
     def __init__(
         self,
         before: discord.abc.PrivateChannel,
@@ -432,7 +446,7 @@ class OnPrivateChannelPinsUpdate(OnPrivateChannelBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_private_channel_pins_update"""
 
     alt_name = "private_channel_pins_update"
-
+    __slots__ = ("channel", "last_pin")
     def __init__(
         self,
         channel: discord.abc.PrivateChannel,
@@ -462,7 +476,7 @@ class OnGuildBase(ClientEvent):
         `OnMemberBanBase`
         `OnInviteBase`
     """
-
+    __slots__ = ()
     pass
 
 
@@ -473,11 +487,12 @@ class OnGuildChannelBase(OnGuildBase):
         `OnGuildChannelDelete`
         `OnGuildChannelUpdate`
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnGuildChannelLifeCycle(OnGuildChannelBase):
+    __slots__ = ("channel",)
     def __init__(self, channel: discord.abc.GuildChannel, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.channel = channel
@@ -485,23 +500,22 @@ class _OnGuildChannelLifeCycle(OnGuildChannelBase):
 
 class OnGuildChannelCreate(_OnGuildChannelLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create"""
-
+    __slots__ = ()
     alt_name = "guild_channel_create"
     pass
 
 
 class OnGuildChannelDelete(_OnGuildChannelLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete"""
-
+    __slots__ = ()
     alt_name = "guild_channel_delete"
     pass
 
 
 class OnGuildChannelUpdate(OnGuildChannelBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "guild_channel_update"
-
     def __init__(
         self,
         before: discord.abc.GuildChannel,
@@ -516,9 +530,8 @@ class OnGuildChannelUpdate(OnGuildChannelBase):
 
 class OnGuildChannelPinsUpdate(OnGuildChannelBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update"""
-
+    __slots__ = ("channel", "last_pin")
     alt_name = "guild_channel_pins_update"
-
     def __init__(
         self,
         channel: discord.abc.GuildChannel,
@@ -533,9 +546,8 @@ class OnGuildChannelPinsUpdate(OnGuildChannelBase):
 
 class OnGuildIntegrationsUpdate(OnGuildBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update"""
-
+    __slots__ = ("guild",)
     alt_name = "guild_integrations_update"
-
     def __init__(self, guild: discord.abc.GuildChannel, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild = guild
@@ -543,9 +555,8 @@ class OnGuildIntegrationsUpdate(OnGuildBase):
 
 class OnWebhooksUpdate(OnGuildBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
-
+    __slots__ = ("channel",)
     alt_name = "webhooks_update"
-
     def __init__(self, channel: discord.abc.GuildChannel, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.channel = channel
@@ -558,7 +569,7 @@ class OnMemberBase(OnGuildBase):
         `OnMemberUpdate`
         `OnMemberBanBase`
     """
-
+    __slots__ = ()
     pass
 
 
@@ -569,7 +580,7 @@ class OnMemberTrafficBase(OnMemberBase):
         `OnMemberJoin`
         `OnMemberRemove`
     """
-
+    __slots__ = ("member",)
     def __init__(self, member: discord.Member, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.member = member
@@ -577,23 +588,22 @@ class OnMemberTrafficBase(OnMemberBase):
 
 class OnMemberJoin(OnMemberTrafficBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-
+    __slots__ = ()
     alt_name = "member_join"
     pass
 
 
 class OnMemberRemove(OnMemberTrafficBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""
-
+    __slots__ = ()
     alt_name = "member_remove"
     pass
 
 
 class OnMemberUpdate(OnMemberBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "member_update"
-
     def __init__(self, before: discord.Member, after: discord.Member, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
@@ -602,9 +612,8 @@ class OnMemberUpdate(OnMemberBase):
 
 class OnUserUpdate(ClientEvent):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_user_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "user_update"
-
     def __init__(self, before: discord.User, after: discord.User, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
@@ -617,9 +626,7 @@ class OnGuildTrafficBase(OnGuildBase):
         `OnGuildJoin`
         `OnGuildRemove`
     """
-
-    alt_name = ""
-
+    __slots__ = ("guild",)
     def __init__(self, guild: discord.Guild, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild = guild
@@ -627,23 +634,22 @@ class OnGuildTrafficBase(OnGuildBase):
 
 class OnGuildJoin(OnGuildTrafficBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
-
+    __slots__ = ()
     alt_name = "guild_join"
     pass
 
 
 class OnGuildRemove(OnGuildTrafficBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove"""
-
+    __slots__ = ()
     alt_name = "guild_remove"
     pass
 
 
 class OnGuildUpdate(OnGuildBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "guild_update"
-
     def __init__(self, before: discord.Guild, after: discord.Guild, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
@@ -657,11 +663,12 @@ class OnGuildRoleBase(OnGuildBase):
         `OnGuildRoleDelete`
         `OnGuildRoleUpdate
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnGuildRoleLifeCycle(OnGuildRoleBase):
+    __slots__ = ("role",)
     def __init__(self, role: discord.Role, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.role = role
@@ -669,23 +676,22 @@ class _OnGuildRoleLifeCycle(OnGuildRoleBase):
 
 class OnGuildRoleCreate(_OnGuildRoleLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create"""
-
+    __slots__ = ()
     alt_name = "guild_role_create"
     pass
 
 
 class OnGuildRoleDelete(_OnGuildRoleLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete"""
-
+    __slots__ = ()
     alt_name = "guild_role_delete"
     pass
 
 
 class OnGuildRoleUpdate(OnGuildRoleBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "guild_role_update"
-
     def __init__(self, before: discord.Role, after: discord.Role, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
@@ -694,9 +700,8 @@ class OnGuildRoleUpdate(OnGuildRoleBase):
 
 class OnGuildEmojisUpdate(OnGuildBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update"""
-
+    __slots__ = ("guild", "before", "after")
     alt_name = "guild_emojis_update"
-
     def __init__(
         self,
         guild: discord.Guild,
@@ -716,9 +721,7 @@ class OnGuildAvailabilityBase(OnGuildBase):
         `OnGuildAvailable`
         `OnGuildUnavailable`
     """
-
-    alt_name = ""
-
+    __slots__ = ("guild",)
     def __init__(self, guild: discord.Guild, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guild = guild
@@ -726,23 +729,22 @@ class OnGuildAvailabilityBase(OnGuildBase):
 
 class OnGuildAvailable(OnGuildAvailabilityBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_available"""
-
+    __slots__ = ()
     alt_name = "guild_available"
     pass
 
 
 class OnGuildUnavailable(OnGuildAvailabilityBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_unavailable"""
-
+    __slots__ = ()
     alt_name = "guild_unavailable"
     pass
 
 
 class OnVoiceStateUpdate(OnGuildBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_voice_state_update"""
-
+    __slots__ = ("member", "before", "after")
     alt_name = "voice_state_update"
-
     def __init__(
         self,
         member: discord.Member,
@@ -763,11 +765,12 @@ class OnMemberBanBase(OnMemberBase):
         `OnMemberBan`
         `OnMemberUnBan`
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnMemberBanToggle(OnMemberBanBase):
+    __slots__ = ("guild", "user")
     def __init__(
         self,
         guild: discord.Guild,
@@ -782,14 +785,14 @@ class _OnMemberBanToggle(OnMemberBanBase):
 
 class OnMemberBan(_OnMemberBanToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban"""
-
+    __slots__ = ()
     alt_name = "member_ban"
     pass
 
 
 class OnMemberUnban(_OnMemberBanToggle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban"""
-
+    __slots__ = ()
     alt_name = "member_unban"
     pass
 
@@ -800,11 +803,12 @@ class OnInviteBase(OnGuildBase):
         `OnInviteCreate`
         `OnInviteDelete`
     """
-
+    __slots__ = ()
     pass
 
 
 class _OnInviteLifeCycle(OnInviteBase):
+    __slots__ = ("invite",)
     def __init__(self, invite: discord.Invite, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.invite = invite
@@ -812,23 +816,23 @@ class _OnInviteLifeCycle(OnInviteBase):
 
 class OnInviteCreate(_OnInviteLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_invite_create"""
-
+    __slots__ = ()
     alt_name = "invite_create"
     pass
 
 
 class OnInviteDelete(_OnInviteLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_invite_delete"""
-
+    __slots__ = ()
     alt_name = "invite_delete"
     pass
 
-
 class OnGroupBase(ClientEvent):
+    __slots__ = ()
     pass
 
-
 class _OnGroupLifeCycle(OnGroupBase):
+    __slots__ = ("channel", "user")
     def __init__(
         self, channel: discord.GroupChannel, user: discord.User, *args, **kwargs
     ):
@@ -839,23 +843,25 @@ class _OnGroupLifeCycle(OnGroupBase):
 
 class OnGroupJoin(_OnGroupLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_group_join"""
-
+    __slots__ = ()
     alt_name = "group_join"
     pass
 
 
 class OnGroupRemove(_OnGroupLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_group_remove"""
-
+    __slots__ = ()
     alt_name = "group_remove"
     pass
 
 
 class OnRelationshipBase(ClientEvent):
+    __slots__ = ()
     pass
 
 
 class _OnRelationshipLifeCycle(OnInviteBase):
+    __slots__ = ("relationship",)
     def __init__(self, relationship: discord.Relationship, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.relationship = relationship
@@ -863,23 +869,22 @@ class _OnRelationshipLifeCycle(OnInviteBase):
 
 class OnRelationshipAdd(_OnRelationshipLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_relationship_add"""
-
+    __slots__ = ()
     alt_name = "relationship_add"
     pass
 
 
 class OnRelationshipRemove(_OnRelationshipLifeCycle):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_relationship_remove"""
-
+    __slots__ = ()
     alt_name = "relationship_remove"
     pass
 
 
 class OnRelationshipUpdate(OnRelationshipBase):
     """See https://discordpy.readthedocs.io/en/latest/api.html#discord.on_relationship_update"""
-
+    __slots__ = ("before", "after")
     alt_name = "relationship_update"
-
     def __init__(
         self,
         before: discord.Relationship,

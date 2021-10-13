@@ -74,7 +74,7 @@ class MessageSend(IntervalJob):
             mention_author=mention_author,
         )
 
-    async def on_init(self):
+    async def on_job_init(self):
         if not isinstance(self.DATA.channel, discord.abc.Messageable):
             if isinstance(self.DATA.channel, int):
                 channel_id = self.DATA.channel
@@ -163,11 +163,11 @@ class MessageSend(IntervalJob):
 
         self.DATA.OUTPUT.message = None
 
-    async def on_run(self):
+    async def on_job_run(self):
         self.DATA.OUTPUT.message = await self.DATA.channel.send(**self.DATA.kwargs)
 
-    async def on_post_run(self):
-        self.END()
+    async def on_job_stop(self):
+        self.COMPLETE()
 
 
 class _MessageModify(IntervalJob):
@@ -193,7 +193,7 @@ class _MessageModify(IntervalJob):
         self.DATA.channel = channel
         self.DATA.message = message
 
-    async def on_init(self):
+    async def on_job_init(self):
         if not isinstance(self.DATA.channel, discord.abc.Messageable):
             if isinstance(self.DATA.channel, int):
                 channel_id = self.DATA.channel
@@ -222,8 +222,8 @@ class _MessageModify(IntervalJob):
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
-    async def on_post_run(self):
-        self.END()
+    async def on_job_stop(self):
+        self.COMPLETE()
 
 
 class MessageEdit(_MessageModify):
@@ -264,8 +264,8 @@ class MessageEdit(_MessageModify):
             allowed_mentions=allowed_mentions,
         )
 
-    @call_with_method(_MessageModify, name="on_init", mode="after")
-    async def on_init(self):
+    @call_with_method(_MessageModify, name="on_job_init", mode="after")
+    async def on_job_init(self):
         if not isinstance(self.DATA.kwargs["embed"], (discord.Embed, NoneType)):
             if isinstance(self.DATA.kwargs["embed"], dict):
                 if embed_utils.validate_embed_dict(self.DATA.kwargs["embed"]):
@@ -291,11 +291,11 @@ class MessageEdit(_MessageModify):
             else:
                 raise TypeError("Invalid type for argument 'allowed_mentions'")
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.edit(**self.DATA.kwargs)
 
-    async def on_post_run(self):
-        self.END()
+    async def on_job_stop(self):
+        self.COMPLETE()
 
 
 class MessageDelete(_MessageModify):
@@ -325,18 +325,18 @@ class MessageDelete(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.kwargs = dict(delay=delay)
 
-    @call_with_method(_MessageModify, name="on_init", mode="after")
-    async def on_init(self):
+    @call_with_method(_MessageModify, name="on_job_init", mode="after")
+    async def on_job_init(self):
         if not isinstance(self.DATA.kwargs["delay"], (int, float)):
             raise TypeError("Invalid type given for argument 'delay'")
 
         self.DATA.kwargs["delay"] = float(self.DATA.kwargs["delay"])
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.delete(**self.DATA.kwargs)
 
-    async def on_post_run(self):
-        self.END()
+    async def on_job_stop(self):
+        self.COMPLETE()
 
 
 class ReactionAdd(_MessageModify):
@@ -376,8 +376,8 @@ class ReactionAdd(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @call_with_method(_MessageModify, name="on_init", mode="after")
-    async def on_init(self):
+    @call_with_method(_MessageModify, name="on_job_init", mode="after")
+    async def on_job_init(self):
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
@@ -394,7 +394,7 @@ class ReactionAdd(_MessageModify):
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.add_reaction(self.DATA.emoji)
 
 
@@ -439,8 +439,8 @@ class ReactionRemove(_MessageModify):
         self.DATA.emoji = emoji
         self.DATA.member = member
 
-    @call_with_method(_MessageModify, name="on_init", mode="after")
-    async def on_init(self):
+    @call_with_method(_MessageModify, name="on_job_init", mode="after")
+    async def on_job_init(self):
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
@@ -463,7 +463,7 @@ class ReactionRemove(_MessageModify):
             else:
                 raise TypeError("Invalid type for argument 'member'")
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.remove_reaction(self.DATA.emoji, self.DATA.member)
 
 
@@ -504,8 +504,8 @@ class ReactionClearEmoji(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @call_with_method(_MessageModify, name="on_init", mode="after")
-    async def on_init(self):
+    @call_with_method(_MessageModify, name="on_job_init", mode="after")
+    async def on_job_init(self):
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
@@ -522,12 +522,12 @@ class ReactionClearEmoji(_MessageModify):
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.clear_reaction(self.DATA.emoji)
 
 
 class ReactionClear(_MessageModify):
     """Clears all reactions from a message."""
 
-    async def on_run(self):
+    async def on_job_run(self):
         await self.DATA.message.clear_reactions()
