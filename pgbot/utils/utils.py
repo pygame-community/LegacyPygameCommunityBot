@@ -22,6 +22,20 @@ import pygame
 from pgbot import common, db
 
 
+def join_readable(joins: list[str]):
+    """
+    Join a list of strings, in a human readable way
+    """
+    if not joins:
+        return ""
+
+    preset = ", ".join(joins[:-1])
+    if preset:
+        return f"{preset} and {joins[-1]}"
+
+    return joins[-1]
+
+
 async def get_channel_feature(
     name: str, channel: common.Channel, defaultret: bool = False
 ):
@@ -156,10 +170,7 @@ def format_long_time(
                 name = name[:-1]
             result.append(f"{value} {name}")
 
-    preset = ", ".join(result[:-1])
-    if preset:
-        return f"{preset} and {result[-1]}"
-    return result[-1]
+    return join_readable(result)
 
 
 def format_timedelta(tdelta: datetime.timedelta):
@@ -368,3 +379,23 @@ def format_datetime(dt: Union[int, float, datetime.datetime], tformat: str = "f"
     if isinstance(dt, datetime.datetime):
         dt = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
     return f"<t:{int(dt)}:{tformat}>"
+
+
+def split_wc_scores(scores: dict[int, int]):
+    """
+    Split wc scoreboard into different categories
+    """
+    scores_list = [(score, f"<@!{mem}>") for mem, score in scores.items()]
+    scores_list.sort(reverse=True)
+
+    for title, category_score in common.WC_SCORING:
+        category_list = list(filter(lambda x: x[0] >= category_score, scores_list))
+        if not category_list:
+            continue
+
+        desc = ">>> " + "\n".join(
+            (f"`{score}` **•** {mem} :medal:" for score, mem in category_list)
+        )
+
+        yield title, desc, False
+        scores_list = scores_list[len(category_list) :]

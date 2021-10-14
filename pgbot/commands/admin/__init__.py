@@ -1572,6 +1572,119 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             description=f"Changed settings on {len(channels)} channel(s)",
         )
 
+    @add_group("events", "wc", "set")
+    async def cmd_events_wc_set(self, description: String):
+        """
+        ->type Events
+        ->signature pg!events wc set <description>
+        ->description Set the description for the WC
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            wc_dict["description"] = description.string
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated description!",
+            description="Updated Weekly Challenges (WC) Event description!",
+        )
+
+    @add_group("events", "wc", "add")
+    async def cmd_events_wc_add(self, round_name: String, description: String):
+        """
+        ->type Events
+        ->signature pg!events wc add <round_name> <description>
+        ->description Set an event round
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            if "rounds" not in wc_dict:
+                wc_dict["rounds"] = []
+
+            wc_dict["rounds"].append(
+                {
+                    "name": round_name.string,
+                    "description": description.string,
+                    "scores": {},
+                }
+            )
+            db_obj.write(wc_dict)
+            ind = len(wc_dict["rounds"])
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated events round!",
+            description=f"Weekly Challenges got round {ind} - '{round_name.string}'!",
+        )
+
+    @add_group("events", "wc", "remove")
+    async def cmd_events_wc_remove(self, round_no: int):
+        """
+        ->type Events
+        ->signature pg!events wc remove <event_id> <round_no>
+        ->description Remove an event round
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            try:
+                round_name = wc_dict.pop(round_no - 1)["name"]
+
+            except IndexError:
+                raise BotException(
+                    "Could not update events round!",
+                    "The specified event round does not exist",
+                )
+
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated events round!",
+            description=(
+                f"Removed round '{round_name}' from Weekly Challenges (WC) event!"
+            ),
+        )
+
+    @add_group("events", "wc", "update")
+    async def cmd_events_wc_update(
+        self,
+        round_no: int,
+        *name_and_scores: tuple[discord.Member, Optional[tuple[int, ...]]],
+    ):
+        """
+        ->type Events
+        ->signature pg!events wc update <round_no> [names_and_scores tuple]
+        ->description Update scoreboard challenge points
+        -----
+        """
+        round_no -= 1
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            try:
+                for name, scores in name_and_scores:
+                    if scores is None:
+                        wc_dict["rounds"][round_no]["scores"].pop(name.id)
+                    else:
+                        wc_dict["rounds"][round_no]["scores"][name.id] = scores
+
+            except IndexError:
+                raise BotException(
+                    "Could not update scoreboard!",
+                    "The specified event round does not exist",
+                ) from None
+
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated data!",
+            description="The scoreboard has been updated with the latest scores",
+        )
+
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
