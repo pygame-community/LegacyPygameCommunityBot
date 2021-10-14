@@ -17,6 +17,7 @@ from typing import Optional, Union
 
 import black
 import discord
+from discord.embeds import EmptyEmbed
 import psutil
 import pygame
 
@@ -351,6 +352,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         show_author: bool = True,
         divider: String = String("-" * 56),
         group_by_author: bool = True,
+        message_links: bool = True,
         oldest_first: bool = True,
         same_channel: bool = False,
     ):
@@ -358,7 +360,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->type Admin commands
         ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
         [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
-        [divider=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
+        [divider=("-"*56)] [group_by_author=True] [message_links=True]
+        [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -388,7 +391,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
         if (
@@ -523,16 +525,46 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             and i > 0
                             and messages[i - 1].author == author
                         ):
-                            # no author info or divider for messages next to each other sharing an author
+                            # no author info or divider for messages next to
+                            # each other sharing an author
                             current_divider_str = None
                         else:
-                            msg_created_at = msg.created_at.strftime("%d %b %Y %H:%M")
+                            shorten = i > 0 and messages[i - 1].author == author
+                            if shorten:
+                                shorten_style = (
+                                    "t"
+                                    if messages[i - 1].created_at.day
+                                    == msg.created_at.day
+                                    else "f"
+                                )
+                                description_str = (
+                                    f"{utils.format_datetime(msg.created_at, tformat=shorten_style)}"
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
+                                )
+                            else:
+                                description_str = (
+                                    f"{author.mention}"
+                                    f" {utils.format_datetime(msg.created_at)}"
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
+                                )
+
                             author_embed = embed_utils.create(
-                                description=f"{author.mention} "
-                                f"[View Original]({msg.jump_url})",
+                                description=description_str,
                                 color=0x36393F,
-                                author_name=f"{author.name}#{author.discriminator}  |  {msg_created_at}",
-                                author_icon_url=f"{author.avatar_url}",
+                                author_name=f"{author.name}#{author.discriminator}"
+                                if not shorten
+                                else EmptyEmbed,
+                                author_icon_url=f"{author.avatar_url}"
+                                if not shorten
+                                else EmptyEmbed,
                             )
 
                         if author_embed or current_divider_str:
