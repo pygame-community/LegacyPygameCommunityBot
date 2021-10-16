@@ -161,6 +161,14 @@ class ServerConstants:
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
 
+    # remember to maintain the scores here in descending order
+    WC_ROLES = (
+        (42, 889170053013061683),  # Legendary Guardian
+        (30, 889169676398100480),  # Elite Guardian
+        (15, 889169351645749311),  # Guardian
+        (1, 889168765479178240),  # Apprentice
+    )
+
 
 # Link to pygame snake logo
 GUILD_ICON = "https://media.discordapp.net/attachments/793272780987826197/836600713672523826/Discord_Server_Animated_Logo_V5_512x512.gif"

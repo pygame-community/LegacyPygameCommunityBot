@@ -14,7 +14,7 @@ import os
 import platform
 import sys
 import traceback
-from typing import Callable, Iterable, Union
+from typing import Callable, Iterable, Union, Optional
 
 import discord
 import pygame
@@ -399,3 +399,27 @@ def split_wc_scores(scores: dict[int, int]):
 
         yield title, desc, False
         scores_list = scores_list[len(category_list) :]
+
+
+async def give_wc_roles(member: discord.Member, score: int):
+    """
+    Updates the WC roles of a member based on their latest total score
+    """
+    got_role: bool = False
+    for min_score, role_id in common.ServerConstants.WC_ROLES:
+        if score >= min_score and not got_role:
+            # This is the role to give
+            got_role = True
+            if role_id not in map(lambda x: x.id, member.roles):
+                await member.add_roles(
+                    discord.Object(role_id),
+                    reason="Automatic bot action, adds WC event roles",
+                )
+
+        else:
+            # any other event related role to be removed
+            if role_id in map(lambda x: x.id, member.roles):
+                await member.remove_roles(
+                    discord.Object(role_id),
+                    reason="Automatic bot action, removes older WC event roles",
+                )
