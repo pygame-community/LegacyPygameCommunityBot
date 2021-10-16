@@ -823,6 +823,7 @@ class UserCommand(FunCommand, HelpCommand):
             description=wc_dict.get(
                 "description", "Upcoming Event! Prepare your peepers!"
             ),
+            url=wc_dict.get("url"),
             fields=fields,
             color=0xFF8C00,
         )
