@@ -86,6 +86,13 @@ GENERIC = False
 
 UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
 
+WC_SCORING = (
+    ("Legendary Guardian ⚜️💫", 42),
+    ("Elite Guardian ⚜️", 30),
+    ("Guardian ⚜️", 15),
+    ("Apprentice ⚜️", 1),
+)
+
 
 class ServerConstants:
     """
@@ -153,6 +160,14 @@ class ServerConstants:
 
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
+
+    # remember to maintain the scores here in descending order
+    WC_ROLES = (
+        (42, 889170053013061683),  # Legendary Guardian
+        (30, 889169676398100480),  # Elite Guardian
+        (15, 889169351645749311),  # Guardian
+        (1, 889168765479178240),  # Apprentice
+    )
 
 
 # Link to pygame snake logo
