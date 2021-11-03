@@ -1101,8 +1101,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if url:
             embed_dict["url"] = url.string
 
-        if img_url:
-            embed_dict["image"] = {"url": img_url.string}
+        if image_url:
+            embed_dict["image"] = {"url": image_url.string}
 
         if thumbnail:
             embed_dict["thumbnail"] = {"url": thumbnail.string}
