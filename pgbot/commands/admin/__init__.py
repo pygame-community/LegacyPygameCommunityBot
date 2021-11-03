@@ -627,13 +627,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             )
 
                     elif msg.type == discord.MessageType.pins_add:
-                        await destination.send(
-                            content=f"{msg.author.name}#{msg.author.discriminator} pinned a message in #{origin.name}"
+                        await embed_utils.send(
+                            channel=destination,
+                            description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}"
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
-                        await destination.send(
-                            content=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
+                         await embed_utils.send(
+                            channel=destination,
+                            description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
                         )
 
                     if len(attached_files) > 1:
@@ -1059,7 +1061,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
-        img_url: Optional[String] = None,
+        image_url: Optional[String] = None,
         thumbnail: Optional[String] = None,
         multi_votes: bool = False,
     ):
