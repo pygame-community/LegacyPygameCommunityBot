@@ -216,7 +216,7 @@ async def message_delete(msg: discord.Message):
                     del common.cmd_logs[log]
                     return
 
-    if common.GENERIC or (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
+    if common.GENERIC or common.TEST_MODE:
         return
 
     if msg.channel in common.entry_channels.values():
@@ -260,7 +260,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
         except discord.HTTPException:
             pass
 
-    if common.GENERIC or (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
+    if common.GENERIC or common.TEST_MODE:
         return
 
     if new.channel in common.entry_channels.values():
@@ -407,7 +407,7 @@ async def handle_message(msg: discord.Message):
 
         await emotion.update("bored", -10)
     
-    elif not (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
+    elif not common.TEST_MODE:
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
