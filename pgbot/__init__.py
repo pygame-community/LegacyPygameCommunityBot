@@ -7,6 +7,7 @@ This file is the main file of pgbot subdir
 """
 
 import asyncio
+import datetime
 import io
 import os
 import random
@@ -118,6 +119,45 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     return title, fields
 
 
+def entry_message_validity_check(message: discord.Message, min_chars=32, max_chars=float("inf")):
+    """Checks if a message posted in a showcase channel for projects has the right format.
+
+    Returns:
+        bool: True/False
+    """
+    if not any((
+        message.content and message.attachments,
+        (message.content and (("https://" in message.content) or ("http://" in message.content)) and min_chars < len(message.content) < max_chars),
+    )):
+        return False
+    return True
+
+async def delete_bad_entry_and_warning(entry_msg: discord.Message, warn_msg: discord.Message, delay: float = 0.):
+    """A function to pardon a bad entry message with a grace period. If this coroutine is not cancelled during the
+    grace period specified in `delay` in seconds, it will delete both `entry_msg` and `warn_msg`, if possible.
+
+    Args:
+        entry_msg (discord.Message): [description]
+        warn_msg (discord.Message): [description]
+        delay (float, optional): [description]. Defaults to 0..
+    """
+    try:
+        await asyncio.sleep(delay)  # allow cancelling during delay
+    except asyncio.CancelledError:
+        return
+    
+    try:
+        await warn_msg.edit("Sorry, but your showcase entry will now be deleted.")
+        await asyncio.sleep(0)
+    except asyncio.CancelledError:
+        pass
+
+    finally:
+        await entry_msg.delete()
+        await warn_msg.delete()
+            
+
+
 async def member_join(member: discord.Member):
     """
     This function handles the greet message when a new member joins
@@ -176,10 +216,23 @@ async def message_delete(msg: discord.Message):
                     del common.cmd_logs[log]
                     return
 
-    if common.GENERIC or common.TEST_MODE:
+    if common.GENERIC or (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
         return
 
     if msg.channel in common.entry_channels.values():
+        if msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] and msg.id in common.entry_message_deletion_dict: # for case where user deletes their bad entry by themselves
+            deletion_data_list = common.entry_message_deletion_dict[msg.id]
+            deletion_task = deletion_data_list[0]
+            if not deletion_task.done():
+                deletion_task.cancel()
+                try:
+                    warn_msg = await msg.channel.fetch_message(deletion_data_list[1])   # warning and entry message were already deleted
+                    await warn_msg.delete()
+                except discord.NotFound:
+                    pass
+
+            del common.entry_message_deletion_dict[msg.id]
+
         async for message in common.entries_discussion_channel.history(
             around=msg.created_at, limit=5
         ):
@@ -207,10 +260,72 @@ async def message_edit(old: discord.Message, new: discord.Message):
         except discord.HTTPException:
             pass
 
-    if common.GENERIC or common.TEST_MODE:
+    if common.GENERIC or (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
         return
 
     if new.channel in common.entry_channels.values():
+        embed_repost_edited = False
+        if new.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
+            if not entry_message_validity_check(new):
+                if new.id in common.entry_message_deletion_dict:
+                    deletion_data_list = common.entry_message_deletion_dict[new.id]
+                    deletion_task = deletion_data_list[0]
+                    if deletion_task.done():
+                        del common.entry_message_deletion_dict[new.id]
+                    else:
+                        try:
+                            deletion_task.cancel() # try to cancel deletion after noticing edit by sender
+                            warn_msg = await new.channel.fetch_message(deletion_data_list[1])
+                            deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                            await warn_msg.edit(
+                                content=(
+                                    "I noticed your edit, but: Your entry message must contain an attachment or a link to be valid and"+\
+                                    f" must, if no attachments are present, contain at least 32 characters."+\
+                                    f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
+                                    " If no changes are made, your entry message will be"+\
+                                    f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                                )
+                            )
+                            common.entry_message_deletion_dict[new.id] = [
+                                asyncio.create_task(
+                                        delete_bad_entry_and_warning(new, warn_msg, delay=120)
+                                    ),
+                                warn_msg.id,
+                            ]
+                        except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
+                            del common.entry_message_deletion_dict[new.id]
+
+                else:  # an edit led to an invalid entry message from a valid one
+                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                    warn_msg = await new.reply(
+                        "Your entry message must contain an attachment or a link to be valid and"+\
+                        f" must, if no attachments are present, contain at least 32 characters."+\
+                        f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
+                        " If no changes are made, your entry message will be"+\
+                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                    )
+                    
+                    common.entry_message_deletion_dict[new.id] = [
+                        asyncio.create_task(
+                            delete_bad_entry_and_warning(new, warn_msg, delay=120)
+                        ),
+                        warn_msg.id,
+                    ]
+                return
+
+            elif entry_message_validity_check(new) and new.id in common.entry_message_deletion_dict: # an invalid entry was corrected
+                deletion_data_list = common.entry_message_deletion_dict[new.id]
+                deletion_task = deletion_data_list[0]
+                if not deletion_task.done():   # too late to do anything
+                    try:
+                        deletion_task.cancel() # try to cancel deletion after noticing valid edit by sender
+                        warn_msg = await new.channel.fetch_message(deletion_data_list[1])
+                        await warn_msg.delete()
+                    except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
+                        pass
+                del common.entry_message_deletion_dict[new.id]
+        
+        
         async for message in common.entries_discussion_channel.history(
             around=old.created_at, limit=5
         ):
@@ -223,10 +338,24 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
                     await embed_utils.edit(message, embed=embed, fields=fields)
+                    embed_repost_edited = True
                     break
 
             except (IndexError, AttributeError):
                 pass
+
+        if not embed_repost_edited:
+            if (datetime.datetime.utcnow() - old.created_at) < datetime.timedelta(minutes=5): # for new, recently corrected entry messages
+                entry_type = "showcase"
+                color = 0xFF8800
+
+                title, fields = format_entries_message(new, entry_type)
+                await embed_utils.send(
+                    common.entries_discussion_channel,
+                    title=title,
+                    color=color,
+                    fields=fields,
+                )
 
 
 async def raw_reaction_add(payload: discord.RawReactionActionEvent):
@@ -277,8 +406,8 @@ async def handle_message(msg: discord.Message):
             del common.cmd_logs[list(common.cmd_logs.keys())[0]]
 
         await emotion.update("bored", -10)
-
-    elif not common.TEST_MODE:
+    
+    elif not (common.TEST_MODE and common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"] != 822650791303053342):
         await emotion.check_bonk(msg)
 
         # Check for these specific messages, do not try to generalise, because we do not
@@ -291,11 +420,30 @@ async def handle_message(msg: discord.Message):
         #         allowed_mentions=no_mentions,
         #     )
         #     await emotion.update("happy", -8)
+
         if common.GENERIC:
             return
 
         if msg.channel in common.entry_channels.values():
+
             if msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
+                if not entry_message_validity_check(msg):
+                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                    warn_msg = await msg.reply(
+                        "Your entry message must contain an attachment or a link to be valid and"+\
+                        f" must, if no attachments are present, contain at least 32 characters."+\
+                        f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
+                        " If no changes are made, your entry message will be"+\
+                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                    )
+                    common.entry_message_deletion_dict[msg.id] = [
+                        asyncio.create_task(
+                            delete_bad_entry_and_warning(msg, warn_msg, delay=120)
+                        ),
+                        warn_msg.id,
+                    ]
+                    return
+
                 entry_type = "showcase"
                 color = 0xFF8800
             else:
