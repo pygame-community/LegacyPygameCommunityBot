@@ -47,6 +47,7 @@ console_channel: discord.TextChannel
 db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
+entry_message_deletion_dict = {}
 
 __version__ = "1.5.3"
 
