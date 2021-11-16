@@ -441,7 +441,7 @@ async def handle_message(msg: discord.Message):
                 if not entry_message_validity_check(msg):
                     deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
                     warn_msg = await msg.reply(
-                        "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."+\
+                        "Your entry message must contain an attachment or a (Discord recognized) link to be valid."+\
                         " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."+\
                         f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."+\
                         f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
