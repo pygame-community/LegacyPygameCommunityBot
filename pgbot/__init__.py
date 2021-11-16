@@ -10,6 +10,7 @@ import asyncio
 import datetime
 import io
 import os
+import re
 import random
 import signal
 import sys
@@ -125,8 +126,19 @@ def entry_message_validity_check(message: discord.Message, min_chars=32, max_cha
     Returns:
         bool: True/False
     """
-    if (message.content and message.attachments) or (message.content and (("https://" in message.content) or ("http://" in message.content)) and min_chars < len(message.content) < max_chars):
+    url_regex_pattern = r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
+    # https://stackoverflow.com/a/6041965/14826938
+
+    match_obj = re.match(url_regex_pattern, (message.content if message.content else ""))
+    link_in_msg = bool(match_obj)
+    first_link_str = match_obj.string if link_in_msg else ""
+
+    if (message.content and (link_in_msg and len(message.content) > len(first_link_str)) and min_chars < len(message.content) < max_chars):
         return True
+    
+    elif ((message.content or message.reference) and message.attachments):
+        return True
+    
     return False
 
 async def delete_bad_entry_and_warning(entry_msg: discord.Message, warn_msg: discord.Message, delay: float = 0.):
@@ -276,11 +288,12 @@ async def message_edit(old: discord.Message, new: discord.Message):
                             deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
                             await warn_msg.edit(
                                 content=(
-                                    "I noticed your edit, but: Your entry message must contain an attachment or a link to be valid and"+\
-                                    f" must, if no attachments are present, contain at least 32 characters (including any links)."+\
+                                    "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."+\
+                                    " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."+\
+                                    f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."+\
                                     f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
                                     " If no changes are made, your entry message will be"+\
-                                    f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                                    f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
                                 )
                             )
                             common.entry_message_deletion_dict[new.id] = [
@@ -295,11 +308,12 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 else:  # an edit led to an invalid entry message from a valid one
                     deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
                     warn_msg = await new.reply(
-                        "Your entry message must contain an attachment or a link to be valid and"+\
-                        f" must, if no attachments are present, contain at least 32 characters (including any links)."+\
+                        "Your entry message must contain an attachment or a (Discord recognized) link to be valid."+\
+                        " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."+\
+                        f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."+\
                         f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
                         " If no changes are made, your entry message will be"+\
-                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
                     )
                     
                     common.entry_message_deletion_dict[new.id] = [
@@ -427,11 +441,12 @@ async def handle_message(msg: discord.Message):
                 if not entry_message_validity_check(msg):
                     deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
                     warn_msg = await msg.reply(
-                        "Your entry message must contain an attachment or a link to be valid and"+\
-                        f" must, if no attachments are present, contain at least 32 characters (including any links)."+\
+                        "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."+\
+                        " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."+\
+                        f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."+\
                         f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."+\
                         " If no changes are made, your entry message will be"+\
-                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}"
+                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
                     )
                     common.entry_message_deletion_dict[msg.id] = [
                         asyncio.create_task(
