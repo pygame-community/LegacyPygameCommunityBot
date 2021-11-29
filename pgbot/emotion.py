@@ -107,7 +107,7 @@ async def dad_joke(msg: discord.Message, mode: str = "happy"):
             if ind and not msg.content[ind - 1].isspace():
                 return
 
-            name = msg.content[ind + len(trigger):]
+            name = msg.content[ind + len(trigger) :]
             if not name or not name[0].isspace():
                 return
 
@@ -124,7 +124,7 @@ async def dad_joke(msg: discord.Message, mode: str = "happy"):
             elif name and mode == "depression":
                 await msg.channel.send(
                     f"Hi {name}! I am... I am.. <:pg_depressed:845321616094789712>",
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
             return
 
@@ -155,7 +155,9 @@ async def server_boost(msg: discord.Message):
     await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")
 
 
-def depression_function_curve(mode: str, context: float, inverse: bool = False, prec: int = -1):
+def depression_function_curve(
+    mode: str, context: float, inverse: bool = False, prec: int = -1
+):
     """
     Mathematic function used to calculate the depression sigmoid curve, the happiness sigmoid curve,
     and its inverses.
@@ -181,8 +183,8 @@ def depression_function_curve(mode: str, context: float, inverse: bool = False, 
                 # Domain: (~0, 40), Range: (?, 100)
                 # TRUE RANGE: (-∞, ~490)
                 min_of_sadness = -(
-                        (5 * math.log(40 / context - 1) - 50 * math.log(1.7))
-                        / math.log(1.7)
+                    (5 * math.log(40 / context - 1) - 50 * math.log(1.7))
+                    / math.log(1.7)
                 )
             else:
                 # Second sigmoid curve of inverse piecewise depression function
