@@ -629,13 +629,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     elif msg.type == discord.MessageType.pins_add:
                         await embed_utils.send(
                             channel=destination,
-                            description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}"
+                            description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}",
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
-                         await embed_utils.send(
+                        await embed_utils.send(
                             channel=destination,
-                            description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
+                            description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!",
                         )
 
                     if len(attached_files) > 1:
