@@ -17,6 +17,7 @@ from typing import Optional, Union
 
 import black
 import discord
+from discord.embeds import EmptyEmbed
 import psutil
 import pygame
 
@@ -351,6 +352,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         show_author: bool = True,
         divider: String = String("-" * 56),
         group_by_author: bool = True,
+        message_links: bool = True,
         oldest_first: bool = True,
         same_channel: bool = False,
     ):
@@ -358,7 +360,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->type Admin commands
         ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
         [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
-        [divider=("-"*56)] [group_by_author=True] [oldest_first=True] [same_channel=False]
+        [divider=("-"*56)] [group_by_author=True] [message_links=True]
+        [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -388,7 +391,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        datetime_format_str = "%a, %d %b %Y - %H:%M:%S (UTC)"
         divider_str = divider.string
 
         if (
@@ -451,11 +453,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             end_date = messages[-1].created_at
 
             if start_date == end_date:
-                header_fields = ([f"On: {utils.format_datetime(start_date)}", "\u200b", True],)
+                header_fields = (
+                    [f"On: {utils.format_datetime(start_date)}", "\u200b", True],
+                )
             else:
                 header_fields = (
                     [f"From: {utils.format_datetime(start_date)}", "\u200b", True],
-                    [f"To: {utils.format_datetime(end_date)}", "\u200b", True]
+                    [f"To: {utils.format_datetime(end_date)}", "\u200b", True],
                 )
 
             archive_header_msg_embed = embed_utils.create(
@@ -495,7 +499,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     )
                 author = msg.author
                 msg_reference_id = None
-                if msg.reference and not isinstance(msg.reference, discord.DeletedReferencedMessage):
+                if msg.reference and not isinstance(
+                    msg.reference, discord.DeletedReferencedMessage
+                ):
                     msg_reference_id = message_id_cache.get(msg.reference.message_id)
 
                 await destination.trigger_typing()
@@ -519,16 +525,46 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             and i > 0
                             and messages[i - 1].author == author
                         ):
-                            # no author info or divider for messages next to each other sharing an author
+                            # no author info or divider for messages next to
+                            # each other sharing an author
                             current_divider_str = None
                         else:
-                            msg_created_at = msg.created_at.strftime("%d %b %Y %H:%M")
+                            shorten = i > 0 and messages[i - 1].author == author
+                            if shorten:
+                                shorten_style = (
+                                    "t"
+                                    if messages[i - 1].created_at.day
+                                    == msg.created_at.day
+                                    else "f"
+                                )
+                                description_str = (
+                                    f"{utils.format_datetime(msg.created_at, tformat=shorten_style)}"
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
+                                )
+                            else:
+                                description_str = (
+                                    f"{author.mention}"
+                                    f" {utils.format_datetime(msg.created_at)}"
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
+                                )
+
                             author_embed = embed_utils.create(
-                                description=f"{author.mention} "
-                                f"[View Original]({msg.jump_url})",
+                                description=description_str,
                                 color=0x36393F,
-                                author_name=f"{author.name}#{author.discriminator}  |  {msg_created_at}",
+                                author_name=f"{author.name}#{author.discriminator}"
+                                if not shorten
+                                else EmptyEmbed,
                                 author_icon_url=f"{author.avatar_url}"
+                                if not shorten
+                                else EmptyEmbed,
                             )
 
                         if author_embed or current_divider_str:
@@ -545,10 +581,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             msg_embed.to_dict() if msg_embed is not None else None
                         )
 
-                        if (
-                            msg_embed_dict
-                            and msg_embed_dict.get("type") == "gifv"
-                        ):
+                        if msg_embed_dict and msg_embed_dict.get("type") == "gifv":
                             msg_embed = None
 
                         if len(msg.content) > 2000:
@@ -559,11 +592,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 stop_idx = 2000 + 2000 * i
 
                                 if not i:
-                                    message_id_cache[msg.id] = (await destination.send(
+                                    message_id_cache[msg.id] = await destination.send(
                                         content=msg.content[start_idx:stop_idx],
                                         allowed_mentions=no_mentions,
                                         reference=msg_reference_id,
-                                    ))
+                                    )
                                 else:
                                     await destination.send(
                                         content=msg.content[start_idx:stop_idx],
@@ -585,22 +618,24 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 file=attached_files[0] if attached_files else None,
                             )
                         else:
-                            message_id_cache[msg.id] = (await destination.send(
+                            message_id_cache[msg.id] = await destination.send(
                                 content=msg.content,
                                 embed=msg_embed,
                                 file=attached_files[0] if attached_files else None,
                                 allowed_mentions=no_mentions,
                                 reference=msg_reference_id,
-                            ))
+                            )
 
                     elif msg.type == discord.MessageType.pins_add:
-                        await destination.send(
-                            content=f"{msg.author.name}#{msg.author.discriminator} pinned a message in #{origin.name}"
+                        await embed_utils.send(
+                            channel=destination,
+                            description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}"
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
-                        await destination.send(
-                            content=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
+                         await embed_utils.send(
+                            channel=destination,
+                            description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!"
                         )
 
                     if len(attached_files) > 1:
@@ -618,21 +653,26 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 elif mode == 1 or mode == 2:
                     if mode == 1:
                         if msg.content:
-                            escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
-                            if len(msg.content) > 2000 or len(escaped_msg_content) + 7 > 2000:
+                            escaped_msg_content = msg.content.replace(
+                                "```", "\\`\\`\\`"
+                            )
+                            if (
+                                len(msg.content) > 2000
+                                or len(escaped_msg_content) + 7 > 2000
+                            ):
                                 with io.StringIO(msg.content) as fobj:
-                                    message_id_cache[msg.id] = (await destination.send(
+                                    message_id_cache[msg.id] = await destination.send(
                                         file=discord.File(fobj, "messagedata.txt"),
                                         reference=msg_reference_id,
-                                    ))
+                                    )
                             else:
-                                message_id_cache[msg.id] = (await destination.send(
+                                message_id_cache[msg.id] = await destination.send(
                                     embed=embed_utils.create(
                                         color=0x36393F,
                                         description=f"```\n{escaped_msg_content}```",
                                     ),
                                     reference=msg_reference_id,
-                                ))
+                                )
 
                         if attached_files:
                             for i in range(len(attached_files)):
@@ -643,11 +683,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     else:
                         if msg.content:
                             with io.StringIO(msg.content) as fobj2:
-                                message_id_cache[msg.id] = (await destination.send(
-                                    file=discord.File(fobj2, filename="messagedata.txt"),
+                                message_id_cache[msg.id] = await destination.send(
+                                    file=discord.File(
+                                        fobj2, filename="messagedata.txt"
+                                    ),
                                     allowed_mentions=no_mentions,
                                     reference=msg_reference_id,
-                                ))
+                                )
 
                         if attached_files:
                             for i in range(len(attached_files)):
@@ -1019,7 +1061,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         author: Optional[String] = None,
         color: Optional[pygame.Color] = None,
         url: Optional[String] = None,
-        img_url: Optional[String] = None,
+        image_url: Optional[String] = None,
         thumbnail: Optional[String] = None,
         multi_votes: bool = False,
     ):
@@ -1059,8 +1101,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if url:
             embed_dict["url"] = url.string
 
-        if img_url:
-            embed_dict["image"] = {"url": img_url.string}
+        if image_url:
+            embed_dict["image"] = {"url": image_url.string}
 
         if thumbnail:
             embed_dict["thumbnail"] = {"url": thumbnail.string}
@@ -1530,6 +1572,146 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             self.response_msg,
             title="Successfully executed command!",
             description=f"Changed settings on {len(channels)} channel(s)",
+        )
+
+    @add_group("events", "wc", "set")
+    async def cmd_events_wc_set(
+        self, desc: Optional[String] = None, url: Optional[str] = None
+    ):
+        """
+        ->type Events
+        ->signature pg!events wc set [desc] [url]
+        ->description Set the description for the WC
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            if desc is not None:
+                wc_dict["description"] = desc.string if desc.string else None
+
+            if url is not None:
+                wc_dict["url"] = url if url else None
+
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated data!",
+            description="Updated Weekly Challenges (WC) Event description and/or url!",
+        )
+
+    @add_group("events", "wc", "add")
+    async def cmd_events_wc_add(self, round_name: String, description: String):
+        """
+        ->type Events
+        ->signature pg!events wc add <round_name> <description>
+        ->description Adds a new WC event round
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            if "rounds" not in wc_dict:
+                wc_dict["rounds"] = []
+
+            wc_dict["rounds"].append(
+                {
+                    "name": round_name.string,
+                    "description": description.string,
+                    "scores": {},
+                }
+            )
+            db_obj.write(wc_dict)
+            ind = len(wc_dict["rounds"])
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated events round!",
+            description=f"Weekly Challenges got round {ind} - '{round_name.string}'!",
+        )
+
+    @add_group("events", "wc", "remove")
+    async def cmd_events_wc_remove(self, round_no: int = 0):
+        """
+        ->type Events
+        ->signature pg!events wc remove [round_no]
+        ->description Remove an event round
+        -----
+        """
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            try:
+                round_name = wc_dict["rounds"].pop(round_no - 1)["name"]
+
+            except (IndexError, KeyError):
+                raise BotException(
+                    "Could not update events round!",
+                    "The specified event round does not exist",
+                )
+
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated events round!",
+            description=(
+                f"Removed round '{round_name}' from Weekly Challenges (WC) event!"
+            ),
+        )
+
+    @add_group("events", "wc", "update")
+    async def cmd_events_wc_update(
+        self,
+        *name_and_scores: tuple[discord.Member, tuple[int, ...]],
+        round_no: int = 0,
+        round_name: Optional[String] = None,
+        round_desc: Optional[String] = None,
+    ):
+        """
+        ->type Events
+        ->signature pg!events wc update [*names_and_scores] [round_no] [round_name] [round_desc]
+        ->description Update scoreboard challenge points
+        ->extended description
+        Argument `name_and_scores` can accept a variable number of member-score tuple pairs.
+        Argument `round_no` is an integer that specifies the round of the event,
+        defaults to the last round when empty
+        Argument `round_name` is an optional string that can be specified to update the event name.
+        Argument `round_desc` is an optional string that can be specified to update the event description.
+        -----
+        """
+        round_no -= 1
+        async with db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.get({})
+            try:
+                if round_name is not None:
+                    wc_dict["rounds"][round_no]["name"] = round_name.string
+
+                if round_desc is not None:
+                    wc_dict["rounds"][round_no]["description"] = round_desc.string
+
+                for mem, scores in name_and_scores:
+                    if scores:
+                        wc_dict["rounds"][round_no]["scores"][mem.id] = scores
+                    else:
+                        wc_dict["rounds"][round_no]["scores"].pop(mem.id)
+
+                    total_score = sum(
+                        sum(round_dict["scores"].get(mem.id, ()))
+                        for round_dict in wc_dict["rounds"]
+                    )
+                    await utils.give_wc_roles(mem, total_score)
+
+            except IndexError:
+                raise BotException(
+                    "Could not update scoreboard!",
+                    "The specified event round does not exist",
+                ) from None
+
+            db_obj.write(wc_dict)
+
+        await embed_utils.replace(
+            self.response_msg,
+            title="Successfully updated data!",
+            description="The round related data or the scores have been updated!",
         )
 
 
