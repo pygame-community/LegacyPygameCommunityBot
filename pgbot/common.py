@@ -144,7 +144,8 @@ class ServerConstants:
     )
     
     # Data from https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-    HTTP_RULES = {
+    HTTP_RULES = {  # Except the first one
+        34: "If the game exists, it can be made with Pygame"
         100: "Continue...",
         200: "OK :+1:",
         204: "?",
@@ -154,7 +155,7 @@ class ServerConstants:
         304: "Rule is still the same!",
         400: "I Don't understand!",
         401: "You must login to Discord to see this rule",
-        402: "Support PyGame Community Server on Patreon",
+        402: "Support Pygame Community Server on Patreon",
         403: "Only for specific users!",
         404: "Not found",
         409: "Oops, I have some problems, taking timeout",
@@ -165,7 +166,7 @@ class ServerConstants:
         451: "FBI, open up",
         500: "I have some problems right now, sorry :sweat:",
         501: "This rule is still undecided",
-        505: "Update PyGame to version 2.1",
+        505: "Update Pygame to version 2.1",
         507: "Download more HDD",
         508: "Write pg!rules 508",
     }
