@@ -365,7 +365,7 @@ async def exec_sandbox(
                 output.duration = time.perf_counter() - start
                 return output
         except psutil.NoSuchProcess:
-            # The process finished but it tried to check it's memory usage
+            # The process finished but it tried to check its memory usage
             # at the "wrong time". Get the output from the queue and return it
             return q.get()
 
