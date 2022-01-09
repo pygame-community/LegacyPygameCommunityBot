@@ -480,6 +480,7 @@ class BaseCommand:
 
         sig = inspect.signature(func)
 
+        passed_arg_len = len(args)
         expected_arg_len = 0
         is_var_key = False
         keyword_only_args = []
@@ -510,6 +511,7 @@ class BaseCommand:
                     msg = str(self.invoke_msg.reference.channel_id) + "/" + msg
 
                 args.insert(0, msg)
+                passed_arg_len += 1
 
             if param.kind == param.VAR_POSITIONAL:
                 expected_arg_len = len(args)
@@ -563,10 +565,10 @@ class BaseCommand:
                 args[i] = await self.cast_arg(param, args[i], cmd, key)
 
         # More arguments were given than required
-        if len(args) > expected_arg_len:
+        if passed_arg_len > expected_arg_len:
             raise ArgError(
                 f"Too many args were given. Expected {expected_arg_len}"
-                f" and got {len(args)}",
+                f" and got {passed_arg_len}",
                 cmd,
             )
 
