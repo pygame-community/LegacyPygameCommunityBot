@@ -480,8 +480,8 @@ class BaseCommand:
 
         sig = inspect.signature(func)
 
-        i = -1
-        is_var_pos = is_var_key = False
+        expected_arg_len = 0
+        is_var_key = False
         keyword_only_args = []
         all_keywords = []
 
@@ -512,7 +512,7 @@ class BaseCommand:
                 args.insert(0, msg)
 
             if param.kind == param.VAR_POSITIONAL:
-                is_var_pos = True
+                expected_arg_len = len(args)
                 for j in range(i, len(args)):
                     args[j] = await self.cast_arg(param, args[j], cmd)
                 continue
@@ -559,12 +559,16 @@ class BaseCommand:
             if iskw:
                 kwargs[key] = await self.cast_arg(param, kwargs[key], cmd, key)
             else:
+                expected_arg_len += 1
                 args[i] = await self.cast_arg(param, args[i], cmd, key)
 
-        i += 1
         # More arguments were given than required
-        if not is_var_pos and i < len(args):
-            raise ArgError(f"Too many args were given (`{len(args)}`)", cmd)
+        if len(args) > expected_arg_len:
+            raise ArgError(
+                f"Too many args were given. Expected {expected_arg_len}"
+                f" and got {len(args)}",
+                cmd,
+            )
 
         # Iterate through kwargs to check if we received invalid ones
         if not is_var_key:
