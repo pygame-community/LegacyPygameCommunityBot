@@ -18,6 +18,7 @@ from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 job_manager = common.job_manager
 bot = common.bot
 
+
 @bot.event
 async def on_ready():
     """
@@ -187,9 +188,7 @@ async def on_private_channel_delete(channel: discord.abc.PrivateChannel):
 async def on_private_channel_update(
     before: discord.GroupChannel, after: discord.GroupChannel
 ):
-    await job_manager.dispatch_event(
-        events.OnPrivateChannelUpdate(before, after)
-    )
+    await job_manager.dispatch_event(events.OnPrivateChannelUpdate(before, after))
 
 
 @bot.event
@@ -222,9 +221,7 @@ async def on_guild_channel_update(
 async def on_guild_channel_pins_update(
     channel: discord.abc.GuildChannel, last_pin: Optional[datetime.datetime]
 ):
-    await job_manager.dispatch_event(
-        events.OnGuildChannelPinsUpdate(channel, last_pin)
-    )
+    await job_manager.dispatch_event(events.OnGuildChannelPinsUpdate(channel, last_pin))
 
 
 @bot.event
@@ -278,9 +275,7 @@ async def on_guild_emojis_update(
     before: Sequence[discord.Emoji],
     after: Sequence[discord.Emoji],
 ):
-    await job_manager.dispatch_event(
-        events.OnGuildEmojisUpdate(guild, before, after)
-    )
+    await job_manager.dispatch_event(events.OnGuildEmojisUpdate(guild, before, after))
 
 
 @bot.event
@@ -298,9 +293,7 @@ async def on_guild_unavailable(guild: discord.Guild):
 async def on_voice_state_update(
     member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
 ):
-    await job_manager.dispatch_event(
-        events.OnVoiceStateUpdate(member, before, after)
-    )
+    await job_manager.dispatch_event(events.OnVoiceStateUpdate(member, before, after))
 
 
 @bot.event

@@ -55,7 +55,9 @@ class BaseSerial:
             ) from None
 
         elif data.get("_class_name") != cls.__name__:
-            raise ValueError("Cannot identify format of the given 'data' dictionary") from None
+            raise ValueError(
+                "Cannot identify format of the given 'data' dictionary"
+            ) from None
 
         instance = cls.__new__(cls)
         instance._data = data.copy()

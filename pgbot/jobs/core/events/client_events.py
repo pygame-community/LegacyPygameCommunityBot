@@ -23,6 +23,7 @@ client = common.bot
 
 EVENT_MAP = base_events.EVENT_MAP
 
+
 class ClientEvent(base_events.BaseEvent):
     """The base class for all discord API websocket event wrapper objects, with values as returned by discord.py."""
 

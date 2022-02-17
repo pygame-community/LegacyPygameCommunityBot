@@ -16,8 +16,8 @@ from pgbot.jobs.utils import messaging
 from pgbot.utils import embed_utils
 
 
-class GreetAndAnnoyUntilSilenced(core.ClientEventJob):
-    EVENT_TYPES = (events.OnMessageBase,)
+class MessagingTest1(core.ClientEventJob):
+    CLASS_EVENT_TYPES = (events.OnMessageBase,)
 
     def __init__(self, target_channel: discord.TextChannel):
         super().__init__()
@@ -29,7 +29,7 @@ class GreetAndAnnoyUntilSilenced(core.ClientEventJob):
             self.DATA.response_count = 0
             self.DATA.interval_job_test = None
 
-    async def on_job_run(self, event: events.OnMessageBase, *args, **kwargs):
+    async def on_run(self, event: events.OnMessageBase, *args, **kwargs):
         if isinstance(event, events.OnMessage):
             if event.message.channel == self.DATA.target_channel:
                 event: events.OnMessage
@@ -80,19 +80,19 @@ class GreetAndAnnoyUntilSilenced(core.ClientEventJob):
                     description=event.message.content,
                 )
 
-    async def on_job_stop(self, *args, **kwargs):
+    async def on_stop(self, *args, **kwargs):
         self.COMPLETE()
 
 
 class IntervalJobTest(core.IntervalJob):
     default_seconds = 10
 
-    async def on_job_init(self):
+    async def on_init(self):
         if "target_channel" not in self.DATA:
             self.DATA.target_channel = common.guild.get_channel(822650791303053342)
             self.DATA.introduced = False
 
-    async def on_job_run(self, *args, **kwargs):
+    async def on_run(self, *args, **kwargs):
         if not self.DATA.introduced:
             await self.DATA.target_channel.send("Hello everyone!")
             self.DATA.introduced = True
@@ -100,21 +100,21 @@ class IntervalJobTest(core.IntervalJob):
             await self.DATA.target_channel.send("*Are you annoyed yet?*")
 
 
-class GreetingTest(core.ClientEventJob):
-    EVENT_TYPES = (events.OnMessage,)
+class MessagingTest2(core.ClientEventJob):
+    CLASS_EVENT_TYPES = (events.OnMessage,)
 
     def __init__(self, target_channel: discord.TextChannel):
         super().__init__()
         self.DATA.target_channel = target_channel
 
-    async def on_job_init(self):
+    async def on_init(self):
         if "target_channel" not in self.DATA:
             self.DATA.target_channel = common.guild.get_channel(822650791303053342)
 
     def check_event(self, event: events.ClientEvent):
         return event.message.channel.id == self.DATA.target_channel.id
 
-    async def on_job_run(self, event: events.OnMessage, *args, **kwargs):
+    async def on_run(self, event: events.OnMessage, *args, **kwargs):
         if event.message.content.lower().startswith("hi"):
             await self.DATA.target_channel.send("Hi, what's your name?")
 
@@ -136,7 +136,7 @@ class GreetingTest(core.ClientEventJob):
 
 
 class Main(core.OneTimeJob):
-    async def on_job_run(self):
+    async def on_run(self):
 
         for job in (
             self.manager.create_job(
@@ -173,8 +173,6 @@ class Main(core.OneTimeJob):
             ),
         )
 
-        await self.manager.create_and_register_job(MessageTestSpawner)
-
         self.manager.schedule_job(
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
@@ -203,19 +201,17 @@ class Main(core.OneTimeJob):
             ),
         )
 
-        reaction_add_job = await self.manager.create_and_register_job(
-            messaging.ReactionsAdd,
+        
+        reaction_add_job = self.manager.create_job(
+            messaging.ReactionAdd,
             None,
             msg_event.message,
-            "🇳",
-            "🇴",
-            "⬛",
-            "🇲",
-            "🇪",
+            *tuple("🇳🇴⬛🇲🇪"),
             853327268474126356,
         )
 
-        await reaction_add_job.wait_for_completion()
+        await self.wait_for(reaction_add_job.await_completion())
+
 
 
 __all__ = [

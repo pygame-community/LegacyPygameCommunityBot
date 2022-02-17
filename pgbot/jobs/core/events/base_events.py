@@ -15,6 +15,7 @@ from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 EVENT_MAP = {}
 
+
 def get_all_slot_names(cls):
     slots_list = []
     cls_slot_values = getattr(cls, "__slots__", None)
@@ -70,9 +71,13 @@ class BaseEvent:
         for subcls in cls.__subclasses__():
             if subcls.alt_name is not None:
                 names.append(subcls.alt_name)
-            
+
             if entire_subclass_chain:
-                names.extend(subcls.get_subclass_names(entire_subclass_chain=entire_subclass_chain))
+                names.extend(
+                    subcls.get_subclass_names(
+                        entire_subclass_chain=entire_subclass_chain
+                    )
+                )
         return names
 
     def copy(self) -> BaseEvent:
@@ -100,5 +105,3 @@ class CustomEvent(BaseEvent):
     """
 
     __slots__ = ()
-
-

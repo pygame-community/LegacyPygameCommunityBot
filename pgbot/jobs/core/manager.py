@@ -31,15 +31,15 @@ from . import events, base_jobs
 
 BotJobProxy = base_jobs.BotJobProxy
 BotJob = base_jobs.BotJob
-EventJob = base_jobs.EventJob 
+EventJob = base_jobs.EventJob
 ClientEventJob = base_jobs.ClientEventJob
 IntervalJob = base_jobs.IntervalJob
 JobError = base_jobs.JobError
 JobInitializationError = base_jobs.JobInitializationError
 
+
 class JobLookupError(LookupError):
-    """A job lookup operation failed.
-    """
+    """A job lookup operation failed."""
 
 
 class BotJobManager:
@@ -82,7 +82,9 @@ class BotJobManager:
             TypeError: Invalid object given as input
         """
         if not isinstance(loop, asyncio.AbstractEventLoop):
-            raise TypeError("Invalid event loop, must be a subclass of asyncio.AbstractEventLoop") from None
+            raise TypeError(
+                "Invalid event loop, must be a subclass of asyncio.AbstractEventLoop"
+            ) from None
         self._loop = loop
 
     def is_running(self):
@@ -191,7 +193,6 @@ class BotJobManager:
             BotJobProxy: A job proxy object.
         """
 
-        print(cls, args, kwargs)
         job = cls(*args, **kwargs)
         job.manager = BotJobManagerProxy(self, job)
         proxy = job._proxy
@@ -208,7 +209,9 @@ class BotJobManager:
             raise JobInitializationError("this job proxy is invalid") from None
         return job
 
-    async def initialize_job(self, job: Union[EventJob, IntervalJob], raise_exceptions: bool = True):
+    async def initialize_job(
+        self, job: Union[EventJob, IntervalJob], raise_exceptions: bool = True
+    ):
         """This initializes a job object.
         registered.
 
@@ -219,7 +222,6 @@ class BotJobManager:
         Returns:
             bool: Whether the initialization attempt was successful.
         """
-
         if not job._is_initialized:
             try:
                 await job._INITIALIZE_EXTERNAL()
@@ -230,13 +232,19 @@ class BotJobManager:
                     raise
         else:
             if raise_exceptions:
-                raise JobInitializationError("this bot job is already initialized") from None
+                raise JobInitializationError(
+                    "this bot job is already initialized"
+                ) from None
             else:
                 return False
 
         return job._is_initialized
 
-    async def register_job(self, job: Union[EventJob, IntervalJob], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    async def register_job(
+        self,
+        job: Union[EventJob, IntervalJob],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Register a job object to this BotJobManager, while initializing it if necessary.
 
         Args:
@@ -248,7 +256,12 @@ class BotJobManager:
         self._add_job(job, _invoker=_invoker)
 
     async def create_and_register_job(
-        self, cls: Type[BotJob], *args, return_proxy: bool = False, _invoker: Optional[Union[EventJob, IntervalJob]] = None, **kwargs
+        self,
+        cls: Type[BotJob],
+        *args,
+        return_proxy: bool = False,
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+        **kwargs,
     ):
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
@@ -260,7 +273,6 @@ class BotJobManager:
         Returns:
             BotJobProxy: A job proxy object.
         """
-
         j = self.create_job(cls, *args, return_proxy=False, **kwargs)
         await self.register_job(j, _invoker=_invoker)
         if return_proxy:
@@ -300,7 +312,9 @@ class BotJobManager:
         NoneType = type(None)
 
         if self._schedule_dict is None:
-            raise RuntimeError("BotJobManager scheduling has not been initiated") from None
+            raise RuntimeError(
+                "BotJobManager scheduling has not been initiated"
+            ) from None
 
         if isinstance(timestamp, datetime.datetime):
             timestamp = timestamp.astimezone(datetime.timezone.utc)
@@ -344,7 +358,9 @@ class BotJobManager:
             if data is None:
                 data = {}
             else:
-                raise TypeError(f"'data' must be of type 'dict', not {type(data)}") from None
+                raise TypeError(
+                    f"'data' must be of type 'dict', not {type(data)}"
+                ) from None
 
         if not issubclass(cls, (EventJob, IntervalJob)):
             raise TypeError(
@@ -394,19 +410,21 @@ class BotJobManager:
             JobInitializationError: An uninitialized job was given as input.
         """
 
-        if isinstance(job, base_jobs.BotJob) and job._is_completed:
+        if isinstance(job, BotJob) and job._is_completed:
             raise ValueError(
                 "cannot add a job that has ended to a BotJobManager instance"
             ) from None
 
         elif job._identifier in self._job_id_map:
-            raise RuntimeError("the given job is already present in this manager") from None
+            raise RuntimeError(
+                "the given job is already present in this manager"
+            ) from None
 
         elif not job._is_initialized:
             raise JobInitializationError("the given job was not initialized") from None
 
         if isinstance(job, EventJob):
-            for ce_type in job.EVENT_TYPES:
+            for ce_type in job.CLASS_EVENT_TYPES:
                 if ce_type.__name__ not in self._event_job_pool:
                     self._event_job_pool[ce_type.__name__] = set()
                 self._event_job_pool[ce_type.__name__].add(job)
@@ -443,7 +461,7 @@ class BotJobManager:
             self._interval_job_pool.remove(job)
 
         elif isinstance(job, EventJob):
-            for ce_type in job.EVENT_TYPES:
+            for ce_type in job.CLASS_EVENT_TYPES:
                 if (
                     ce_type.__name__ in self._event_job_pool
                     and job in self._event_job_pool[ce_type.__name__]
@@ -503,18 +521,26 @@ class BotJobManager:
             if isinstance(identifier, str):
                 if identifier in self._job_id_map:
                     return self._job_id_map[identifier]._proxy
-                raise JobLookupError("cound not find a job with the specified identifier")
-            raise TypeError(f"'identifier' must be of type 'str', not {type(identifier)}") from None
+                raise JobLookupError(
+                    "cound not find a job with the specified identifier"
+                )
+            raise TypeError(
+                f"'identifier' must be of type 'str', not {type(identifier)}"
+            ) from None
 
         elif created_at is not None:
             if isinstance(created_at, datetime.datetime):
                 for job in self._job_id_map.values():
                     if job._created_at == created_at:
                         return job._proxy
-                raise JobLookupError("cound not find a job with the specified creation time")
-            
-            raise TypeError(f"'create_at' must be of type 'datetime.datetime', not {type(created_at)}") from None
-        
+                raise JobLookupError(
+                    "cound not find a job with the specified creation time"
+                )
+
+            raise TypeError(
+                f"'create_at' must be of type 'datetime.datetime', not {type(created_at)}"
+            ) from None
+
         else:
 
             filter_lambdas = []
@@ -553,18 +579,32 @@ class BotJobManager:
                     jobs.append(job._proxy)
 
             if not jobs:
-                raise JobLookupError("could not find any job objects matching the speficied arguments")
+                raise JobLookupError(
+                    "could not find any job objects matching the speficied arguments"
+                )
 
             return jobs
 
-
-    def restart_job(self, job: Union[IntervalJob, EventJob], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def restart_job(
+        self,
+        job: Union[IntervalJob, EventJob],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         return job._RESTART_LOOP_EXTERNAL()
 
-    def stop_job(self, job: Union[EventJob, IntervalJob], force=False, _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def stop_job(
+        self,
+        job: Union[EventJob, IntervalJob],
+        force=False,
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         return job._STOP_LOOP_EXTERNAL(force=force)
 
-    def kill_job(self, job: Union[EventJob, IntervalJob], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def kill_job(
+        self,
+        job: Union[EventJob, IntervalJob],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Stops this job's current execution unconditionally and remove it from its `BotJobManager`.
         In order to check if a job was ended by killing it, on can call `.was_killed()`."""
         return job._KILL_EXTERNAL(awaken=True)
@@ -631,14 +671,14 @@ class BotJobManager:
 
     def wait_for_event(
         self,
-        *event_types: Type[BotJob],
+        *CLASS_EVENT_TYPES: Type[BotJob],
         check: Optional[Callable[[events.BaseEvent], bool]] = None,
         timeout: Optional[float] = None,
     ):
         """Wait for specific type of event to be dispatched, and return that.
 
         Args:
-            *event_types (events.BaseEvent):
+            *CLASS_EVENT_TYPES (events.BaseEvent):
                 The event type/types to wait for. If any of its/their
                 instances is dispatched, that instance will be returned.
             check (Optional[Callable[[events.BaseEvent], bool]], optional):
@@ -651,21 +691,21 @@ class BotJobManager:
 
         check = (lambda x: True) if check is None else check
         future = self._loop.create_future()
-        wait_list = [event_types, check, future]
+        wait_list = [CLASS_EVENT_TYPES, check, future]
 
-        for event_type in event_types:
+        for event_type in CLASS_EVENT_TYPES:
             if (
                 not issubclass(event_type, events.BaseEvent)
                 and event_type is not events.BaseEvent
             ):
-                for event_type in event_types:  # undo everything
+                for event_type in CLASS_EVENT_TYPES:  # undo everything
                     d = self._event_waiting_queues[event_type.__name__]
                     d.remove(wait_list)
                     if not d:
                         del self._event_waiting_queues[event_type.__name__]
 
                 raise TypeError(
-                    "argument 'event_types' must contain only subclasses of 'BaseEvent'"
+                    "argument 'CLASS_EVENT_TYPES' must contain only subclasses of 'BaseEvent'"
                 ) from None
 
             elif event_type.__name__ not in self._event_waiting_queues:
@@ -682,10 +722,7 @@ class BotJobManager:
             map,
             lambda x: x._KILL_EXTERNAL(awaken=True),
             itertools.chain(
-                tuple(
-                    t
-                    for t in (ce_set for ce_set in self._event_job_pool.values())
-                ),
+                tuple(t for t in (ce_set for ce_set in self._event_job_pool.values())),
                 tuple(self._interval_job_pool),
             ),
         )
@@ -705,9 +742,7 @@ class BotJobManager:
             None,
             map,
             lambda x: x._KILL_EXTERNAL(awaken=True),
-            tuple(
-                j for j in (cej_set for cej_set in self._event_job_pool.values())
-            ),
+            tuple(j for j in (cej_set for cej_set in self._event_job_pool.values())),
         )
 
     def quit(self, kill_all_jobs=True):
@@ -734,7 +769,9 @@ class BotJobManagerProxy:
         """
         return self._mgr.create_job(cls, *args, return_proxy=True, **kwargs)
 
-    async def initialize_job(self, job_proxy: BotJobProxy, raise_exceptions: bool = True):
+    async def initialize_job(
+        self, job_proxy: BotJobProxy, raise_exceptions: bool = True
+    ):
         """This initializes a job object from its proxy.
         registered.
 
@@ -752,9 +789,7 @@ class BotJobManagerProxy:
         job = self._mgr._get_job_from_proxy(job_proxy)
         return await self._mgr.register_job(job, _invoker=self._job)
 
-    async def create_and_register_job(
-        self, cls: Type[BotJob], *args, **kwargs
-    ):
+    async def create_and_register_job(self, cls: Type[BotJob], *args, **kwargs):
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
@@ -765,6 +800,7 @@ class BotJobManagerProxy:
         Returns:
             BotJobProxy: A job proxy object.
         """
+
         return await self._mgr.create_and_register_job(
             cls,
             *args,
@@ -813,12 +849,12 @@ class BotJobManagerProxy:
 
     def wait_for_event(
         self,
-        *event_types: type,
+        *CLASS_EVENT_TYPES: type,
         check: Optional[Callable[[events.BaseEvent], bool]] = None,
         timeout: Optional[float] = None,
     ):
         return self._mgr.wait_for_event(
-            *event_types,
+            *CLASS_EVENT_TYPES,
             check=check,
             timeout=timeout,
         )
@@ -832,12 +868,12 @@ class BotJobManagerProxy:
         """
 
         if not isinstance(event, events.CustomEvent):
-            raise TypeError("argument 'event' must have `CustomEvent` as a subclass") from None
-        
+            raise TypeError(
+                "argument 'event' must have `CustomEvent` as a subclass"
+            ) from None
+
         event._dispatcher = self._job._proxy
         return await self._mgr.dispatch_event(event)
-
-
 
     def __contains__(self, job_proxy: BotJobProxy):
         job = self._mgr._get_job_from_proxy(job_proxy)
