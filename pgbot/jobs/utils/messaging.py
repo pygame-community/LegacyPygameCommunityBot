@@ -166,7 +166,7 @@ class MessageSend(IntervalJob):
     async def on_job_run(self):
         self.DATA.OUTPUT.message = await self.DATA.channel.send(**self.DATA.kwargs)
 
-    async def on_job_stop(self):
+    async def on_job_stop(self, *args, **kwargs):
         self.COMPLETE()
 
 
@@ -222,16 +222,17 @@ class _MessageModify(IntervalJob):
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
-    async def on_job_stop(self):
-        self.COMPLETE()
+    async def on_job_stop(self, *args, **kwargs):
+        if self.job_run_has_failed():
+            self.KILL()
+        else:
+            self.COMPLETE()
 
 
 class MessageEdit(_MessageModify):
     """A job class for editing a message in a
     Discord text channel.
     """
-
-    default_count = 1
 
     def __init__(
         self,
@@ -264,8 +265,8 @@ class MessageEdit(_MessageModify):
             allowed_mentions=allowed_mentions,
         )
 
-    @call_with_method(_MessageModify, name="on_job_init", mode="after")
     async def on_job_init(self):
+        await super().INITIALIZE()
         if not isinstance(self.DATA.kwargs["embed"], (discord.Embed, NoneType)):
             if isinstance(self.DATA.kwargs["embed"], dict):
                 if embed_utils.validate_embed_dict(self.DATA.kwargs["embed"]):
@@ -294,16 +295,11 @@ class MessageEdit(_MessageModify):
     async def on_job_run(self):
         await self.DATA.message.edit(**self.DATA.kwargs)
 
-    async def on_job_stop(self):
-        self.COMPLETE()
-
 
 class MessageDelete(_MessageModify):
     """A job class for deleting a message in a
     Discord text channel.
     """
-
-    default_count = 1
 
     def __init__(
         self,
@@ -325,8 +321,8 @@ class MessageDelete(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.kwargs = dict(delay=delay)
 
-    @call_with_method(_MessageModify, name="on_job_init", mode="after")
     async def on_job_init(self):
+        await super().INITIALIZE()
         if not isinstance(self.DATA.kwargs["delay"], (int, float)):
             raise TypeError("Invalid type given for argument 'delay'")
 
@@ -334,9 +330,6 @@ class MessageDelete(_MessageModify):
 
     async def on_job_run(self):
         await self.DATA.message.delete(**self.DATA.kwargs)
-
-    async def on_job_stop(self):
-        self.COMPLETE()
 
 
 class ReactionAdd(_MessageModify):
@@ -376,8 +369,8 @@ class ReactionAdd(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @call_with_method(_MessageModify, name="on_job_init", mode="after")
     async def on_job_init(self):
+        await super().INITIALIZE()
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
@@ -396,6 +389,84 @@ class ReactionAdd(_MessageModify):
 
     async def on_job_run(self):
         await self.DATA.message.add_reaction(self.DATA.emoji)
+
+
+class ReactionsAdd(_MessageModify):
+    """Adds a given reaction to a message."""
+
+    def __init__(
+        self,
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        message: Union[int, discord.Message, serials.MessageSerial],
+        *emojis: Union[
+            int,
+            discord.Reaction,
+            discord.Emoji,
+            serials.EmojiSerial,
+            discord.PartialEmoji,
+            serials.PartialEmojiSerial,
+            str,
+        ],
+        stop_at_maximum = True,
+    ):
+        """Setup this object.
+
+        Args:
+            channel (Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType]):
+            The channel to get a message from.
+            message (Union[int, discord.Message, serials.MessageSerial]): The message to react to.
+            *emojis (
+                Union[
+                    int,
+                    discord.Reaction,
+                    discord.Emoji,
+                    serials.EmojiSerial,
+                    discord.PartialEmoji,
+                    serials.PartialEmojiSerial,
+                    str]
+            ):
+                A sequence of emojis to react with.
+            limit_to_maximum (bool, optional):
+                Whether the reactions will be added until the maxmimum is reached. If False,
+                reaction emojis will be added to a target message until an exception is
+                raised from Discord. Defaults to True.
+        """
+        super().__init__(channel=channel, message=message)
+        if len(emojis) > 20:
+            raise ValueError("only 20 reaction emojis can be added to a message at a time.")
+        self.DATA.emojis = list(emojis)
+        self.DATA.stop_at_maximum = stop_at_maximum
+
+    async def on_job_init(self):
+        await super().INITIALIZE()
+        for i in range(len(self.DATA.emojis)):
+            emoji = self.DATA.emojis[i]
+            if not isinstance(
+                emoji,
+                (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
+            ):
+                if isinstance(emoji, int):
+                    emoji = client.get_emoji(emoji)
+                    if emoji is None:
+                        raise ValueError("invalid integer ID for 'emoji' argument")
+                    self.DATA.emojis[i] = emoji
+                elif isinstance(
+                    emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+                ):
+                    self.DATA.emojis[i] = emoji.reconstructed()
+                else:
+                    raise TypeError("Invalid type for argument 'emoji'")
+
+    async def on_job_run(self):
+        message: discord.Message = self.DATA.message
+        emojis: list = self.DATA.emojis 
+
+        if self.DATA.stop_at_maximum:
+            for i in range(min(20-len(message.reactions), len(emojis))):
+                await self.DATA.message.add_reaction(emojis[i])
+        else:
+            for i in range(len(emojis)):
+                await message.add_reaction(emojis[i])
 
 
 class ReactionRemove(_MessageModify):
@@ -439,8 +510,8 @@ class ReactionRemove(_MessageModify):
         self.DATA.emoji = emoji
         self.DATA.member = member
 
-    @call_with_method(_MessageModify, name="on_job_init", mode="after")
     async def on_job_init(self):
+        await super().INITIALIZE()
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),
@@ -504,8 +575,8 @@ class ReactionClearEmoji(_MessageModify):
         super().__init__(channel=channel, message=message)
         self.DATA.emoji = emoji
 
-    @call_with_method(_MessageModify, name="on_job_init", mode="after")
     async def on_job_init(self):
+        await super().INITIALIZE()
         if not isinstance(
             self.DATA.emoji,
             (discord.Reaction, discord.Emoji, discord.PartialEmoji, str),

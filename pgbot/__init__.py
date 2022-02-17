@@ -18,7 +18,7 @@ import pygame
 
 from pgbot import commands, common, db, emotion, routine, jobs
 from pgbot.jobs import core
-from pgbot import jobmain
+from pgbot import job_main
 from pgbot.utils import embed_utils, utils
 
 common.job_manager = core.BotJobManager()
@@ -73,7 +73,7 @@ async def _init():
 
     common.job_manager.set_event_loop(asyncio.get_running_loop())
     common.job_manager.job_scheduling_loop.start()
-    common.job_manager.add_job(await jobmain.Main().as_initialized())
+    await common.job_manager.create_and_register_job(job_main.Main)
 
 
 async def init():

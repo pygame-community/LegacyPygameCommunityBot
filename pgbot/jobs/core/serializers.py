@@ -52,10 +52,10 @@ class BaseSerial:
         if not isinstance(data, dict):
             raise TypeError(
                 f"argument data must be of type 'dict', not {type(data).__name__}"
-            )
+            ) from None
 
         elif data.get("_class_name") != cls.__name__:
-            raise ValueError("Cannot identify format of the given 'data' dictionary")
+            raise ValueError("Cannot identify format of the given 'data' dictionary") from None
 
         instance = cls.__new__(cls)
         instance._data = data.copy()
@@ -83,7 +83,7 @@ class UserSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore User object with ID {self._dict["id"]}'
-                )
+                ) from None
         return user
 
 
@@ -101,7 +101,7 @@ class MemberSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Guild object with ID {self._dict["guild_id"]} for Member object with ID {self._dict["id"]}'
-                )
+                ) from None
 
         member = guild.get_member(self._dict["id"])
         if member is None:
@@ -110,7 +110,7 @@ class MemberSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Member object with ID {self._dict["id"]}'
-                )
+                ) from None
         return member
 
 
@@ -130,7 +130,7 @@ class GuildSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Guild object with ID {self._dict["id"]}'
-                )
+                ) from None
         return guild
 
 
@@ -145,7 +145,7 @@ class EmojiSerial(BaseSerial):
         if emoji is None:
             raise DeserializationError(
                 f'could not restore Emoji object with ID {self._dict["id"]}'
-            )
+            ) from None
 
         return emoji
 
@@ -180,7 +180,7 @@ class FileSerial(BaseSerial):
             else:
                 raise ValueError(
                     "Could not serialize File object into pickleable dictionary"
-                )
+                ) from None
 
     def reconstructed(self):
         if self._dict["fp"] is None:
@@ -194,7 +194,7 @@ class FileSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     "Could not deserialize File object into pickleable dictionary"
-                )
+                ) from None
 
             return discord.File(
                 fp=fp, filename=self._dict["filename"], spoiler=self._dict["spoiler"]
@@ -223,7 +223,7 @@ class RoleSerial(BaseSerial):
         else:
             raise DeserializationError(
                 f'could not restore Guild object with ID {self._dict["guild_id"]} for Role object with ID {self._dict["id"]}'
-            )
+            ) from None
 
         role = guild.get_role(self._dict["id"])
         if role is None:
@@ -237,11 +237,11 @@ class RoleSerial(BaseSerial):
                 if role is None:
                     raise DeserializationError(
                         f'could not find Role object with ID {self._dict["id"]}'
-                    )
+                    ) from None
             else:
                 raise DeserializationError(
                     f'could not restore Role object with ID {self._dict["id"]}'
-                )
+                ) from None
 
         return role
 
@@ -348,7 +348,7 @@ class MessageSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Messageable object (channel) with ID {self._dict["channel_id"]} for Message with ID {self._dict["id"]}'
-                )
+                ) from None
 
         message = await channel.fetch_message(self._dict["id"])
         return message
@@ -388,7 +388,7 @@ class ChannelSerial(BaseSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Messageable object (channel) with ID {self._dict["id"]}'
-                )
+                ) from None
         return channel
 
 
@@ -405,7 +405,7 @@ class GuildChannelSerial(ChannelSerial):
             else:
                 raise DeserializationError(
                     f'could not restore Guild object with ID {self._dict["guild_id"]} for GuildChannel object with ID {self._dict["id"]}'
-                )
+                ) from None
 
         channel = guild.get_channel(self._dict["id"])
         if channel is None:
@@ -417,7 +417,7 @@ class GuildChannelSerial(ChannelSerial):
             else:
                 raise DeserializationError(
                     f'could not restore GuildChannel object with ID {self._dict["id"]}'
-                )
+                ) from None
         return channel
 
 
