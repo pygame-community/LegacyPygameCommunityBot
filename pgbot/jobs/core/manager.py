@@ -34,15 +34,17 @@ BotJob = base_jobs.BotJob
 EventJob = base_jobs.EventJob
 ClientEventJob = base_jobs.ClientEventJob
 IntervalJob = base_jobs.IntervalJob
+SingletonJobBase = base_jobs.SingletonJobBase
 JobError = base_jobs.JobError
 JobInitializationError = base_jobs.JobInitializationError
 
 
 class BotJobManager:
     """The job manager for all interval jobs and event jobs.
-    It acts as a container for interval and event job objects, whilst also being responsible dispatching
-    events to event job objects. Each of the jobs that a bot job manager
-    contains can use a proxy to register new job objects that they instantiate at runtime.
+    It acts as a container for interval and event job objects,
+    whilst also being responsible dispatching events to event job objects.
+    Each of the jobs that a bot job manager contains can use a proxy to
+    register new job objects that they instantiate at runtime.
     """
 
     def __init__(self, loop=None):
@@ -61,8 +63,8 @@ class BotJobManager:
         self._loop = loop
         self._event_job_pool = {}
         self._interval_job_pool = set()
+        self._job_type_count_dict = {}
         self._job_id_map = {}
-        self._job_class_data = base_jobs.JOB_CLASS_MAP
         self._event_waiting_queues = {}
         self._schedule_dict = {}
         self._schedule_dict_fails = {}
@@ -111,7 +113,7 @@ class BotJobManager:
                             deletion_list.append(k)
                             continue
 
-                    if d["class_name"] in self._job_class_data:
+                    if d["class_name"] in base_jobs.JOB_CLASS_MAP:
                         try:
                             job = self.create_job(
                                 base_jobs.JOB_CLASS_MAP[d["class_name"]],
@@ -186,10 +188,11 @@ class BotJobManager:
         """Create an instance of a job class, and return it.
 
         Args:
-            cls (Type[BotJob]): The job class to
-            instantiate a job object from.
-            return_proxy (bool, optional): Whether a proxy of the job object
-            should be returned. Defaults to False.
+            cls (Type[BotJob]):
+               The job class to instantiate a job object from.
+            return_proxy (bool, optional):
+                Whether a proxy of the job object should be returned.
+                Defaults to False.
 
         Returns:
             BotJobProxy: A job proxy object.
@@ -224,6 +227,16 @@ class BotJobManager:
         Returns:
             bool: Whether the initialization attempt was successful.
         """
+
+        if (
+            isinstance(job, SingletonJobBase) and
+            self._job_type_count_dict[job.__class__.__name__]
+        ):
+            raise JobError(
+                "Cannot have more than one instance of a"
+                " 'SingletonJobBase' job registered at a time."
+            )
+
         if not job._is_initialized:
             try:
                 await job._INITIALIZE_EXTERNAL()
@@ -247,7 +260,8 @@ class BotJobManager:
         job: Union[EventJob, IntervalJob],
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
-        """Register a job object to this BotJobManager, while initializing it if necessary.
+        """Register a job object to this BotJobManager,
+        while initializing it if necessary.
 
         Args:
             job (BotJob): The job object to be registered.
@@ -293,23 +307,25 @@ class BotJobManager:
     ):
         """Schedule a job of a specific type to be instantiated and to run at
         one or more specific periods of time. Each job can receive positional
-        or keyword arguments which are passed to this method. Those arguments must be pickleable.
+        or keyword arguments which are passed to this method.
+        Those arguments must be pickleable.
 
         Args:
             cls (Type[BotJob]): The job type to schedule.
             timestamp (Union[datetime.datetime, datetime.timedelta]):
                 The exact timestamp at which to instantiate a job.
             recur_interval (Optional[datetime.timedelta]):
-                The interval at which a job should be rescheduled. Defaults to None.
+                The interval at which a job should be rescheduled.
+                Defaults to None.
             max_intervals (Optional[int]):
-                The maximum amount of recur intervals for rescheduling. Defaults to None.
+                The maximum amount of recur intervals for rescheduling. 
+                Defaults to None.
             job_args (tuple, optional):
                 Positional arguments to pass to the scheduled job upon
                 instantiation. Defaults to None.
             job_kwargs (dict, optional):
             Keyword arguments to pass to the scheduled job upon instantiation.
             Defaults to None.
-            data (dict, optional): _description_. Defaults to None.
 
         Raises:
             RuntimeError:
@@ -415,8 +431,8 @@ class BotJobManager:
             job: Union[EventJob, IntervalJob]:
                 The job to add.
             start (bool, optional):
-                Whether a given interval job object should start immediately after being added.
-                Defaults to True.
+                Whether a given interval job object should start immediately
+                after being added. Defaults to True.
         Raises:
             TypeError: An invalid object was given as a job.
             ValueError: A job was given that had already ended.
@@ -447,8 +463,14 @@ class BotJobManager:
             self._interval_job_pool.add(job)
         else:
             raise TypeError(
-                f"expected an instance of EventJob or IntervalJob subclasses, not {job.__class__.__name__}"
+                f"expected an instance of EventJob or IntervalJob subclasses,"
+                " not {job.__class__.__name__}"
             ) from None
+
+        if job.__class__.__name__ not in self._job_type_count_dict:
+            self._job_type_count_dict[job.__class__.__name__] = 0
+
+        self._job_type_count_dict[job.__class__.__name__] += 1
 
         self._job_id_map[job._identifier] = job
         job._mgr = BotJobManagerProxy(self, job)
@@ -468,7 +490,8 @@ class BotJobManager:
         """
         if not isinstance(job, (EventJob, IntervalJob)):
             raise TypeError(
-                f"expected an instance of class EventJob or IntervalJob, not {job.__class__.__name__}"
+                f"expected an instance of class EventJob or IntervalJob"
+                " , not {job.__class__.__name__}"
             ) from None
 
         if isinstance(job, IntervalJob) and job in self._interval_job_pool:
@@ -487,8 +510,11 @@ class BotJobManager:
         if job in self._job_id_map:
             del self._job_id_map[job._identifier]
 
-        if job._mgr:
-            job._mgr = None
+        self._job_type_count_dict[job.__class__.__name__] -= 1
+
+        if not self._job_type_count_dict[job.__class__.__name__]:
+            del self._job_type_count_dict[job.__class__.__name__]
+
 
     def _remove_jobs(self, *jobs: Union[EventJob, IntervalJob]):
         """Remove the given job objects from this bot job manager.
@@ -497,8 +523,8 @@ class BotJobManager:
             *jobs: Union[EventJob, IntervalJob]:
                 The jobs to be removed, if present.
             cancel (bool, optional):
-                Whether the given interval job objects should be cancelled immediately after being removed.
-                Defaults to True.
+                Whether the given interval job objects should be cancelled
+                immediately after being removed. Defaults to True.
         Raises:
             TypeError: An invalid object was given as a job.
         """

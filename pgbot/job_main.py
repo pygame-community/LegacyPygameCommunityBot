@@ -135,7 +135,7 @@ class MessagingTest2(core.ClientEventJob):
             await self.DATA.target_channel.send(f"Hi, {user_name}")
 
 
-class Main(core.OneTimeJob):
+class Main(core.SingleRunJob):
     async def on_run(self):
 
         for job in (

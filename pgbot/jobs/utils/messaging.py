@@ -392,7 +392,7 @@ class ReactionAdd(_MessageModify):
 
 
 class ReactionsAdd(_MessageModify):
-    """Adds a given reaction to a message."""
+    """Adds a sequence of reactions to a message."""
 
     def __init__(
         self,
@@ -450,14 +450,18 @@ class ReactionsAdd(_MessageModify):
                 if isinstance(emoji, int):
                     emoji = client.get_emoji(emoji)
                     if emoji is None:
-                        raise ValueError("invalid integer ID for 'emoji' argument")
+                        raise ValueError(
+                            f"Could not find a valid emoji for 'emojis' argument {3+i}"
+                        )
                     self.DATA.emojis[i] = emoji
                 elif isinstance(
                     emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
                 ):
                     self.DATA.emojis[i] = emoji.reconstructed()
                 else:
-                    raise TypeError("Invalid type for argument 'emoji'")
+                    raise TypeError(
+                        f"Invalid type for argument 'emojis' at argument {3+i}"
+                    )
 
     async def on_run(self):
         message: discord.Message = self.DATA.message

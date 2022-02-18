@@ -9,6 +9,7 @@ can be used to implement background processes for the bot.
 
 from __future__ import annotations
 import asyncio
+from aiohttp import ClientError
 from collections import deque
 from contextlib import contextmanager
 import datetime
@@ -36,6 +37,57 @@ from . import events
 
 JOB_CLASS_MAP = {}
 """A dictionary of all BotJob subclasses that were created."""
+
+
+DEFAULT_JOB_EXCEPTION_WHITELIST = (
+    OSError,
+    discord.GatewayNotFound,
+    discord.ConnectionClosed,
+    ClientError,
+    asyncio.TimeoutError,
+)
+"""The default exceptions handled in discord.ext.tasks.Loop
+upon reconnecting."""
+
+
+class StopFlags:
+    INTERNAL = "INTERNAL"
+    """Job is stopping due to an unknown internal reason.
+    """
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    """Job is stopping due to an internal error.
+    """
+    INTERNAL_RESTART = "INTERNAL_RESTART"
+    """Job is stopping due to an internal restart.
+    """
+    INTERNAL_COUNT_LIMIT = "INTERNAL_COUNT_LIMIT"
+    """Job is stopping due to hitting its maximimum execution
+    count before stopping.
+    """
+    INTERNAL_COMPLETION = "INTERNAL_COMPLETION"
+    """Job is stopping for finishing all execution, it has completed.
+    """
+    INTERNAL_KILLING = "INTERNAL_KILLING"
+    """Job is stopping due to killing itself internally.
+    """
+
+    INTERNAL_IDLING_TIMEOUT = "INTERNAL_IDLING_TIMEOUT"
+    """Job is stopping after staying idle beyond a specified timeout.
+    """
+
+    INTERNAL_EMPTY_QUEUE = "INTERNAL_EMPTY_QUEUE"
+    """
+    """
+
+    EXTERNAL = "EXTERNAL"
+    """Job is stopping due to an unknown external reason.
+    """
+    EXTERNAL_RESTART = "EXTERNAL_RESTART"
+    """Job is stopping due to an external restart.
+    """
+    EXTERNAL_KILLING = "EXTERNAL_KILLING"
+    """Job is stopping due to being killed externally.
+    """
 
 
 class JobError(Exception):
@@ -225,11 +277,14 @@ class BotJobProxy:
         """Whether this job object's task loop is being stopped.
 
         Args:
-            get_reason (bool, optional): Whether the reason for stopping should be returned as a string. Defaults to False.
+            get_reason (bool, optional):
+                Whether the reason for stopping should be returned as a string. 
+                Defaults to False.
 
         Returns:
-            Union[bool, str]: Returns a boolean if `get_reason` is False, otherwise a string is returned. If the string is empty,
-                then no stopping is occuring.
+            Union[bool, str]:
+                Returns a boolean if `get_reason` is False, otherwise a string
+                is returned. If the string is empty, no stopping is occuring.
         """
         return self._j.is_being_stopped(get_reason=get_reason)
 
@@ -242,8 +297,8 @@ class BotJobProxy:
         return self._j.get_last_stop_reason()
 
     def is_awaiting(self):
-        """Whether this job is currently waiting
-        for a coroutine to complete, which was awaited using `.wait_for(awaitable)`.
+        """Whether this job is currently waiting for a coroutine to complete,
+        which was awaited using `.wait_for(awaitable)`.
 
         Returns:
             bool: True/False
@@ -251,7 +306,8 @@ class BotJobProxy:
         return self._j.is_awaiting()
 
     def is_alive(self):
-        """Whether this job is currently alive (initialized and bound to a job manager).
+        """Whether this job is currently alive
+        (initialized and bound to a job manager).
 
         Returns:
             bool: True/False
@@ -283,8 +339,8 @@ class BotJobProxy:
         return self._j.is_idling()
 
     def job_run_has_failed(self):
-        """Whether this job's `.on_run()` method failed an execution attempt, usually due to an
-        exception.
+        """Whether this job's `.on_run()` method failed an execution attempt,
+        usually due to an exception.
 
         Returns:
             bool: True/False
@@ -297,14 +353,14 @@ class BotJobProxy:
 
     def is_being_killed(self):
         """Whether this job is being killed."""
-        return self.is_being_killed()
+        return self._j.is_being_killed()
 
     def is_being_startup_killed(self):
         """Whether this job is being killed."""
         return self._j.is_being_startup_killed()
 
     def is_completed(self):
-        """Whether this job has ended, either due to being killed, or due to it ending itself.
+        """Whether this job completed successfully.
 
         Returns:
             bool: True/False
@@ -312,7 +368,8 @@ class BotJobProxy:
         return self._j.is_completed()
 
     def is_being_completed(self):
-        """Whether this job has ended, either due to being killed, or due to it ending itself.
+        """Whether this job is in the process of completing,
+        either due to being killed, or due to it ending itself.
 
         Returns:
             bool: True/False
@@ -334,8 +391,8 @@ class BotJobProxy:
         """Wait for this job object to release the data of a specified output field.
 
         Args:
-            timeout (float, optional): The maximum amount of time to wait
-            in seconds. Defaults to None.
+            timeout (float, optional):
+                The maximum amount of time to wait in seconds. Defaults to None.
 
         Raises:
             asyncio.TimeoutError: The timeout was exceeded.
@@ -347,7 +404,8 @@ class BotJobProxy:
         """Wait for this job to complete.
 
         Args:
-            timeout (float, optional): Timeout for completion in seconds. Defaults to None.
+            timeout (float, optional):
+                Timeout for completion in seconds. Defaults to None.
 
         Raises:
             asyncio.TimeoutError: The timeout was exceeded.
@@ -380,7 +438,8 @@ class BotJob:
         for field in cls.CLASS_OUTPUT_FIELDS:
             if re.search(r"\s", field):
                 raise ValueError(
-                    "field names in 'CLASS_OUTPUT_FIELDS' cannot contain any whitespace"
+                    "field names in 'CLASS_OUTPUT_FIELDS'"
+                    " cannot contain any whitespace"
                 )
 
         JOB_CLASS_MAP[cls.__name__] = cls
@@ -409,6 +468,10 @@ class BotJob:
         self._task_loop: tasks.Loop = None
 
         self._proxy = BotJobProxy(self)
+
+        self._on_start_exception = None
+        self._on_run_exception = None
+        self._on_stop_exception = None
 
         self._is_awaiting = False
         self._is_initialized = False
@@ -453,20 +516,20 @@ class BotJob:
         pass
 
     async def _on_start(self):
+        self._on_start_exception = None
+        self._on_run_exception = None
+        self._on_stop_exception = None
         self._is_sleeping = False
         self._is_idling = False
+
         try:
-            if self._startup_kill:
-                self._KILL_EXTERNAL()
-                return
-            else:
-                output = await self.on_start()
+            if not self._startup_kill:
+                await self.on_start()
         except Exception as exc:
             self._is_sleeping = True
+            self._on_start_exception = exc
             await self.on_start_error(exc)
             raise
-
-        return output
 
     async def on_start(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
@@ -495,6 +558,7 @@ class BotJob:
         try:
             await self.on_stop(reason=reason, by_force=self._stopping_by_force)
         except Exception as exc:
+            self._on_stop_exception = exc
             await self.on_stop_error(exc)
             raise
         finally:
@@ -510,7 +574,7 @@ class BotJob:
                 self._is_killed = True
             self._is_being_killed = False
             self._stopping_by_force = False
-            self._is_sleeping = True
+            self._is_sleeping = self._is_killed or self._is_completed
 
     async def on_stop(self, reason, by_force):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
@@ -528,19 +592,26 @@ class BotJob:
         This method gets called when an error occurs while this job is starting up.
 
         Args:
-            exc (Exception): [description]
+            exc (Exception): The exception that occured.
         """
         print(
-            f"An Exception occured before job {self.__class__} could start running its loop:\n\n",
+            f"An Exception occured before job {self.__class__}"
+            " could start running its loop:\n\n",
             utils.format_code_exception(exc),
         )
+
+        traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
+
+    async def _on_run_error(self, exc: Exception):
+        self._on_run_exception = exc
+        await self.on_run_error(exc)
 
     async def on_run_error(self, exc: Exception):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
         THIS METHOD TO ACCESS THE SUPERCLASS METHOD.
 
         Args:
-            exc (Exception): [description]
+            exc (Exception): The exception that occured.
         """
         print(
             "Unhandled exception in internal background task {0.__name__!r}.".format(
@@ -554,10 +625,11 @@ class BotJob:
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
         THIS METHOD TO ACCESS THE SUPERCLASS METHOD.
 
-        This method gets called when an error occurs while this job is stopping.
+        This method gets called when an error occurs
+        while this job is stopping.
 
         Args:
-            exc (Exception): [description]
+            exc (Exception): The exception that occured.
         """
         print(
             "Unhandled exception in internal background task {0.__name__!r}.".format(
@@ -571,11 +643,15 @@ class BotJob:
         """Whether this job object's task loop is being stopped.
 
         Args:
-            get_reason (bool, optional): Whether the reason for stopping should be returned as a string. Defaults to False.
+            get_reason (bool, optional):
+                Whether the reason for stopping should be returned as a string.
+                Defaults to False.
 
         Returns:
-            Union[bool, str]: Returns a boolean if `get_reason` is False, otherwise a string is returned. If the string is empty,
-                then no stopping is occuring.
+            Union[bool, str]:
+                Returns a boolean if `get_reason` is False, otherwise
+                a string is returned. If the string is empty,
+                no stopping is occuring.
         """
         output = self._is_being_stopped
         if get_reason:
@@ -583,28 +659,54 @@ class BotJob:
             if not self._is_being_stopped:
                 reason = ""
             elif self._task_loop.failed():
-                reason = "INTERNAL_ERROR"
+                reason = StopFlags.INTERNAL_ERROR
             elif self._task_loop.current_loop == self._count:
-                reason = "INTERNAL_COUNT_LIMIT"
+                reason = StopFlags.INTERNAL_COUNT_LIMIT
             elif self._stopping_by_self:
                 if self._is_being_restarted:
-                    reason = "INTERNAL_RESTART"
+                    reason = StopFlags.INTERNAL_RESTART
                 elif self._is_being_completed:
-                    reason = "INTERNAL_COMPLETION"
+                    reason = StopFlags.INTERNAL_COMPLETION
                 elif self._is_being_killed:
-                    reason = "INTERNAL_KILLING"
+                    reason = StopFlags.INTERNAL_KILLING
                 else:
-                    reason = "INTERNAL"
+                    reason = StopFlags.INTERNAL
             elif not self._stopping_by_self:
                 if self._is_being_restarted:
-                    reason = "EXTERNAL_RESTART"
+                    reason = StopFlags.EXTERNAL_RESTART
                 elif self._is_being_killed:
-                    reason = "EXTERNAL_KILLING"
+                    reason = StopFlags.EXTERNAL_KILLING
                 else:
-                    reason = "EXTERNAL"
+                    reason = StopFlags.EXTERNAL
 
             reason = output
         return output
+
+    def add_to_exception_whitelist(self, *exception_types):
+        """Add exceptions to a whitelist, which allows them to be ignored
+        when they are raised, if reconnection is enabled.
+        Args:
+            *exception_types: The exception types to add.
+        """
+        self._task_loop.add_exception_type(*exception_types)
+
+    def remove_from_exception_whitelist(self, *exception_types):
+        """Remove exceptions from the exception whitelist for reconnection.
+        Args:
+            *exception_types: The exception types to remove.
+        """
+        self._task_loop.remove_exception_type(*exception_types)
+
+    def clear_exception_whitelist(self, keep_default=True):
+        """Clear all the exceptions whitelisted for reconnection.
+
+        keep_default:
+            Preserve the default set of exceptions in the whitelist.
+            Defaults to True.
+
+        """
+        self._task_loop.clear_exception_types()
+        self._task_loop.add_exception_type(*DEFAULT_JOB_EXCEPTION_WHITELIST)
 
     def get_last_stop_reason(self):
         """Get the last reason this job object stopped, when applicable.
@@ -613,6 +715,37 @@ class BotJob:
             Optional[str]: The reason for stopping.
         """
         return self._last_stop_reason
+
+    def get_start_exception(self):
+        """Get the exception that caused this job to fail at startup
+        within the `on_start()` method, otherwise return None.
+
+        Returns:
+            Exception: The exception instance.
+            None: No exception has been raised in `on_start()`.
+        """
+        return self._on_start_exception
+
+    def get_run_exception(self):
+        """Get the exception that caused this job to fail while running
+        its main loop within the `on_run()` method. This is the same
+        exception passed to `on_run_error()`, otherwise return None.
+
+        Returns:
+            Exception: The exception instance.
+            None: No exception has been raised in `on_run()`.
+        """
+        return self._on_run_exception
+
+    def get_stop_exception(self):
+        """Get the exception that caused this job to fail while
+        shutting down within the `on_stop()` method, otherwise return None.
+
+        Returns:
+            Exception: The exception instance.
+            None: No exception has been raised in `on_stop()`.
+        """
+        return self._on_stop_exception
 
     async def _INITIALIZE_EXTERNAL(self):
         """DO NOT CALL THIS METHOD FROM WITHIN YOUR JOB SUBCLASS.
@@ -630,8 +763,10 @@ class BotJob:
         Args:
             force (bool, optional): Whether this job object should be stopped
                 forcefully instead of gracefully, thereby ignoring any exceptions
-                that it might have handled when reconnecting is enabled for it.
+                that it might have handled if reconnecting is enabled for it.
                 Defaults to False.
+        Returns:
+            bool: Whether the call was successful.
         """
         task = self._task_loop.get_task()
         if not self._is_being_stopped and task and not task.done():
@@ -655,9 +790,13 @@ class BotJob:
                 forcefully instead of gracefully, thereby ignoring any exceptions
                 that it might have handled when reconnecting is enabled for it.
                 Defaults to False.
+
+        Returns:
+            bool: Whether the call was successful.
         """
         task = self._task_loop.get_task()
         if not self._is_being_stopped and task and not task.done():
+            self._stopping_by_self = False
             self._is_being_stopped = True
             if force:
                 self._stopping_by_force = True
@@ -714,13 +853,15 @@ class BotJob:
         return False
 
     def COMPLETE(self):
-        """
-        DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
+        """DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
 
-        Stops this job object gracefully, before removing it from its `BotJobManager`.
-        Any job that was completed has officially finished execution, and all jobs waiting for this job
-        to complete will be notified. If a job had reconnecting enabled, then it will be silently cancelled to ensure
-        that it suspends all execution."""
+        Stops this job object gracefully, before removing it
+        from its `BotJobManager`. Any job that was completed
+        has officially finished execution, and all jobs waiting
+        for this job to complete will be notified. If a job had
+        reconnecting enabled, then it will be silently cancelled
+        to ensure that it suspends all execution.
+        """
 
         if not self._is_being_completed:
             self._is_being_completed = True
@@ -753,7 +894,11 @@ class BotJob:
         Stops this job object gracefully like `.stop_run()`, before removing it from its `BotJobManager`.
         Any job that was closed has officially finished execution, and all jobs waiting for this job
         to close will be notified. If a job had reconnecting enabled, then it will be silently cancelled to ensure
-        that it suspends all execution."""
+        that it suspends all execution.
+
+        Returns:
+            bool: Whether this method was successful.
+        """
 
         if not self._is_being_killed:
             self._is_being_killed = True
@@ -768,7 +913,8 @@ class BotJob:
                 for fut in fut_list:
                     if not fut.cancelled():
                         fut.cancel(
-                            msg=f"Job object '{self}' was killed. job output might be incomplete."
+                            msg=f"Job object '{self}' was killed."
+                            " job output might be incomplete."
                         )
 
                 fut_list.clear()
@@ -780,14 +926,15 @@ class BotJob:
             return True
         return False
 
-    def _KILL_EXTERNAL(self, awaken=False):
+    def _KILL_EXTERNAL(self, awaken=True):
         """DO NOT CALL THIS METHOD FROM WITHIN YOUR JOB SUBCLASS.
 
         Args:
-            awaken (bool, optional): Whether to awaken . Defaults to False.
+            awaken (bool, optional):
+                Whether to awaken this job object before killing it. Defaults to True.
 
         Returns:
-            _type_: _description_
+            bool: Whether this method was successful.
         """
 
         if not self._is_being_killed:
@@ -807,7 +954,8 @@ class BotJob:
             for fut in self._output_futures:
                 if not fut.cancelled():
                     fut.cancel(
-                        msg=f"Job object '{self}' was killed. job output might be incomplete."
+                        msg=f"Job object '{self}' was killed."
+                        " job output might be incomplete."
                     )
 
             self._completion_futures.clear()
@@ -850,7 +998,8 @@ class BotJob:
 
     def is_awaiting(self):
         """Whether this job is currently waiting
-        for a coroutine to complete, which was awaited using `.wait_for(awaitable)`.
+        for a coroutine to complete, which was awaited
+        using `.wait_for(awaitable)`.
 
         Returns:
             bool: True/False
@@ -858,7 +1007,8 @@ class BotJob:
         return self._is_awaiting
 
     def is_alive(self):
-        """Whether this job is currently alive (initialized and bound to a job manager).
+        """Whether this job is currently alive
+        (initialized and bound to a job manager).
 
         Returns:
             bool: True/False
@@ -895,8 +1045,8 @@ class BotJob:
         return self._is_idling
 
     def job_run_has_failed(self):
-        """Whether this jobs `.on_run()` method failed an execution attempt, usually due to an
-        exception.
+        """Whether this jobs `.on_run()` method failed an execution attempt,
+        due to an unhandled exception being raised.
 
         Returns:
             bool: True/False
@@ -907,16 +1057,35 @@ class BotJob:
         """Whether this job was killed."""
         return self._is_killed
 
-    def is_being_killed(self):
-        """Whether this job is being killed."""
-        return self._is_being_killed
+    def is_being_killed(self, get_reason=False):
+        """Whether this job is being killed.
+
+        Args:
+            get_reason (bool, optional):
+                If set to True, the reason for killing will be returned.
+                Defaults to False.
+
+        Returns:
+            bool: True/False
+            str:
+                'INTERNAL_KILLING' or 'EXTERNAL_KILLING' or ''
+                depending on if this job is being killed or not.
+        """
+        if get_reason:
+            reason = self.is_being_stopped(get_reason=get_reason)
+            if reason in ("INTERNAL_KILLING", "EXTERNAL_KILLING"):
+                return reason
+            else:
+                return ""
+
+        return self._is_being_restarted
 
     def is_being_startup_killed(self):
         """Whether this job is being killed while trying to start up."""
         return self._is_being_killed and self._startup_kill
 
     def is_completed(self):
-        """Whether this job has ended, either due to being killed, or due to it ending itself.
+        """Whether this job completed successfully.
 
         Returns:
             bool: True/False
@@ -924,7 +1093,8 @@ class BotJob:
         return self._is_completed
 
     def is_being_completed(self):
-        """Whether this job is currently ending, either due to being killed, or due to it ending itself.
+        """Whether this job is currently ending, either due to being killed,
+        or due to it ending itself.
 
         Returns:
             bool: True/False
@@ -935,11 +1105,15 @@ class BotJob:
         """Whether this job is being restarted.
 
         Args:
-            get_reason (bool, optional): If set to True, the restart reason will be returned. Defaults to False.
+            get_reason (bool, optional):
+                If set to True, the restart reason will be returned.
+                Defaults to False.
 
         Returns:
             bool: True/False
-            str: 'INTERNAL_RESTART' or 'EXTERNAL_RESTART'
+            str:
+                'INTERNAL_RESTART' or 'EXTERNAL_RESTART' or ''
+                depending on if a restart applies.
         """
         if get_reason:
             reason = self.is_being_stopped(get_reason=get_reason)
@@ -954,7 +1128,8 @@ class BotJob:
         """Wait for this job object to complete.
 
         Args:
-            timeout (float, optional): Timeout for completion. Defaults to None.
+            timeout (float, optional):
+                Timeout for completion. Defaults to None.
 
         Raises:
             asyncio.TimeoutError: The timeout was exceeded.
@@ -970,10 +1145,12 @@ class BotJob:
         return asyncio.wait_for(fut, timeout)
 
     def await_output_field(self, field_name: str, timeout: float = None):
-        """Wait for this job object to release the data of a specified output field.
+        """Wait for this job object to release the data of a
+        specified output field.
 
         Args:
-            timeout (float, optional): The maximum amount of time to wait in seconds. Defaults to None.
+            timeout (float, optional):
+            The maximum amount of time to wait in seconds. Defaults to None.
 
         Raises:
             asyncio.TimeoutError: The timeout was exceeded.
@@ -988,11 +1165,13 @@ class BotJob:
         if field_name not in self._output_futures:
             raise (
                 ValueError(
-                    f"field name '{field_name}' not defined in 'CLASS_OUTPUT_FIELDS' of {self.__class__.__name__} class"
+                    f"field name '{field_name}' not defined in"
+                    " 'CLASS_OUTPUT_FIELDS' of {self.__class__.__name__} class"
                 )
                 if isinstance(field_name, str)
                 else ValueError(
-                    f"field name argument '{field_name}' must be of type str, not {field_name.__class__}"
+                    f"field name argument '{field_name}' must be of type str,"
+                    " not {field_name.__class__}"
                 )
             )
         else:
@@ -1010,11 +1189,13 @@ class BotJob:
         if field_name not in self._output_futures:
             raise (
                 ValueError(
-                    f"field name '{field_name}' not defined in 'CLASS_OUTPUT_FIELDS' of {self.__class__} class"
+                    f"field name '{field_name}' not defined in"
+                    " 'CLASS_OUTPUT_FIELDS' of {self.__class__} class"
                 )
                 if isinstance(field_name, str)
                 else ValueError(
-                    f"field name argument '{field_name}' must be of type str, not {field_name.__class__}"
+                    f"field name argument '{field_name}' must be"
+                    " of type str, not {field_name.__class__}"
                 )
             )
 
@@ -1032,13 +1213,15 @@ class BotJob:
 class IntervalJob(BotJob):
     """Base class for interval based jobs.
     Subclasses are expected to overload the `on_run()` method.
-    `on_start()` and `on_stop()` and `on_run_error(exc)` can optionally be overloaded.
+    `on_start()` and `on_stop()` and `on_run_error(exc)`
+    can optionally be overloaded.
 
-    One can override the class variables `default_seconds`, `default_minutes`,
-    `default_hours`, `CLASS_DEFAULT_COUNT` and `CLASS_DEFAULT_RECONNECT` in subclasses. They are derived
-    from the keyword arguments of the `discord.ext.tasks.Loop` constructor.
-    These will act as defaults for each bot job object
-    created from this class.
+    One can override the class variables `CLASS_DEFAULT_SECONDS`,
+    `CLASS_DEFAULT_MINUTES`, `CLASS_DEFAULT_HOURS`, `CLASS_DEFAULT_COUNT`
+    and `CLASS_DEFAULT_RECONNECT` in subclasses. They are derived
+    from the keyword arguments of the `discord.ext.tasks.Loop`
+    constructor. These will act as defaults for each bot job
+    object created from this class.
     """
 
     CLASS_DEFAULT_SECONDS = 0
@@ -1171,11 +1354,9 @@ class EventJob(BotJob):
     """
 
     CLASS_EVENT_TYPES: tuple = (events.BaseEvent,)
-    CLASS_DEFAULT_RECONNECT = True
     CLASS_DEFAULT_COUNT = None
-    CLASS_DEFAULT_MAX_IDLING_DURATION: Optional[
-        datetime.timedelta
-    ] = datetime.timedelta()
+    CLASS_DEFAULT_RECONNECT = True
+    CLASS_DEFAULT_MAX_IDLING_DURATION = datetime.timedelta()
 
     CLASS_DEFAULT_BLOCK_QUEUE_ON_STOP = False
     CLASS_DEFAULT_WAKEUP_ON_DISPATCH = True
@@ -1292,7 +1473,7 @@ class EventJob(BotJob):
         """Get the last event dispatched to this event job object.
 
         Returns:
-            _type_: _description_
+            BaseEvent: The event object.
         """
         return self._last_event
 
@@ -1343,12 +1524,10 @@ class EventJob(BotJob):
         self._idle_since = None
 
         event = self._event_queue.popleft()
-        output = await self.on_run(event=event)
+        await self.on_run(event=event)
         self._last_event = event
 
         self._current_loop_count += 1
-
-        return output
 
     async def on_run(self, event: events.ClientEvent):
         """The code to run whenever an event is recieved.
@@ -1362,14 +1541,20 @@ class EventJob(BotJob):
     async def _on_stop(self):
         try:
             await super()._on_stop()
-        finally:
+        finally:  # reset some attributes in case an exception is raised
             self._current_loop_count = 0
             self._stopping_by_idling_timeout = False
 
     def get_queue_size(self):
+        """Get the count of events stored in the queue.
+
+        Returns:
+            int: The queue sizee.
+        """
         return len(self._event_queue)
 
     def clear_queue(self):
+        """Clear the current event queue."""
         self._event_queue.clear()
 
     @contextmanager
@@ -1412,33 +1597,33 @@ class EventJob(BotJob):
             if not self._is_being_stopped:
                 reason = ""
             elif self._task_loop.failed():
-                reason = "INTERNAL_ERROR"
+                reason = StopFlags.INTERNAL_ERROR
             elif (
                 not self._max_idling_duration
                 and self._max_idling_duration is not None
                 and self._stopping_by_empty_queue
             ):
-                reason = "INTERNAL_EMPTY_QUEUE"
+                reason = StopFlags.INTERNAL_EMPTY_QUEUE
             elif self._stopping_by_idling_timeout:
-                reason = "INTERNAL_IDLING_TIMEOUT"
+                reason = StopFlags.INTERNAL_IDLING_TIMEOUT
             elif self._current_loop_count == self._count:
-                reason = "INTERNAL_COUNT_LIMIT"
+                reason = StopFlags.INTERNAL_COUNT_LIMIT
             elif self._stopping_by_self:
                 if self._is_being_restarted:
-                    reason = "INTERNAL_RESTART"
+                    reason = StopFlags.INTERNAL_RESTART
                 elif self._is_being_completed:
-                    reason = "INTERNAL_COMPLETION"
+                    reason = StopFlags.INTERNAL_COMPLETION
                 elif self._is_being_killed:
-                    reason = "INTERNAL_KILLING"
+                    reason = StopFlags.INTERNAL_KILLING
                 else:
-                    reason = "INTERNAL"
+                    reason = StopFlags.INTERNAL
             elif not self._stopping_by_self:
                 if self._is_being_restarted:
-                    reason = "EXTERNAL_RESTART"
+                    reason = StopFlags.EXTERNAL_RESTART
                 elif self._is_being_killed:
-                    reason = "EXTERNAL_KILLING"
+                    reason = StopFlags.EXTERNAL_KILLING
                 else:
-                    reason = "EXTERNAL"
+                    reason = StopFlags.EXTERNAL
 
             reason = output
         return output
@@ -1449,13 +1634,13 @@ class ClientEventJob(EventJob):
     (Discord API events) passed to them by their `BotJobManager` object.
     Subclasses are expected to overload the `on_run(self, event)` method.
     `on_start(self)` and `on_stop(self)` and `on_run_error(self, exc)` can
-    optionally be overloaded.
-    One can also override the class variables `CLASS_DEFAULT_COUNT` and `CLASS_DEFAULT_RECONNECT`
-    in subclasses. They are derived from the keyword arguments of the
-    `discord.ext.tasks.loop` decorator. Unlike `IntervalJob` class instances,
-    the instances of this class depend on their `BotJobManager` to trigger
-    the execution of their `.on_run()` method, and will stop running if
-    all ClientEvent objects passed to them have been processed.
+    optionally be overloaded. One can also override the class variables
+    `CLASS_DEFAULT_COUNT` and `CLASS_DEFAULT_RECONNECT` in subclasses.
+    They are derived from the keyword arguments of the `discord.ext.tasks.loop`
+    decorator. Unlike `IntervalJob` class instances, the instances of this
+    class depend on their `BotJobManager` to trigger the execution of
+    their `.on_run()` method, and will stop running if all ClientEvent
+    objects passed to them have been processed.
 
     Attributes:
         CLASS_EVENT_TYPES:
@@ -1469,10 +1654,14 @@ class ClientEventJob(EventJob):
 
 
 class SingletonJobBase(BotJob):
+    """A special job base class whose instances can only exist
+    one at a time within a `BotJobManager`.
+    """
+
     pass
 
 
-class OneTimeJob(IntervalJob):
+class SingleRunJob(IntervalJob):
     """A subclass of `IntervalJob` whose subclasses's
     job objects will only run once, before going into an idle state.
     automatically. For more control, use `IntervalJob` directly.
@@ -1487,8 +1676,8 @@ class OneTimeJob(IntervalJob):
         self.COMPLETE()
 
 
-class RegisterDelayedJob(OneTimeJob):
-    """A subclass of `OneTimeJob` that
+class RegisterDelayedJob(SingleRunJob):
+    """A subclass of `SingleRunJob` that
     adds a given set of job proxies to its `BotJobManager`
     only after a given period of time in seconds.
 
@@ -1521,4 +1710,4 @@ class RegisterDelayedJob(OneTimeJob):
         self.COMPLETE()
 
 
-from .manager import BotJobManagerProxy
+from .manager import BotJobManager, BotJobManagerProxy
