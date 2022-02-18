@@ -177,7 +177,7 @@ class Main(core.OneTimeJob):
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
-            max_recurrences=2,
+            max_intervals=2,
             job_kwargs=dict(
                 channel=822650791303053342,
                 content="This will occur every 10 seconds, but only 2 times.",
@@ -203,12 +203,14 @@ class Main(core.OneTimeJob):
 
         
         reaction_add_job = self.manager.create_job(
-            messaging.ReactionAdd,
+            messaging.ReactionsAdd,
             None,
             msg_event.message,
             *tuple("🇳🇴⬛🇲🇪"),
             853327268474126356,
         )
+
+        await self.manager.register_job(reaction_add_job)
 
         await self.wait_for(reaction_add_job.await_completion())
 

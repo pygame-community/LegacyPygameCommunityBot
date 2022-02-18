@@ -38,7 +38,7 @@ JOB_CLASS_MAP = {}
 """A dictionary of all BotJob subclasses that were created."""
 
 
-class JobError(RuntimeError):
+class JobError(Exception):
     """Generic job object run-time error."""
 
     pass
@@ -55,7 +55,7 @@ class JobStateError(JobError):
 
 
 class JobInitializationError(JobError):
-    """Initialisation of a job object failed due to an error."""
+    """Initialisation of a job object failed."""
 
     pass
 
@@ -365,6 +365,9 @@ class BotJobProxy:
                 The time at which the next iteration will occur.
         """
         return self._j.next_iteration()
+
+    def __repr__(self):
+        return f"<BotJobProxy ({self.__job_class})>"
 
 
 
