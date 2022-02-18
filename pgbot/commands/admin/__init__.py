@@ -1313,7 +1313,6 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         -----
         """
         for emoji in emojis:
-            print(emoji)
             try:
                 await message.add_reaction(emoji)
             except discord.HTTPException as e:
