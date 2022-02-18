@@ -370,7 +370,6 @@ class BotJobProxy:
         return f"<BotJobProxy ({self.__job_class})>"
 
 
-
 class BotJob:
     """The base class of all bot job objects. Do not instantiate
     this class by yourself, use its subclasses"""
@@ -446,9 +445,8 @@ class BotJob:
         return self._registered_at
 
     async def on_init(self):
-        """DO NOT CALL THIS METHOD OUTSIDE OF
-        OVERLOADED VERSIONS OF THIS METHOD. Only the
-        `on_init` version of a subclass can call this method.
+        """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()`
+        WITHIN THIS METHOD TO ACCESS THE SUPERCLASS METHOD.
 
         This method allows subclasses to initialize their job object instances.
         """
@@ -1012,7 +1010,7 @@ class BotJob:
         if field_name not in self._output_futures:
             raise (
                 ValueError(
-                    f"field name '{field_name}' not defined in 'CLASS_OUTPUT_FIELDS' of {self.__class__.__name__} class"
+                    f"field name '{field_name}' not defined in 'CLASS_OUTPUT_FIELDS' of {self.__class__} class"
                 )
                 if isinstance(field_name, str)
                 else ValueError(
@@ -1027,22 +1025,8 @@ class BotJob:
 
         self._output_futures[field_name].clear()
 
-    def get_output(self):
-        """Get the data that this job has marked as its output, if present.
-
-        Returns:
-            (JobNamespace, optional): The output namespace of this job, if present.
-        """
-        if "OUTPUT" in self.DATA:
-            try:
-                return self.DATA.OUTPUT.copy()
-            except AttributeError:
-                pass
-
-        return None
-
     def __str__(self):
-        return f"<{self.__class__.__name__}: id:{self._identifier}>"
+        return f"<{self.__class__}: id:{self._identifier}>"
 
 
 class IntervalJob(BotJob):

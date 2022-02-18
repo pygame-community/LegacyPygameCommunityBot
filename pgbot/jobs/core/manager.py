@@ -97,7 +97,9 @@ class BotJobManager:
         for i, timestamp in enumerate(tuple(self._schedule_dict.keys())):
             now = datetime.datetime.now(datetime.timezone.utc)
             if now >= timestamp:
-                for j, schedule_data in enumerate(self._schedule_dict[timestamp].items()):
+                for j, schedule_data in enumerate(
+                    self._schedule_dict[timestamp].items()
+                ):
                     k, d = schedule_data
                     if d["recur_interval"] is not None:
                         try:
@@ -535,7 +537,7 @@ class BotJobManager:
         and return a tuple of proxy objects to them.
 
         Args:
-            
+
             identifier (Optional[str]):
                 The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
             classes: (
@@ -548,7 +550,7 @@ class BotJobManager:
                 The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
             exact_class_match (bool):
                 Whether an exact match is required for the classes in the previous parameter. Defaults to False.
-            
+
             created_at (Optional[datetime.datetime]):
                 The exact creation date of the jobs to find. This argument overrides any other parameter below. Defaults to None.
             created_before (Optional[datetime.datetime]):
@@ -581,9 +583,7 @@ class BotJobManager:
             if isinstance(identifier, str):
                 if identifier in self._job_id_map:
                     return self._job_id_map[identifier]._proxy
-                raise ValueError(
-                    "cound not find a job with the specified identifier"
-                )
+                raise ValueError("cound not find a job with the specified identifier")
             raise TypeError(
                 f"'identifier' must be of type 'str', not {type(identifier)}"
             ) from None
@@ -621,7 +621,9 @@ class BotJobManager:
                         ) from None
 
                 if exact_class_match:
-                    filter_lambdas.append(lambda job: any(job.__class__ is c for c in classes))
+                    filter_lambdas.append(
+                        lambda job: any(job.__class__ is c for c in classes)
+                    )
                 else:
                     filter_lambdas.append(lambda job: isinstance(job, classes))
 
@@ -659,17 +661,27 @@ class BotJobManager:
 
             if is_being_stopped is not None:
                 is_running = bool(is_running)
-                filter_lambdas.append(lambda job: job.is_being_stopped() == is_being_stopped)
+                filter_lambdas.append(
+                    lambda job: job.is_being_stopped() == is_being_stopped
+                )
 
             if is_being_killed is not None:
                 is_running = bool(is_running)
-                filter_lambdas.append(lambda job: job.is_being_killed() == is_being_killed)
+                filter_lambdas.append(
+                    lambda job: job.is_being_killed() == is_being_killed
+                )
 
             if is_being_completed is not None:
                 is_running = bool(is_running)
-                filter_lambdas.append(lambda job: job.is_being_completed() == is_being_completed)
+                filter_lambdas.append(
+                    lambda job: job.is_being_completed() == is_being_completed
+                )
 
-            jobs = tuple(job._proxy for job in self._job_id_map.values() if all(filter_func(job) for filter_func in filter_lambdas))
+            jobs = tuple(
+                job._proxy
+                for job in self._job_id_map.values()
+                if all(filter_func(job) for filter_func in filter_lambdas)
+            )
 
             return jobs
 
@@ -782,9 +794,7 @@ class BotJobManager:
         wait_list = [event_types, check, future]
 
         for event_type in event_types:
-            if (
-                not issubclass(event_type, events.BaseEvent)
-            ):
+            if not issubclass(event_type, events.BaseEvent):
                 for event_type in event_types:  # undo everything
                     if event_type.__name__ in self._event_waiting_queues:
                         d = self._event_waiting_queues[event_type.__name__]

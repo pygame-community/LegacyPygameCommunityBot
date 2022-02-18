@@ -201,7 +201,6 @@ class Main(core.OneTimeJob):
             ),
         )
 
-        
         reaction_add_job = self.manager.create_job(
             messaging.ReactionsAdd,
             None,
@@ -213,7 +212,6 @@ class Main(core.OneTimeJob):
         await self.manager.register_job(reaction_add_job)
 
         await self.wait_for(reaction_add_job.await_completion())
-
 
 
 __all__ = [
