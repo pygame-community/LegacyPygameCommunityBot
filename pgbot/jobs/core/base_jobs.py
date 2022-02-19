@@ -1575,8 +1575,8 @@ class EventJob(BotJob):
         temporarily blocking the event queue of this event job
         while running an operation, thereby disabling event dispatch to it.
         """
-        self._allow_dispatch = False
         try:
+            self._allow_dispatch = False
             yield
         finally:
             self._allow_dispatch = True
