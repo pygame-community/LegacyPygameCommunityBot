@@ -52,7 +52,7 @@ upon reconnecting."""
 
 class StopFlags:
     INTERNAL = "INTERNAL"
-    """Job is stopping due to an unknown internal reason.
+    """Job is stopping due to an internal reason.
     """
     INTERNAL_ERROR = "INTERNAL_ERROR"
     """Job is stopping due to an internal error.
@@ -567,14 +567,24 @@ class BotJob:
             self._stopping_by_self = False
             self._is_being_stopped = False
             self._is_being_restarted = False
+            
             if self._is_being_completed:
                 self._is_completed = True
+            
             self._is_being_completed = False
+
             if self._is_being_killed:
                 self._is_killed = True
+
             self._is_being_killed = False
             self._stopping_by_force = False
-            self._is_sleeping = self._is_killed or self._is_completed
+
+            if self._is_killed or self._is_completed:
+                self._is_sleeping = False
+                self.manager._eject()
+            else:
+                self._is_sleeping = True
+
 
     async def on_stop(self, reason, by_force):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
@@ -883,7 +893,6 @@ class BotJob:
             self._completion_futures.clear()
 
             self._is_sleeping = False
-            self.manager._eject()
             return True
         return False
 
@@ -922,7 +931,6 @@ class BotJob:
             self._completion_futures.clear()
 
             self._is_sleeping = False
-            self.manager._eject()
             return True
         return False
 
@@ -962,7 +970,6 @@ class BotJob:
             self._output_futures.clear()
 
             self._is_sleeping = False
-            self.manager.remove_self(self)
             return True
         return False
 
@@ -1364,12 +1371,17 @@ class EventJob(BotJob):
     CLASS_DEFAULT_CLEAR_QUEUE_AT_STARTUP = False
 
     def __init_subclass__(cls):
-        if not isinstance(cls.CLASS_EVENT_TYPES, (list, tuple)):
+        if not cls.CLASS_EVENT_TYPES:
+            raise TypeError(
+                "the 'CLASS_EVENT_TYPES' class attribute must not be empty"
+            )
+
+        elif not isinstance(cls.CLASS_EVENT_TYPES, (list, tuple)):
             raise TypeError(
                 "the 'CLASS_EVENT_TYPES' class attribute must be of type 'list'/'tuple' and"
                 " must contain one or more subclasses of `BaseEvent`"
             )
-        elif not cls.CLASS_EVENT_TYPES or not all(
+        elif not all(
             issubclass(et, events.BaseEvent) for et in cls.CLASS_EVENT_TYPES
         ):
             raise ValueError(
