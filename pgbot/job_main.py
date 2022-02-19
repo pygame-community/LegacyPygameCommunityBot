@@ -8,7 +8,7 @@ This file includes job classes that run at bot startup.
 import datetime
 import discord
 
-from pgbot import common
+from pgbot import common, db
 from pgbot.jobs import core
 from pgbot.jobs.core import events
 from pgbot.jobs.core import serializers as serials
@@ -135,6 +135,61 @@ class MessagingTest2(core.ClientEventJob):
             await self.DATA.target_channel.send(f"Hi, {user_name}")
 
 
+class MemberReminderJob(core.IntervalJob):
+    CLASS_DEFAULT_SECONDS = 3
+
+    async def on_run(self):
+        async with db.DiscordDB("reminders") as reminder_obj:
+            reminders = reminder_obj.get({})
+            new_reminders = {}
+            for mem_id, reminder_dict in reminders.items():
+                for dt, (msg, chan_id, msg_id) in reminder_dict.items():
+                    if datetime.datetime.utcnow() >= dt:
+                        content = f"__**Reminder for you:**__\n>>> {msg}"
+
+                        channel = None
+                        if common.guild is not None:
+                            channel = common.guild.get_channel(chan_id)
+                        if not isinstance(channel, discord.TextChannel):
+                            # Channel does not exist in the guild, DM the user
+                            try:
+                                user = await common.bot.fetch_user(mem_id)
+                                if user.dm_channel is None:
+                                    await user.create_dm()
+
+                                await user.dm_channel.send(content=content)
+                            except discord.HTTPException:
+                                pass
+                            continue
+
+                        allowed_mentions = discord.AllowedMentions.none()
+                        allowed_mentions.replied_user = True
+                        try:
+                            message = await channel.fetch_message(msg_id)
+                            await message.reply(
+                                content=content, allowed_mentions=allowed_mentions
+                            )
+                        except discord.HTTPException:
+                            # The message probably got deleted, try to resend in channel
+                            allowed_mentions.users = [discord.Object(mem_id)]
+                            content = f"__**Reminder for <@!{mem_id}>:**__\n>>> {msg}"
+                            try:
+                                await channel.send(
+                                    content=content,
+                                    allowed_mentions=allowed_mentions,
+                                )
+                            except discord.HTTPException:
+                                pass
+                    else:
+                        if mem_id not in new_reminders:
+                            new_reminders[mem_id] = {}
+
+                        new_reminders[mem_id][dt] = (msg, chan_id, msg_id)
+
+            if reminders != new_reminders:
+                reminder_obj.write(new_reminders)
+
+
 class Main(core.SingleRunJob):
     async def on_run(self):
 
@@ -212,6 +267,8 @@ class Main(core.SingleRunJob):
         await self.manager.register_job(reaction_add_job)
 
         await self.wait_for(reaction_add_job.await_completion())
+
+        await self.manager.create_and_register_job(MemberReminderJob)
 
 
 __all__ = [

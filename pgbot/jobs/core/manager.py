@@ -406,7 +406,7 @@ class BotJobManager:
         new_data["schedule_timestamp"] = datetime.datetime.now(datetime.timezone.utc)
         return schedule_id
 
-    def remove_job_schedule(self, schedule_id: str):
+    def remove_job_schedule(self, schedule_id: str, _invoker=None):
         """Remove a scheduled job using a string identifier
         for the schedule operation.
 
@@ -522,9 +522,6 @@ class BotJobManager:
         Args:
             *jobs: Union[EventJob, IntervalJob]:
                 The jobs to be removed, if present.
-            cancel (bool, optional):
-                Whether the given interval job objects should be cancelled
-                immediately after being removed. Defaults to True.
         Raises:
             TypeError: An invalid object was given as a job.
         """
@@ -542,7 +539,7 @@ class BotJobManager:
         """
         return job._identifier in self._job_id_map
 
-    async def find_jobs(
+    def find_jobs(
         self,
         *,
         identifier: Optional[str] = None,
@@ -558,6 +555,7 @@ class BotJobManager:
         is_being_stopped: Optional[bool] = None,
         is_being_killed: Optional[bool] = None,
         is_being_completed: Optional[bool] = None,
+        _return_proxy: bool = False,
     ):
         """Find jobs that match the given criteria specified as arguments,
         and return a tuple of proxy objects to them.
@@ -603,7 +601,7 @@ class BotJobManager:
             TypeError: Invalid argument types.
 
         Returns:
-            tuple: A tuple of proxies of the job objects that were found.
+            tuple: A tuple of the job objects that were found.
         """
         if identifier is not None:
             if isinstance(identifier, str):
@@ -703,11 +701,18 @@ class BotJobManager:
                     lambda job: job.is_being_completed() == is_being_completed
                 )
 
-            jobs = tuple(
-                job._proxy
-                for job in self._job_id_map.values()
-                if all(filter_func(job) for filter_func in filter_lambdas)
-            )
+            if _return_proxy:
+                jobs = tuple(
+                    job._proxy
+                    for job in self._job_id_map.values()
+                    if all(filter_func(job) for filter_func in filter_lambdas)
+                )
+            else:
+                jobs = tuple(
+                    job
+                    for job in self._job_id_map.values()
+                    if all(filter_func(job) for filter_func in filter_lambdas)
+                )
 
             return jobs
 
@@ -716,14 +721,33 @@ class BotJobManager:
         job: Union[IntervalJob, EventJob],
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
+        """Restart the given job object. This provides a cleaner way
+        to forcefully stop a job and restart it, or to wake it up from
+        a sleeping state after it was stoppd. 
+
+        Args:
+            job (Union[IntervalJob, EventJob]): The job object.
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         return job._RESTART_LOOP_EXTERNAL()
 
     def stop_job(
         self,
         job: Union[EventJob, IntervalJob],
-        force=False,
+        force: bool = False,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
+        """Stop the given job object.
+
+        Args:
+            job (Union[IntervalJob, EventJob]): The job object.
+            force (bool): Whether to suspend all operations of the job forcefully. 
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         return job._STOP_LOOP_EXTERNAL(force=force)
 
     def kill_job(
@@ -731,8 +755,15 @@ class BotJobManager:
         job: Union[EventJob, IntervalJob],
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
-        """Stops this job's current execution unconditionally and remove it from its `BotJobManager`.
-        In order to check if a job was ended by killing it, on can call `.was_killed()`."""
+        """Stops a job's current execution unconditionally and remove it from its `BotJobManager`.
+        In order to check if a job was ended by killing it, one can call `.is_killed()`.
+        
+        Args:
+            job (Union[IntervalJob, EventJob]): The job object.
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         return job._KILL_EXTERNAL(awaken=True)
 
     def __contains__(self, job: Union[EventJob, IntervalJob]):
@@ -940,16 +971,42 @@ class BotJobManagerProxy:
         )
 
     def restart_job(self, job_proxy: BotJobProxy):
+        """Restart the given job object. This provides a cleaner way
+        to forcefully stop a job and restart it, or to wake it up from
+        a sleeping state after it was stoppd. 
+
+        Args:
+            job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.restart_job(job, _invoker=self._job)
 
     def stop_job(self, job_proxy: BotJobProxy, force=False):
+        """Stop the given job object.
+
+        Args:
+            job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
+            force (bool): Whether to suspend all operations of the job forcefully. 
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.stop_job(job, force=force, _invoker=self._job)
 
     def kill_job(self, job_proxy: BotJobProxy):
-        """Stops this job's current execution unconditionally and remove it from its `BotJobManager`.
-        In order to check if a job was ended by killing it, on can call `.was_killed()`."""
+        """Stops a job's current execution unconditionally and remove it from its `BotJobManager`.
+        In order to check if a job was ended by killing it, one can call `.is_killed()`.
+        
+        Args:
+            job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
+
+        Returns:
+            bool: Whether the operation was initiated by the job.
+        """
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.kill_job(job, _invoker=self._job)
 
@@ -966,6 +1023,37 @@ class BotJobManagerProxy:
         job_kwargs: dict = None,
         data: dict = None,
     ):
+        """Schedule a job of a specific type to be instantiated and to run at
+        one or more specific periods of time. Each job can receive positional
+        or keyword arguments which are passed to this method.
+        Those arguments must be pickleable.
+
+        Args:
+            cls (Type[BotJob]): The job type to schedule.
+            timestamp (Union[datetime.datetime, datetime.timedelta]):
+                The exact timestamp at which to instantiate a job.
+            recur_interval (Optional[datetime.timedelta]):
+                The interval at which a job should be rescheduled.
+                Defaults to None.
+            max_intervals (Optional[int]):
+                The maximum amount of recur intervals for rescheduling. 
+                Defaults to None.
+            job_args (tuple, optional):
+                Positional arguments to pass to the scheduled job upon
+                instantiation. Defaults to None.
+            job_kwargs (dict, optional):
+            Keyword arguments to pass to the scheduled job upon instantiation.
+            Defaults to None.
+
+        Raises:
+            RuntimeError:
+                The bot job manager has not yet initiated bot job scheduling.
+            TypeError: Invalid argument types were given.
+
+        Returns:
+            str: The string identifier of the scheduling operation
+        """
+
         return self._mgr.schedule_job(
             cls=cls,
             timestamp=timestamp,
@@ -975,6 +1063,97 @@ class BotJobManagerProxy:
             job_kwargs=job_kwargs,
             data=data,
             _invoker=self._job,
+        )
+
+    def remove_job_schedule(self, schedule_id: str):
+        """Remove a scheduled job using a string identifier
+        for the schedule operation.
+
+        Args:
+            schedule_id (str): A string identifier.
+        """
+
+        self._mgr.remove_job_schedule(schedule_id)
+
+    def find_jobs(
+        self,
+        *,
+        identifier: Optional[str] = None,
+        classes: Optional[Union[Type[BotJob], tuple[Type[BotJob]]]] = None,
+        exact_class_match: bool = False,
+        created_at: Optional[datetime.datetime] = None,
+        created_before: Optional[datetime.datetime] = None,
+        created_after: Optional[datetime.datetime] = None,
+        is_running: Optional[bool] = None,
+        is_idling: Optional[bool] = None,
+        is_sleeping: Optional[bool] = None,
+        is_awaiting: Optional[bool] = None,
+        is_being_stopped: Optional[bool] = None,
+        is_being_killed: Optional[bool] = None,
+        is_being_completed: Optional[bool] = None,
+        _return_proxy: bool = False,
+    ):
+        """Find jobs that match the given criteria specified as arguments,
+        and return a tuple of proxy objects to them.
+
+        Args:
+
+            identifier (Optional[str]):
+                The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
+            classes: (
+                Optional[
+                    Union[Type[BotJob],
+                    list[Type[BotJob]],
+                    tuple[Type[BotJob]]]
+                ]
+            ):
+                The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
+            exact_class_match (bool):
+                Whether an exact match is required for the classes in the previous parameter. Defaults to False.
+
+            created_at (Optional[datetime.datetime]):
+                The exact creation date of the jobs to find. This argument overrides any other parameter below. Defaults to None.
+            created_before (Optional[datetime.datetime]):
+                The lower age limit of the jobs to find. Defaults to None.
+            created_after (Optional[datetime.datetime]):
+                The upper age limit of the jobs to find. Defaults to None.
+            is_running (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_idling (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_sleeping (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_awaiting (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_being_stopped (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_being_killed (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+            is_being_completed (Optional[bool]):
+                A boolean that a job's state should match. Defaults to None.
+
+        Raises:
+            ValueError: Jobs with the specified arguments could not be found.
+            TypeError: Invalid argument types.
+
+        Returns:
+            tuple: A tuple of proxies of the job objects that were found.
+        """
+
+        return self._mgr.find_jobs(
+            identifier=identifier,
+            classes=classes,
+            exact_class_match=exact_class_match,
+            created_at=created_at,
+            created_before=created_before,
+            is_running=is_running,
+            is_idling=is_idling,
+            is_sleeping=is_sleeping,
+            is_awaiting=is_awaiting,
+            is_being_stopped=is_being_stopped,
+            is_being_killed=is_being_killed,
+            is_being_completed=is_being_completed,
+            _return_proxy=True,
         )
 
     def wait_for_event(
@@ -1020,6 +1199,15 @@ class BotJobManagerProxy:
         return await self._mgr.dispatch_event(event)
 
     def __contains__(self, job_proxy: BotJobProxy):
+        """Whether a specific job object is currently in this
+        BotJobManager.
+
+        Args:
+            job_proxy (BotJobProxy): The target job's proxy.
+
+        Returns:
+            bool: True/False
+        """
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.__contains__(job)
 

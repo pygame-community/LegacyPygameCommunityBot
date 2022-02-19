@@ -115,8 +115,8 @@ async def routine():
     Function that gets called routinely, to call other
     routine functions to handle stuff
     """
-    async with db.DiscordDB("reminders") as db_obj:
-        await handle_reminders(db_obj)
+    # async with db.DiscordDB("reminders") as db_obj:
+    #     await handle_reminders(db_obj)
 
     if random.randint(0, 4) == 0:
         await emotion.update("bored", 1)
