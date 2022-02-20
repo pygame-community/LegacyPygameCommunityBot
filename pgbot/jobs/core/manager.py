@@ -49,10 +49,6 @@ class BotJobManager:
 
     def __init__(self, loop=None):
         """Create a new bot job manager instance.
-
-        Args:
-            *jobs: Union[EventJob, IntervalJob]:
-                The job objects to add during initiation.
         """
         if loop is None:
             try:
@@ -159,7 +155,7 @@ class BotJobManager:
                             deletion_list.append(k)
                             continue
                         else:
-                            if not isinstance(job, BotJob):
+                            if not isinstance(job, (EventJob, IntervalJob)):
                                 print(
                                     f"Invalid job type found in job class scheduling data: '{type(job).__name__}'"
                                 )
@@ -206,7 +202,7 @@ class BotJobManager:
 
     def create_job(
         self,
-        cls: Type[BotJob],
+        cls: Union[Type[EventJob], Type[IntervalJob]],
         *args,
         return_proxy=False,
         **kwargs,
@@ -214,7 +210,7 @@ class BotJobManager:
         """Create an instance of a job class, and return it.
 
         Args:
-            cls (Type[BotJob]):
+            cls (Union[Type[EventJob], Type[IntervalJob]]):
                The job class to instantiate a job object from.
             return_proxy (bool, optional):
                 Whether a proxy of the job object should be returned.
@@ -241,7 +237,7 @@ class BotJobManager:
         return job
 
     async def initialize_job(
-        self, job: Union[EventJob, IntervalJob], raise_exceptions: bool = True
+        self, job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy], raise_exceptions: bool = True
     ):
         """Initialize this job object.
 
@@ -256,6 +252,8 @@ class BotJobManager:
         Returns:
             bool: Whether the initialization attempt was successful.
         """
+
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
 
         if (
             isinstance(job, SingletonJobBase)
@@ -286,15 +284,18 @@ class BotJobManager:
 
     async def register_job(
         self,
-        job: Union[EventJob, IntervalJob],
+        job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy],
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
         """Register a job object to this BotJobManager,
         while initializing it if necessary.
 
         Args:
-            job (BotJob): The job object to be registered.
+            job (Union[Union[EventJob, IntervalJob], BotJobProxy]):
+                The job object to be registered.
         """
+        
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
 
         if job._is_killed:
             raise JobError("cannot register a killed job object")
@@ -306,18 +307,17 @@ class BotJobManager:
 
     async def create_and_register_job(
         self,
-        cls: Type[BotJob],
+        cls: Union[Type[EventJob], Type[IntervalJob]],
         *args,
-        return_proxy: bool = False,
+        _return_proxy: bool = True,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
         **kwargs,
     ):
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
-            cls (Type[BotJob]): The job class to be used for instantiation.
-            return_proxy (bool, optional): Whether a proxy of the job object
-            should be returned. Defaults to False.
+            cls (Union[Type[EventJob], Type[IntervalJob]]):
+                The job class to be used for instantiation.
 
         Returns:
             BotJobProxy: A job proxy object.
@@ -329,7 +329,7 @@ class BotJobManager:
 
     def schedule_job(
         self,
-        cls: Type[BotJob],
+        cls: Union[Type[EventJob], Type[IntervalJob]],
         timestamp: Union[datetime.datetime, datetime.timedelta],
         recur_interval: Optional[datetime.timedelta] = None,
         max_intervals: Optional[int] = None,
@@ -344,7 +344,7 @@ class BotJobManager:
         Those arguments must be pickleable.
 
         Args:
-            cls (Type[BotJob]): The job type to schedule.
+            cls (Union[Type[EventJob], Type[IntervalJob]]): The job type to schedule.
             timestamp (Union[datetime.datetime, datetime.timedelta]):
                 The exact timestamp at which to instantiate a job.
             recur_interval (Optional[datetime.timedelta]):
@@ -560,15 +560,16 @@ class BotJobManager:
         for job in jobs:
             self._remove_job(job)
 
-    def has_job(self, job: Union[EventJob, IntervalJob]):
+    def has_job(self, job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy]):
         """Whether a job is contained in this bot job manager.
 
         Args:
-            job (Union[EventJob, IntervalJob]): The job object to look for.
+            job_or_proxy (Union[EventJob, IntervalJob]): The job object to look for.
 
         Returns:
             bool: True/False
         """
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
         return job._identifier in self._job_id_map
 
     def find_jobs(
@@ -587,7 +588,7 @@ class BotJobManager:
         is_being_stopped: Optional[bool] = None,
         is_being_killed: Optional[bool] = None,
         is_being_completed: Optional[bool] = None,
-        _return_proxy: bool = False,
+        _return_proxy: bool = True,
     ):
         """Find jobs that match the given criteria specified as arguments,
         and return a tuple of proxy objects to them.
@@ -598,14 +599,16 @@ class BotJobManager:
                 The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
             classes: (
                 Optional[
-                    Union[Type[BotJob],
-                    list[Type[BotJob]],
-                    tuple[Type[BotJob]]]
+                    Union[
+                        Type[BotJob],
+                        tuple[Type[BotJob]]
+                    ]
                 ]
             ):
                 The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
             exact_class_match (bool):
-                Whether an exact match is required for the classes in the previous parameter. Defaults to False.
+                Whether an exact match is required for the classes in the previous parameter,
+                or subclasses are allowed too. Defaults to False.
 
             created_at (Optional[datetime.datetime]):
                 The exact creation date of the jobs to find. This argument overrides any other parameter below. Defaults to None.
@@ -663,17 +666,17 @@ class BotJobManager:
 
             if classes:
                 if isinstance(classes, type):
-                    if issubclass(classes, BotJob):
+                    if issubclass(classes, (EventJob, IntervalJob)):
                         classes = (classes,)
                     else:
                         raise TypeError(
-                            f"'classes' must be a tuple of 'BotJob' subclasses or a single subclass"
+                            f"'classes' must be a tuple of 'EventJob' or 'IntervalJob' subclasses or a single subclass"
                         ) from None
 
                 elif isinstance(classes, tuple):
-                    if not all(issubclass(c, BotJob) for c in classes):
+                    if not all(issubclass(c, (EventJob, IntervalJob)) for c in classes):
                         raise TypeError(
-                            f"'classes' must be a tuple of 'BotJob' subclasses or a single subclass"
+                            f"'classes' must be a tuple of 'EventJob' or 'IntervalJob' subclasses or a single subclass"
                         ) from None
 
                 if exact_class_match:
@@ -750,7 +753,7 @@ class BotJobManager:
 
     def restart_job(
         self,
-        job: Union[IntervalJob, EventJob],
+        job_or_proxy: Union[IntervalJob, EventJob],
         stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
@@ -759,7 +762,7 @@ class BotJobManager:
         a sleeping state after it was stoppd.
 
         Args:
-            job (Union[IntervalJob, EventJob]): The job object.
+            job_or_proxy (Union[IntervalJob, EventJob]): The job object.
             stopping_timeout (Optional[float]):
                 An optional timeout in seconds for the maximum time period
                 for stopping the job while it is restarting. This overrides
@@ -767,6 +770,8 @@ class BotJobManager:
         Returns:
             bool: Whether the operation was initiated by the job.
         """
+
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -776,7 +781,7 @@ class BotJobManager:
 
     def stop_job(
         self,
-        job: Union[EventJob, IntervalJob],
+        job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy],
         stopping_timeout: Optional[float] = None,
         force: bool = False,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
@@ -784,7 +789,7 @@ class BotJobManager:
         """Stop the given job object.
 
         Args:
-            job (Union[IntervalJob, EventJob]): The job object.
+            job_or_proxy (Union[IntervalJob, EventJob]): The job object.
             force (bool): Whether to suspend all operations of the job forcefully.
             stopping_timeout (Optional[float]):
                 An optional timeout in seconds for the maximum time period
@@ -795,6 +800,8 @@ class BotJobManager:
             bool: Whether the operation was initiated by the job.
         """
 
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
             job.manager._job_stop_timeout = stopping_timeout
@@ -803,7 +810,7 @@ class BotJobManager:
 
     def kill_job(
         self,
-        job: Union[EventJob, IntervalJob],
+        job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy],
         stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
@@ -812,7 +819,7 @@ class BotJobManager:
         can call `.is_killed()`.
 
         Args:
-            job (Union[IntervalJob, EventJob]): The job object.
+            job_or_proxy (Union[IntervalJob, EventJob]): The job object.
             stopping_timeout (Optional[float]):
                 An optional timeout in seconds for the maximum time period
                 for stopping the job while it is being killed. This overrides the
@@ -822,13 +829,16 @@ class BotJobManager:
             bool: Whether the operation was initiated by the job.
         """
 
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
             job.manager._job_stop_timeout = stopping_timeout
 
         return job._KILL_EXTERNAL(awaken=True)
 
-    def __contains__(self, job: Union[EventJob, IntervalJob]):
+    def __contains__(self, job: Union[Union[EventJob, IntervalJob], BotJobProxy]):
+        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
         return job._identifier in self._job_id_map
 
     async def dispatch_event(self, event: events.BaseEvent):
@@ -1004,12 +1014,12 @@ class BotJobManagerProxy:
             else self._mgr.get_global_job_stop_timeout()
         )
 
-    def create_job(self, cls: Type[BotJob], *args, **kwargs):
+    def create_job(self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs):
         """Create an instance of a job class.
 
         Args:
-            cls (Type[BotJob]): The job class to
-            instantiate a job object from.
+            cls (Union[Type[EventJob], Type[IntervalJob]]):
+                The job class to instantiate a job object from.
 
         Returns:
             BotJobProxy: A job proxy object.
@@ -1041,11 +1051,12 @@ class BotJobManagerProxy:
         job = self._mgr._get_job_from_proxy(job_proxy)
         return await self._mgr.register_job(job, _invoker=self._job)
 
-    async def create_and_register_job(self, cls: Type[BotJob], *args, **kwargs):
+    async def create_and_register_job(self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs):
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
-            cls (Type[BotJob]): The job class to be used for instantiation.
+            cls (Union[Type[EventJob], Type[IntervalJob]]):
+                The job class to be used for instantiation.
 
         Returns:
             BotJobProxy: A job proxy object.
@@ -1121,7 +1132,7 @@ class BotJobManagerProxy:
 
     def schedule_job(
         self,
-        cls: Type[BotJob],
+        cls: Union[Type[EventJob], Type[IntervalJob]],
         timestamp: Union[datetime.datetime, datetime.timedelta],
         recur_interval: Optional[datetime.timedelta] = None,
         max_intervals: Optional[int] = None,
@@ -1135,7 +1146,7 @@ class BotJobManagerProxy:
         Those arguments must be pickleable.
 
         Args:
-            cls (Type[BotJob]): The job type to schedule.
+            cls (Union[Type[EventJob], Type[IntervalJob]]): The job type to schedule.
             timestamp (Union[datetime.datetime, datetime.timedelta]):
                 The exact timestamp at which to instantiate a job.
             recur_interval (Optional[datetime.timedelta]):
@@ -1185,7 +1196,7 @@ class BotJobManagerProxy:
         self,
         *,
         identifier: Optional[str] = None,
-        classes: Optional[Union[Type[BotJob], tuple[Type[BotJob]]]] = None,
+        classes: Optional[Union[Union[Type[EventJob], Type[IntervalJob]], tuple[Union[Type[EventJob], Type[IntervalJob]]]]] = None,
         exact_class_match: bool = False,
         created_at: Optional[datetime.datetime] = None,
         created_before: Optional[datetime.datetime] = None,
@@ -1197,7 +1208,6 @@ class BotJobManagerProxy:
         is_being_stopped: Optional[bool] = None,
         is_being_killed: Optional[bool] = None,
         is_being_completed: Optional[bool] = None,
-        _return_proxy: bool = False,
     ):
         """Find jobs that match the given criteria specified as arguments,
         and return a tuple of proxy objects to them.
@@ -1208,9 +1218,18 @@ class BotJobManagerProxy:
                 The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
             classes: (
                 Optional[
-                    Union[Type[BotJob],
-                    list[Type[BotJob]],
-                    tuple[Type[BotJob]]]
+                    Union[
+                        Union[
+                            Type[EventJob],
+                            Type[IntervalJob]
+                        ],
+                        tuple[
+                            Union[
+                                Type[EventJob],
+                                Type[IntervalJob]
+                            ]
+                        ]
+                    ]
                 ]
             ):
                 The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
