@@ -941,7 +941,7 @@ class BotJobManager:
 
         return asyncio.wait_for(future, timeout)
 
-    async def kill_all(self):
+    async def kill_all_jobs(self):
         """Kill all job objects that are in this bot job manager."""
         await self._loop.run_in_executor(
             None,
@@ -954,7 +954,7 @@ class BotJobManager:
         )
 
     async def kill_all_interval_jobs(self):
-        """Kill all interval job objects that are in this bot job manager."""
+        """Kill all job objects inheriting from `IntervalJob` that are in this bot job manager."""
         await self._loop.run_in_executor(
             None,
             map,
@@ -962,8 +962,8 @@ class BotJobManager:
             tuple(self._interval_job_pool),
         )
 
-    async def kill_all_client_event_jobs(self):
-        """Kill all event job objects that are in this bot job manager."""
+    async def kill_all_event_jobs(self):
+        """Kill all job objects inheriting from `EventJob` that are in this bot job manager."""
         await self._loop.run_in_executor(
             None,
             map,
@@ -973,7 +973,7 @@ class BotJobManager:
 
     async def quit(self):
         self.job_scheduling_loop.stop()
-        await self.kill_all()
+        await self.kill_all_jobs()
         self._running = False
 
 
