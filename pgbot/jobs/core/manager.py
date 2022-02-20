@@ -278,7 +278,7 @@ class BotJobManager:
         else:
             if raise_exceptions:
                 raise JobInitializationError(
-                    "this bot job is already initialized"
+                    "this job object is already initialized"
                 ) from None
             else:
                 return False
