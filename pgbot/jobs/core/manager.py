@@ -48,8 +48,7 @@ class BotJobManager:
     """
 
     def __init__(self, loop=None):
-        """Create a new bot job manager instance.
-        """
+        """Create a new bot job manager instance."""
         if loop is None:
             try:
                 self._loop = asyncio.get_running_loop()
@@ -237,7 +236,9 @@ class BotJobManager:
         return job
 
     async def initialize_job(
-        self, job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy], raise_exceptions: bool = True
+        self,
+        job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy],
+        raise_exceptions: bool = True,
     ):
         """Initialize this job object.
 
@@ -294,7 +295,7 @@ class BotJobManager:
             job (Union[Union[EventJob, IntervalJob], BotJobProxy]):
                 The job object to be registered.
         """
-        
+
         job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
 
         if job._is_killed:
@@ -1014,7 +1015,9 @@ class BotJobManagerProxy:
             else self._mgr.get_global_job_stop_timeout()
         )
 
-    def create_job(self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs):
+    def create_job(
+        self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs
+    ):
         """Create an instance of a job class.
 
         Args:
@@ -1051,7 +1054,9 @@ class BotJobManagerProxy:
         job = self._mgr._get_job_from_proxy(job_proxy)
         return await self._mgr.register_job(job, _invoker=self._job)
 
-    async def create_and_register_job(self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs):
+    async def create_and_register_job(
+        self, cls: Union[Type[EventJob], Type[IntervalJob]], *args, **kwargs
+    ):
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
@@ -1070,7 +1075,9 @@ class BotJobManagerProxy:
             **kwargs,
         )
 
-    def restart_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None):
+    def restart_job(
+        self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None
+    ):
         """Restart the given job object. This provides a cleaner way
         to forcefully stop a job and restart it, or to wake it up from
         a sleeping state after it was stoppd.
@@ -1086,9 +1093,16 @@ class BotJobManagerProxy:
             bool: Whether the operation was initiated by the job.
         """
         job = self._mgr._get_job_from_proxy(job_proxy)
-        return self._mgr.restart_job(job, stopping_timeout=stopping_timeout, _invoker=self._job)
+        return self._mgr.restart_job(
+            job, stopping_timeout=stopping_timeout, _invoker=self._job
+        )
 
-    def stop_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None, force=False):
+    def stop_job(
+        self,
+        job_proxy: BotJobProxy,
+        stopping_timeout: Optional[float] = None,
+        force=False,
+    ):
         """Stop the given job object.
 
         Args:
@@ -1105,7 +1119,9 @@ class BotJobManagerProxy:
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.stop_job(job, force=force, _invoker=self._job)
 
-    def kill_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None):
+    def kill_job(
+        self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None
+    ):
         """Stops a job's current execution unconditionally and remove it from its `BotJobManager`.
         In order to check if a job was ended by killing it, one can call `.is_killed()`.
 
@@ -1120,7 +1136,9 @@ class BotJobManagerProxy:
             bool: Whether the operation was initiated by the job.
         """
         job = self._mgr._get_job_from_proxy(job_proxy)
-        return self._mgr.kill_job(job, stopping_timeout=stopping_timeout, _invoker=self._job)
+        return self._mgr.kill_job(
+            job, stopping_timeout=stopping_timeout, _invoker=self._job
+        )
 
     def _eject(self):
         """Irreversible job death."""
@@ -1196,7 +1214,12 @@ class BotJobManagerProxy:
         self,
         *,
         identifier: Optional[str] = None,
-        classes: Optional[Union[Union[Type[EventJob], Type[IntervalJob]], tuple[Union[Type[EventJob], Type[IntervalJob]]]]] = None,
+        classes: Optional[
+            Union[
+                Union[Type[EventJob], Type[IntervalJob]],
+                tuple[Union[Type[EventJob], Type[IntervalJob]]],
+            ]
+        ] = None,
         exact_class_match: bool = False,
         created_at: Optional[datetime.datetime] = None,
         created_before: Optional[datetime.datetime] = None,

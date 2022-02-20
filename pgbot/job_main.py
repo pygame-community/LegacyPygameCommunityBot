@@ -193,7 +193,6 @@ class MemberReminderJob(core.IntervalJob):
 
 
 class Main(core.SingleRunJob):
-
     async def on_start(self):
         self.remove_from_exception_whitelist(asyncio.TimeoutError)
 
