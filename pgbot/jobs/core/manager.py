@@ -70,6 +70,7 @@ class BotJobManager:
         self._schedule_dict_fails = {}
         self._running = True
         self._schedule_init = False
+        self._global_job_stop_timeout = None
 
     def set_event_loop(self, loop):
         """
@@ -81,7 +82,7 @@ class BotJobManager:
         """
         if not isinstance(loop, asyncio.AbstractEventLoop):
             raise TypeError(
-                "Invalid event loop, must be a subclass of asyncio.AbstractEventLoop"
+                "invalid event loop, must be a subclass of asyncio.AbstractEventLoop"
             ) from None
         self._loop = loop
 
@@ -92,6 +93,31 @@ class BotJobManager:
             bool: True/False
         """
         return self._running
+
+    def get_global_job_stop_timeout(self):
+        """Get the maximum time period in seconds for job objects to stop
+        when halted from this manager, either due to being stopped,
+        restarted or killed.
+
+        Returns:
+            float: The timeout in seconds.
+            None: No timeout is currently set.
+        """
+        return self._global_job_stop_timeout
+
+    def set_global_job_stop_timeout(self, timeout: Union[float, None]):
+        """Set the maximum time period in seconds for job objects to stop
+        when halted from this manager, either due to being stopped,
+        restarted or killed.
+
+        Args:
+            timeout (Union[float, None]): The timeout in seconds,
+            or None to clear any previous timeout.
+        """
+
+        if timeout:
+            timeout = float(timeout)
+        self._global_job_stop_timeout = timeout
 
     @tasks.loop(seconds=2.5, reconnect=False)
     async def job_scheduling_loop(self):
@@ -217,23 +243,26 @@ class BotJobManager:
     async def initialize_job(
         self, job: Union[EventJob, IntervalJob], raise_exceptions: bool = True
     ):
-        """This initializes a job object.
-        registered.
+        """Initialize this job object.
 
         Args:
             raise_exceptions (bool, optional):
                 Whether exceptions should be raised. Defaults to True.
+
+        Raises:
+            JobError: job-specific errors are preventing initialization.
+            JobInitializationError: The job given was already initialized.
 
         Returns:
             bool: Whether the initialization attempt was successful.
         """
 
         if (
-            isinstance(job, SingletonJobBase) and
-            self._job_type_count_dict[job.__class__.__name__]
+            isinstance(job, SingletonJobBase)
+            and self._job_type_count_dict[job.__class__.__name__]
         ):
             raise JobError(
-                "Cannot have more than one instance of a"
+                "cannot have more than one instance of a"
                 " 'SingletonJobBase' job registered at a time."
             )
 
@@ -266,6 +295,10 @@ class BotJobManager:
         Args:
             job (BotJob): The job object to be registered.
         """
+
+        if job._is_killed:
+            raise JobError("cannot register a killed job object")
+
         if not job._is_initialized:
             await self.initialize_job(job)
 
@@ -318,7 +351,7 @@ class BotJobManager:
                 The interval at which a job should be rescheduled.
                 Defaults to None.
             max_intervals (Optional[int]):
-                The maximum amount of recur intervals for rescheduling. 
+                The maximum amount of recur intervals for rescheduling.
                 Defaults to None.
             job_args (tuple, optional):
                 Positional arguments to pass to the scheduled job upon
@@ -440,9 +473,9 @@ class BotJobManager:
             JobInitializationError: An uninitialized job was given as input.
         """
 
-        if isinstance(job, BotJob) and job._is_completed:
+        if job._is_completed or job._is_killed:
             raise ValueError(
-                "cannot add a job that has ended to a BotJobManager instance"
+                "cannot add a job that has is not alive to a BotJobManager instance"
             ) from None
 
         elif job._identifier in self._job_id_map:
@@ -514,7 +547,6 @@ class BotJobManager:
 
         if not self._job_type_count_dict[job.__class__.__name__]:
             del self._job_type_count_dict[job.__class__.__name__]
-
 
     def _remove_jobs(self, *jobs: Union[EventJob, IntervalJob]):
         """Remove the given job objects from this bot job manager.
@@ -719,23 +751,33 @@ class BotJobManager:
     def restart_job(
         self,
         job: Union[IntervalJob, EventJob],
+        stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
         """Restart the given job object. This provides a cleaner way
         to forcefully stop a job and restart it, or to wake it up from
-        a sleeping state after it was stoppd. 
+        a sleeping state after it was stoppd.
 
         Args:
             job (Union[IntervalJob, EventJob]): The job object.
-
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job while it is restarting. This overrides
+                the global timeout of this `BotJobManager` if present.
         Returns:
             bool: Whether the operation was initiated by the job.
         """
+
+        if stopping_timeout:
+            stopping_timeout = float(stopping_timeout)
+            job.manager._job_stop_timeout = stopping_timeout
+
         return job._RESTART_LOOP_EXTERNAL()
 
     def stop_job(
         self,
         job: Union[EventJob, IntervalJob],
+        stopping_timeout: Optional[float] = None,
         force: bool = False,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
@@ -743,27 +785,47 @@ class BotJobManager:
 
         Args:
             job (Union[IntervalJob, EventJob]): The job object.
-            force (bool): Whether to suspend all operations of the job forcefully. 
+            force (bool): Whether to suspend all operations of the job forcefully.
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job. This overrides the global timeout of this
+                `BotJobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
         """
+
+        if stopping_timeout:
+            stopping_timeout = float(stopping_timeout)
+            job.manager._job_stop_timeout = stopping_timeout
+
         return job._STOP_LOOP_EXTERNAL(force=force)
 
     def kill_job(
         self,
         job: Union[EventJob, IntervalJob],
+        stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
-        """Stops a job's current execution unconditionally and remove it from its `BotJobManager`.
-        In order to check if a job was ended by killing it, one can call `.is_killed()`.
-        
+        """Stops a job's current execution unconditionally and remove it from its
+        `BotJobManager`. In order to check if a job was ended by killing it, one
+        can call `.is_killed()`.
+
         Args:
             job (Union[IntervalJob, EventJob]): The job object.
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job while it is being killed. This overrides the
+                global timeout of this `BotJobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
         """
+
+        if stopping_timeout:
+            stopping_timeout = float(stopping_timeout)
+            job.manager._job_stop_timeout = stopping_timeout
+
         return job._KILL_EXTERNAL(awaken=True)
 
     def __contains__(self, job: Union[EventJob, IntervalJob]):
@@ -832,7 +894,7 @@ class BotJobManager:
         check: Optional[Callable[[events.BaseEvent], bool]] = None,
         timeout: Optional[float] = None,
     ):
-        """Wait for specific type of event to be dispatched, and return that.
+        """Wait for specific type of event to be dispatched, and return it as an event object.
 
         Args:
             *event_types (Type[events.BaseEvent]):
@@ -841,6 +903,12 @@ class BotJobManager:
             check (Optional[Callable[[events.BaseEvent], bool]]):
                 A callable obejct used to validate if a valid event that was recieved meets specific conditions.
                 Defaults to None.
+            timeout: (Optional[float]):
+                An optional timeout value in seconds for the maximum waiting period.
+
+        Raises:
+            TimeoutError: The timeout value was exceeded.
+            CancelledError: The future used to wait for an event was cancelled.
 
         Returns:
             BaseEvent: A valid event object
@@ -903,17 +971,38 @@ class BotJobManager:
             tuple(j for j in (cej_set for cej_set in self._event_job_pool.values())),
         )
 
-    def quit(self, kill_all_jobs=True):
-        self._running = False
+    async def quit(self):
         self.job_scheduling_loop.stop()
-        if kill_all_jobs:
-            self.kill_all()
+        await self.kill_all()
+        self._running = False
 
 
 class BotJobManagerProxy:
     def __init__(self, mgr: BotJobManager, job):
         self._mgr = mgr
         self._job = job
+        self._job_stop_timeout = None
+
+    def get_job_stop_timeout(self):
+        """Get the maximum time period in seconds for the job object managed
+        by this `BotJobManagerProxy` to stop when halted from the
+        `BotJobManager`, either due to being stopped, restarted or killed.
+        By default, this method returns the global job timeout set for the
+        current `BotJobManager`, but that can be overridden with a custom
+        timeout when trying to stop the job object.
+
+        Returns:
+            float: The timeout in seconds.
+            None:
+                No timeout was set for the job object or globally for the
+                current `BotJobManager`.
+        """
+
+        return (
+            self._job_stop_timeout
+            if self._job_stop_timeout
+            else self._mgr.get_global_job_stop_timeout()
+        )
 
     def create_job(self, cls: Type[BotJob], *args, **kwargs):
         """Create an instance of a job class.
@@ -970,26 +1059,34 @@ class BotJobManagerProxy:
             **kwargs,
         )
 
-    def restart_job(self, job_proxy: BotJobProxy):
+    def restart_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None):
         """Restart the given job object. This provides a cleaner way
         to forcefully stop a job and restart it, or to wake it up from
-        a sleeping state after it was stoppd. 
+        a sleeping state after it was stoppd.
 
         Args:
             job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job while it is restarting. This overrides
+                the global timeout of this `BotJobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
         """
         job = self._mgr._get_job_from_proxy(job_proxy)
-        return self._mgr.restart_job(job, _invoker=self._job)
+        return self._mgr.restart_job(job, stopping_timeout=stopping_timeout, _invoker=self._job)
 
-    def stop_job(self, job_proxy: BotJobProxy, force=False):
+    def stop_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None, force=False):
         """Stop the given job object.
 
         Args:
             job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
-            force (bool): Whether to suspend all operations of the job forcefully. 
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job. This overrides the global timeout of this
+                `BotJobManager` if present.
+            force (bool): Whether to suspend all operations of the job forcefully.
 
         Returns:
             bool: Whether the operation was initiated by the job.
@@ -997,21 +1094,30 @@ class BotJobManagerProxy:
         job = self._mgr._get_job_from_proxy(job_proxy)
         return self._mgr.stop_job(job, force=force, _invoker=self._job)
 
-    def kill_job(self, job_proxy: BotJobProxy):
+    def kill_job(self, job_proxy: BotJobProxy, stopping_timeout: Optional[float] = None):
         """Stops a job's current execution unconditionally and remove it from its `BotJobManager`.
         In order to check if a job was ended by killing it, one can call `.is_killed()`.
-        
+
         Args:
             job_proxy (Union[IntervalJob, EventJob]): The job object's proxy.
+            stopping_timeout (Optional[float]):
+                An optional timeout in seconds for the maximum time period
+                for stopping the job while it is being killed. This overrides the
+                global timeout of this `BotJobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
         """
         job = self._mgr._get_job_from_proxy(job_proxy)
-        return self._mgr.kill_job(job, _invoker=self._job)
+        return self._mgr.kill_job(job, stopping_timeout=stopping_timeout, _invoker=self._job)
 
     def _eject(self):
-        self._mgr._remove_job(self._job)
+        """Irreversible job death."""
+        if not self._job.is_alive():
+            self._mgr._remove_job(self._job)
+            self._job.manager = None
+            self._job = None
+            self._mgr = None
 
     def schedule_job(
         self,
@@ -1036,7 +1142,7 @@ class BotJobManagerProxy:
                 The interval at which a job should be rescheduled.
                 Defaults to None.
             max_intervals (Optional[int]):
-                The maximum amount of recur intervals for rescheduling. 
+                The maximum amount of recur intervals for rescheduling.
                 Defaults to None.
             job_args (tuple, optional):
                 Positional arguments to pass to the scheduled job upon

@@ -5,8 +5,10 @@ Copyright (c) 2020-present PygameCommunityDiscord
 
 This file includes job classes that run at bot startup.
 """
+import asyncio
 import datetime
 import discord
+from time import perf_counter
 
 from pgbot import common, db
 from pgbot.jobs import core
@@ -23,7 +25,7 @@ class MessagingTest1(core.ClientEventJob):
         super().__init__()
         self.DATA.target_channel = target_channel
 
-    async def on_job_init(self):
+    async def on_init(self):
         if "target_channel" not in self.DATA:
             self.DATA.target_channel = common.guild.get_channel(822650791303053342)
             self.DATA.response_count = 0
@@ -191,6 +193,10 @@ class MemberReminderJob(core.IntervalJob):
 
 
 class Main(core.SingleRunJob):
+
+    async def on_start(self):
+        self.remove_from_exception_whitelist(asyncio.TimeoutError)
+
     async def on_run(self):
 
         for job in (
@@ -262,6 +268,11 @@ class Main(core.SingleRunJob):
             msg_event.message,
             *tuple("🇳🇴⬛🇲🇪"),
             853327268474126356,
+            848212253017636895,
+            848212380059566130,
+            848212610733572168,
+            848211974370099230,
+            848212574213767208,
         )
 
         await self.manager.register_job(reaction_add_job)
