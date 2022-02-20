@@ -139,6 +139,7 @@ class BotJobManager:
                             job = self.create_job(
                                 base_jobs.JOB_CLASS_MAP[d["class_name"]],
                                 *d["job_args"],
+                                _return_proxy=False,
                                 **d["job_kwargs"],
                             )
                         except Exception as e:
@@ -203,7 +204,7 @@ class BotJobManager:
         self,
         cls: Union[Type[EventJob], Type[IntervalJob]],
         *args,
-        return_proxy=False,
+        _return_proxy=True,
         **kwargs,
     ):
         """Create an instance of a job class, and return it.
@@ -211,9 +212,6 @@ class BotJobManager:
         Args:
             cls (Union[Type[EventJob], Type[IntervalJob]]):
                The job class to instantiate a job object from.
-            return_proxy (bool, optional):
-                Whether a proxy of the job object should be returned.
-                Defaults to False.
 
         Returns:
             BotJobProxy: A job proxy object.
@@ -224,7 +222,7 @@ class BotJobManager:
         proxy = job._proxy
         proxy._j = job
 
-        if return_proxy:
+        if _return_proxy:
             return proxy
         return job
 
@@ -254,7 +252,11 @@ class BotJobManager:
             bool: Whether the initialization attempt was successful.
         """
 
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
 
         if (
             isinstance(job, SingletonJobBase)
@@ -296,7 +298,11 @@ class BotJobManager:
                 The job object to be registered.
         """
 
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
 
         if job._is_killed:
             raise JobError("cannot register a killed job object")
@@ -323,9 +329,9 @@ class BotJobManager:
         Returns:
             BotJobProxy: A job proxy object.
         """
-        j = self.create_job(cls, *args, return_proxy=False, **kwargs)
+        j = self.create_job(cls, *args, _return_proxy=False, **kwargs)
         await self.register_job(j, _invoker=_invoker)
-        if return_proxy:
+        if _return_proxy:
             return j._proxy
 
     def schedule_job(
@@ -570,7 +576,11 @@ class BotJobManager:
         Returns:
             bool: True/False
         """
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
         return job._identifier in self._job_id_map
 
     def find_jobs(
@@ -772,7 +782,11 @@ class BotJobManager:
             bool: Whether the operation was initiated by the job.
         """
 
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -801,7 +815,11 @@ class BotJobManager:
             bool: Whether the operation was initiated by the job.
         """
 
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -830,7 +848,11 @@ class BotJobManager:
             bool: Whether the operation was initiated by the job.
         """
 
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -838,8 +860,14 @@ class BotJobManager:
 
         return job._KILL_EXTERNAL(awaken=True)
 
-    def __contains__(self, job: Union[Union[EventJob, IntervalJob], BotJobProxy]):
-        job = self._get_job_from_proxy(job) if isinstance(job, BotJobProxy) else job
+    def __contains__(
+        self, job_or_proxy: Union[Union[EventJob, IntervalJob], BotJobProxy]
+    ):
+        job = (
+            self._get_job_from_proxy(job_or_proxy)
+            if isinstance(job_or_proxy, BotJobProxy)
+            else job_or_proxy
+        )
         return job._identifier in self._job_id_map
 
     async def dispatch_event(self, event: events.BaseEvent):
@@ -1027,7 +1055,7 @@ class BotJobManagerProxy:
         Returns:
             BotJobProxy: A job proxy object.
         """
-        return self._mgr.create_job(cls, *args, return_proxy=True, **kwargs)
+        return self._mgr.create_job(cls, *args, _return_proxy=True, **kwargs)
 
     async def initialize_job(
         self, job_proxy: BotJobProxy, raise_exceptions: bool = True
@@ -1070,7 +1098,7 @@ class BotJobManagerProxy:
         return await self._mgr.create_and_register_job(
             cls,
             *args,
-            return_proxy=True,
+            _return_proxy=True,
             _invoker=self._job,
             **kwargs,
         )
