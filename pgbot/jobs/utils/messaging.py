@@ -7,20 +7,19 @@ This file implements job classes for scheduling messaging events as jobs.
 """
 
 from __future__ import annotations
-from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
+from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
 import io
 import discord
-from pgbot.jobs.core import IntervalJob
-from pgbot.jobs.core import serializers as serials
-from pgbot.jobs.core.base_jobs import call_with_method
+from pgbot.jobs.core import IntervalJob, PERMISSION_LEVELS
 from pgbot.utils import embed_utils
 from pgbot import common
+from pgbot import serializers as serials
 
 NoneType = type(None)
 client = common.bot
 
 
-class MessageSend(IntervalJob):
+class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
     """A job class for sending a message into a
     discord text channel.
     """
@@ -30,23 +29,22 @@ class MessageSend(IntervalJob):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial],
+        channel: Union[int, discord.abc.Messageable, serials.ChannelSerializer],
         content: Optional[str] = None,
         tts: bool = False,
-        embed: Union[discord.Embed, serials.EmbedSerial, dict] = None,
-        file: Union[discord.File, serials.FileSerial] = None,
-        files: list[Union[discord.File, serials.FileSerial]] = None,
+        embed: Union[discord.Embed, serials.EmbedSerializer, dict] = None,
+        file: Union[discord.File, serials.FileSerializer] = None,
+        files: list[Union[discord.File, serials.FileSerializer]] = None,
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[
-            discord.AllowedMentions,
-            serials.AllowedMentionsSerial,
+            Union[discord.AllowedMentions, serials.AllowedMentionsSerializer]
         ] = None,
         reference: Union[
             discord.Message,
             discord.MessageReference,
-            serials.MessageSerial,
-            serials.MessageReferenceSerial,
+            serials.MessageSerializer,
+            serials.MessageReferenceSerializer,
         ] = None,
         mention_author: Optional[bool] = None,
     ):
@@ -81,7 +79,7 @@ class MessageSend(IntervalJob):
                 self.DATA.channel = client.get_channel(channel_id)
                 if self.DATA.channel is None:
                     self.DATA.channel = await client.fetch_channel(channel_id)
-            elif isinstance(self.DATA.channel, serials.ChannelSerial):
+            elif isinstance(self.DATA.channel, serials.ChannelSerializer):
                 self.DATA.channel = await self.DATA.channel.reconstructed(True)
             else:
                 raise TypeError("Invalid type for argument 'channel'")
@@ -94,7 +92,7 @@ class MessageSend(IntervalJob):
                     )
                 else:
                     raise ValueError("Invalid embed dictionary structure")
-            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerial):
+            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerializer):
                 self.DATA.kwargs["embed"] = discord.Embed.from_dict(
                     self.DATA.kwargs["embed"]
                 )
@@ -105,7 +103,7 @@ class MessageSend(IntervalJob):
                     io.BytesIO(self.DATA.kwargs["file"])
                 )
 
-            elif isinstance(self.DATA.kwargs["file"], serials.FileSerial):
+            elif isinstance(self.DATA.kwargs["file"], serials.FileSerializer):
                 self.DATA.kwargs["file"] = await self.DATA.kwargs[
                     "file"
                 ].reconstructed()
@@ -123,7 +121,7 @@ class MessageSend(IntervalJob):
             for i, obj in enumerate(self.DATA.kwargs["files"]):
                 if isinstance(obj, discord.File):
                     file_list.append(obj)
-                elif isinstance(obj, serials.FileSerial):
+                elif isinstance(obj, serials.FileSerializer):
                     file_list.append(obj.reconstructed())
                 else:
                     raise TypeError(
@@ -134,7 +132,7 @@ class MessageSend(IntervalJob):
             self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
         ):
             if isinstance(
-                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial
+                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerializer
             ):
                 self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs[
                     "allowed_mentions"
@@ -148,7 +146,7 @@ class MessageSend(IntervalJob):
         ):
             if isinstance(
                 self.DATA.kwargs["reference"],
-                (serials.MessageSerial, serials.MessageReferenceSerial),
+                (serials.MessageSerializer, serials.MessageReferenceSerializer),
             ):
                 if self.DATA.kwargs["reference"].IS_ASYNC:
                     self.DATA.kwargs["reference"] = await self.DATA.kwargs[
@@ -170,7 +168,7 @@ class MessageSend(IntervalJob):
         self.COMPLETE()
 
 
-class _MessageModify(IntervalJob):
+class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
     """A intermediary job class for modifying a message in a
     Discord text channel. Does not do anything on its own.
     """
@@ -180,14 +178,16 @@ class _MessageModify(IntervalJob):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
     ):
         """Create a bot job instance.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serials.ChannelSerial]): The target channel.
-            message (Union[int, discord.Message, serials.MessageSerial]): [description]
+            channel (Union[int, discord.abc.Messageable, serials.ChannelSerializer]): The target channel.
+            message (Union[int, discord.Message, serials.MessageSerializer]): [description]
         """
         super().__init__()
         self.DATA.channel = channel
@@ -200,11 +200,11 @@ class _MessageModify(IntervalJob):
                 self.DATA.channel = client.get_channel(channel_id)
                 if self.DATA.channel is None:
                     self.DATA.channel = await client.fetch_channel(channel_id)
-            elif isinstance(self.DATA.channel, serials.ChannelSerial):
+            elif isinstance(self.DATA.channel, serials.ChannelSerializer):
                 self.DATA.channel = await self.DATA.channel.reconstructed(True)
             elif self.DATA.channel is None:
                 if not isinstance(
-                    self.DATA.message, (discord.Message, serials.MessageSerial)
+                    self.DATA.message, (discord.Message, serials.MessageSerializer)
                 ):
                     raise TypeError(
                         "argument 'channel' cannot be None when 'message' is an integer ID"
@@ -217,13 +217,13 @@ class _MessageModify(IntervalJob):
                 channel = client.get_channel(self.DATA.channel.id)
                 if channel is None:
                     channel = await client.fetch_channel(self.DATA.channel.id)
-            elif isinstance(self.DATA.message, serials.MessageSerial):
+            elif isinstance(self.DATA.message, serials.MessageSerializer):
                 self.DATA.message = await self.DATA.message.reconstructed(True)
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
     async def on_stop(self, *args, **kwargs):
-        if self.job_run_has_failed():
+        if self.failed():
             self.KILL()
         else:
             self.COMPLETE()
@@ -236,14 +236,15 @@ class MessageEdit(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
         content: Optional[str] = None,
-        embed: Union[discord.Embed, serials.EmbedSerial, dict] = None,
+        embed: Union[discord.Embed, serials.EmbedSerializer, dict] = None,
         delete_after: Optional[float] = None,
         allowed_mentions: Optional[
-            discord.AllowedMentions,
-            serials.AllowedMentionsSerial,
+            Union[discord.AllowedMentions, serials.AllowedMentionsSerializer]
         ] = None,
     ):
         """Setup this job ojbect.
@@ -275,7 +276,7 @@ class MessageEdit(_MessageModify):
                     )
                 else:
                     raise ValueError("Invalid embed dictionary structure")
-            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerial):
+            elif isinstance(self.DATA.kwargs["embed"], serials.EmbedSerializer):
                 self.DATA.kwargs["embed"] = discord.Embed.from_dict(
                     self.DATA.kwargs["embed"]
                 )
@@ -284,7 +285,7 @@ class MessageEdit(_MessageModify):
             self.DATA.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
         ):
             if isinstance(
-                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerial
+                self.DATA.kwargs["allowed_mentions"], serials.AllowedMentionsSerializer
             ):
                 self.DATA.kwargs["allowed_mentions"] = await self.DATA.kwargs[
                     "allowed_mentions"
@@ -303,8 +304,10 @@ class MessageDelete(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
         delay: Optional[float] = None,
     ):
         """Setup this job ojbect.
@@ -337,15 +340,17 @@ class ReactionAdd(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerial,
+            serials.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerial,
+            serials.PartialEmojiSerializer,
             str,
         ],
     ):
@@ -381,7 +386,8 @@ class ReactionAdd(_MessageModify):
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
             elif isinstance(
-                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+                self.DATA.emoji,
+                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:
@@ -396,15 +402,17 @@ class ReactionsAdd(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
         *emojis: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerial,
+            serials.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerial,
+            serials.PartialEmojiSerializer,
             str,
         ],
         stop_at_maximum=True,
@@ -412,17 +420,17 @@ class ReactionsAdd(_MessageModify):
         """Setup this object.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType]):
+            channel (Union[int, discord.abc.Messageable, serials.ChannelSerializer, NoneType]):
             The channel to get a message from.
-            message (Union[int, discord.Message, serials.MessageSerial]): The message to react to.
+            message (Union[int, discord.Message, serials.MessageSerializer]): The message to react to.
             *emojis (
                 Union[
                     int,
                     discord.Reaction,
                     discord.Emoji,
-                    serials.EmojiSerial,
+                    serials.EmojiSerializer,
                     discord.PartialEmoji,
-                    serials.PartialEmojiSerial,
+                    serials.PartialEmojiSerializer,
                     str]
             ):
                 A sequence of emojis to react with.
@@ -455,7 +463,7 @@ class ReactionsAdd(_MessageModify):
                         )
                     self.DATA.emojis[i] = emoji
                 elif isinstance(
-                    emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+                    emoji, (serials.EmojiSerializer, serials.PartialEmojiSerializer)
                 ):
                     self.DATA.emojis[i] = emoji.reconstructed()
                 else:
@@ -480,18 +488,20 @@ class ReactionRemove(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
-        message: Union[int, discord.Message, serials.MessageSerial],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
+        message: Union[int, discord.Message, serials.MessageSerializer],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerial,
+            serials.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerial,
+            serials.PartialEmojiSerializer,
             str,
         ],
-        member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerial],
+        member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerializer],
     ):
         """Setup this job ojbect.
 
@@ -528,14 +538,15 @@ class ReactionRemove(_MessageModify):
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
             elif isinstance(
-                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+                self.DATA.emoji,
+                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
         if not isinstance(self.DATA.member, (discord.abc.Snowflake, discord.Member)):
-            if isinstance(self.DATA.member, serials.MemberSerial):
+            if isinstance(self.DATA.member, serials.MemberSerializer):
                 self.DATA.member = await self.DATA.member.reconstructed()
             else:
                 raise TypeError("Invalid type for argument 'member'")
@@ -549,15 +560,17 @@ class ReactionClearEmoji(_MessageModify):
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerial, NoneType],
+        channel: Union[
+            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+        ],
         message: Union[int, discord.Message],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerial,
+            serials.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerial,
+            serials.PartialEmojiSerializer,
             str,
         ],
     ):
@@ -593,7 +606,8 @@ class ReactionClearEmoji(_MessageModify):
                     raise ValueError("invalid integer ID for 'emoji' argument")
                 self.DATA.emoji = emoji
             elif isinstance(
-                self.DATA.emoji, (serials.EmojiSerial, serials.PartialEmojiSerial)
+                self.DATA.emoji,
+                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
                 self.DATA.emoji = self.DATA.emoji.reconstructed()
             else:

@@ -6,6 +6,5 @@ Copyright (c) 2020-present PygameCommunityDiscord
 A asyncronous task module based on OOP principles.
 """
 
-from . import events
 from .base_jobs import *
-from .manager import BotJobManager, BotJobManagerProxy
+from .manager import JobManager, JobManagerProxy

@@ -16,12 +16,37 @@ import sys
 import discord
 import pygame
 
+from discord.ext import tasks
 from pgbot import commands, common, db, emotion, routine, jobs
 from pgbot.jobs import core
 from pgbot import job_main
 from pgbot.utils import embed_utils, utils
 
-common.job_manager = core.BotJobManager()
+
+class BotJobManager(core.JobManager):
+    """A `JobManager` subclass tailored to the current database system."""
+
+    @tasks.loop(seconds=5, reconnect=False)
+    async def job_scheduling_loop(self):
+        await super().job_scheduling_loop()
+
+    @job_scheduling_loop.before_loop
+    async def initialize_job_scheduling(self):
+        async with db.DiscordDB("job_schedule") as db_obj:
+            await self.load_job_scheduling_data(db_obj.get([set(), {}]))
+
+        super().initialize_job_scheduling()
+
+    @job_scheduling_loop.after_loop
+    async def uninitialize_job_scheduling(self):
+        self.job_scheduling_loop.cancel()
+        async with db.DiscordDB("job_schedule") as db_obj:
+            db_obj.write(await self.dump_job_scheduling_data())
+
+        super().uninitialize_job_scheduling()
+
+
+common.job_manager = BotJobManager()
 
 
 async def _init():

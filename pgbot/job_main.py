@@ -10,10 +10,9 @@ import datetime
 import discord
 from time import perf_counter
 
-from pgbot import common, db
+from pgbot import common, db, events, serializers
 from pgbot.jobs import core
-from pgbot.jobs.core import events
-from pgbot.jobs.core import serializers as serials
+from pgbot.jobs.core import PERMISSION_LEVELS
 from pgbot.jobs.utils import messaging
 from pgbot.utils import embed_utils
 
@@ -137,7 +136,7 @@ class MessagingTest2(core.ClientEventJob):
             await self.DATA.target_channel.send(f"Hi, {user_name}")
 
 
-class MemberReminderJob(core.IntervalJob):
+class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.HIGHEST):
     CLASS_DEFAULT_SECONDS = 3
 
     async def on_run(self):
@@ -192,7 +191,9 @@ class MemberReminderJob(core.IntervalJob):
                 reminder_obj.write(new_reminders)
 
 
-class Main(core.SingleRunJob):
+class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
+    CLASS_DEFAULT_RECONNECT = False
+
     async def on_start(self):
         self.remove_from_exception_whitelist(asyncio.TimeoutError)
 
@@ -233,21 +234,26 @@ class Main(core.SingleRunJob):
             ),
         )
 
-        self.manager.schedule_job(
+        if not self.manager.job_scheduling_is_initialized():
+            await self.manager.wait_for_job_scheduling_initialization()
+
+        await self.manager.create_job_schedule(
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
             max_intervals=2,
-            job_kwargs=dict(
+            input_kwargs=dict(
                 channel=822650791303053342,
                 content="This will occur every 10 seconds, but only 2 times.",
             ),
         )
 
-        self.manager.schedule_job(
+        await self.manager.create_and_register_job(MemberReminderJob)
+
+        await self.manager.create_job_schedule(
             messaging.MessageSend,
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
-            job_kwargs=dict(
+            input_kwargs=dict(
                 channel=841726972841558056,
                 content="Say 'I am cool.'",
             ),
@@ -275,10 +281,8 @@ class Main(core.SingleRunJob):
         )
 
         await self.manager.register_job(reaction_add_job)
-
+        print("\n".join(str(j) for j in self.manager.find_jobs(is_running=True)))
         await self.wait_for(reaction_add_job.await_completion())
-
-        await self.manager.create_and_register_job(MemberReminderJob)
 
 
 __all__ = [
