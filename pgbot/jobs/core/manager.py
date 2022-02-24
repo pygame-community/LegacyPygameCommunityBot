@@ -53,15 +53,6 @@ from .base_jobs import (
 )
 
 client = common.bot
-# JobProxy = base_jobs.JobProxy
-# Job = base_jobs.Job
-# EventJob = base_jobs.EventJob
-# ClientEventJob = base_jobs.ClientEventJob
-# IntervalJob = base_jobs.IntervalJob
-# SingletonJobBase = base_jobs.SingletonJobBase
-# JobError = base_jobs.JobError
-# JobInitializationError = base_jobs.JobInitializationError
-
 
 class JobManager:
     """The job manager for all interval jobs and event jobs.
@@ -247,7 +238,7 @@ class JobManager:
                             )
                         except KeyError:
                             print(
-                                f"Job initiation failed: Could not find job type called '{schedule_data['class']}'"
+                                f"Job initiation failed: Could not find job type called '{schedule_data['class_id']}'"
                             )
                             deletion_list.append(schedule_identifier)
                             self._schedule_ids.remove(schedule_identifier)
