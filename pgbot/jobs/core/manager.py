@@ -33,9 +33,9 @@ import discord
 from discord.ext import tasks
 
 from pgbot.utils import utils
-from pgbot import common, db, events
+from pgbot import common, db
 
-from . import base_jobs
+from . import events, base_jobs
 from .base_jobs import (
     JobProxy,
     Job,

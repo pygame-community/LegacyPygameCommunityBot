@@ -30,7 +30,9 @@ import discord
 from discord.ext import tasks
 
 from pgbot.utils import utils
-from pgbot import common, events
+from pgbot import common
+
+from . import events
 
 
 _JOB_CLASS_MAP = {}
