@@ -105,7 +105,6 @@ class IntervalJobTest(core.IntervalJob):
 class MessagingTest2(core.ClientEventJob):
     EVENT_TYPES = (events.OnMessage,)
 
-
     class TestNamespace(core.JobNamespace):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
@@ -290,7 +289,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             848211974370099230,
             848212574213767208,
         )
-        dt = perf_counter()-t0
+        dt = perf_counter() - t0
         print(dt)
 
         await self.manager.register_job(reaction_add_job)

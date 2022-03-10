@@ -34,17 +34,17 @@ class BotJobManager(core.JobManager):
     async def initialize_job_scheduling(self):
         async with db.DiscordDB("job_schedule") as db_obj:
             db_data = db_obj.get({"identifiers": [], "data": {}})
-                
+
         try:
             await self.load_job_scheduling_data(db_data)
         except Exception as e:
             print(
-                "Error while loading job scheduling data:\n"+\
-                utils.format_code_exception(e)
+                "Error while loading job scheduling data:\n"
+                + utils.format_code_exception(e)
             )
-        
+
         super().initialize_job_scheduling()
-    
+
     @job_scheduling_loop.after_loop
     async def uninitialize_job_scheduling(self):
         self.job_scheduling_loop.cancel()
@@ -53,13 +53,15 @@ class BotJobManager(core.JobManager):
                 db_obj.write(await self.dump_job_scheduling_data())
             except Exception as e:
                 print(
-                    "Error while dumping job scheduling data:\n"+\
-                    utils.format_code_exception(e)
+                    "Error while dumping job scheduling data:\n"
+                    + utils.format_code_exception(e)
                 )
 
         super().uninitialize_job_scheduling()
 
+
 common.job_manager = BotJobManager()
+
 
 async def _init():
     """

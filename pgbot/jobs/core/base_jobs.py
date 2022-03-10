@@ -40,6 +40,7 @@ _JOB_CLASS_MAP = {}
 
 _JOB_MANAGER_JOB_CLS = None
 
+
 def get_job_class_from_id(class_identifier: str, closest_match: bool = True):
 
     name, timestamp_str = class_identifier.split("-")
@@ -73,7 +74,9 @@ def get_job_class_id(cls: Type[Job], raise_exceptions=True):
         name, timestamp_str = class_identifier.split("-")
     except ValueError:
         if raise_exceptions:
-            raise ValueError("invalid identifier found in the given job class") from None
+            raise ValueError(
+                "invalid identifier found in the given job class"
+            ) from None
         return
 
     if name in _JOB_CLASS_MAP:
@@ -115,7 +118,9 @@ def get_job_class_permission_level(cls: Type[Job], raise_exceptions=True):
         name, timestamp_str = class_identifier.split("-")
     except ValueError:
         if raise_exceptions:
-            raise ValueError("invalid identifier found in the given job class") from None
+            raise ValueError(
+                "invalid identifier found in the given job class"
+            ) from None
         return
 
     if _JOB_MANAGER_JOB_CLS is not None and issubclass(cls, _JOB_MANAGER_JOB_CLS):
@@ -337,7 +342,6 @@ class PERMISSION_LEVELS:
         - Can guard or unguard any job.
     """
 
-
     @staticmethod
     def get_name(level: int):
         if not isinstance(level, int):
@@ -384,11 +388,13 @@ class JobPermissionError(JobError):
 
 class JobStateError(JobError):
     """An invalid job object state is preventing an operation."""
+
     pass
 
 
 class JobInitializationError(JobStateError):
     """Initialization of a job object failed."""
+
     pass
 
 
@@ -800,7 +806,7 @@ class JobProxy:
             bool: True/False
         """
         return self.__j.is_being_guarded()
-    
+
     def await_done(self, timeout: float = None):
         """Wait for this job object to be done (completed or killed).
 
@@ -846,7 +852,6 @@ class JobProxy:
         """
         return await self.__j.await_output_field(field_name, timeout=timeout)
 
-
     def interval_job_next_iteration(self):
         """
         THIS METHOD WILL ONLY WORK ON PROXIES TO JOB OBJECTS
@@ -889,8 +894,7 @@ class JobBase:
         for field in cls.OUTPUT_FIELDS:
             if re.search(r"\s", field):
                 raise ValueError(
-                    "field names in 'OUTPUT_FIELDS'"
-                    " cannot contain any whitespace"
+                    "field names in 'OUTPUT_FIELDS'" " cannot contain any whitespace"
                 )
 
         if cls is not _JOB_MANAGER_JOB_CLS:
@@ -906,7 +910,11 @@ class JobBase:
                     and PERMISSION_LEVELS.LOWEST
                     <= permission_level
                     <= PERMISSION_LEVELS.HIGHEST
-                ) or (_JOB_MANAGER_JOB_CLS is not None and issubclass(cls, _JOB_MANAGER_JOB_CLS) and permission_level == PERMISSION_LEVELS.SYSTEM):
+                ) or (
+                    _JOB_MANAGER_JOB_CLS is not None
+                    and issubclass(cls, _JOB_MANAGER_JOB_CLS)
+                    and permission_level == PERMISSION_LEVELS.SYSTEM
+                ):
                     cls._PERMISSION_LEVEL = permission_level
                 else:
                     raise ValueError(
@@ -997,9 +1005,7 @@ class Job(JobBase):
         self._registered_at_ts = None
         self._completed_at_ts = None
         self._killed_at_ts = None
-        self._identifier = (
-            f"{id(self)}-{int(self._created_at_ts*1_000_000_000)}"
-        )
+        self._identifier = f"{id(self)}-{int(self._created_at_ts*1_000_000_000)}"
         self._schedule_identifier = None
         self._data = self.NAMESPACE_CLASS()
 
@@ -1055,16 +1061,14 @@ class Job(JobBase):
     def created_at(self):
         if self._created_at_ts:
             return datetime.datetime.fromtimestamp(
-                self._created_at_ts,
-                tz=datetime.timezone.utc
+                self._created_at_ts, tz=datetime.timezone.utc
             )
 
     @property
     def registered_at(self):
         if self._registered_at_ts:
             return datetime.datetime.fromtimestamp(
-                self._registered_at_ts,
-                tz=datetime.timezone.utc
+                self._registered_at_ts, tz=datetime.timezone.utc
             )
 
     @property
@@ -1153,7 +1157,7 @@ class Job(JobBase):
 
         A generic hook method that subclasses can use to setup their job objects
         when they start.
-        
+
         Raises:
             NotImplementedError: This method must be overloaded in subclasses.
         """
@@ -1162,7 +1166,7 @@ class Job(JobBase):
     async def _on_run(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
         OVERLOADED VERSIONS OF THIS METHOD TO ACCESS A SUPERCLASS METHOD.
-        
+
         Raises:
             NotImplementedError: This method must be overloaded in subclasses.
         """
@@ -1171,7 +1175,7 @@ class Job(JobBase):
     async def on_run(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
         OVERLOADED VERSIONS OF THIS METHOD TO ACCESS A SUPERCLASS METHOD.
-        
+
         Raises:
             NotImplementedError: This method must be overloaded in subclasses.
         """
@@ -1194,7 +1198,7 @@ class Job(JobBase):
             for fut, cancel_if_killed in self._done_futures:
                 if not fut.cancelled():
                     fut.set_result(True)
-            
+
             for field_name, fut_list in self._output_futures.items():
                 output = getattr(self.output, field_name)
                 for fut in fut_list:
@@ -1228,7 +1232,7 @@ class Job(JobBase):
                         fut.cancel(msg=f"Job object '{self}' was killed.")
                     else:
                         fut.set_result(True)
-            
+
             for fut_list in self._output_futures.values():
                 for fut in fut_list:
                     if not fut.cancelled():
@@ -1238,7 +1242,7 @@ class Job(JobBase):
                         )
 
                 fut_list.clear()
-            
+
             for fut in self._unguard_futures:
                 if not fut.cancelled():
                     fut.set_result(True)
@@ -1249,7 +1253,6 @@ class Job(JobBase):
             self._guarded_job_proxies_dict.clear()
             self._done_futures.clear()
             self._output_futures.clear()
-
 
             self._is_being_killed = False
 
@@ -1265,7 +1268,6 @@ class Job(JobBase):
         else:
             self._stopped = True
             self._stopped_since_ts = time.time()
-
 
     async def _on_stop(self):
         self._is_being_stopped = True
@@ -1302,7 +1304,7 @@ class Job(JobBase):
 
         Note that `on_stop_error()` will not be called if this method raises
         TimeoutError, and this job did not trigger the stop operation.
-        
+
         Raises:
             NotImplementedError: This method must be overloaded in subclasses.
         """
@@ -1468,11 +1470,7 @@ class Job(JobBase):
         Use this method to initialize a job using the `on_init` method
         of the base class.
         """
-        if (
-            self._manager is not None
-            and not self._killed
-            and not self._completed
-        ):
+        if self._manager is not None and not self._killed and not self._completed:
             await self.on_init()
             self._alive_since_ts = time.time()
 
@@ -1700,8 +1698,7 @@ class Job(JobBase):
         """
         if self._awaiting_since_ts:
             return datetime.datetime.fromtimestamp(
-                self._awaiting_since_ts,
-                tz=datetime.timezone.utc
+                self._awaiting_since_ts, tz=datetime.timezone.utc
             )
 
     def alive(self):
@@ -1726,8 +1723,7 @@ class Job(JobBase):
         """
         if self._alive_since_ts:
             return datetime.datetime.fromtimestamp(
-                self._alive_since_ts,
-                tz=datetime.timezone.utc
+                self._alive_since_ts, tz=datetime.timezone.utc
             )
 
     def is_starting(self):
@@ -1754,8 +1750,7 @@ class Job(JobBase):
         """
         if self._running_since_ts:
             return datetime.datetime.fromtimestamp(
-                self._running_since_ts,
-                tz=datetime.timezone.utc
+                self._running_since_ts, tz=datetime.timezone.utc
             )
 
     def stopped(self):
@@ -1774,8 +1769,7 @@ class Job(JobBase):
         """
         if self._stopped_since_ts:
             return datetime.datetime.fromtimestamp(
-                self._stopped_since_ts,
-                tz=datetime.timezone.utc
+                self._stopped_since_ts, tz=datetime.timezone.utc
             )
 
     def is_idling(self):
@@ -1795,8 +1789,7 @@ class Job(JobBase):
         """
         if self._idling_since_ts:
             return datetime.datetime.fromtimestamp(
-                self._idling_since_ts,
-                tz=datetime.timezone.utc
+                self._idling_since_ts, tz=datetime.timezone.utc
             )
 
     def failed(self):
@@ -1820,8 +1813,7 @@ class Job(JobBase):
         """
         if self._killed_at_ts:
             return datetime.datetime.fromtimestamp(
-                self._killed_at_ts,
-                tz=datetime.timezone.utc
+                self._killed_at_ts, tz=datetime.timezone.utc
             )
 
     def is_being_killed(self, get_reason=False):
@@ -1871,8 +1863,7 @@ class Job(JobBase):
         """
         if self._completed_at_ts:
             return datetime.datetime.fromtimestamp(
-                self._completed_at_ts,
-                tz=datetime.timezone.utc
+                self._completed_at_ts, tz=datetime.timezone.utc
             )
 
     def is_being_completed(self):
@@ -2044,7 +2035,6 @@ class Job(JobBase):
 
         self._output_futures[field_name].clear()
 
-
     def status(self):
         output = None
         if self.alive():
@@ -2133,9 +2123,7 @@ class IntervalJob(Job):
         self._minutes = self.DEFAULT_MINUTES if minutes is None else minutes
         self._hours = self.DEFAULT_HOURS if hours is None else hours
         self._count = self.DEFAULT_COUNT if count is None else count
-        self._reconnect = (
-            self.DEFAULT_RECONNECT if reconnect is None else reconnect
-        )
+        self._reconnect = self.DEFAULT_RECONNECT if reconnect is None else reconnect
         self._loop_count = 0
         self._task_loop = tasks.Loop(
             self._on_run,
@@ -2300,9 +2288,7 @@ class EventJob(Job):
         self._last_event = None
         self._count = self.DEFAULT_COUNT if count is None else count
         self._loop_count = 0
-        self._reconnect = (
-            self.DEFAULT_RECONNECT if reconnect is None else reconnect
-        )
+        self._reconnect = self.DEFAULT_RECONNECT if reconnect is None else reconnect
         self._max_idling_duration = (
             self.DEFAULT_MAX_IDLING_DURATION
             if max_idling_duration is None
@@ -2418,8 +2404,7 @@ class EventJob(Job):
 
             if (
                 self._is_idling
-                and (time.time() - self._idling_since_ts)
-                > self._max_idling_duration
+                and (time.time() - self._idling_since_ts) > self._max_idling_duration
             ):
                 self._stopping_by_idling_timeout = True
                 self.STOP()
@@ -2457,7 +2442,7 @@ class EventJob(Job):
         finally:  # reset some attributes in case an exception is raised
             self._loop_count = 0
             self._stopping_by_idling_timeout = False
-    
+
     async def on_stop(self, reason, by_force):
         pass
 
@@ -2590,9 +2575,11 @@ class JobManagerJob(SingletonJobBase, IntervalJob):
     async def on_run(self):
         pass
 
+
 _JOB_MANAGER_JOB_CLS = JobManagerJob
 
 Job.__init_subclass__.__func__(JobManagerJob, permission_level=PERMISSION_LEVELS.SYSTEM)
+
 
 class SingleRunJob(IntervalJob):
     """A subclass of `IntervalJob` whose subclasses's

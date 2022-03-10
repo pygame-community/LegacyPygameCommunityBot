@@ -58,6 +58,7 @@ from .base_jobs import (
 
 client = common.bot
 
+
 class JobManager:
     """The job manager for all interval jobs and event jobs.
     It acts as a container for interval and event job objects,
@@ -110,7 +111,7 @@ class JobManager:
 
         if global_job_timeout:
             global_job_timeout = float(global_job_timeout)
-        
+
         self._global_job_stop_timeout = global_job_timeout
 
     @property
@@ -193,14 +194,14 @@ class JobManager:
         pickled_data = pickle.dumps(target_dict)
         return pickled_data
 
-
     async def initialize(self):
-        """Initialize this job manager, if it hasn't yet been initialized.
-        """
+        """Initialize this job manager, if it hasn't yet been initialized."""
 
         if not self._initialized:
             self._initialized = True
-            self._manager_job = self._get_job_from_proxy(await self.create_and_register_job(JobManagerJob))
+            self._manager_job = self._get_job_from_proxy(
+                await self.create_and_register_job(JobManagerJob)
+            )
 
     async def job_scheduling_loop(self):
         """Run one iteration of the job scheduling loop of this
@@ -245,7 +246,10 @@ class JobManager:
 
                         if schedule_data["recur_interval"]:
                             try:
-                                if now < timestamp + ((schedule_data["recur_interval"] / 1_000_000_000)*schedule_data["occurences"]):
+                                if now < timestamp + (
+                                    (schedule_data["recur_interval"] / 1_000_000_000)
+                                    * schedule_data["occurences"]
+                                ):
                                     continue
                             except OverflowError as e:
                                 print(
@@ -254,7 +258,9 @@ class JobManager:
                                 )
                                 deletion_list.append(schedule_identifier)
                                 self._schedule_ids.remove(schedule_identifier)
-                                self._schedule_dict[0][schedule_identifier] = schedule_data
+                                self._schedule_dict[0][
+                                    schedule_identifier
+                                ] = schedule_data
                                 continue
 
                         try:
@@ -280,8 +286,8 @@ class JobManager:
                             job._schedule_identifier = schedule_identifier
                         except Exception as e:
                             print(
-                                "Job initiation failed due to an exception:\n"+\
-                                utils.format_code_exception(e),
+                                "Job initiation failed due to an exception:\n"
+                                + utils.format_code_exception(e),
                             )
 
                             deletion_list.append(schedule_identifier)
@@ -293,8 +299,8 @@ class JobManager:
                                 await self.register_job(job)
                             except Exception as e:
                                 print(
-                                    "Job registration failed due to an exception:\n"+\
-                                    utils.format_code_exception(e),
+                                    "Job registration failed due to an exception:\n"
+                                    + utils.format_code_exception(e),
                                 )
 
                                 deletion_list.append(schedule_identifier)
@@ -314,7 +320,7 @@ class JobManager:
                             deletion_list.append(schedule_identifier)
                             self._schedule_ids.remove(schedule_identifier)
 
-                        #if j % 20:
+                        # if j % 20:
                         #    await asyncio.sleep(0)
 
                     for schedule_id_key in deletion_list:
@@ -325,7 +331,7 @@ class JobManager:
                 if not self._schedule_dict[timestamp_ns_str]:
                     del self._schedule_dict[timestamp_ns_str]
 
-                #if i % 10:
+                # if i % 10:
                 #    await asyncio.sleep(0)
 
     @staticmethod
@@ -628,11 +634,12 @@ class JobManager:
                 # the target is now the job that scheduled a specific operation
                 target_cls = target.__class__
 
-                target_cls_permission_level = get_job_class_permission_level(
-                    target_cls
-                )
+                target_cls_permission_level = get_job_class_permission_level(target_cls)
 
-                if invoker_cls_permission_level == PERMISSION_LEVELS.MEDIUM and invoker._identifier != scheduler_identifier:
+                if (
+                    invoker_cls_permission_level == PERMISSION_LEVELS.MEDIUM
+                    and invoker._identifier != scheduler_identifier
+                ):
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
@@ -644,8 +651,11 @@ class JobManager:
                             " invoker job"
                         )
                     return False
-                
-                elif invoker_cls_permission_level == PERMISSION_LEVELS.HIGH and target_cls_permission_level >= PERMISSION_LEVELS.HIGH:
+
+                elif (
+                    invoker_cls_permission_level == PERMISSION_LEVELS.HIGH
+                    and target_cls_permission_level >= PERMISSION_LEVELS.HIGH
+                ):
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
@@ -655,7 +665,6 @@ class JobManager:
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
-                
 
         if op.startswith(
             (
@@ -689,21 +698,21 @@ class JobManager:
                     return False
 
             elif (
-                    invoker_cls_permission_level == PERMISSION_LEVELS.HIGH and
-                    target_cls_permission_level > PERMISSION_LEVELS.HIGH
-                ) or (
-                    invoker_cls_permission_level == PERMISSION_LEVELS.HIGHEST and
-                    target_cls_permission_level > PERMISSION_LEVELS.HIGHEST
-                ):
-                    if raise_exceptions:
-                        raise JobPermissionError(
-                            f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
-                            f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
-                        )
-                    return False
+                invoker_cls_permission_level == PERMISSION_LEVELS.HIGH
+                and target_cls_permission_level > PERMISSION_LEVELS.HIGH
+            ) or (
+                invoker_cls_permission_level == PERMISSION_LEVELS.HIGHEST
+                and target_cls_permission_level > PERMISSION_LEVELS.HIGHEST
+            ):
+                if raise_exceptions:
+                    raise JobPermissionError(
+                        f"insufficient permission level of '{invoker_cls.__name__}'"
+                        f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                        f" job objects of the specified class '{target_cls.__name__}'"
+                        f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                    )
+                return False
 
         elif op.startswith((JOB_VERBS.GUARD, JOB_VERBS.UNGUARD)):
 
@@ -725,7 +734,10 @@ class JobManager:
                     )
                 return False
 
-            elif invoker_cls_permission_level in (PERMISSION_LEVELS.HIGH, PERMISSION_LEVELS.HIGHEST):
+            elif invoker_cls_permission_level in (
+                PERMISSION_LEVELS.HIGH,
+                PERMISSION_LEVELS.HIGHEST,
+            ):
                 if target._creator is not invoker:
                     if raise_exceptions:
                         raise JobPermissionError(
@@ -811,7 +823,6 @@ class JobManager:
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
-            
 
         return True
 
@@ -874,7 +885,7 @@ class JobManager:
 
         Raises:
             JobInitializationError: The job given was already initialized.
-        
+
         Returns:
             bool: Whether the initialization attempt was successful.
         """
@@ -952,7 +963,8 @@ class JobManager:
 
         if (
             isinstance(job, SingletonJobBase)
-            and job.__class__._IDENTIFIER in self._job_type_count_dict and self._job_type_count_dict[job.__class__._IDENTIFIER]
+            and job.__class__._IDENTIFIER in self._job_type_count_dict
+            and self._job_type_count_dict[job.__class__._IDENTIFIER]
         ):
             raise JobError(
                 "cannot have more than one instance of a"
@@ -1057,7 +1069,9 @@ class JobManager:
         if isinstance(timestamp, datetime.datetime):
             timestamp = timestamp.astimezone(datetime.timezone.utc)
         elif isinstance(timestamp, (int, float)):
-            timestamp = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+            timestamp = datetime.datetime.fromtimestamp(
+                timestamp, tz=datetime.timezone.utc
+            )
         else:
             raise TypeError(
                 "argument 'timestamp' must be a datetime.datetime or a positive real number"
@@ -1071,14 +1085,18 @@ class JobManager:
         if recur_interval is None or recur_interval == 0:
             recur_interval_num = 0
 
-        elif isinstance(recur_interval, (int, float)) and (recur_interval == -1 or recur_interval > 0):
+        elif isinstance(recur_interval, (int, float)) and (
+            recur_interval == -1 or recur_interval > 0
+        ):
             if recur_interval > 0:
                 recur_interval_num = int(recur_interval * 1_000_000_000)
                 # save time difference in ns
             else:
                 recur_interval_num = -1
 
-        elif isinstance(recur_interval, datetime.timedelta) and (recur_interval.total_seconds() == -1 or recur_interval.total_seconds() >= 0):
+        elif isinstance(recur_interval, datetime.timedelta) and (
+            recur_interval.total_seconds() == -1 or recur_interval.total_seconds() >= 0
+        ):
             if recur_interval.total_seconds() >= 0:
                 recur_interval_num = int(recur_interval.total_seconds() * 1_000_000_000)
             else:
@@ -1090,12 +1108,13 @@ class JobManager:
                 " of -1 seconds, or a positive value"
             ) from None
 
-        if not isinstance(max_recurrences, int) or (max_recurrences != -1 and max_recurrences <= 0):
+        if not isinstance(max_recurrences, int) or (
+            max_recurrences != -1 and max_recurrences <= 0
+        ):
             raise TypeError(
                 "argument 'max_recurrences' must be -1 or a non-zero positive real"
                 f" number of type 'int', not {type(job_args).__name__}"
             ) from None
-        
 
         if not isinstance(job_args, (list, tuple)):
             if job_args is None:
@@ -1113,7 +1132,11 @@ class JobManager:
                     f"'job_kwargs' must be of type 'dict', not {type(job_kwargs)}"
                 ) from None
 
-        schedule_timestamp_ns_str = str(int(datetime.datetime.now(datetime.timezone.utc).timestamp()*1_000_000_000))
+        schedule_timestamp_ns_str = str(
+            int(
+                datetime.datetime.now(datetime.timezone.utc).timestamp() * 1_000_000_000
+            )
+        )
 
         new_data = {
             "scheduler_identifier": _invoker.identifier if _invoker is not None else "",
@@ -1129,9 +1152,7 @@ class JobManager:
         }
 
         new_data["schedule_identifier"] = schedule_identifier = (
-            f"{self._identifier}-"
-            f"{timestamp_ns_str}-"
-            f"{schedule_timestamp_ns_str}"
+            f"{self._identifier}-" f"{timestamp_ns_str}-" f"{schedule_timestamp_ns_str}"
         )
 
         async with self._schedule_dict_lock:
@@ -1820,7 +1841,6 @@ class JobManager:
                 if all(filter_func(job) for filter_func in filter_functions)
             )
 
-
     def start_job(
         self,
         job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
@@ -1889,7 +1909,7 @@ class JobManager:
             job._manager._job_stop_timeout = stopping_timeout
 
         return job._RESTART_EXTERNAL()
-    
+
     def stop_job(
         self,
         job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
@@ -1961,7 +1981,9 @@ class JobManager:
             _invoker = None
 
         if job._is_being_guarded:
-            raise JobStateError("the given target job object is being guarded by another job")
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            )
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -1969,12 +1991,16 @@ class JobManager:
 
         return job._KILL_EXTERNAL(awaken=True)
 
-    def guard_job(self, job_or_proxy: Union[EventJob, IntervalJob, JobProxy], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def guard_job(
+        self,
+        job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Place a guard on the given job object, to prevent unintended state
-        modifications by other jobs. 
+        modifications by other jobs.
 
         Args:
-            job_or_proxy (Union[EventJob, IntervalJob, JobProxy]): The job object. 
+            job_or_proxy (Union[EventJob, IntervalJob, JobProxy]): The job object.
 
         Raises:
             JobStateError:
@@ -1983,7 +2009,7 @@ class JobManager:
                 The given target job object is already
                 being guarded by the invoker job object.
         """
-        
+
         job = (
             self._get_job_from_proxy(job_or_proxy)
             if isinstance(job_or_proxy, JobProxy)
@@ -1996,7 +2022,9 @@ class JobManager:
             _invoker = None
 
         if job._is_being_guarded:
-            raise JobStateError("the given target job object is already being guarded by a job")
+            raise JobStateError(
+                "the given target job object is already being guarded by a job"
+            )
 
         if _invoker is not None:
             if job._identifier not in _invoker._guarded_job_proxies_dict:
@@ -2012,13 +2040,16 @@ class JobManager:
             job._is_being_guarded = True
             self._manager_job._guarded_job_proxies_dict[job._identifier] = job._proxy
 
-
-    def unguard_job(self, job_or_proxy: Union[EventJob, IntervalJob, JobProxy], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def unguard_job(
+        self,
+        job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Remove the guard on the given job object, to prevent unintended state
-        modifications by other jobs. 
+        modifications by other jobs.
 
         Args:
-            job_or_proxy (Union[EventJob, IntervalJob, JobProxy]): The job object. 
+            job_or_proxy (Union[EventJob, IntervalJob, JobProxy]): The job object.
 
         Raises:
             JobStateError:
@@ -2059,7 +2090,6 @@ class JobManager:
         for fut in job._unguard_futures:
             if not fut.cancelled():
                 fut.set_result(True)
-        
 
     def __contains__(self, job_or_proxy: Union[EventJob, IntervalJob, JobProxy]):
         job = (
@@ -2095,7 +2125,9 @@ class JobManager:
         event_class_identifier = event.__class__._IDENTIFIER
 
         if event_class_identifier in self._event_waiting_queues:
-            target_event_waiting_queue = self._event_waiting_queues[event_class_identifier]
+            target_event_waiting_queue = self._event_waiting_queues[
+                event_class_identifier
+            ]
             deletion_queue_indices = []
 
             for i, waiting_list in enumerate(target_event_waiting_queue):
@@ -2144,7 +2176,9 @@ class JobManager:
         check = (lambda x: True) if check is None else check
         future = self._loop.create_future()
 
-        if not all(issubclass(event_type, events.BaseEvent) for event_type in event_types):
+        if not all(
+            issubclass(event_type, events.BaseEvent) for event_type in event_types
+        ):
             raise TypeError(
                 "argument 'event_types' must contain only subclasses of 'BaseEvent'"
             ) from None
@@ -2412,10 +2446,13 @@ class JobManagerProxy:
     def get_guarded_jobs(self):
         return tuple(self.__j._guarded_job_proxies_set)
 
-
-    def guard_job(self, job_proxy: JobProxy, _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def guard_job(
+        self,
+        job_proxy: JobProxy,
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Place a guard on the given job object, to prevent unintended state
-        modifications by other jobs. 
+        modifications by other jobs.
 
         Args:
             job_proxy (JobProxy): The job object's proxy.
@@ -2427,13 +2464,16 @@ class JobManagerProxy:
                 The given target job object is already
                 being guarded by the invoker job object.
         """
-        
+
         return self.__mgr.unguard_job(job_proxy, _invoker=self.__j)
 
-
-    def unguard_job(self, job_or_proxy: Union[EventJob, IntervalJob, JobProxy], _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def unguard_job(
+        self,
+        job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Remove the guard on the given job object, to prevent unintended state
-        modifications by other jobs. 
+        modifications by other jobs.
 
         Args:
             job_proxy (JobProxy): The job object's proxy.
@@ -2445,9 +2485,8 @@ class JobManagerProxy:
                 The given target job object is already
                 being guarded by the invoker job object.
         """
-        
-        return self.__mgr.unguard_job(self, job_or_proxy, _invoker=self.__j)
 
+        return self.__mgr.unguard_job(self, job_or_proxy, _invoker=self.__j)
 
     def _eject(self):
         """
@@ -2509,7 +2548,7 @@ class JobManagerProxy:
                 Defaults to None.
             max_recurrences (int):
                 The maximum amount of recur intervals for rescheduling.
-                -1 sets the interval maximum to be unlimited. 
+                -1 sets the interval maximum to be unlimited.
                 Defaults to 1.
             job_args (tuple, optional):
                 Positional arguments to pass to the scheduled job upon
