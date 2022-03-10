@@ -33,21 +33,33 @@ class BotJobManager(core.JobManager):
     @job_scheduling_loop.before_loop
     async def initialize_job_scheduling(self):
         async with db.DiscordDB("job_schedule") as db_obj:
-            await self.load_job_scheduling_data(db_obj.get([set(), {}]))
-
+            db_data = db_obj.get({"identifiers": [], "data": {}})
+                
+        try:
+            await self.load_job_scheduling_data(db_data)
+        except Exception as e:
+            print(
+                "Error while loading job scheduling data:\n"+\
+                utils.format_code_exception(e)
+            )
+        
         super().initialize_job_scheduling()
-
+    
     @job_scheduling_loop.after_loop
     async def uninitialize_job_scheduling(self):
         self.job_scheduling_loop.cancel()
         async with db.DiscordDB("job_schedule") as db_obj:
-            db_obj.write(await self.dump_job_scheduling_data())
+            try:
+                db_obj.write(await self.dump_job_scheduling_data())
+            except Exception as e:
+                print(
+                    "Error while dumping job scheduling data:\n"+\
+                    utils.format_code_exception(e)
+                )
 
         super().uninitialize_job_scheduling()
 
-
 common.job_manager = BotJobManager()
-
 
 async def _init():
     """
@@ -97,6 +109,7 @@ async def _init():
                     common.entry_channels[key] = channel
 
     common.job_manager.set_event_loop(asyncio.get_running_loop())
+    await common.job_manager.initialize()
     common.job_manager.job_scheduling_loop.start()
     await common.job_manager.create_and_register_job(job_main.Main)
 

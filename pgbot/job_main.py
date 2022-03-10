@@ -7,6 +7,7 @@ This file includes job classes that run at bot startup.
 """
 import asyncio
 import datetime
+from typing import Type
 import discord
 from time import perf_counter
 
@@ -18,65 +19,65 @@ from pgbot.utils import embed_utils
 
 
 class MessagingTest1(core.ClientEventJob):
-    CLASS_EVENT_TYPES = (events.OnMessageBase,)
+    EVENT_TYPES = (events.OnMessageBase,)
 
     def __init__(self, target_channel: discord.TextChannel):
         super().__init__()
-        self.DATA.target_channel = target_channel
+        self.data.target_channel = target_channel
 
     async def on_init(self):
-        if "target_channel" not in self.DATA:
-            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
-            self.DATA.response_count = 0
-            self.DATA.interval_job_test = None
+        if "target_channel" not in self.data:
+            self.data.target_channel = common.guild.get_channel(822650791303053342)
+            self.data.response_count = 0
+            self.data.interval_job_test = None
 
     async def on_run(self, event: events.OnMessageBase, *args, **kwargs):
         if isinstance(event, events.OnMessage):
-            if event.message.channel == self.DATA.target_channel:
+            if event.message.channel == self.data.target_channel:
                 event: events.OnMessage
                 if event.message.content.lower().startswith(("hi", "hello")):
-                    await self.DATA.target_channel.send(
+                    await self.data.target_channel.send(
                         f"Hi, {event.message.author.mention}"
                     )
 
-                    self.DATA.response_count += 1
-                    if self.DATA.response_count == 3:
-                        self.DATA.interval_job_test = self.manager.create_job(
+                    self.data.response_count += 1
+                    if self.data.response_count == 3:
+                        self.data.interval_job_test = self.manager.create_job(
                             IntervalJobTest
                         )
-                        await self.manager.register_job(self.DATA.interval_job_test)
+                        await self.manager.register_job(self.data.interval_job_test)
 
                 elif (
                     event.message.content.lower().startswith(("shut"))
-                    and self.DATA.response_count >= 3
+                    and self.data.response_count >= 3
                 ):
-                    self.manager.kill_job(self.DATA.interval_job_test)
-                    await self.DATA.target_channel.send(
+                    self.manager.kill_job(self.data.interval_job_test)
+                    await self.data.target_channel.send(
                         f"Sorry, {event.message.author.mention}, I won't annoy you anymore, {event.message.author.mention}"
                     )
                     self.STOP_LOOP()
 
         elif isinstance(event, events.OnMessageEdit):
             event: events.OnMessageEdit
-            if event.before.channel == self.DATA.target_channel:
-                await self.DATA.target_channel.send(
+            if event.before.channel == self.data.target_channel:
+                await self.data.target_channel.send(
                     f"Hi, {event.before.author.mention}, did you just change this message to:",
                     reference=event.before,
                 )
                 await embed_utils.send(
-                    self.DATA.target_channel,
+                    self.data.target_channel,
                     title="...this?",
                     description=event.after.content,
                 )
 
         elif isinstance(event, events.OnMessageDelete):
             event: events.OnMessageDelete
-            if event.message.channel == self.DATA.target_channel:
-                await self.DATA.target_channel.send(
+            if event.message.channel == self.data.target_channel:
+                await self.data.target_channel.send(
                     f"Hi, {event.message.author.mention}, did you just delete:"
                 )
                 await embed_utils.send(
-                    self.DATA.target_channel,
+                    self.data.target_channel,
                     title="...this?",
                     description=event.message.content,
                 )
@@ -89,42 +90,51 @@ class IntervalJobTest(core.IntervalJob):
     default_seconds = 10
 
     async def on_init(self):
-        if "target_channel" not in self.DATA:
-            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
-            self.DATA.introduced = False
+        if "target_channel" not in self.data:
+            self.data.target_channel = common.guild.get_channel(822650791303053342)
+            self.data.introduced = False
 
     async def on_run(self, *args, **kwargs):
-        if not self.DATA.introduced:
-            await self.DATA.target_channel.send("Hello everyone!")
-            self.DATA.introduced = True
+        if not self.data.introduced:
+            await self.data.target_channel.send("Hello everyone!")
+            self.data.introduced = True
         else:
-            await self.DATA.target_channel.send("*Are you annoyed yet?*")
+            await self.data.target_channel.send("*Are you annoyed yet?*")
 
 
 class MessagingTest2(core.ClientEventJob):
-    CLASS_EVENT_TYPES = (events.OnMessage,)
+    EVENT_TYPES = (events.OnMessage,)
+
+
+    class TestNamespace(core.JobNamespace):
+        def __init__(self, **kwargs) -> None:
+            super().__init__(**kwargs)
+            self.target_channel: discord.TextChannel = None
+
+    NAMESPACE_CLASS = TestNamespace
 
     def __init__(self, target_channel: discord.TextChannel):
         super().__init__()
-        self.DATA.target_channel = target_channel
+        self.data: MessagingTest2.TestNamespace
+        self.data.target_channel = target_channel
 
     async def on_init(self):
-        if "target_channel" not in self.DATA:
-            self.DATA.target_channel = common.guild.get_channel(822650791303053342)
+        if "target_channel" not in self.data:
+            self.data.target_channel = common.guild.get_channel(822650791303053342)
 
     def check_event(self, event: events.ClientEvent):
-        return event.message.channel.id == self.DATA.target_channel.id
+        return event.message.channel.id == self.data.target_channel.id
 
     async def on_run(self, event: events.OnMessage, *args, **kwargs):
         if event.message.content.lower().startswith("hi"):
-            await self.DATA.target_channel.send("Hi, what's your name?")
+            await self.data.target_channel.send("Hi, what's your name?")
 
             author = event.message.author
             user_name = None
 
             check = (
                 lambda x: x.message.author == author
-                and x.message.channel == self.DATA.target_channel
+                and x.message.channel == self.data.target_channel
                 and x.message.content
             )
 
@@ -133,11 +143,11 @@ class MessagingTest2(core.ClientEventJob):
             )
             user_name = name_event.message.content
 
-            await self.DATA.target_channel.send(f"Hi, {user_name}")
+            await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.HIGHEST):
-    CLASS_DEFAULT_SECONDS = 3
+class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.MEDIUM):
+    DEFAULT_SECONDS = 3
 
     async def on_run(self):
         async with db.DiscordDB("reminders") as reminder_obj:
@@ -192,7 +202,7 @@ class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.HIG
 
 
 class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
-    CLASS_DEFAULT_RECONNECT = False
+    DEFAULT_RECONNECT = False
 
     async def on_start(self):
         self.remove_from_exception_whitelist(asyncio.TimeoutError)
@@ -241,10 +251,10 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
-            max_intervals=2,
-            input_kwargs=dict(
+            max_recurrences=2,
+            job_kwargs=dict(
                 channel=822650791303053342,
-                content="This will occur every 10 seconds, but only 2 times.",
+                content="This will occur once. Then every 10 seconds, but only 2 times.",
             ),
         )
 
@@ -253,7 +263,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
         await self.manager.create_job_schedule(
             messaging.MessageSend,
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
-            input_kwargs=dict(
+            job_kwargs=dict(
                 channel=841726972841558056,
                 content="Say 'I am cool.'",
             ),
@@ -267,6 +277,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             ),
         )
 
+        t0 = perf_counter()
         reaction_add_job = self.manager.create_job(
             messaging.ReactionsAdd,
             None,
@@ -279,10 +290,12 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             848211974370099230,
             848212574213767208,
         )
+        dt = perf_counter()-t0
+        print(dt)
 
         await self.manager.register_job(reaction_add_job)
-        print("\n".join(str(j) for j in self.manager.find_jobs(is_running=True)))
-        await self.wait_for(reaction_add_job.await_completion())
+        print("\n".join(str(j) for j in self.manager.find_jobs(is_being_killed=False)))
+        await self.wait_for(reaction_add_job.await_done())
 
 
 __all__ = [
