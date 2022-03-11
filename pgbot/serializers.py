@@ -13,6 +13,7 @@ import datetime
 import io
 import itertools
 import pickle
+from selectors import BaseSelector
 import time
 from types import SimpleNamespace
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
@@ -83,8 +84,28 @@ class BaseSerializer:
 
     serialized = to_dict
 
+    def reconstructed(self):
+        raise NotImplementedError()
 
-class UserSerializer(BaseSerializer):
+    async def reconstructed_async(self, *args, **kwargs):
+        """A helper method to check and await reconstruction
+        coroutines if necessary, while defaulting to a
+        synchronous implementation if necessary.
+
+        Returns:
+            object: The reconstruction output.
+        """
+        if self.IS_ASYNC:
+            return await self.reconstructed(*args, **kwargs)
+
+        return self.reconstructed(*args, **kwargs)
+
+
+class DiscordObjectSerializer(BaseSerializer):
+    pass
+
+
+class UserSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, user: discord.User):
@@ -104,7 +125,7 @@ class UserSerializer(BaseSerializer):
         return user
 
 
-class MemberSerializer(BaseSerializer):
+class MemberSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, member: discord.Member):
@@ -131,7 +152,7 @@ class MemberSerializer(BaseSerializer):
         return member
 
 
-class GuildSerializer(BaseSerializer):
+class GuildSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, guild: discord.Guild):
@@ -151,7 +172,7 @@ class GuildSerializer(BaseSerializer):
         return guild
 
 
-class EmojiSerializer(BaseSerializer):
+class EmojiSerializer(DiscordObjectSerializer):
     def __init__(self, emoji: discord.Emoji):
         self._dict = {
             "id": emoji.id,
@@ -167,7 +188,7 @@ class EmojiSerializer(BaseSerializer):
         return emoji
 
 
-class PartialEmojiSerializer(BaseSerializer):
+class PartialEmojiSerializer(DiscordObjectSerializer):
     def __init__(self, emoji: discord.PartialEmoji):
         self._dict = {
             "dict": emoji.to_dict(),
@@ -177,7 +198,7 @@ class PartialEmojiSerializer(BaseSerializer):
         return discord.PartialEmoji.from_dict(self._dict["dict"])
 
 
-class FileSerializer(BaseSerializer):
+class FileSerializer(DiscordObjectSerializer):
     def __init__(self, file: discord.File):
         self._dict = {"filename": file.filename, "spoiler": file.spoiler}
         if isinstance(file.fp, str):
@@ -225,7 +246,7 @@ class FileSerializer(BaseSerializer):
             )
 
 
-class RoleSerializer(BaseSerializer):
+class RoleSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, role: discord.Role):
@@ -263,7 +284,7 @@ class RoleSerializer(BaseSerializer):
         return role
 
 
-class PermissionsSerializer(BaseSerializer):
+class PermissionsSerializer(DiscordObjectSerializer):
     def __init__(self, permissions: discord.Permissions):
         self._dict = {"value": permissions.value}
 
@@ -271,7 +292,7 @@ class PermissionsSerializer(BaseSerializer):
         return discord.Permissions(permissions=self._dict["value"])
 
 
-class PermissionOverwriteSerializer(BaseSerializer):
+class PermissionOverwriteSerializer(DiscordObjectSerializer):
     def __init__(self, permission_overwrite: discord.PermissionOverwrite):
         self._dict = {"_values": permission_overwrite._values}
 
@@ -281,7 +302,7 @@ class PermissionOverwriteSerializer(BaseSerializer):
         return permission_overwrite
 
 
-class AllowedMentionsSerializer(BaseSerializer):
+class AllowedMentionsSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, allowed_mentions: discord.AllowedMentions):
@@ -296,7 +317,7 @@ class AllowedMentionsSerializer(BaseSerializer):
             else [UserSerializer(user).serialized() for user in allowed_mentions.users],
         }
 
-    async def reconstructed(self):
+    async def reconstructed(self, always_fetch=False):
         return discord.AllowedMentions(
             everyone=self._dict["everyone"],
             replied_user=self._dict["replied_user"],
@@ -315,7 +336,7 @@ class AllowedMentionsSerializer(BaseSerializer):
         )
 
 
-class ColorSerializer(BaseSerializer):
+class ColorSerializer(DiscordObjectSerializer):
     def __init__(self, color: discord.Color):
         self._dict = {"value": color.value}
 
@@ -323,7 +344,7 @@ class ColorSerializer(BaseSerializer):
         return discord.Color(self._dict["value"])
 
 
-class ActivitySerializer(BaseSerializer):
+class ActivitySerializer(DiscordObjectSerializer):
     def __init__(self, activity: discord.Activity):
         self._dict = {"dict": activity.to_dict()}
 
@@ -331,7 +352,7 @@ class ActivitySerializer(BaseSerializer):
         return discord.Activity(**self._dict["dict"])
 
 
-class GameSerializer(BaseSerializer):
+class GameSerializer(DiscordObjectSerializer):
     def __init__(self, game: discord.Game):
         self._dict = {"dict": game.to_dict()}
 
@@ -339,7 +360,7 @@ class GameSerializer(BaseSerializer):
         return discord.Game(**self._dict["dict"])
 
 
-class StreamingSerializer(BaseSerializer):
+class StreamingSerializer(DiscordObjectSerializer):
     def __init__(self, streaming: discord.Streaming):
         self._dict = {"dict": streaming.to_dict()}
 
@@ -347,7 +368,7 @@ class StreamingSerializer(BaseSerializer):
         return discord.Streaming(**self._dict["dict"])
 
 
-class IntentsSerializer(BaseSerializer):
+class IntentsSerializer(DiscordObjectSerializer):
     def __init__(self, intents: discord.Intents):
         self._dict = {"value": intents.value}
 
@@ -357,7 +378,7 @@ class IntentsSerializer(BaseSerializer):
         return i
 
 
-class MemberCacheFlagsSerializer(BaseSerializer):
+class MemberCacheFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, member_cache_flags: discord.MemberCacheFlags):
         self._dict = {"value": member_cache_flags.value}
 
@@ -367,7 +388,7 @@ class MemberCacheFlagsSerializer(BaseSerializer):
         return f
 
 
-class SystemChannelFlagsSerializer(BaseSerializer):
+class SystemChannelFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, system_channel_flags: discord.SystemChannelFlags):
         self._dict = {"value": system_channel_flags.value}
 
@@ -377,7 +398,7 @@ class SystemChannelFlagsSerializer(BaseSerializer):
         return f
 
 
-class MessageFlagsSerializer(BaseSerializer):
+class MessageFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, message_flags: discord.MessageFlags):
         self._dict = {"value": message_flags.value}
 
@@ -387,7 +408,7 @@ class MessageFlagsSerializer(BaseSerializer):
         return f
 
 
-class PublicUserFlagsSerializer(BaseSerializer):
+class PublicUserFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, public_user_flags: discord.PublicUserFlags):
         self._dict = {"value": public_user_flags.value}
 
@@ -397,7 +418,7 @@ class PublicUserFlagsSerializer(BaseSerializer):
         return f
 
 
-class MessageSerializer(BaseSerializer):
+class MessageSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, message: discord.Message):
@@ -421,7 +442,7 @@ class MessageSerializer(BaseSerializer):
         return message
 
 
-class MessageReferenceSerializer(BaseSerializer):
+class MessageReferenceSerializer(DiscordObjectSerializer):
     def __init__(self, message_reference: discord.MessageReference):
         self._dict = {"dict": message_reference.to_dict()}
 
@@ -429,7 +450,7 @@ class MessageReferenceSerializer(BaseSerializer):
         return discord.MessageReference(**self._dict["dict"])
 
 
-class EmbedSerializer(BaseSerializer):
+class EmbedSerializer(DiscordObjectSerializer):
     def __init__(self, embed: discord.Embed):
         self._dict = {
             "dict": embed.to_dict(),
@@ -439,7 +460,7 @@ class EmbedSerializer(BaseSerializer):
         return discord.Embed.from_dict(self._dict["dict"])
 
 
-class ChannelSerializer(BaseSerializer):
+class ChannelSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
 
     def __init__(self, channel: discord.abc.Messageable):

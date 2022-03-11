@@ -522,39 +522,39 @@ class JobManager:
         """Whether the job scheduling process of this job manager is initialized."""
         return self._scheduling_is_initialized
 
-    def wait_for_job_scheduling_initialization(self):
-        """This method returns a `Future` that can be used to wait until job scheduling
+    def wait_for_job_scheduling_initialization(self, timeout: Optional[float] = None):
+        """This method returns a coroutine that can be used to wait until job scheduling
         is initialized.
 
         Raises:
             RuntimeError: Job scheduling is already initialized.
 
         Returns:
-            Future: A future object.
+            Coroutine: A coroutine that evaluates to `True`.
         """
 
         if not self._scheduling_is_initialized:
             fut = self._loop.create_future()
             self._scheduling_initialized_futures.append(fut)
-            return fut
+            return asyncio.wait_for(fut, timeout)
 
         raise RuntimeError("Job scheduling is already initialized.")
 
-    def wait_for_job_scheduling_uninitialization(self):
-        """This method returns a `Future` that can be used to wait until job scheduling
+    def wait_for_job_scheduling_uninitialization(self, timeout: Optional[float] = None):
+        """This method returns a coroutine that can be used to wait until job scheduling
         is uninitialized.
 
         Raises:
             RuntimeError: Job scheduling is not initialized.
 
         Returns:
-            Future: A future object.
+            Coroutine: A coroutine that evaluates to `True`.
         """
 
         if self._scheduling_is_initialized:
             fut = self._loop.create_future()
             self._scheduling_uninitialized_futures.append(fut)
-            return fut
+            return asyncio.wait_for(fut, timeout)
 
         raise RuntimeError("Job scheduling is not initialized.")
 
@@ -853,7 +853,7 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.CREATE, target_cls=cls)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         job = cls(*args, **kwargs)
         job._manager = JobManagerProxy(self, job)
@@ -899,7 +899,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.INITIALIZE, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
+
+        if job._is_being_guarded and _invoker is not job._guardian:
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            ) from None
 
         if not job._initialized:
             try:
@@ -953,7 +958,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.REGISTER, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
+
+        if job._is_being_guarded and _invoker is not job._guardian:
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            ) from None
 
         if job._killed:
             raise JobStateError("cannot register a killed job object")
@@ -1056,7 +1066,7 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.SCHEDULE, target_cls=cls)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         if not self._initialized:
             raise RuntimeError("This job manager object is not initialized.")
@@ -1490,7 +1500,7 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.FIND)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         if identifier is not None:
             if isinstance(identifier, str):
@@ -1608,7 +1618,7 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.FIND)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         filter_functions = []
 
@@ -1629,30 +1639,14 @@ class JobManager:
 
             if exact_class_match:
                 filter_functions.append(
-                    partial(
-                        lambda job, classes=(): any(
-                            job.__class__ is c for c in classes
-                        ),
-                        classes=classes,
-                    )
+                    lambda job: any(job.__class__ is c for c in classes)
                 )
             else:
-                filter_functions.append(
-                    partial(
-                        lambda job, classes=(): isinstance(job, classes),
-                        classes=classes,
-                    )
-                )
+                filter_functions.append(lambda job: isinstance(job, classes))
 
         if created_before is not None:
             if isinstance(created_before, datetime.datetime):
-                filter_functions.append(
-                    partial(
-                        lambda job, created_before=None: job.created_at
-                        < created_before,
-                        created_before=created_before,
-                    )
-                )
+                filter_functions.append(lambda job: job.created_at < created_before)
             else:
                 raise TypeError(
                     f"'created_before' must be of type 'datetime.datetime', not {type(created_before)}"
@@ -1661,10 +1655,7 @@ class JobManager:
         if created_after is not None:
             if isinstance(created_after, datetime.datetime):
                 filter_functions.append(
-                    partial(
-                        lambda job, created_after=None: job.created_at > created_after,
-                        created_after=created_after,
-                    )
+                    lambda job, created_after=None: job.created_at > created_after
                 )
             else:
                 raise TypeError(
@@ -1685,11 +1676,7 @@ class JobManager:
                 <= PERMISSION_LEVELS.HIGHEST
             ):
                 filter_functions.append(
-                    partial(
-                        lambda job, permission_level=0: job.permission_level
-                        == permission_level,
-                        permission_level=permission_level,
-                    )
+                    lambda job: job.permission_level == permission_level
                 )
             else:
                 raise ValueError(
@@ -1711,11 +1698,7 @@ class JobManager:
                 <= PERMISSION_LEVELS.HIGHEST
             ):
                 filter_functions.append(
-                    partial(
-                        lambda job, below_permission_level=0: job.permission_level
-                        < below_permission_level,
-                        below_permission_level=below_permission_level,
-                    )
+                    lambda job: job.permission_level < below_permission_level
                 )
             else:
                 raise ValueError(
@@ -1737,11 +1720,7 @@ class JobManager:
                 <= PERMISSION_LEVELS.HIGHEST
             ):
                 filter_functions.append(
-                    partial(
-                        lambda job, above_permission_level=0: job.permission_level
-                        > above_permission_level,
-                        above_permission_level=above_permission_level,
-                    )
+                    lambda job: job.permission_level > above_permission_level
                 )
             else:
                 raise ValueError(
@@ -1751,78 +1730,48 @@ class JobManager:
 
         if is_starting is not None:
             is_starting = bool(is_starting)
-            filter_functions.append(
-                partial(
-                    lambda job, is_starting=None: job.is_starting() == is_starting,
-                    is_starting=is_starting,
-                )
-            )
+            filter_functions.append(lambda job: job.is_starting() == is_starting)
 
         if is_running is not None:
             is_running = bool(is_running)
-            filter_functions.append(
-                partial(
-                    lambda job, is_running=None: job.is_running() == is_running,
-                    is_running=is_running,
-                )
-            )
+            filter_functions.append(lambda job: job.is_running() == is_running)
 
         if is_idling is not None:
             is_running = bool(is_idling)
-            partial(
-                lambda job, is_idling=None: job.is_idling() == is_idling,
-                is_idling=is_idling,
+            filter_functions.append(
+                lambda job, is_idling=None: job.is_idling() == is_idling
             )
 
         if stopped is not None:
             stopped = bool(stopped)
-            partial(lambda job, stopped=None: job.stopped() == stopped, stopped=stopped)
+            filter_functions.append(lambda job: job.stopped() == stopped)
 
         if is_awaiting is not None:
             is_running = bool(is_awaiting)
-            partial(
-                lambda job, is_awaiting=None: job.is_awaiting() == is_awaiting,
-                is_awaiting=is_awaiting,
-            )
+            filter_functions.append(lambda job: job.is_awaiting() == is_awaiting)
 
         if is_being_stopped is not None:
             is_running = bool(is_being_stopped)
             filter_functions.append(
-                partial(
-                    lambda job, is_being_stopped=None: job.is_being_stopped()
-                    == is_being_stopped,
-                    is_being_stopped=is_being_stopped,
-                )
+                lambda job: job.is_being_stopped() == is_being_stopped
             )
 
         if is_being_restarted is not None:
             is_being_restarted = bool(is_being_restarted)
             filter_functions.append(
-                partial(
-                    lambda job, is_being_restarted=None: job.is_being_restarted()
-                    == is_being_restarted,
-                    is_being_restarted=is_being_restarted,
-                )
+                lambda job: job.is_being_restarted() == is_being_restarted
             )
 
         if is_being_killed is not None:
             is_being_killed = bool(is_being_killed)
             filter_functions.append(
-                partial(
-                    lambda job, is_being_killed=None: job.is_being_killed()
-                    == is_being_killed,
-                    is_being_killed=is_being_killed,
-                )
+                lambda job: job.is_being_killed() == is_being_killed
             )
 
         if is_being_completed is not None:
             is_being_completed = bool(is_being_completed)
             filter_functions.append(
-                partial(
-                    lambda job, is_being_completed=None: job.is_being_completed()
-                    == is_being_completed,
-                    is_being_completed=is_being_completed,
-                )
+                lambda job: job.is_being_completed() == is_being_completed
             )
 
         if not filter_functions:
@@ -1865,7 +1814,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.START, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
+
+        if job._is_being_guarded and _invoker is not job._guardian:
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            ) from None
 
         if not job._task_loop.is_running():
             job._task_loop.start()
@@ -1902,7 +1856,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.RESTART, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
+
+        if job._is_being_guarded and _invoker is not job._guardian:
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            ) from None
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -1940,7 +1899,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.STOP, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
+
+        if job._is_being_guarded and _invoker is not job._guardian:
+            raise JobStateError(
+                "the given target job object is being guarded by another job"
+            ) from None
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -1978,12 +1942,12 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.KILL, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
-        if job._is_being_guarded:
+        if job._is_being_guarded and _invoker is not job._guardian:
             raise JobStateError(
                 "the given target job object is being guarded by another job"
-            )
+            ) from None
 
         if stopping_timeout:
             stopping_timeout = float(stopping_timeout)
@@ -2019,26 +1983,25 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.GUARD, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         if job._is_being_guarded:
             raise JobStateError(
                 "the given target job object is already being guarded by a job"
             )
 
-        if _invoker is not None:
-            if job._identifier not in _invoker._guarded_job_proxies_dict:
-                job._guardian = _invoker
-                _invoker._guarded_job_proxies_dict[job._identifier] = job._proxy
-            else:
-                raise JobStateError(
-                    "the given target job object is already"
-                    " being guarded by the invoker job object"
-                )
-        else:
-            job._guardian = self._manager_job
+        if _invoker._guarded_job_proxies_dict is None:
+            _invoker._guarded_job_proxies_dict = {}
+
+        if job._identifier not in _invoker._guarded_job_proxies_dict:
+            job._guardian = _invoker
+            _invoker._guarded_job_proxies_dict[job._identifier] = job._proxy
             job._is_being_guarded = True
-            self._manager_job._guarded_job_proxies_dict[job._identifier] = job._proxy
+        else:
+            raise JobStateError(
+                "the given target job object is already"
+                " being guarded by the invoker job object"
+            )
 
     def unguard_job(
         self,
@@ -2053,7 +2016,7 @@ class JobManager:
 
         Raises:
             JobStateError:
-                The given target job object is already being guarded by a job.
+                The given target job object is not being guarded by a job.
             JobStateError:
                 The given target job object is already
                 being guarded by the invoker job object.
@@ -2067,29 +2030,37 @@ class JobManager:
         if isinstance(_invoker, (EventJob, IntervalJob)):
             self._verify_permissions(_invoker, op=JOB_VERBS.UNGUARD, target=job)
         else:
-            _invoker = None
+            _invoker = self._manager_job
 
         if not job._is_being_guarded:
             raise JobStateError("the given job object is not being guarded by a job")
 
-        if _invoker is not None:
-            if job._identifier in _invoker._guarded_job_proxies_dict:
-                job._guardian = None
-                job._is_being_guarded = False
-                del _invoker._guarded_job_proxies_dict[job._identifier]
-            else:
-                raise JobStateError(
-                    "the given target job object is not"
-                    " being guarded by the invoker job object"
-                )
-        else:
+        if (
+            _invoker._guarded_job_proxies_dict is not None
+            and job._identifier in _invoker._guarded_job_proxies_dict
+        ):
             job._guardian = None
             job._is_being_guarded = False
-            del self._manager_job._guarded_job_proxies_dict[job._identifier]
+            del _invoker._guarded_job_proxies_dict[job._identifier]
+
+        elif _invoker is self._manager_job:
+            guardian = job._guardian
+            job._guardian = None
+            job._is_being_guarded = False
+
+            del guardian._guarded_job_proxies_dict[job._identifier]
+
+        else:
+            raise JobStateError(
+                "the given target job object is not"
+                " being guarded by the invoker job object"
+            )
 
         for fut in job._unguard_futures:
             if not fut.cancelled():
                 fut.set_result(True)
+
+        job._unguard_futures.clear()
 
     def __contains__(self, job_or_proxy: Union[EventJob, IntervalJob, JobProxy]):
         job = (
@@ -2153,7 +2124,8 @@ class JobManager:
         check: Optional[Callable[[events.BaseEvent], bool]] = None,
         timeout: Optional[float] = None,
     ):
-        """Wait for specific type of event to be dispatched, and return it as an event object.
+        """Wait for specific type of event to be dispatched
+        and return it as an event object using the given coroutine.
 
         Args:
             *event_types (Type[events.BaseEvent]):
@@ -2170,10 +2142,11 @@ class JobManager:
             CancelledError: The future used to wait for an event was cancelled.
 
         Returns:
-            BaseEvent: A valid event object
+            Coroutine:
+                A coroutine that evaluates to a valid `BaseEvent` event object.
         """
 
-        check = (lambda x: True) if check is None else check
+        check = (lambda _: True) if check is None else check
         future = self._loop.create_future()
 
         if not all(
@@ -2229,7 +2202,7 @@ class JobManagerProxy:
 
     __slots__ = ("__mgr", "__j", "_job_stop_timeout")
 
-    def __init__(self, mgr: JobManager, job):
+    def __init__(self, mgr: JobManager, job: Union[EventJob, IntervalJob]):
         self.__mgr = mgr
         self.__j = job
         self._job_stop_timeout = None
@@ -2291,7 +2264,9 @@ class JobManagerProxy:
         return self.__mgr._verify_permissions(
             self.__j,
             op,
-            target=target,
+            target=self.__mgr._get_job_from_proxy(target)
+            if target is not None
+            else target,
             target_cls=target_cls,
             schedule_identifier=schedule_identifier,
             scheduler_identifier=scheduler_identifier,
@@ -2375,7 +2350,12 @@ class JobManagerProxy:
         Returns:
             bool: Whether the operation was initiated by the job.
         """
+
         job = self.__mgr._get_job_from_proxy(job_proxy)
+
+        if job is self.__j:
+            job.RESTART()
+
         return self.__mgr.restart_job(
             job, stopping_timeout=stopping_timeout, _invoker=self.__j
         )
@@ -2449,7 +2429,6 @@ class JobManagerProxy:
     def guard_job(
         self,
         job_proxy: JobProxy,
-        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
     ):
         """Place a guard on the given job object, to prevent unintended state
         modifications by other jobs.
@@ -2464,13 +2443,11 @@ class JobManagerProxy:
                 The given target job object is already
                 being guarded by the invoker job object.
         """
-
-        return self.__mgr.unguard_job(job_proxy, _invoker=self.__j)
+        return self.__mgr.guard_job(job_proxy, _invoker=self.__j)
 
     def unguard_job(
         self,
-        job_or_proxy: Union[EventJob, IntervalJob, JobProxy],
-        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+        job_proxy: JobProxy,
     ):
         """Remove the guard on the given job object, to prevent unintended state
         modifications by other jobs.
@@ -2480,13 +2457,13 @@ class JobManagerProxy:
 
         Raises:
             JobStateError:
-                The given target job object is already being guarded by a job.
+                The given target job object is not being guarded by a job.
             JobStateError:
                 The given target job object is already
                 being guarded by the invoker job object.
         """
 
-        return self.__mgr.unguard_job(self, job_or_proxy, _invoker=self.__j)
+        return self.__mgr.unguard_job(job_proxy, _invoker=self.__j)
 
     def _eject(self):
         """
@@ -2498,6 +2475,14 @@ class JobManagerProxy:
             self.__j._manager = None
             self.__j = None
             self.__mgr = None
+
+    def _unguard(self):
+        """
+        Unguard the job of this job manager proxy.
+        """
+        if self.__j._is_being_guarded:
+            guardian = self.__mgr._get_job_from_proxy(self.__j._guardian)
+            self.__mgr.unguard_job(self.__j, _invoker=guardian)
 
     def job_scheduling_is_initialized(self):
         """Whether the job scheduling process of this job manager is initialized."""
@@ -2580,7 +2565,7 @@ class JobManagerProxy:
         scheduling data.
 
         Returns:
-            tuple: The job schedule identifiers.
+            tuple: All job schedule identifiers.
         """
 
         return self.__mgr.get_job_schedule_identifiers()

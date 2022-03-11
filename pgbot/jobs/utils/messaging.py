@@ -12,7 +12,7 @@ import io
 import discord
 from pgbot.jobs.core import IntervalJob, PERMISSION_LEVELS
 from pgbot.utils import embed_utils
-from pgbot import common
+from pgbot import common, serializers
 from pgbot import serializers as serials
 
 NoneType = type(None)
@@ -23,6 +23,8 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
     """A job class for sending a message into a
     discord text channel.
     """
+
+    OUTPUT_FIELDS = frozenset(("message",))
 
     DEFAULT_COUNT = 1
     DEFAULT_RECONNECT = False
@@ -47,6 +49,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             serials.MessageReferenceSerializer,
         ] = None,
         mention_author: Optional[bool] = None,
+        kill_if_failed: bool = True,
     ):
         """Setup this job ojbect's namespace.
 
@@ -71,6 +74,8 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             reference=reference,
             mention_author=mention_author,
         )
+
+        self.data.kill_if_failed = not not kill_if_failed
 
     async def on_init(self):
         if not isinstance(self.data.channel, discord.abc.Messageable):
@@ -159,13 +164,16 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             else:
                 raise TypeError("Invalid type for argument 'reference'")
 
-        self.output.message = None
-
     async def on_run(self):
-        self.output.message = await self.data.channel.send(**self.data.kwargs)
+        msg = await self.data.channel.send(**self.data.kwargs)
+        self.set_output_field("message", msg)
 
-    async def on_stop(self, *args, **kwargs):
-        self.COMPLETE()
+    async def on_stop(self, reason, by_force):
+        if self.failed():
+            if self.data.kill_if_failed:
+                self.KILL()
+        else:
+            self.COMPLETE()
 
 
 class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
@@ -182,6 +190,7 @@ class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
         ],
         message: Union[int, discord.Message, serials.MessageSerializer],
+        kill_if_failed: bool = True,
     ):
         """Create a bot job instance.
 
@@ -192,6 +201,7 @@ class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
         super().__init__()
         self.data.channel = channel
         self.data.message = message
+        self.data.kill_if_failed = not not kill_if_failed
 
     async def on_init(self):
         if not isinstance(self.data.channel, discord.abc.Messageable):
@@ -222,9 +232,10 @@ class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
-    async def on_stop(self, *args, **kwargs):
+    async def on_stop(self, reason, by_force):
         if self.failed():
-            self.KILL()
+            if self.data.kill_if_failed:
+                self.KILL()
         else:
             self.COMPLETE()
 
@@ -246,6 +257,7 @@ class MessageEdit(_MessageModify):
         allowed_mentions: Optional[
             Union[discord.AllowedMentions, serials.AllowedMentionsSerializer]
         ] = None,
+        **kwargs,
     ):
         """Setup this job ojbect.
 
@@ -258,7 +270,7 @@ class MessageEdit(_MessageModify):
                 The keyword arguments to pass to the
                 coroutine methods of the message.
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         self.data.kwargs = dict(
             content=content,
             embed=embed,
@@ -309,19 +321,18 @@ class MessageDelete(_MessageModify):
         ],
         message: Union[int, discord.Message, serials.MessageSerializer],
         delay: Optional[float] = None,
+        **kwargs,
     ):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int):
-                The ID of a channel to get
-                a message from.
+            channel_id (int): The ID of a channel to get a message from.
             message_id (int): The ID of a message.
             **kwargs:
                 The keyword arguments to pass to the
                 coroutine methods of the message.
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         self.data.kwargs = dict(delay=delay)
 
     async def on_init(self):
@@ -353,13 +364,12 @@ class ReactionAdd(_MessageModify):
             serials.PartialEmojiSerializer,
             str,
         ],
+        **kwargs,
     ):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int):
-                The ID of a channel to get
-                a message from.
+            channel_id (int): The ID of a channel to get a message from.
             message_id (int): The ID of a message.
             emoji: (
                 Union[
@@ -370,8 +380,11 @@ class ReactionAdd(_MessageModify):
                 ]
             ):
                 The emoji to react with.
+            **kwargs:
+                The keyword arguments to pass to the
+                coroutine methods of the message.
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
 
     async def on_init(self):
@@ -416,6 +429,7 @@ class ReactionsAdd(_MessageModify):
             str,
         ],
         stop_at_maximum=True,
+        **kwargs,
     ):
         """Setup this object.
 
@@ -434,12 +448,15 @@ class ReactionsAdd(_MessageModify):
                     str]
             ):
                 A sequence of emojis to react with.
-            limit_to_maximum (bool, optional):
+            stop_at_maximum (bool, optional):
                 Whether the reactions will be added until the maxmimum is reached. If False,
                 reaction emojis will be added to a target message until an exception is
                 raised from Discord. Defaults to True.
+            **kwargs:
+                The keyword arguments to pass to the
+                coroutine methods of the message.
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         if len(emojis) > 20:
             raise ValueError(
                 "only 20 reaction emojis can be added to a message at a time."
@@ -502,6 +519,7 @@ class ReactionRemove(_MessageModify):
             str,
         ],
         member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerializer],
+        **kwargs,
     ):
         """Setup this job ojbect.
 
@@ -521,8 +539,11 @@ class ReactionRemove(_MessageModify):
                 The emoji to remove.
             member: (discord.abc.Snowflake):
                 The member whose reaction should be removed.
+            **kwargs:
+                The keyword arguments to pass to the
+                coroutine methods of the message.
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
         self.data.member = member
 
@@ -573,13 +594,12 @@ class ReactionClearEmoji(_MessageModify):
             serials.PartialEmojiSerializer,
             str,
         ],
+        **kwargs,
     ):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int):
-                The ID of a channel to get
-                a message from.
+            channel_id (int): The ID of a channel to get a message from.
             message_id (int): The ID of a message to edit.
             emoji: (
                 Union[
@@ -590,8 +610,11 @@ class ReactionClearEmoji(_MessageModify):
                 ]
             ):
                 The emoji to clear.
+            **kwargs:
+                The keyword arguments to pass to the
+                coroutine methods of the message.s
         """
-        super().__init__(channel=channel, message=message)
+        super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
 
     async def on_init(self):

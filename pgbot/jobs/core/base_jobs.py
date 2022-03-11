@@ -18,7 +18,6 @@ import functools
 import itertools
 import inspect
 import pickle
-from random import getrandbits
 import re
 import sys
 import time
@@ -398,6 +397,12 @@ class JobInitializationError(JobStateError):
     pass
 
 
+class JobWarning(Warning):
+    """Base class for job related warnings."""
+
+    pass
+
+
 class JobNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by job objects
     to store instance-specific data.
@@ -420,10 +425,6 @@ class JobNamespace(SimpleNamespace):
         return JobNamespace(**d)
 
     __copy__ = copy
-
-
-class JobWarning(RuntimeWarning):
-    """Base class for warnings about dubious job object runtime behavior."""
 
 
 def call_with_method(cls, name, mode="after"):
@@ -527,7 +528,7 @@ class JobProxy:
         "__registered_at",
     )
 
-    def __init__(self, job):
+    def __init__(self, job: Job):
         self.__j = job
         self.__job_class = job.__class__
         self.__identifier = job._identifier
@@ -807,8 +808,11 @@ class JobProxy:
         """
         return self.__j.is_being_guarded()
 
-    def await_done(self, timeout: float = None):
-        """Wait for this job object to be done (completed or killed).
+    def await_done(
+        self, timeout: Optional[float] = None, cancel_if_killed: bool = False
+    ):
+        """Wait for this job object to be done (completed or killed) using the
+        coroutine output of this method.
 
         Args:
             timeout (float, optional):
@@ -821,36 +825,171 @@ class JobProxy:
             JobStateError: This job object is already done or not alive.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine: A coroutine that evaluates to `True`.
         """
 
-        return self.__j.await_done(timeout=timeout)
+        return self.__j.await_done(timeout=timeout, cancel_if_killed=cancel_if_killed)
 
-    def await_unguard(self, timeout: float = None):
-        """Wait for this job object to be unguarded.
+    def await_unguard(self, timeout: Optional[float] = None):
+        """Wait for this job object to be unguarded using the
+        coroutine output of this method.
 
         Args:
             timeout (float, optional):
                 Timeout for awaiting. Defaults to None.
 
         Raises:
-            JobStateError: This job object is already done or not alive.
+            JobStateError:
+                This job object is already done or not alive,
+                or isn't being guarded.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine: A coroutine that evaluates to `True`.
         """
         return self.__j.await_unguard(timeout=timeout)
 
-    async def await_output_field(self, field_name: str, timeout: float = None):
-        """Wait for this job object to release the data of a specified output field.
+    def set_output_field(self, field_name: str, value):
+        """Set the specified output field to have the given value,
+        while releasing the value to external jobs awaiting the field.
+
+        Args:
+            field_name (str): The name of the output field to set.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value has already been set.
+        """
+
+        if not self.OUTPUT_FIELDS:
+            raise TypeError(
+                f"'{self.__class__.__name__}' class does not"
+                f" define any fields in 'OUTPUT_FIELDS' class attribute"
+            )
+
+        elif field_name not in self.OUTPUT_FIELDS:
+            raise (
+                ValueError(
+                    f"field name '{field_name}' is not defined in"
+                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
+                )
+                if isinstance(field_name, str)
+                else TypeError(
+                    f"field name argument '{field_name}' must be of type str,"
+                    f" not {field_name.__class__.__name__}"
+                )
+            )
+
+        field_data = value
+        old_field_data_list: list = getattr(self._output, field_name)
+
+        if old_field_data_list[1]:
+            raise JobStateError(
+                "An output field value has already been set for the field"
+                f" '{field_name}'"
+            )
+
+        old_field_data_list[0] = field_data
+        old_field_data_list[1] = True
+
+        for fut in self._output_futures[field_name]:
+            if not fut.cancelled():
+                fut.set_result(field_data)
+
+        self._output_futures[field_name].clear()
+
+    def get_output_field(self, field_name: str, default=None):
+        """Get the value of a specified output field.
+
+        Args:
+            field_name (str): The name of the target output field.
+            default (str): The value to return if the specified
+                output field does not exist, has not been set,
+                or if this job doesn't support them at all.
+                Defaults to None.
+
+        Raises:
+            TypeError: `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value is not set.
+
+        Returns:
+            object: The output field value.
+        """
+
+        return self.__j.get_output_field(field_name, default=default)
+
+    def get_output_field_names(self):
+        """Get all output field names that this job supports.
+
+        Returns:
+            tuple: A tuple of the supported output fields.
+        """
+        return self.__j.get_output_field_names()
+
+    def has_output_field_name(self, field_name: str):
+        """Whether the specified field name is supported as an
+        output field.
+
+        Args:
+            field_name (str): The name of the target output field.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.has_output_field_name(field_name)
+
+    def output_field_is_set(self, field_name: str):
+        """Whether a value for the specified output field
+        has been set.
+
+        Args:
+            field_name (str): The name of the target output field.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value is not set.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.output_field_is_set(field_name)
+
+    def await_output_field(self, field_name: str, timeout: Optional[float] = None):
+        """Wait for this job object to release the value of a
+        specified output field while this job is running, using the
+        coroutine output of this method.
 
         Args:
             timeout (float, optional):
-                The maximum amount of time to wait in seconds. Defaults to None.
+            The maximum amount of time to wait in seconds. Defaults to None.
 
         Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            JobStateError: This job object is already done.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine:
+                A coroutine that evaluates to the value of specified
+                output field.
         """
-        return await self.__j.await_output_field(field_name, timeout=timeout)
+
+        return self.__j.await_output_field(field_name, timeout=timeout)
 
     def interval_job_next_iteration(self):
         """
@@ -886,7 +1025,7 @@ class JobBase:
     _IDENTIFIER = f"JobBase-{int(_CREATED_AT.timestamp()*1_000_000_000)}"
     _PERMISSION_LEVEL = PERMISSION_LEVELS.MEDIUM
 
-    OUTPUT_FIELDS = ()
+    OUTPUT_FIELDS = frozenset()
 
     NAMESPACE_CLASS = JobNamespace
 
@@ -894,8 +1033,10 @@ class JobBase:
         for field in cls.OUTPUT_FIELDS:
             if re.search(r"\s", field):
                 raise ValueError(
-                    "field names in 'OUTPUT_FIELDS'" " cannot contain any whitespace"
+                    "field names in 'OUTPUT_FIELDS' cannot contain any whitespace"
                 )
+
+        cls.OUTPUT_FIELDS = frozenset(cls.OUTPUT_FIELDS)
 
         if cls is not _JOB_MANAGER_JOB_CLS:
             cls._CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
@@ -941,6 +1082,10 @@ class JobBase:
 class Job(JobBase):
     """The base class of all job objects. Do not instantiate
     this class by yourself, use its subclasses"""
+
+    OUTPUT_FIELDS = JobBase.OUTPUT_FIELDS
+
+    NAMESPACE_CLASS = JobNamespace
 
     __slots__ = (
         "_seconds",
@@ -999,6 +1144,8 @@ class Job(JobBase):
         self._count = None
         self._reconnect = False
 
+        self._loop_count = 0
+
         self._manager: JobManagerProxy = None
         self._creator: JobProxy = None
         self._created_at_ts = time.time()
@@ -1010,19 +1157,28 @@ class Job(JobBase):
         self._data = self.NAMESPACE_CLASS()
 
         self._done_futures = []
-        self._output_futures = {field: [] for field in self.OUTPUT_FIELDS}
-        self._unguard_futures = []
+        self._output_futures = None
 
-        self._output = self.NAMESPACE_CLASS()
+        self._output = None
 
-        for field in self.OUTPUT_FIELDS:
-            setattr(self.output, field, None)
+        if self.OUTPUT_FIELDS:
+            self._output_futures = {field: [] for field in self.OUTPUT_FIELDS}
+
+            self._output = self.NAMESPACE_CLASS()
+
+            for field in self.OUTPUT_FIELDS:
+                setattr(self._output, field, [None, False])
 
         self._task_loop: tasks.Loop = None
 
         self._proxy = JobProxy(self)
 
-        self._guarded_job_proxies_dict = {}
+        self._unguard_futures: Optional[list] = None
+        self._guardian: Optional[Job] = None
+        self._guarded_job_proxies_dict: Optional[dict] = None
+        # will be assigned by job manager
+
+        self._is_being_guarded = False
 
         self._on_start_exception = None
         self._on_run_exception = None
@@ -1079,11 +1235,6 @@ class Job(JobBase):
     def data(self):
         """The `JobNamespace` instance bound to this job object for storage."""
         return self._data
-
-    @property
-    def output(self):
-        """The `JobNamespace` instance bound to this job object for output fields."""
-        return self._output
 
     @property
     def manager(self):
@@ -1189,7 +1340,24 @@ class Job(JobBase):
         self._is_being_stopped = False
         self._is_being_restarted = False
 
+        if self._is_being_completed or self._is_being_killed:
+            if self._is_being_guarded:
+                if self._unguard_futures is not None:
+                    for fut in self._unguard_futures:
+                        if not fut.cancelled():
+                            fut.set_result(True)
+
+                    self._unguard_futures.clear()
+                    self._manager._unguard()
+
+            if self._guarded_job_proxies_dict is not None:
+                for job_proxy in self._guarded_job_proxies_dict.values():
+                    self.manager.unguard_job(job_proxy)
+
+                self._guarded_job_proxies_dict.clear()
+
         if self._is_being_completed:
+            self._is_being_completed = False
             self._completed = True
             self._completed_at_ts = time.time()
 
@@ -1199,28 +1367,21 @@ class Job(JobBase):
                 if not fut.cancelled():
                     fut.set_result(True)
 
-            for field_name, fut_list in self._output_futures.items():
-                output = getattr(self.output, field_name)
-                for fut in fut_list:
-                    if not fut.cancelled():
-                        fut.set_result(output)
-
-                fut_list.clear()
-
-            for fut in self._unguard_futures:
-                if not fut.cancelled():
-                    fut.set_result(True)
-
-            for job_proxy in self._guarded_job_proxies_dict.values():
-                self.manager.unguard_job(job_proxy)
-
-            self._guarded_job_proxies_dict.clear()
             self._done_futures.clear()
-            self._output_futures.clear()
 
-            self._is_being_completed = False
+            if self.OUTPUT_FIELDS:
+                for field_name, fut_list in self._output_futures.items():
+                    output = getattr(self._output, field_name)
+                    for fut in fut_list:
+                        if not fut.cancelled():
+                            fut.set_result(output)
+
+                    fut_list.clear()
+
+                self._output_futures.clear()
 
         elif self._is_being_killed:
+            self._is_being_killed = False
             self._killed = True
             self._killed_at_ts = time.time()
 
@@ -1233,28 +1394,20 @@ class Job(JobBase):
                     else:
                         fut.set_result(True)
 
-            for fut_list in self._output_futures.values():
-                for fut in fut_list:
-                    if not fut.cancelled():
-                        fut.cancel(
-                            msg=f"Job object '{self}' was killed."
-                            " Job output might be incomplete."
-                        )
-
-                fut_list.clear()
-
-            for fut in self._unguard_futures:
-                if not fut.cancelled():
-                    fut.set_result(True)
-
-            for job_proxy in self._guarded_job_proxies_dict.values():
-                self.manager.unguard_job(job_proxy)
-
-            self._guarded_job_proxies_dict.clear()
             self._done_futures.clear()
-            self._output_futures.clear()
 
-            self._is_being_killed = False
+            if self.OUTPUT_FIELDS:
+                for fut_list in self._output_futures.values():
+                    for fut in fut_list:
+                        if not fut.cancelled():
+                            fut.cancel(
+                                msg=f"Job object '{self}' was killed."
+                                " Job output would be incomplete."
+                            )
+
+                    fut_list.clear()
+
+                self._output_futures.clear()
 
         self._is_idling = False
         self._idling_since_ts = None
@@ -1642,7 +1795,7 @@ class Job(JobBase):
             return True
         return False
 
-    async def wait_for(self, awaitable, timeout: float = None):
+    async def wait_for(self, awaitable, timeout: Optional[float] = None):
         """Wait for a given awaitable object to complete.
         While awaiting the awaitable, this job object
         will be marked as waiting.
@@ -1921,8 +2074,11 @@ class Job(JobBase):
         """
         return self._is_being_guarded
 
-    def await_done(self, timeout: float = None, cancel_if_killed: bool = False):
-        """Wait for this job object to be done (completed or killed).
+    def await_done(
+        self, timeout: Optional[float] = None, cancel_if_killed: bool = False
+    ):
+        """Wait for this job object to be done (completed or killed) using the
+        coroutine output of this method.
 
         Args:
             timeout (float, optional):
@@ -1935,6 +2091,9 @@ class Job(JobBase):
             JobStateError: This job object is already done or not alive.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine: A coroutine that evaluates to `True`.
         """
         if not self.alive():
             raise JobStateError("This job object is not alive.")
@@ -1947,18 +2106,25 @@ class Job(JobBase):
 
         return asyncio.wait_for(fut, timeout)
 
-    def await_unguard(self, timeout: float = None):
-        """Wait for this job object to be unguarded.
+    def await_unguard(self, timeout: Optional[float] = None):
+        """Wait for this job object to be unguarded using the
+        coroutine output of this method.
 
         Args:
             timeout (float, optional):
                 Timeout for awaiting. Defaults to None.
 
         Raises:
-            JobStateError: This job object is already done or not alive.
+            JobStateError:
+                This job object is already done or not alive,
+                or isn't being guarded.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine: A coroutine that evaluates to `True`.
         """
+
         if not self.alive():
             raise JobStateError("This job object is not alive.")
         elif self.done():
@@ -1968,74 +2134,225 @@ class Job(JobBase):
 
         fut = self._task_loop.loop.create_future()
 
+        if self._unguard_futures is None:
+            self._unguard_futures = []
+
         self._unguard_futures.append(fut)
 
         return asyncio.wait_for(fut, timeout)
 
-    def await_output_field(self, field_name: str, timeout: float = None):
-        """Wait for this job object to release the data of a
-        specified output field while running.
+    def set_output_field(self, field_name: str, value):
+        """Set the specified output field to have the given value,
+        while releasing the value to external jobs awaiting the field.
 
         Args:
-            timeout (float, optional):
-            The maximum amount of time to wait in seconds. Defaults to None.
+            field_name (str): The name of the output field to set.
 
         Raises:
-            RuntimeError: This job object is already done.
-            asyncio.TimeoutError: The timeout was exceeded.
-            asyncio.CancelledError: The job was killed.
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value has already been set.
         """
 
-        if self.done():
-            raise RuntimeError("This job object is already done and not alive.")
-
-        fut = self._task_loop.loop.create_future()
-
-        if field_name not in self._output_futures:
-            raise (
-                ValueError(
-                    f"field name '{field_name}' not defined in"
-                    " 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
-                )
-                if isinstance(field_name, str)
-                else ValueError(
-                    f"field name argument '{field_name}' must be of type str,"
-                    " not {field_name.__class__}"
-                )
+        if not self.OUTPUT_FIELDS:
+            raise TypeError(
+                f"'{self.__class__.__name__}' class does not"
+                f" define any fields in 'OUTPUT_FIELDS' class attribute"
             )
-        else:
-            self._output_futures[field_name].append(fut)
 
-        return asyncio.wait_for(fut, timeout=timeout)
-
-    def release_output_field(self, field_name: str):
-        """Release the data of an output field to external jobs awaiting it.
-
-        Args:
-            field_name (str): The name of the field to release.
-        """
-
-        if field_name not in self._output_futures:
+        elif field_name not in self.OUTPUT_FIELDS:
             raise (
                 ValueError(
-                    f"field name '{field_name}' not defined in"
+                    f"field name '{field_name}' is not defined in"
                     f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
                 )
                 if isinstance(field_name, str)
-                else ValueError(
-                    f"field name argument '{field_name}' must be"
-                    f" of type str, not {field_name.__class__}"
+                else TypeError(
+                    f"field name argument '{field_name}' must be of type str,"
+                    f" not {field_name.__class__.__name__}"
                 )
             )
 
-        field_data = getattr(self.output, field_name)
+        field_data = value
+        old_field_data_list: list = getattr(self._output, field_name)
+
+        if old_field_data_list[1]:
+            raise JobStateError(
+                "An output field value has already been set for the field"
+                f" '{field_name}'"
+            )
+
+        old_field_data_list[0] = field_data
+        old_field_data_list[1] = True
+
         for fut in self._output_futures[field_name]:
             if not fut.cancelled():
                 fut.set_result(field_data)
 
         self._output_futures[field_name].clear()
 
+    def get_output_field(self, field_name: str, default=None):
+        """Get the value of a specified output field.
+
+        Args:
+            field_name (str): The name of the target output field.
+            default (str): The value to return if the specified
+                output field does not exist, has not been set,
+                or if this job doesn't support them at all.
+                Defaults to None.
+
+        Raises:
+            TypeError: `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value is not set.
+
+        Returns:
+            object: The output field value.
+        """
+
+        if not isinstance(field_name, str):
+            raise TypeError(
+                f"field name argument '{field_name}' must be of type str,"
+                f" not {field_name.__class__.__name__}"
+            )
+
+        if not self.OUTPUT_FIELDS or field_name not in self.OUTPUT_FIELDS:
+            return default
+
+        old_field_data_list: list = getattr(self._output, field_name)
+
+        if not old_field_data_list[1]:
+            return default
+
+        return old_field_data_list[0]
+
+    def get_output_field_names(self):
+        """Get all output field names that this job supports.
+
+        Returns:
+            tuple: A tuple of the supported output fields.
+        """
+        return tuple(self.OUTPUT_FIELDS)
+
+    def has_output_field_name(self, field_name: str):
+        """Whether the specified field name is supported as an
+        output field.
+
+        Args:
+            field_name (str): The name of the target output field.
+
+        Returns:
+            bool: True/False
+        """
+
+        if not isinstance(field_name, str):
+            raise TypeError(
+                f"field name argument '{field_name}' must be of type str,"
+                f" not {field_name.__class__.__name__}"
+            )
+
+        return field_name in self.OUTPUT_FIELDS
+
+    def output_field_is_set(self, field_name: str):
+        """Whether a value for the specified output field
+        has been set.
+
+        Args:
+            field_name (str): The name of the target output field.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            ValueError: The specified field name is not defined by this job.
+            JobStateError: An output field value is not set.
+
+        Returns:
+            bool: True/False
+        """
+
+        if not self.OUTPUT_FIELDS:
+            raise TypeError(
+                f"'{self.__class__.__name__}' class does not"
+                f" define any fields in 'OUTPUT_FIELDS' class attribute"
+            )
+
+        elif field_name not in self.OUTPUT_FIELDS:
+            raise (
+                ValueError(
+                    f"field name '{field_name}' is not defined in"
+                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
+                )
+                if isinstance(field_name, str)
+                else TypeError(
+                    f"field name argument '{field_name}' must be of type str,"
+                    f" not {field_name.__class__.__name__}"
+                )
+            )
+
+        old_field_data_list: list = getattr(self._output, field_name)
+
+        return old_field_data_list[1]
+
+    def await_output_field(self, field_name: str, timeout: Optional[float] = None):
+        """Wait for this job object to release the value of a
+        specified output field while this job is running, using the
+        coroutine output of this method.
+
+        Args:
+            timeout (float, optional):
+            The maximum amount of time to wait in seconds. Defaults to None.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            JobStateError: This job object is already done.
+            asyncio.TimeoutError: The timeout was exceeded.
+            asyncio.CancelledError: The job was killed.
+
+        Returns:
+            Coroutine:
+                A coroutine that evaluates to the value of specified
+                output field.
+        """
+
+        if not self.OUTPUT_FIELDS:
+            raise TypeError(
+                f"'{self.__class__.__name__}' class does not"
+                f" define any fields in 'OUTPUT_FIELDS' class attribute"
+            )
+
+        elif field_name not in self.OUTPUT_FIELDS:
+            raise (
+                ValueError(
+                    f"field name '{field_name}' not defined in"
+                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
+                )
+                if isinstance(field_name, str)
+                else TypeError(
+                    f"field name argument '{field_name}' must be of type str,"
+                    f" not {field_name.__class__.__name__}"
+                )
+            )
+
+        elif self.done():
+            raise JobStateError("This job object is already done and not alive.")
+
+        fut = self._task_loop.loop.create_future()
+        self._output_futures[field_name].append(fut)
+
+        return asyncio.wait_for(fut, timeout=timeout)
+
     def status(self):
+        """Get the job status of this job as a value from the
+        `JOB_STATUS` class namespace.
+
+        Returns:
+            str: A status value.
+        """
         output = None
         if self.alive():
             if self.is_running():
@@ -2576,7 +2893,7 @@ class JobManagerJob(SingletonJobBase, IntervalJob):
         pass
 
 
-_JOB_MANAGER_JOB_CLS = JobManagerJob
+_JOB_MANAGER_JOB_CLS = (JobManagerJob,)
 
 Job.__init_subclass__.__func__(JobManagerJob, permission_level=PERMISSION_LEVELS.SYSTEM)
 

@@ -12,6 +12,7 @@ import discord
 from time import perf_counter
 
 from pgbot import common, db, serializers
+import pgbot.jobs
 from pgbot.jobs import core
 from pgbot.jobs.core import events, PERMISSION_LEVELS
 from pgbot.jobs.utils import messaging
@@ -273,6 +274,17 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             check=(
                 lambda x: x.message.channel.id == 841726972841558056
                 and x.message.content == "I am cool."
+            ),
+        )
+
+        await self.manager.create_job_schedule(
+            pgbot.jobs.utils.MethodCall,
+            timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
+            job_kwargs=dict(
+                instance=serializers.TextChannelSerializer(msg_event.message.channel),
+                method_name="send",
+                is_async=True,
+                instance_kwargs=dict(content="Some random message."),
             ),
         )
 
