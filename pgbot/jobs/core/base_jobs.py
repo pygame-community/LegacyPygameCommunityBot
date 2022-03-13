@@ -9,6 +9,8 @@ can be used to implement background processes for the bot.
 
 from __future__ import annotations
 import asyncio
+from tkinter import NO
+from tkinter.tix import Tree
 from aiohttp import ClientError
 from collections import deque
 from contextlib import contextmanager
@@ -27,6 +29,7 @@ from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type,
 
 import discord
 from discord.ext import tasks
+from matplotlib.style import use
 
 from pgbot.utils import utils
 from pgbot import common
@@ -146,6 +149,96 @@ def get_job_class_permission_level(cls: Type[Job], raise_exceptions=True):
             f"The given job class does not exist in the job class registry"
         )
 
+def call_with_method(cls, name, mode="after"):
+    """A decorator to chain the execution of a method to another method from
+    one of its superclasses. This works through the decorator making an
+    implicit call to the method of the superclass specified before/after
+    calling the actual method.
+
+    Args:
+        cls: (type):
+            The class from which to select a method to chain to.
+        name (str):
+            The name of the method to chain to.
+        mode (str, optional):
+            The order in which the methods should be called, which can be
+            "before" or "after".
+            Defaults to "after".
+    Raises:
+        ValueError: mode is not a valid string ('before' or 'after')
+    """
+
+    def chain_deco(func):
+        chained_func = getattr(cls, name)
+
+        if isinstance(mode, str):
+            if mode.lower() not in ("before", "after"):
+                raise ValueError("argument 'mode' must be either 'before' or 'after'")
+        else:
+            raise TypeError("argument 'mode' must be of type 'str'")
+
+        chained_func_coro = inspect.iscoroutinefunction(chained_func)
+        func_coro = inspect.iscoroutinefunction(func)
+        after_mode = mode.lower() == "after"
+
+        if chained_func_coro and func_coro:
+
+            async def chainer(*args, **kwargs):
+                if after_mode:
+                    await chained_func(*args, **kwargs)
+                    return await func(*args, **kwargs)
+                else:
+                    output = await func(*args, **kwargs)
+                    await chained_func(*args, **kwargs)
+                    return output
+
+        elif chained_func_coro or func_coro:
+            if after_mode:
+
+                async def chainer(*args, **kwargs):
+                    chained_output = (
+                        (await chained_func(*args, **kwargs))
+                        if chained_func_coro
+                        else chained_func(*args, **kwargs)
+                    )
+                    return (
+                        (await func(*args, **kwargs))
+                        if func_coro
+                        else func(*args, **kwargs)
+                    )
+
+            else:
+
+                async def chainer(*args, **kwargs):
+                    output = (
+                        (await func(*args, **kwargs))
+                        if func_coro
+                        else func(*args, **kwargs)
+                    )
+                    chained_output = (
+                        (await chained_func(*args, **kwargs))
+                        if chained_func_coro
+                        else chained_func(*args, **kwargs)
+                    )
+                    return output
+
+        else:
+            if after_mode:
+
+                def chainer(*args, **kwargs):
+                    chained_func(*args, **kwargs)
+                    return func(*args, **kwargs)
+
+            else:
+
+                def chainer(*args, **kwargs):
+                    output = func(*args, **kwargs)
+                    chained_func(*args, **kwargs)
+                    return output
+
+        return chainer
+
+    return chain_deco
 
 DEFAULT_JOB_EXCEPTION_WHITELIST = (
     OSError,
@@ -374,34 +467,32 @@ class PERMISSION_LEVELS:
 
 
 class JobError(Exception):
-    """Generic job object run-time error."""
-
+    """Generic job object error."""
     pass
 
 
 class JobPermissionError(JobError):
     """Job object permisssion error."""
-
     pass
 
 
 class JobStateError(JobError):
     """An invalid job object state is preventing an operation."""
-
     pass
 
 
 class JobInitializationError(JobStateError):
-    """Initialization of a job object failed."""
-
+    """Initialization of a job object failed, or is required."""
     pass
 
 
 class JobWarning(Warning):
     """Base class for job related warnings."""
-
     pass
 
+class JobOutputProxyDestroyed(Exception):
+    """Job output queue manager was destroyed by its job."""
+    pass
 
 class JobNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by job objects
@@ -426,99 +517,6 @@ class JobNamespace(SimpleNamespace):
 
     __copy__ = copy
 
-
-def call_with_method(cls, name, mode="after"):
-    """A decorator to chain the execution of a method to another method from
-    one of its superclasses. This works through the decorator making an
-    implicit call to the method of the superclass specified before/after
-    calling the actual method.
-
-    Args:
-        cls: (type):
-            The class from which to select a method to chain to.
-        name (str):
-            The name of the method to chain to.
-        mode (str, optional):
-            The order in which the methods should be called, which can be
-            "before" or "after".
-            Defaults to "after".
-    Raises:
-        ValueError: mode is not a valid string ('before' or 'after')
-    """
-
-    def chain_deco(func):
-        chained_func = getattr(cls, name)
-
-        if isinstance(mode, str):
-            if mode.lower() not in ("before", "after"):
-                raise ValueError("argument 'mode' must be either 'before' or 'after'")
-        else:
-            raise TypeError("argument 'mode' must be of type 'str'")
-
-        chained_func_coro = inspect.iscoroutinefunction(chained_func)
-        func_coro = inspect.iscoroutinefunction(func)
-        after_mode = mode.lower() == "after"
-
-        if chained_func_coro and func_coro:
-
-            async def chainer(*args, **kwargs):
-                if after_mode:
-                    await chained_func(*args, **kwargs)
-                    return await func(*args, **kwargs)
-                else:
-                    output = await func(*args, **kwargs)
-                    await chained_func(*args, **kwargs)
-                    return output
-
-        elif chained_func_coro or func_coro:
-            if after_mode:
-
-                async def chainer(*args, **kwargs):
-                    chained_output = (
-                        (await chained_func(*args, **kwargs))
-                        if chained_func_coro
-                        else chained_func(*args, **kwargs)
-                    )
-                    return (
-                        (await func(*args, **kwargs))
-                        if func_coro
-                        else func(*args, **kwargs)
-                    )
-
-            else:
-
-                async def chainer(*args, **kwargs):
-                    output = (
-                        (await func(*args, **kwargs))
-                        if func_coro
-                        else func(*args, **kwargs)
-                    )
-                    chained_output = (
-                        (await chained_func(*args, **kwargs))
-                        if chained_func_coro
-                        else chained_func(*args, **kwargs)
-                    )
-                    return output
-
-        else:
-            if after_mode:
-
-                def chainer(*args, **kwargs):
-                    chained_func(*args, **kwargs)
-                    return func(*args, **kwargs)
-
-            else:
-
-                def chainer(*args, **kwargs):
-                    output = func(*args, **kwargs)
-                    chained_func(*args, **kwargs)
-                    return output
-
-        return chainer
-
-    return chain_deco
-
-
 class JobProxy:
     __slots__ = (
         "__j",
@@ -534,6 +532,14 @@ class JobProxy:
         self.__identifier = job._identifier
         self.__created_at = job.created_at
         self.__registered_at = job.registered_at
+
+    @property
+    def OUTPUT_FIELDS(self):
+        return self.__j.OUTPUT_FIELDS
+
+    @property
+    def OUTPUT_QUEUES(self):
+        return self.__j.OUTPUT_QUEUES
 
     @property
     def job_class(self):
@@ -582,7 +588,7 @@ class JobProxy:
 
     def loop_count(self):
         """The current amount of `on_run()` calls completed by this job object."""
-        return self._loop_count
+        return self.__j.loop_count()
 
     def is_being_stopped(self, get_reason: bool = False):
         """Whether this job object's task loop is being stopped.
@@ -852,59 +858,55 @@ class JobProxy:
         """
         return self.__j.await_unguard(timeout=timeout)
 
-    def set_output_field(self, field_name: str, value):
-        """Set the specified output field to have the given value,
-        while releasing the value to external jobs awaiting the field.
+    def get_output_queue_proxy(self):
+        """Get a job output queue proxy object for more convenient
+        reading of job output queues while this job is running.
+
+        Raises:
+            TypeError: Output fields or queues aren't
+            defined for this job type. 
+
+        Returns:
+            JobOutputQueueProxy: The output queue proxy.
+        """
+
+        return self.__j.get_output_queue_proxy()
+
+    def verify_output_field_support(self, field_name: str, raise_exceptions=False):
+        """Verify if a specified output field name is supported by this job,
+        or if it supports output fields at all.
 
         Args:
             field_name (str): The name of the output field to set.
+            raise_exceptions (Optional[bool]):
+                Whether exceptions should be raised. Defaults to False.
 
         Raises:
             TypeError:
                 Output fields aren't supported for this job,
                 or `field_name` is not a string.
-            ValueError: The specified field name is not defined by this job.
-            JobStateError: An output field value has already been set.
+            LookupError: The specified field name is not defined by this job.
         """
+        return self.__j.verify_output_field_support(field_name, raise_exceptions=raise_exceptions)
 
-        if not self.OUTPUT_FIELDS:
-            raise TypeError(
-                f"'{self.__class__.__name__}' class does not"
-                f" define any fields in 'OUTPUT_FIELDS' class attribute"
-            )
+    def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
+        """Verify if a specified output queue name is supported by this job,
+        or if it supports output queues at all.
 
-        elif field_name not in self.OUTPUT_FIELDS:
-            raise (
-                ValueError(
-                    f"field name '{field_name}' is not defined in"
-                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
-                )
-                if isinstance(field_name, str)
-                else TypeError(
-                    f"field name argument '{field_name}' must be of type str,"
-                    f" not {field_name.__class__.__name__}"
-                )
-            )
+        Args:
+            queue_name (str): The name of the output queue to set.
+            raise_exceptions (Optional[bool]):
+                Whether exceptions should be raised. Defaults to False.
 
-        field_data = value
-        old_field_data_list: list = getattr(self._output, field_name)
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
+        """
+        return self.__j.verify_output_queue_support(queue_name, raise_exceptions=raise_exceptions)
 
-        if old_field_data_list[1]:
-            raise JobStateError(
-                "An output field value has already been set for the field"
-                f" '{field_name}'"
-            )
-
-        old_field_data_list[0] = field_data
-        old_field_data_list[1] = True
-
-        for fut in self._output_futures[field_name]:
-            if not fut.cancelled():
-                fut.set_result(field_data)
-
-        self._output_futures[field_name].clear()
-
-    def get_output_field(self, field_name: str, default=None):
+    def get_output_field(self, field_name: str, default=Ellipsis):
         """Get the value of a specified output field.
 
         Args:
@@ -912,7 +914,8 @@ class JobProxy:
             default (str): The value to return if the specified
                 output field does not exist, has not been set,
                 or if this job doesn't support them at all.
-                Defaults to None.
+                Defaults to the `Ellipsis` singleton, which will
+                trigger an exception.
 
         Raises:
             TypeError: `field_name` is not a string.
@@ -925,6 +928,32 @@ class JobProxy:
 
         return self.__j.get_output_field(field_name, default=default)
 
+    def get_output_queue_contents(self, queue_name: str, default=Ellipsis):
+        """Get a list of all values present in the specified output queue.
+        For continuous access to job output queues, consider requesting
+        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.    
+
+        Args:
+            queue_name (str): The name of the target output queue.
+            default (str): The value to return if the specified
+                output queue does not exist, is empty,
+                or if this job doesn't support them at all.
+                Defaults to the `Ellipsis` singleton, which will
+                trigger an exception.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
+            JobStateError: The specified output queue is empty.
+
+        Returns:
+            list: A list of values.
+        """
+
+        return self.__j.get_output_queue_contents(queue_name, default=default)
+
     def get_output_field_names(self):
         """Get all output field names that this job supports.
 
@@ -932,6 +961,14 @@ class JobProxy:
             tuple: A tuple of the supported output fields.
         """
         return self.__j.get_output_field_names()
+
+    def get_output_queue_names(self):
+        """Get all output queue names that this job supports.
+
+        Returns:
+            tuple: A tuple of the supported output queues.
+        """
+        return self.__j.get_output_queue_names()
 
     def has_output_field_name(self, field_name: str):
         """Whether the specified field name is supported as an
@@ -945,6 +982,19 @@ class JobProxy:
         """
 
         return self.__j.has_output_field_name(field_name)
+
+    def has_output_queue_name(self, queue_name: str):
+        """Whether the specified queue name is supported as an
+        output queue.
+
+        Args:
+            queue_name (str): The name of the target output queue.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.has_output_queue_name(queue_name)
 
     def output_field_is_set(self, field_name: str):
         """Whether a value for the specified output field
@@ -966,9 +1016,27 @@ class JobProxy:
 
         return self.__j.output_field_is_set(field_name)
 
+    def output_queue_is_empty(self, queue_name: str):
+        """Whether the specified output queue is empty.
+
+        Args:
+            queue_name (str): The name of the target output queue.
+
+        Raises:
+            TypeError:
+                Output queues aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.output_queue_is_empty(queue_name)
+
     def await_output_field(self, field_name: str, timeout: Optional[float] = None):
         """Wait for this job object to release the value of a
-        specified output field while this job is running, using the
+        specified output field while it is running, using the
         coroutine output of this method.
 
         Args:
@@ -990,6 +1058,36 @@ class JobProxy:
         """
 
         return self.__j.await_output_field(field_name, timeout=timeout)
+
+    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+        """Wait for this job object to update the specified output queue while
+        it is running, using the coroutine output of this method.
+
+        Args:
+            timeout (float, optional):
+                The maximum amount of time to wait in seconds. Defaults to None.
+            cancel_if_cleared (bool):
+                Whether `asyncio.CancelledError` should be raised if the
+                output queue is cleared. If set to `False`, `Ellipsis`
+                will be the result of the coroutine. Defaults to False.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job
+            JobStateError: This job object is already done.
+            asyncio.TimeoutError: The timeout was exceeded.
+            asyncio.CancelledError:
+                The job was killed, or the output queue was cleared.
+
+        Returns:
+            Coroutine:
+                A coroutine that evaluates to the most recent output queue
+                value, or `Ellipsis` if the queue is cleared.
+        """
+
+        return self.__j.await_output_queue_update(queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared)
 
     def interval_job_next_iteration(self):
         """
@@ -1017,6 +1115,204 @@ class JobProxy:
     def __repr__(self):
         return f"<JobProxy ({self.__j})>"
 
+class JobOutputQueueProxy:
+    """A helper class for job objects to share
+    data with other jobs in a continuous manner.
+    """
+    
+    __slots__ = ("__j", "__job_proxy", "_output_queue_proxy_dict")
+    
+    def __init__(self, job: Job):
+        self.__j = job
+        self.__job_proxy = job._proxy
+        job_output_queues = self.__j._output_queues
+        self._output_queue_proxy_dict: dict[str, list[Union[int, Optional[deque], list]]] = {queue_name: [0, None, job_output_queues[queue_name]] for queue_name in self.__j.OUTPUT_QUEUES}
+
+    @property
+    def job_proxy(self):
+        """The job this output queue proxy is pointing to.
+
+        Returns:
+            JobProxy: The job proxy. 
+        """
+        return self.__job_proxy
+
+    def verify_queue_name(self, queue_name: str, raise_exceptions=False):
+        """Verify if a specified output queue name is supported by this
+        output queue proxy's job.
+
+        Args:
+            queue_name (str): The name of the output queue to set.
+            raise_exceptions (Optional[bool]):
+                Whether exceptions should be raised. Defaults to False.
+
+        Raises:
+            TypeError:
+                `queue_name` is not a string.
+            LookupError:
+                The specified queue name is not defined by this
+                output queue proxy's job.
+        """
+        
+        if queue_name not in self._output_queue_proxy_dict:
+            if raise_exceptions:
+                raise (
+                    LookupError(
+                        f"queue name '{queue_name}' is not defined in"
+                        f" 'OUTPUT_FIELDS' of the {self.__class__.__name__}"
+                        " class of this job output queue proxy"
+                    )
+                    if isinstance(queue_name, str)
+                    else TypeError(
+                        f"'queue_name' argument must be of type str,"
+                        f" not {queue_name.__class__.__name__}"
+                    )
+                )
+            return False
+
+        return True
+
+    def config_queue(self, queue_name: str, use_rescue_buffer: Optional[bool] = None):
+        """Configure settings for a speficied output queue.
+
+        Args:
+            queue_name (str): The name of the output queue to set.
+            use_rescue_buffer (Optional[bool]):
+                Set up a rescue buffer for the specified output queue,
+                which automatically collects queue values when a job cleares a queue.
+                Defaults to None.
+        """
+        self.verify_queue_name(queue_name, raise_exceptions=True)
+
+        if use_rescue_buffer:
+            self._output_queue_proxy_dict[queue_name][1] = deque()
+        elif use_rescue_buffer is False:
+            self._output_queue_proxy_dict[queue_name][1] = None
+
+    def _queue_clear_alert(self, queue_name: str):
+        queue_list = self._output_queue_proxy_dict[queue_name]
+
+        if queue_list[1] is not None:
+            queue_list[1].extend(queue_list[2])
+
+    def pop_output_queue(self, queue_name: str):
+        """Get the oldest value in the speficied output queue.
+
+
+        Args:
+            queue_name (str):
+                The name of the target output queue.
+
+        Raises:
+            LookupError: The target queue is exhausted, or empty.
+
+        Returns:
+            object: The oldest value.
+        """
+        self.verify_queue_name(queue_name, raise_exceptions=True)
+
+        queue_list = self._output_queue_proxy_dict[queue_name]
+
+        if queue_list[1]:
+            return queue_list[1].popleft()
+        elif queue_list[2]:
+            if queue_list[0] < len(queue_list[2]):
+                output = queue_list[2][queue_list[0]]
+                queue_list[0] += 1
+                return output
+            
+            raise LookupError(f"the target queue with name '{queue_name}' is exhausted")
+
+        else:
+            raise LookupError(f"the target queue with name '{queue_name}' is empty")
+
+    def output_queue_is_empty(self, queue_name: str, ignore_rescue_buffer=False):
+        """Whether the specified output queue is empty.
+
+        Args:
+            queue_name (str):
+                The name of the target output queue.
+            ignore_rescue_buffer (bool):
+                Whether the contents of the rescue buffer should be considered
+                as well. Defaults to False.
+
+        Raises:
+            TypeError:
+                `queue_name` is not a string.
+            LookupError:
+                The specified queue name is not defined by this
+                output queue proxy's job.
+
+        Returns:
+            bool: True/False
+        """
+
+        self.verify_queue_name(queue_name, raise_exceptions=True)
+
+        if ignore_rescue_buffer:
+            return not self._output_queue_proxy_dict[queue_name][2]
+
+        queue_list = self._output_queue_proxy_dict[queue_name]
+        return not queue_list[1] and not queue_list[2] 
+
+    def queue_is_exhausted(self, queue_name: str):
+        """Whether the specified output queue is esxhausted,
+        meaning that no new values are available.
+
+        Args:
+            queue_name (str):
+                The name of the target output queue.
+            ignore_rescue_buffer (bool):
+                Whether the contents of the rescue buffer should be considered
+                as well. Defaults to False.
+
+        Raises:
+            TypeError:
+                `queue_name` is not a string.
+            LookupError:
+                The specified queue name is not defined by this
+                output queue proxy's job.
+
+        Returns:
+            bool: True/False
+        """
+
+        self.verify_queue_name(queue_name, raise_exceptions=True)
+        queue_list = self._output_queue_proxy_dict[queue_name]
+
+        if queue_list[2] and queue_list[0] >= len(queue_list[2]):
+            return True
+        return False
+
+    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+        """Wait for the job object of this output queue proxy to update the specified output queue while
+        it is running, using the coroutine output of this method.
+
+        Args:
+            timeout (float, optional):
+                The maximum amount of time to wait in seconds. Defaults to None.
+            cancel_if_cleared (bool):
+                Whether `asyncio.CancelledError` should be raised if the
+                output queue is cleared. If set to `False`, `Ellipsis`
+                will be the result of the coroutine. Defaults to False.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job
+            JobStateError: This job object is already done.
+            asyncio.TimeoutError: The timeout was exceeded.
+            asyncio.CancelledError:
+                The job was killed, or the output queue was cleared.
+
+        Returns:
+            Coroutine:
+                A coroutine that evaluates to the most recent output queue
+                value, or `Ellipsis` if the queue is cleared.
+        """
+
+        return self.__j.await_output_queue_update(queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared)
 
 class JobBase:
     __slots__ = ()
@@ -1026,17 +1322,20 @@ class JobBase:
     _PERMISSION_LEVEL = PERMISSION_LEVELS.MEDIUM
 
     OUTPUT_FIELDS = frozenset()
+    OUTPUT_QUEUES = frozenset()
 
     NAMESPACE_CLASS = JobNamespace
 
     def __init_subclass__(cls, permission_level=None):
-        for field in cls.OUTPUT_FIELDS:
+        for field in itertools.chain(cls.OUTPUT_FIELDS, cls.OUTPUT_QUEUES):
             if re.search(r"\s", field):
                 raise ValueError(
-                    "field names in 'OUTPUT_FIELDS' cannot contain any whitespace"
+                    "field names in 'OUTPUT_FIELDS' or 'OUTPUT_QUEUES'"
+                    " cannot contain any whitespace"
                 )
 
         cls.OUTPUT_FIELDS = frozenset(cls.OUTPUT_FIELDS)
+        cls.OUTPUT_QUEUES = frozenset(cls.OUTPUT_QUEUES)
 
         if cls is not _JOB_MANAGER_JOB_CLS:
             cls._CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
@@ -1084,8 +1383,9 @@ class Job(JobBase):
     this class by yourself, use its subclasses"""
 
     OUTPUT_FIELDS = JobBase.OUTPUT_FIELDS
+    OUTPUT_QUEUES = JobBase.OUTPUT_QUEUES
 
-    NAMESPACE_CLASS = JobNamespace
+    NAMESPACE_CLASS: Type[JobNamespace] = JobNamespace
 
     __slots__ = (
         "_seconds",
@@ -1103,10 +1403,13 @@ class Job(JobBase):
         "_identifier",
         "_schedule_identifier",
         "_data",
-        "_output",
-        "_done_futures",
-        "_output_futures",
+        "_output_fields",
+        "_output_queues",
+        "_output_queue_proxies",
+        "_output_field_futures",
+        "_output_queue_futures",
         "_unguard_futures",
+        "_done_futures",
         "_task_loop",
         "_proxy",
         "_guarded_job_proxies_dict",
@@ -1157,18 +1460,22 @@ class Job(JobBase):
         self._data = self.NAMESPACE_CLASS()
 
         self._done_futures = []
-        self._output_futures = None
+        self._output_field_futures = None
 
-        self._output = None
+        self._output_fields = None
+        self._output_queue_proxies: Optional[list[JobOutputQueueProxy]] = None
 
-        if self.OUTPUT_FIELDS:
-            self._output_futures = {field: [] for field in self.OUTPUT_FIELDS}
+        if self.OUTPUT_QUEUES or self.OUTPUT_FIELDS:
+            self._output_queue_proxies = []
 
-            self._output = self.NAMESPACE_CLASS()
+            if self.OUTPUT_FIELDS:
+                self._output_field_futures = {field_name: [] for field_name in self.OUTPUT_FIELDS}
+                self._output_fields = {field_name: [None, False] for field_name in self.OUTPUT_FIELDS}
 
-            for field in self.OUTPUT_FIELDS:
-                setattr(self._output, field, [None, False])
-
+            if self.OUTPUT_QUEUES:
+                self._output_queue_futures = {queue_name : [] for queue_name in self.OUTPUT_QUEUES}
+                self._output_queues = {queue_name: [] for queue_name in self.OUTPUT_QUEUES}
+        
         self._task_loop: tasks.Loop = None
 
         self._proxy = JobProxy(self)
@@ -1356,6 +1663,8 @@ class Job(JobBase):
 
                 self._guarded_job_proxies_dict.clear()
 
+            self._output_queue_proxies.clear()
+
         if self._is_being_completed:
             self._is_being_completed = False
             self._completed = True
@@ -1370,17 +1679,23 @@ class Job(JobBase):
             self._done_futures.clear()
 
             if self.OUTPUT_FIELDS:
-                for field_name, fut_list in self._output_futures.items():
-                    output = getattr(self._output, field_name)
+                for field_name, fut_list in self._output_field_futures.items():
+                    output = self._output_fields[field_name]
                     for fut in fut_list:
                         if not fut.cancelled():
                             fut.set_result(output)
 
                     fut_list.clear()
 
-                self._output_futures.clear()
+                self._output_field_futures.clear()
 
-        elif self._is_being_killed:
+            if self.OUTPUT_QUEUES:
+                for fut_list in self._output_queue_futures.values():
+                    for fut, cancel_if_cleared in fut_list:
+                        if not fut.cancelled():
+                            fut.cancel(msg=f"Job object '{self}' has completed.")
+
+        elif self._is_being_killed: 
             self._is_being_killed = False
             self._killed = True
             self._killed_at_ts = time.time()
@@ -1397,7 +1712,7 @@ class Job(JobBase):
             self._done_futures.clear()
 
             if self.OUTPUT_FIELDS:
-                for fut_list in self._output_futures.values():
+                for fut_list in self._output_field_futures.values():
                     for fut in fut_list:
                         if not fut.cancelled():
                             fut.cancel(
@@ -1407,8 +1722,15 @@ class Job(JobBase):
 
                     fut_list.clear()
 
-                self._output_futures.clear()
+                self._output_field_futures.clear()
 
+            if self.OUTPUT_QUEUES:
+                for fut_list in self._output_queue_futures.values():
+                    for fut, cancel_if_cleared in fut_list:
+                        if not fut.cancelled():
+                            fut.cancel(msg=f"Job object '{self}' was killed.")
+        
+        
         self._is_idling = False
         self._idling_since_ts = None
 
@@ -2096,9 +2418,9 @@ class Job(JobBase):
             Coroutine: A coroutine that evaluates to `True`.
         """
         if not self.alive():
-            raise JobStateError("This job object is not alive.")
+            raise JobStateError("this job object is not alive.")
         elif self.done():
-            raise JobStateError("This job object is already done and not alive.")
+            raise JobStateError("this job object is already done and not alive.")
 
         fut = self._task_loop.loop.create_future()
 
@@ -2126,9 +2448,9 @@ class Job(JobBase):
         """
 
         if not self.alive():
-            raise JobStateError("This job object is not alive.")
+            raise JobStateError("this job object is not alive")
         elif self.done():
-            raise JobStateError("This job object is already done and not alive.")
+            raise JobStateError("this job object is already done and not alive")
         elif not self._is_being_guarded:
             raise JobStateError("this job object is not being guarded by a job")
 
@@ -2141,6 +2463,113 @@ class Job(JobBase):
 
         return asyncio.wait_for(fut, timeout)
 
+    def get_output_queue_proxy(self):
+        """Get a job output queue proxy object for more convenient
+        reading of job output queues while this job is running.
+
+        Raises:
+            JobStateError:
+                This job object is already done or not alive,
+                or isn't being guarded.
+            TypeError: Output queues aren't
+            defined for this job type. 
+
+        Returns:
+            JobOutputQueueProxy: The output queue proxy.
+        """
+
+        if not self.alive():
+            raise JobStateError("this job object is not alive")
+        elif self.done():
+            raise JobStateError("this job object is already done and not alive")
+
+        if self.OUTPUT_QUEUES:
+            output_queue_proxy = JobOutputQueueProxy(self)
+            self._output_queue_proxies.append(output_queue_proxy)
+            return output_queue_proxy
+
+        raise TypeError("this job object does not support output queues")
+
+    def verify_output_field_support(self, field_name: str, raise_exceptions=False):
+        """Verify if a specified output field name is supported by this job,
+        or if it supports output fields at all.
+
+        Args:
+            field_name (str): The name of the output field to set.
+            raise_exceptions (Optional[bool]):
+                Whether exceptions should be raised. Defaults to False.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job.
+        """
+        if not self.OUTPUT_FIELDS:
+            if raise_exceptions:
+                raise TypeError(
+                    f"'{self.__class__.__name__}' class does not"
+                    f" define any fields in 'OUTPUT_FIELDS' class attribute"
+                )
+            return False
+
+        elif field_name not in self.OUTPUT_FIELDS:
+            if raise_exceptions:
+                raise (
+                    LookupError(
+                        f"field name '{field_name}' is not defined in"
+                        f" 'OUTPUT_FIELDS' of '{self.__class__.__name__}' class"
+                    )
+                    if isinstance(field_name, str)
+                    else TypeError(
+                        f"'field_name' argument must be of type str,"
+                        f" not {field_name.__class__.__name__}"
+                    )
+                )
+            return False
+        
+        return True
+
+    def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
+        """Verify if a specified output queue name is supported by this job,
+        or if it supports output queues at all.
+
+        Args:
+            queue_name (str): The name of the output queue to set.
+            raise_exceptions (Optional[bool]):
+                Whether exceptions should be raised. Defaults to False.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
+        """
+        if not self.OUTPUT_QUEUES:
+            if raise_exceptions:
+                raise TypeError(
+                    f"'{self.__class__.__name__}' class does not"
+                    f" define any fields in 'OUTPUT_FIELDS' class attribute"
+                )
+            return False
+
+        elif queue_name not in self.OUTPUT_QUEUES:
+            if raise_exceptions:
+                raise (
+                    LookupError(
+                        f"field name '{queue_name}' is not defined in"
+                        f" 'OUTPUT_FIELDS' of '{self.__class__.__name__}' class"
+                    )
+                    if isinstance(queue_name, str)
+                    else TypeError(
+                        f"'queue_name' argument must be of type str,"
+                        f" not {queue_name.__class__.__name__}"
+                    )
+                )
+            return False
+        
+        return True
+
     def set_output_field(self, field_name: str, value):
         """Set the specified output field to have the given value,
         while releasing the value to external jobs awaiting the field.
@@ -2152,31 +2581,14 @@ class Job(JobBase):
             TypeError:
                 Output fields aren't supported for this job,
                 or `field_name` is not a string.
-            ValueError: The specified field name is not defined by this job.
+            LookupError: The specified field name is not defined by this job.
             JobStateError: An output field value has already been set.
         """
 
-        if not self.OUTPUT_FIELDS:
-            raise TypeError(
-                f"'{self.__class__.__name__}' class does not"
-                f" define any fields in 'OUTPUT_FIELDS' class attribute"
-            )
-
-        elif field_name not in self.OUTPUT_FIELDS:
-            raise (
-                ValueError(
-                    f"field name '{field_name}' is not defined in"
-                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
-                )
-                if isinstance(field_name, str)
-                else TypeError(
-                    f"field name argument '{field_name}' must be of type str,"
-                    f" not {field_name.__class__.__name__}"
-                )
-            )
+        self.verify_output_field_support(field_name, raise_exceptions=True)
 
         field_data = value
-        old_field_data_list: list = getattr(self._output, field_name)
+        old_field_data_list: list = self._output_fields[field_name]
 
         if old_field_data_list[1]:
             raise JobStateError(
@@ -2187,13 +2599,49 @@ class Job(JobBase):
         old_field_data_list[0] = field_data
         old_field_data_list[1] = True
 
-        for fut in self._output_futures[field_name]:
+        for fut in self._output_field_futures[field_name]:
             if not fut.cancelled():
                 fut.set_result(field_data)
 
-        self._output_futures[field_name].clear()
+        self._output_field_futures[field_name].clear()
 
-    def get_output_field(self, field_name: str, default=None):
+    def push_output_queue(self, field_name: str, value):
+        """Add a value to the specified output queue,
+        while releasing the value to external jobs
+        awaiting the field.
+
+        Args:
+            field_name (str): The name of the output field to set.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job.
+            JobStateError: An output field value has already been set.
+        """
+
+        self.verify_output_field_support(field_name, raise_exceptions=True)
+
+        field_data = value
+        old_field_data_list: list = self._output_fields[field_name]
+
+        if old_field_data_list[1]:
+            raise JobStateError(
+                "An output field value has already been set for the field"
+                f" '{field_name}'"
+            )
+
+        old_field_data_list[0] = field_data
+        old_field_data_list[1] = True
+
+        for fut in self._output_field_futures[field_name]:
+            if not fut.cancelled():
+                fut.set_result(field_data)
+
+        self._output_field_futures[field_name].clear()
+
+    def get_output_field(self, field_name: str, default=Ellipsis):
         """Get the value of a specified output field.
 
         Args:
@@ -2201,32 +2649,106 @@ class Job(JobBase):
             default (str): The value to return if the specified
                 output field does not exist, has not been set,
                 or if this job doesn't support them at all.
-                Defaults to None.
+                Defaults to the `Ellipsis` singleton, which will
+                trigger an exception.
 
         Raises:
-            TypeError: `field_name` is not a string.
-            ValueError: The specified field name is not defined by this job.
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job.
             JobStateError: An output field value is not set.
 
         Returns:
             object: The output field value.
         """
 
-        if not isinstance(field_name, str):
-            raise TypeError(
-                f"field name argument '{field_name}' must be of type str,"
-                f" not {field_name.__class__.__name__}"
-            )
-
-        if not self.OUTPUT_FIELDS or field_name not in self.OUTPUT_FIELDS:
+        if not self.OUTPUT_FIELDS:
+            if default is Ellipsis:
+                self.verify_output_field_support(field_name, raise_exceptions=True)
+            return default
+        
+        elif field_name not in self.OUTPUT_FIELDS:
+            if default is Ellipsis:
+                self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
 
-        old_field_data_list: list = getattr(self._output, field_name)
+        old_field_data_list: list = self._output_fields[field_name]
 
         if not old_field_data_list[1]:
+            if default is Ellipsis:
+                raise JobStateError(
+                    "An output field value has not been set for the field"
+                    f" '{field_name}'"
+                )
             return default
 
         return old_field_data_list[0]
+
+    def get_output_queue_contents(self, queue_name: str, default=Ellipsis):
+        """Get a list of all values present in the specified output queue.
+        For continuous access to job output queues, consider requesting
+        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.    
+
+        Args:
+            queue_name (str): The name of the target output queue.
+            default (str): The value to return if the specified
+                output queue does not exist, is empty,
+                or if this job doesn't support them at all.
+                Defaults to the `Ellipsis` singleton, which will
+                trigger an exception.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
+            JobStateError: The specified output queue is empty.
+
+        Returns:
+            list: A list of values.
+        """
+
+        if not self.OUTPUT_QUEUES:
+            if default is Ellipsis:
+                self.verify_output_queue_support(queue_name, raise_exceptions=True)
+            return default
+        
+        elif queue_name not in self.OUTPUT_QUEUES:
+            if default is Ellipsis:
+                self.verify_output_queue_support(queue_name, raise_exceptions=True)
+            return default
+
+        queue_data_list: list = self._output_queues[queue_name]
+
+        if not queue_data_list:
+            if default is Ellipsis:
+                raise JobStateError(
+                   f"The specified output queue '{queue_name}' is empty"
+                )
+            return default
+
+        return queue_data_list[:]
+
+    def clear_output_queue(self, queue_name: str):
+        """Clear all values in the specified output queue.
+
+        Args:
+            field_name (str): The name of the target output field.
+        """
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
+
+        for output_queue_proxy in self._output_queue_proxies:
+            output_queue_proxy._queue_clear_alert(queue_name)
+
+        for fut, cancel_if_cleared in self._output_queue_futures:
+            if not fut.cancelled():
+                if cancel_if_cleared:
+                    fut.cancel(f"The job output queue '{queue_name}' was cleared")
+                else:
+                    fut.set_result(Ellipsis)
+
+        self._output_queues[queue_name].clear()
 
     def get_output_field_names(self):
         """Get all output field names that this job supports.
@@ -2235,6 +2757,14 @@ class Job(JobBase):
             tuple: A tuple of the supported output fields.
         """
         return tuple(self.OUTPUT_FIELDS)
+
+    def get_output_queue_names(self):
+        """Get all output queue names that this job supports.
+
+        Returns:
+            tuple: A tuple of the supported output queues.
+        """
+        return tuple(self.OUTPUT_QUEUES)
 
     def has_output_field_name(self, field_name: str):
         """Whether the specified field name is supported as an
@@ -2249,11 +2779,30 @@ class Job(JobBase):
 
         if not isinstance(field_name, str):
             raise TypeError(
-                f"field name argument '{field_name}' must be of type str,"
+                f"'field_name' argument must be of type str,"
                 f" not {field_name.__class__.__name__}"
             )
 
         return field_name in self.OUTPUT_FIELDS
+
+    def has_output_queue_name(self, queue_name: str):
+        """Whether the specified queue name is supported as an
+        output queue.
+
+        Args:
+            queue_name (str): The name of the target output queue.
+
+        Returns:
+            bool: True/False
+        """
+
+        if not isinstance(queue_name, str):
+            raise TypeError(
+                f"'queue_name' argument must be of type str,"
+                f" not {queue_name.__class__.__name__}"
+            )
+
+        return queue_name in self.OUTPUT_QUEUES
 
     def output_field_is_set(self, field_name: str):
         """Whether a value for the specified output field
@@ -2266,49 +2815,52 @@ class Job(JobBase):
             TypeError:
                 Output fields aren't supported for this job,
                 or `field_name` is not a string.
-            ValueError: The specified field name is not defined by this job.
-            JobStateError: An output field value is not set.
+            LookupError: The specified field name is not defined by this job.
+        
+        Returns:
+            bool: True/False
+        """
+
+        self.verify_output_field_support(field_name, raise_exceptions=True)
+
+        old_field_data_list = self._output_fields[field_name]
+
+        return old_field_data_list[1]
+
+    def output_queue_is_empty(self, queue_name: str):
+        """Whether the specified output queue is empty.
+
+        Args:
+            queue_name (str): The name of the target output queue.
+
+        Raises:
+            TypeError:
+                Output queues aren't supported for this job,
+                or `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this job.
 
         Returns:
             bool: True/False
         """
 
-        if not self.OUTPUT_FIELDS:
-            raise TypeError(
-                f"'{self.__class__.__name__}' class does not"
-                f" define any fields in 'OUTPUT_FIELDS' class attribute"
-            )
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
-        elif field_name not in self.OUTPUT_FIELDS:
-            raise (
-                ValueError(
-                    f"field name '{field_name}' is not defined in"
-                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
-                )
-                if isinstance(field_name, str)
-                else TypeError(
-                    f"field name argument '{field_name}' must be of type str,"
-                    f" not {field_name.__class__.__name__}"
-                )
-            )
-
-        old_field_data_list: list = getattr(self._output, field_name)
-
-        return old_field_data_list[1]
+        return not self._output_queues[queue_name]
 
     def await_output_field(self, field_name: str, timeout: Optional[float] = None):
         """Wait for this job object to release the value of a
-        specified output field while this job is running, using the
+        specified output field while it is running, using the
         coroutine output of this method.
 
         Args:
             timeout (float, optional):
-            The maximum amount of time to wait in seconds. Defaults to None.
+                The maximum amount of time to wait in seconds. Defaults to None.
 
         Raises:
             TypeError:
                 Output fields aren't supported for this job,
                 or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job
             JobStateError: This job object is already done.
             asyncio.TimeoutError: The timeout was exceeded.
             asyncio.CancelledError: The job was killed.
@@ -2319,30 +2871,51 @@ class Job(JobBase):
                 output field.
         """
 
-        if not self.OUTPUT_FIELDS:
-            raise TypeError(
-                f"'{self.__class__.__name__}' class does not"
-                f" define any fields in 'OUTPUT_FIELDS' class attribute"
-            )
+        self.verify_output_field_support(field_name, raise_exceptions=True)
 
-        elif field_name not in self.OUTPUT_FIELDS:
-            raise (
-                ValueError(
-                    f"field name '{field_name}' not defined in"
-                    f" 'OUTPUT_FIELDS' of {self.__class__.__name__} class"
-                )
-                if isinstance(field_name, str)
-                else TypeError(
-                    f"field name argument '{field_name}' must be of type str,"
-                    f" not {field_name.__class__.__name__}"
-                )
-            )
-
-        elif self.done():
-            raise JobStateError("This job object is already done and not alive.")
+        if self.done():
+            raise JobStateError("this job object is already done and not alive.")
 
         fut = self._task_loop.loop.create_future()
-        self._output_futures[field_name].append(fut)
+        self._output_field_futures[field_name].append(fut)
+
+        return asyncio.wait_for(fut, timeout=timeout)
+
+    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+        """Wait for this job object to update the specified output queue while
+        it is running, using the coroutine output of this method.
+
+        Args:
+            timeout (float, optional):
+                The maximum amount of time to wait in seconds. Defaults to None.
+            cancel_if_cleared (bool):
+                Whether `asyncio.CancelledError` should be raised if the
+                output queue is cleared. If set to `False`, `Ellipsis`
+                will be the result of the coroutine. Defaults to False.
+
+        Raises:
+            TypeError:
+                Output fields aren't supported for this job,
+                or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job
+            JobStateError: This job object is already done.
+            asyncio.TimeoutError: The timeout was exceeded.
+            asyncio.CancelledError:
+                The job was killed, or the output queue was cleared.
+
+        Returns:
+            Coroutine:
+                A coroutine that evaluates to the most recent output queue
+                value, or `Ellipsis` if the queue is cleared.
+        """
+
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
+
+        if self.done():
+            raise JobStateError("this job object is already done and not alive.")
+
+        fut = self._task_loop.loop.create_future()
+        self._output_queue_futures[queue_name].append((fut, cancel_if_cleared))
 
         return asyncio.wait_for(fut, timeout=timeout)
 
