@@ -9,27 +9,19 @@ can be used to implement background processes for the bot.
 
 from __future__ import annotations
 import asyncio
-from tkinter import NO
-from tkinter.tix import Tree
 from aiohttp import ClientError
 from collections import deque
 from contextlib import contextmanager
 import datetime
-import enum
-import functools
 import itertools
 import inspect
-import pickle
 import re
-import sys
 import time
-import traceback
 from types import SimpleNamespace
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
 
 import discord
 from discord.ext import tasks
-from matplotlib.style import use
 
 from pgbot.utils import utils
 from pgbot import common
@@ -149,6 +141,7 @@ def get_job_class_permission_level(cls: Type[Job], raise_exceptions=True):
             f"The given job class does not exist in the job class registry"
         )
 
+
 def call_with_method(cls, name, mode="after"):
     """A decorator to chain the execution of a method to another method from
     one of its superclasses. This works through the decorator making an
@@ -239,6 +232,7 @@ def call_with_method(cls, name, mode="after"):
         return chainer
 
     return chain_deco
+
 
 DEFAULT_JOB_EXCEPTION_WHITELIST = (
     OSError,
@@ -468,31 +462,39 @@ class PERMISSION_LEVELS:
 
 class JobError(Exception):
     """Generic job object error."""
+
     pass
 
 
 class JobPermissionError(JobError):
     """Job object permisssion error."""
+
     pass
 
 
 class JobStateError(JobError):
     """An invalid job object state is preventing an operation."""
+
     pass
 
 
 class JobInitializationError(JobStateError):
     """Initialization of a job object failed, or is required."""
+
     pass
 
 
 class JobWarning(Warning):
     """Base class for job related warnings."""
+
     pass
+
 
 class JobOutputProxyDestroyed(Exception):
     """Job output queue manager was destroyed by its job."""
+
     pass
+
 
 class JobNamespace(SimpleNamespace):
     """A subclass of SimpleNamespace, which is used by job objects
@@ -516,6 +518,7 @@ class JobNamespace(SimpleNamespace):
         return JobNamespace(**d)
 
     __copy__ = copy
+
 
 class JobProxy:
     __slots__ = (
@@ -864,7 +867,7 @@ class JobProxy:
 
         Raises:
             TypeError: Output fields or queues aren't
-            defined for this job type. 
+            defined for this job type.
 
         Returns:
             JobOutputQueueProxy: The output queue proxy.
@@ -887,7 +890,9 @@ class JobProxy:
                 or `field_name` is not a string.
             LookupError: The specified field name is not defined by this job.
         """
-        return self.__j.verify_output_field_support(field_name, raise_exceptions=raise_exceptions)
+        return self.__j.verify_output_field_support(
+            field_name, raise_exceptions=raise_exceptions
+        )
 
     def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
         """Verify if a specified output queue name is supported by this job,
@@ -904,7 +909,9 @@ class JobProxy:
                 or `queue_name` is not a string.
             LookupError: The specified queue name is not defined by this job.
         """
-        return self.__j.verify_output_queue_support(queue_name, raise_exceptions=raise_exceptions)
+        return self.__j.verify_output_queue_support(
+            queue_name, raise_exceptions=raise_exceptions
+        )
 
     def get_output_field(self, field_name: str, default=Ellipsis):
         """Get the value of a specified output field.
@@ -931,7 +938,7 @@ class JobProxy:
     def get_output_queue_contents(self, queue_name: str, default=Ellipsis):
         """Get a list of all values present in the specified output queue.
         For continuous access to job output queues, consider requesting
-        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.    
+        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.
 
         Args:
             queue_name (str): The name of the target output queue.
@@ -1059,7 +1066,12 @@ class JobProxy:
 
         return self.__j.await_output_field(field_name, timeout=timeout)
 
-    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+    def await_output_queue_update(
+        self,
+        queue_name: str,
+        timeout: Optional[float] = None,
+        cancel_if_cleared: bool = True,
+    ):
         """Wait for this job object to update the specified output queue while
         it is running, using the coroutine output of this method.
 
@@ -1087,7 +1099,9 @@ class JobProxy:
                 value, or `Ellipsis` if the queue is cleared.
         """
 
-        return self.__j.await_output_queue_update(queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared)
+        return self.__j.await_output_queue_update(
+            queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared
+        )
 
     def interval_job_next_iteration(self):
         """
@@ -1115,25 +1129,31 @@ class JobProxy:
     def __repr__(self):
         return f"<JobProxy ({self.__j})>"
 
+
 class JobOutputQueueProxy:
     """A helper class for job objects to share
     data with other jobs in a continuous manner.
     """
-    
+
     __slots__ = ("__j", "__job_proxy", "_output_queue_proxy_dict")
-    
+
     def __init__(self, job: Job):
         self.__j = job
         self.__job_proxy = job._proxy
         job_output_queues = self.__j._output_queues
-        self._output_queue_proxy_dict: dict[str, list[Union[int, Optional[deque], list]]] = {queue_name: [0, None, job_output_queues[queue_name]] for queue_name in self.__j.OUTPUT_QUEUES}
+        self._output_queue_proxy_dict: dict[
+            str, list[Union[int, Optional[deque], list]]
+        ] = {
+            queue_name: [0, None, job_output_queues[queue_name]]
+            for queue_name in self.__j.OUTPUT_QUEUES
+        }
 
     @property
     def job_proxy(self):
         """The job this output queue proxy is pointing to.
 
         Returns:
-            JobProxy: The job proxy. 
+            JobProxy: The job proxy.
         """
         return self.__job_proxy
 
@@ -1153,7 +1173,7 @@ class JobOutputQueueProxy:
                 The specified queue name is not defined by this
                 output queue proxy's job.
         """
-        
+
         if queue_name not in self._output_queue_proxy_dict:
             if raise_exceptions:
                 raise (
@@ -1220,7 +1240,7 @@ class JobOutputQueueProxy:
                 output = queue_list[2][queue_list[0]]
                 queue_list[0] += 1
                 return output
-            
+
             raise LookupError(f"the target queue with name '{queue_name}' is exhausted")
 
         else:
@@ -1253,7 +1273,7 @@ class JobOutputQueueProxy:
             return not self._output_queue_proxy_dict[queue_name][2]
 
         queue_list = self._output_queue_proxy_dict[queue_name]
-        return not queue_list[1] and not queue_list[2] 
+        return not queue_list[1] and not queue_list[2]
 
     def queue_is_exhausted(self, queue_name: str):
         """Whether the specified output queue is esxhausted,
@@ -1284,7 +1304,12 @@ class JobOutputQueueProxy:
             return True
         return False
 
-    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+    def await_output_queue_update(
+        self,
+        queue_name: str,
+        timeout: Optional[float] = None,
+        cancel_if_cleared: bool = True,
+    ):
         """Wait for the job object of this output queue proxy to update the specified output queue while
         it is running, using the coroutine output of this method.
 
@@ -1312,7 +1337,10 @@ class JobOutputQueueProxy:
                 value, or `Ellipsis` if the queue is cleared.
         """
 
-        return self.__j.await_output_queue_update(queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared)
+        return self.__j.await_output_queue_update(
+            queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared
+        )
+
 
 class JobBase:
     __slots__ = ()
@@ -1469,13 +1497,21 @@ class Job(JobBase):
             self._output_queue_proxies = []
 
             if self.OUTPUT_FIELDS:
-                self._output_field_futures = {field_name: [] for field_name in self.OUTPUT_FIELDS}
-                self._output_fields = {field_name: [None, False] for field_name in self.OUTPUT_FIELDS}
+                self._output_field_futures = {
+                    field_name: [] for field_name in self.OUTPUT_FIELDS
+                }
+                self._output_fields = {
+                    field_name: [None, False] for field_name in self.OUTPUT_FIELDS
+                }
 
             if self.OUTPUT_QUEUES:
-                self._output_queue_futures = {queue_name : [] for queue_name in self.OUTPUT_QUEUES}
-                self._output_queues = {queue_name: [] for queue_name in self.OUTPUT_QUEUES}
-        
+                self._output_queue_futures = {
+                    queue_name: [] for queue_name in self.OUTPUT_QUEUES
+                }
+                self._output_queues = {
+                    queue_name: [] for queue_name in self.OUTPUT_QUEUES
+                }
+
         self._task_loop: tasks.Loop = None
 
         self._proxy = JobProxy(self)
@@ -1695,7 +1731,7 @@ class Job(JobBase):
                         if not fut.cancelled():
                             fut.cancel(msg=f"Job object '{self}' has completed.")
 
-        elif self._is_being_killed: 
+        elif self._is_being_killed:
             self._is_being_killed = False
             self._killed = True
             self._killed_at_ts = time.time()
@@ -1729,8 +1765,7 @@ class Job(JobBase):
                     for fut, cancel_if_cleared in fut_list:
                         if not fut.cancelled():
                             fut.cancel(msg=f"Job object '{self}' was killed.")
-        
-        
+
         self._is_idling = False
         self._idling_since_ts = None
 
@@ -2472,7 +2507,7 @@ class Job(JobBase):
                 This job object is already done or not alive,
                 or isn't being guarded.
             TypeError: Output queues aren't
-            defined for this job type. 
+            defined for this job type.
 
         Returns:
             JobOutputQueueProxy: The output queue proxy.
@@ -2527,7 +2562,7 @@ class Job(JobBase):
                     )
                 )
             return False
-        
+
         return True
 
     def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
@@ -2567,7 +2602,7 @@ class Job(JobBase):
                     )
                 )
             return False
-        
+
         return True
 
     def set_output_field(self, field_name: str, value):
@@ -2667,7 +2702,7 @@ class Job(JobBase):
             if default is Ellipsis:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
-        
+
         elif field_name not in self.OUTPUT_FIELDS:
             if default is Ellipsis:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
@@ -2688,7 +2723,7 @@ class Job(JobBase):
     def get_output_queue_contents(self, queue_name: str, default=Ellipsis):
         """Get a list of all values present in the specified output queue.
         For continuous access to job output queues, consider requesting
-        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.    
+        a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.
 
         Args:
             queue_name (str): The name of the target output queue.
@@ -2713,7 +2748,7 @@ class Job(JobBase):
             if default is Ellipsis:
                 self.verify_output_queue_support(queue_name, raise_exceptions=True)
             return default
-        
+
         elif queue_name not in self.OUTPUT_QUEUES:
             if default is Ellipsis:
                 self.verify_output_queue_support(queue_name, raise_exceptions=True)
@@ -2724,7 +2759,7 @@ class Job(JobBase):
         if not queue_data_list:
             if default is Ellipsis:
                 raise JobStateError(
-                   f"The specified output queue '{queue_name}' is empty"
+                    f"The specified output queue '{queue_name}' is empty"
                 )
             return default
 
@@ -2816,7 +2851,7 @@ class Job(JobBase):
                 Output fields aren't supported for this job,
                 or `field_name` is not a string.
             LookupError: The specified field name is not defined by this job.
-        
+
         Returns:
             bool: True/False
         """
@@ -2881,7 +2916,12 @@ class Job(JobBase):
 
         return asyncio.wait_for(fut, timeout=timeout)
 
-    def await_output_queue_update(self, queue_name: str, timeout: Optional[float] = None, cancel_if_cleared: bool = True):
+    def await_output_queue_update(
+        self,
+        queue_name: str,
+        timeout: Optional[float] = None,
+        cancel_if_cleared: bool = True,
+    ):
         """Wait for this job object to update the specified output queue while
         it is running, using the coroutine output of this method.
 
