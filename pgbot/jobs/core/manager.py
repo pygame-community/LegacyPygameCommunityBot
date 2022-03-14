@@ -2110,7 +2110,11 @@ class JobManager:
             if event_job.check_event(event):
                 event_job._add_event(event.copy())
 
-    def dispatch_event(self, event: events.BaseEvent, _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+    def dispatch_event(
+        self,
+        event: events.BaseEvent,
+        _invoker: Optional[Union[EventJob, IntervalJob]] = None,
+    ):
         """Dispatch an instance of a `BaseEvent` subclass to all event job
         objects in this job manager that are listening for it.
 
