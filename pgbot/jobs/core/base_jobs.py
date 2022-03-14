@@ -650,6 +650,14 @@ class JobProxy:
 
         return self.__j.is_being_initialized()
 
+    def initialized_since(self):
+        """The time at which this job object was initialized, if available.
+
+        Returns:
+            datetime.datetime: The time, if available.
+        """
+        return self.__j.initialized_since()
+
     def is_being_stopped(self, get_reason: bool = False):
         """Whether this job object is being stopped.
 
@@ -1519,7 +1527,8 @@ class Job(JobBase):
         "_is_being_restarted",
         "_stopped",
         "_is_idling",
-        "_initialized_since_ts" "_alive_since_ts",
+        "_initialized_since_ts",
+        "_alive_since_ts",
         "_awaiting_since_ts",
         "_idling_since_ts",
         "_running_since_ts",
@@ -1673,9 +1682,11 @@ class Job(JobBase):
         except Exception:
             self._is_being_initialized = False
             raise
-        finally:
+        else:
             self._is_being_initialized = False
             self._initialized = True
+            self._initialized_since_ts = time.time()
+            
 
     async def on_init(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()`
@@ -1755,6 +1766,7 @@ class Job(JobBase):
         self._is_being_restarted = False
 
         if self._is_being_completed or self._is_being_killed:
+            self._initialized = False
             if self._is_being_guarded:
                 if self._unguard_futures is not None:
                     for fut in self._unguard_futures:
@@ -2292,7 +2304,7 @@ class Job(JobBase):
         return self._is_being_initialized
 
     def initialized_since(self):
-        """The last time at which this job object became alive, if available.
+        """The time at which this job object was initialized, if available.
 
         Returns:
             datetime.datetime: The time, if available.
