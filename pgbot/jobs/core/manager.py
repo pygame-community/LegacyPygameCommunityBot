@@ -607,7 +607,31 @@ class JobManager:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
                     f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                    f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]} job objects"
+                    f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
+                )
+            return False
+
+        elif (
+            op.startswith(JOB_VERBS.CUSTOM_EVENT_DISPATCH)
+            and invoker_cls_permission_level < PERMISSION_LEVELS.HIGH
+        ):
+            if raise_exceptions:
+                raise JobPermissionError(
+                    f"insufficient permission level of {invoker_cls.__name__}"
+                    f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" for dispatching custom events to job objects"
+                )
+            return False
+
+        elif (
+            op.startswith(JOB_VERBS.EVENT_DISPATCH)
+            and invoker_cls_permission_level < PERMISSION_LEVELS.HIGH
+        ):
+            if raise_exceptions:
+                raise JobPermissionError(
+                    f"insufficient permission level of {invoker_cls.__name__}"
+                    f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" for dispatching non-custom events to job objects"
                 )
             return False
 
@@ -623,7 +647,7 @@ class JobManager:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
                         f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]} job objects"
+                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
 
@@ -644,7 +668,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" jobs that were scheduled by the class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                             " when the scheduler job is still alive and is not the"
@@ -660,7 +684,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" jobs that were scheduled by the class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
@@ -681,7 +705,7 @@ class JobManager:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
                         f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]} job objects"
+                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
 
@@ -691,7 +715,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
@@ -708,7 +732,7 @@ class JobManager:
                     raise JobPermissionError(
                         f"insufficient permission level of '{invoker_cls.__name__}'"
                         f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                         f" job objects of the specified class '{target_cls.__name__}'"
                         f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                     )
@@ -730,7 +754,7 @@ class JobManager:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
                         f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]} job objects"
+                        f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
 
@@ -743,7 +767,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                             " its instance did not create."
@@ -771,7 +795,7 @@ class JobManager:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
                     f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                    f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]} job objects"
+                    f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                 )
             elif invoker_cls_permission_level == PERMISSION_LEVELS.MEDIUM:
                 if (
@@ -782,7 +806,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)}) that"
                             " its instance did not create."
@@ -794,7 +818,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
@@ -806,7 +830,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
@@ -818,7 +842,7 @@ class JobManager:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
-                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op]}"
+                            f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
                             f" ({PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
                         )
@@ -2086,13 +2110,22 @@ class JobManager:
             if event_job.check_event(event):
                 event_job._add_event(event.copy())
 
-    def dispatch_event(self, event: events.BaseEvent):
-        """Dispatch a `BaseEvent` subclass to all event job objects
-        in this job manager.
+    def dispatch_event(self, event: events.BaseEvent, _invoker: Optional[Union[EventJob, IntervalJob]] = None):
+        """Dispatch an instance of a `BaseEvent` subclass to all event job
+        objects in this job manager that are listening for it.
 
         Args:
-            event (events.BaseEvent): The event instance to be dispatched.
+            event (BaseEvent): The event to be dispatched.
         """
+
+        if isinstance(_invoker, (EventJob, IntervalJob)):
+            if isinstance(event, events.CustomEvent):
+                self._verify_permissions(_invoker, op=JOB_VERBS.CUSTOM_EVENT_DISPATCH)
+            elif isinstance(event, events.BaseEvent):
+                self._verify_permissions(_invoker, op=JOB_VERBS.EVENT_DISPATCH)
+        else:
+            _invoker = self._manager_job
+
         event_class_identifier = event.__class__._IDENTIFIER
 
         if event_class_identifier in self._event_waiting_queues:
@@ -2785,21 +2818,19 @@ class JobManagerProxy:
             timeout=timeout,
         )
 
-    async def dispatch_custom_event(self, event: events.CustomEvent):
-        """Dispatch a `CustomEvent` subclass to all event job objects
-        in this job manager that are listining for it.
+    async def dispatch_event(self, event: events.BaseEvent):
+        """Dispatch an instance of a `BaseEvent` subclass to all event job
+        objects in this job manager that are listening for it.
 
         Args:
-            event (events.BaseEvent): The subclass to be dispatched.
+            event (BaseEvent): The event to be dispatched.
+
+        Raises:
+            JobPermissionError: Insufficient permissions.
         """
 
-        if not isinstance(event, events.CustomEvent):
-            raise TypeError(
-                "argument 'event' must have `CustomEvent` as a subclass"
-            ) from None
-
         event._dispatcher = self.__j._proxy
-        return self.__mgr.dispatch_event(event)
+        return self.__mgr.dispatch_event(event, _invoker=self.__j)
 
     def has_job(self, job_proxy: JobProxy):
         """Whether a specific job object is currently in this

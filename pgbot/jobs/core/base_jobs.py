@@ -247,6 +247,8 @@ upon reconnecting."""
 
 class JOB_STATUS:
     FRESH = "FRESH"
+    """This job object is freshly created and unmodified.
+    """
     INITIALIZED = "INITIALIZED"
 
     STARTING = "STARTING"
@@ -265,21 +267,53 @@ class JOB_STATUS:
 
 class JOB_VERBS:
     CREATE = "CREATE"
+    """The act of creating/instantiating a job object.
+    """
     INITIALIZE = "INITIALIZE"
+    """The act of initializing a job object.
+    """
     REGISTER = "REGISTER"
+    """The act of registering a job object.
+    """
     SCHEDULE = "SCHEDULE"
+    """The act of scheduling a job type for instantiation in the future.
+    """
     GUARD = "GUARD"
+    """The act of placing a modification guard on a job object.
+    """
 
     FIND = "FIND"
+    """The act of finding job objects based on specific parameters.
+    """
+
+    CUSTOM_EVENT_DISPATCH = "CUSTOM_EVENT_DISPATCH"
+    """The act of dispatching only custom events to job objects.
+    """
+
+    EVENT_DISPATCH = "EVENT_DISPATCH"
+    """The act of dispatching any type of event to job objects.
+    """
 
     START = "START"
+    """The act of starting a job object.
+    """
     STOP = "STOP"
+    """The act of stopping a job object.
+    """
     RESTART = "RESTART"
+    """The act of restarting a job object.
+    """
 
     UNSCHEDULE = "UNSCHEDULE"
+    """The act of unscheduling a specific job schedule operation.
+    """
     UNGUARD = "UNGUARD"
+    """The act of removing a modification guard on a job object.
+    """
 
     KILL = "KILL"
+    """The act of killing a job object.
+    """
 
     _SIMPLE_PAST_TENSE = dict(
         CREATE="CREATED",
@@ -288,6 +322,8 @@ class JOB_VERBS:
         SCHEDULE="SCHEDULED",
         GUARD="GUARDED",
         FIND="FOUND",
+        CUSTOM_EVENT_DISPATCH = "CUSTOM_EVENT_DISPATCHED",
+        EVENT_DISPATCH = "EVENT_DISPATCHED",
         START="STARTED",
         STOP="STOPPED",
         RESTART="RESTARTED",
@@ -303,6 +339,8 @@ class JOB_VERBS:
         SCHEDULE="SCHEDULING",
         GUARD="GUARDING",
         FIND="FINDING",
+        CUSTOM_EVENT_DISPATCH = "CUSTOM_EVENT_DISPATCHING",
+        EVENT_DISPATCH = "EVENT_DISPATCHING",
         START="STARTING",
         STOP="STOPPING",
         RESTART="RESTARTING",
@@ -351,7 +389,6 @@ class STOP_REASONS:
     """Job is stopping due to being killed externally.
     """
 
-
 class PERMISSION_LEVELS:
     LOWEST = 0
     """The lowest permission level.
@@ -391,6 +428,7 @@ class PERMISSION_LEVELS:
         - Can unschedule jobs that don't have an alive job as a scheduler.
         - Can stop, restart, kill or unschedule any job of a lower permission level.
         - Can guard and unguard jobs of a lower permission level instantiated by itself.
+        - Can dispatch custom events to other jobs (`CustomEvent` subclasses).
     """
 
     HIGHEST = 1 << 4
@@ -406,6 +444,7 @@ class PERMISSION_LEVELS:
         - Can stop, restart, kill or unschedule any job of a lower permission level.
         - Can guard and unguard jobs of a lower permission level instantiated by itself.
         - Can guard and unguard jobs of the same permission level instantiated by itself.
+        - Can dispatch any event to other jobs (`BaseEvent` subclasses).
         - Can instantiate, register, start and schedule jobs of the same permission level.
         - Can stop, restart, kill or unschedule any job of the same permission level.
     """
