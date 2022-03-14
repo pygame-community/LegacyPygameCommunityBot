@@ -51,13 +51,15 @@ class MethodCall(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             )
             getattr(self.data.instance, self.data.method_name)
 
-        for i, arg in enumerate(tuple(self.data.instance_args)):
+        for i in range(len(self.data.instance_args)):
+            arg = self.data.instance_args[i]
             if isinstance(arg, serials.BaseSerializer):
                 self.data.instance_args[i] = await arg.reconstructed_async(
                     always_fetch=False
                 )
 
-        for key, kwarg in enumerate(tuple(self.data.instance_kwargs.items())):
+        for key in self.data.instance_kwargs:
+            kwarg = self.data.instance_kwargs[key]
             if isinstance(kwarg, serials.BaseSerializer):
                 self.data.instance_kwargs[key] = await kwarg.reconstructed_async(
                     always_fetch=False
