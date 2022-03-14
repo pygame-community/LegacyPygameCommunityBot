@@ -26,11 +26,11 @@ from discord.ext import tasks
 from pgbot.utils import utils
 from pgbot import common
 
-from . import events
+from pgbot import events
 
 
 _JOB_CLASS_MAP = {}
-# """A dictionary of all Job subclasses that were created. Do not access outside of this module."""
+# A dictionary of all Job subclasses that were created. Do not access outside of this module.
 
 _JOB_MANAGER_JOB_CLS = None
 
@@ -1686,7 +1686,6 @@ class Job(JobBase):
             self._is_being_initialized = False
             self._initialized = True
             self._initialized_since_ts = time.time()
-            
 
     async def on_init(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()`
@@ -2176,7 +2175,7 @@ class Job(JobBase):
         to ensure that it suspends all execution.
         """
 
-        if not self._is_being_completed:
+        if not self._is_being_killed and not self._is_being_completed:
             self._is_being_completed = True
             if not self._is_being_stopped:
                 self.STOP(force=self._reconnect)
@@ -2199,7 +2198,7 @@ class Job(JobBase):
             bool: Whether this method was successful.
         """
 
-        if not self._is_being_killed:
+        if not self._is_being_killed and not self._is_being_completed:
             self._is_being_killed = True
             if not self._is_being_stopped:
                 self.STOP(force=self._reconnect)
@@ -2220,7 +2219,7 @@ class Job(JobBase):
             bool: Whether this method was successful.
         """
 
-        if not self._is_being_killed:
+        if not self._is_being_killed and not self._is_being_completed:
             if not self._task_loop.is_running() and awaken:
                 self._startup_kill = True  # start and kill immediately
                 self._task_loop.start()

@@ -32,17 +32,15 @@ from typing import (
 
 import discord
 from discord.ext import tasks
-from pgbot.jobs.core.events.base_events import BaseEvent
+from pgbot.events.base_events import BaseEvent
 
 from pgbot.utils import utils
-from pgbot import common, db
-
-from . import events, base_jobs
+from pgbot import common, db, events
+from . import base_jobs
 from .base_jobs import (
     JobProxy,
     Job,
     EventJob,
-    ClientEventJob,
     IntervalJob,
     SingletonJobBase,
     JobManagerJob,
@@ -165,7 +163,7 @@ class JobManager:
         restarted or killed.
 
         Args:
-            timeout (Union[float, None]): The timeout in seconds,
+            timeout (Optional[float]): The timeout in seconds,
             or None to clear any previous timeout.
         """
 
@@ -2123,12 +2121,24 @@ class JobManager:
         """
 
         if isinstance(_invoker, (EventJob, IntervalJob)):
-            if isinstance(event, events.CustomEvent):
-                self._verify_permissions(_invoker, op=JOB_VERBS.CUSTOM_EVENT_DISPATCH)
-            elif isinstance(event, events.BaseEvent):
-                self._verify_permissions(_invoker, op=JOB_VERBS.EVENT_DISPATCH)
+            if isinstance(event, events.BaseEvent):
+                if isinstance(event, events.CustomEvent):
+                    self._verify_permissions(
+                        _invoker, op=JOB_VERBS.CUSTOM_EVENT_DISPATCH
+                    )
+                else:
+                    self._verify_permissions(_invoker, op=JOB_VERBS.EVENT_DISPATCH)
+            else:
+                raise TypeError(
+                    "argument 'event' must be an instance of CustomEvent or BaseEvent"
+                )
         else:
             _invoker = self._manager_job
+
+        if (
+            _invoker is not None
+        ):  # for cases where the default _invoker might not yet be set
+            event._dispatcher = _invoker._proxy
 
         event_class_identifier = event.__class__._IDENTIFIER
 

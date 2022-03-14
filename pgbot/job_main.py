@@ -11,10 +11,10 @@ from typing import Type
 import discord
 from time import perf_counter
 
-from pgbot import common, db, serializers
+from pgbot import common, db, events, serializers
 import pgbot.jobs
 from pgbot.jobs import core
-from pgbot.jobs.core import events, PERMISSION_LEVELS
+from pgbot.jobs.core import PERMISSION_LEVELS
 from pgbot.jobs.utils import messaging
 from pgbot.utils import embed_utils
 

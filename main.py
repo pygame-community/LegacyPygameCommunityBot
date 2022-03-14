@@ -40,7 +40,7 @@ async def on_member_join(member: discord.Member):
     job_manager.dispatch_event(
         events.OnMemberJoin(
             member,
-            _created_at=member.joined_at.astimezone(datetime.timezone.utc),
+            event_created_at=member.joined_at.astimezone(datetime.timezone.utc),
         )
     )
 
@@ -83,7 +83,7 @@ async def on_message(message: discord.Message):
     job_manager.dispatch_event(
         events.OnMessage(
             message,
-            _created_at=message.created_at.astimezone(datetime.timezone.utc),
+            event_created_at=message.created_at.astimezone(datetime.timezone.utc),
         )
     )
 

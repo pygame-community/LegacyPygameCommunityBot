@@ -30,7 +30,6 @@ class MethodCall(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
         is_async: bool = False,
         instance_args: Optional[tuple] = (),
         instance_kwargs: Optional[dict] = None,
-        kill_if_failed: bool = True,
     ):
 
         super().__init__()
@@ -75,7 +74,6 @@ class MethodCall(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
 
     async def on_stop(self, reason, by_force):
         if self.failed():
-            if self.data.kill_if_failed:
-                self.KILL()
+            self.KILL()
         else:
             self.COMPLETE()

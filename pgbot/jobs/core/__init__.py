@@ -5,6 +5,5 @@ Copyright (c) 2020-present PygameCommunityDiscord
 
 The core module for the asynchronous job system.
 """
-from . import events
 from .base_jobs import *
 from .manager import JobManager, JobManagerProxy
