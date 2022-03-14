@@ -633,8 +633,25 @@ class JobProxy:
         """The current amount of `on_run()` calls completed by this job object."""
         return self.__j.loop_count()
 
+    def initialized(self):
+        """Whether this job has been initialized.
+
+        Returns:
+            bool: True/False
+        """
+        return self.__j.initialized()
+
+    def is_being_initialized(self):
+        """Whether this job object is being initialized.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.is_being_initialized()
+
     def is_being_stopped(self, get_reason: bool = False):
-        """Whether this job object's task loop is being stopped.
+        """Whether this job object is being stopped.
 
         Args:
             get_reason (bool, optional):
@@ -1487,6 +1504,7 @@ class Job(JobBase):
         "_on_run_exception",
         "_on_stop_exception",
         "_initialized",
+        "_is_being_initialized",
         "_is_starting",
         "_completed",
         "_is_being_completed",
@@ -1501,7 +1519,7 @@ class Job(JobBase):
         "_is_being_restarted",
         "_stopped",
         "_is_idling",
-        "_alive_since_ts",
+        "_initialized_since_ts" "_alive_since_ts",
         "_awaiting_since_ts",
         "_idling_since_ts",
         "_running_since_ts",
@@ -1568,6 +1586,7 @@ class Job(JobBase):
         self._on_stop_exception = None
 
         self._is_awaiting = False
+        self._is_being_initialized = False
         self._initialized = False
         self._is_starting = False
         self._completed = False
@@ -1586,6 +1605,7 @@ class Job(JobBase):
         self._stopped = False
         self._is_idling = False
 
+        self._initialized_since_ts = None
         self._alive_since_ts = None
         self._awaiting_since_ts = None
         self._idling_since_ts = None
@@ -1645,6 +1665,17 @@ class Job(JobBase):
         this job object.
         """
         return self._schedule_identifier
+
+    async def _on_init(self):
+        try:
+            self._is_being_initialized = True
+            await self.on_init()
+        except Exception:
+            self._is_being_initialized = False
+            raise
+        finally:
+            self._is_being_initialized = False
+            self._initialized = True
 
     async def on_init(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()`
@@ -1906,7 +1937,7 @@ class Job(JobBase):
         )
 
     def is_being_stopped(self, get_reason: bool = False):
-        """Whether this job object's task loop is being stopped.
+        """Whether this job object is being stopped.
 
         Args:
             get_reason (bool, optional):
@@ -2017,11 +2048,11 @@ class Job(JobBase):
     async def _INITIALIZE_EXTERNAL(self):
         """DO NOT CALL THIS METHOD MANUALLY.
 
-        Use this method to initialize a job using the `on_init` method
+        This method to initializes a job using the `_on_init` method
         of the base class.
         """
         if self._manager is not None and not self._killed and not self._completed:
-            await self.on_init()
+            await self._on_init()
             self._alive_since_ts = time.time()
 
     def STOP(self, force=False):
@@ -2222,14 +2253,6 @@ class Job(JobBase):
         """The current amount of `on_run()` calls completed by this job object."""
         return self._loop_count
 
-    def initialized(self):
-        """Whether this job has been initialized.
-
-        Returns:
-            bool: True/False
-        """
-        return self._initialized
-
     def is_awaiting(self):
         """Whether this job is currently waiting
         for a coroutine to complete, which was awaited
@@ -2249,6 +2272,34 @@ class Job(JobBase):
         if self._awaiting_since_ts:
             return datetime.datetime.fromtimestamp(
                 self._awaiting_since_ts, tz=datetime.timezone.utc
+            )
+
+    def initialized(self):
+        """Whether this job has been initialized.
+
+        Returns:
+            bool: True/False
+        """
+        return self._initialized
+
+    def is_being_initialized(self):
+        """Whether this job object is being initialized.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self._is_being_initialized
+
+    def initialized_since(self):
+        """The last time at which this job object became alive, if available.
+
+        Returns:
+            datetime.datetime: The time, if available.
+        """
+        if self._initialized_since_ts:
+            return datetime.datetime.fromtimestamp(
+                self._initialized_since_ts, tz=datetime.timezone.utc
             )
 
     def alive(self):
