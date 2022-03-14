@@ -54,6 +54,8 @@ class SerializationError(Exception):
 class BaseSerializer:
     IS_ASYNC = False
 
+    __slots__ = ("_dict",)
+
     def __init__(self):
         self._dict = None
 
@@ -90,7 +92,10 @@ class BaseSerializer:
     serialized = to_dict
 
     def deserialized(self):
-        """A method for...
+        """A method meant to be overloaded,
+        which is for deserializing the serialized data of this
+        serializer object back into a specific python object
+        it was made for.
 
         Raises:
             NotImplementedError: This method must be overloaded in subclasses.
