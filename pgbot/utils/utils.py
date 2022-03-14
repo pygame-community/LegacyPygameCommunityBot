@@ -14,12 +14,26 @@ import os
 import platform
 import sys
 import traceback
-from typing import Callable, Iterable, Union
+from typing import Callable, Iterable, Union, Optional
 
 import discord
 import pygame
 
 from pgbot import common, db
+
+
+def join_readable(joins: list[str]):
+    """
+    Join a list of strings, in a human readable way
+    """
+    if not joins:
+        return ""
+
+    preset = ", ".join(joins[:-1])
+    if preset:
+        return f"{preset} and {joins[-1]}"
+
+    return joins[-1]
 
 
 async def get_channel_feature(
@@ -156,10 +170,7 @@ def format_long_time(
                 name = name[:-1]
             result.append(f"{value} {name}")
 
-    preset = ", ".join(result[:-1])
-    if preset:
-        return f"{preset} and {result[-1]}"
-    return result[-1]
+    return join_readable(result)
 
 
 def format_timedelta(tdelta: datetime.timedelta):
@@ -368,3 +379,47 @@ def format_datetime(dt: Union[int, float, datetime.datetime], tformat: str = "f"
     if isinstance(dt, datetime.datetime):
         dt = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
     return f"<t:{int(dt)}:{tformat}>"
+
+
+def split_wc_scores(scores: dict[int, int]):
+    """
+    Split wc scoreboard into different categories
+    """
+    scores_list = [(score, f"<@!{mem}>") for mem, score in scores.items()]
+    scores_list.sort(reverse=True)
+
+    for title, category_score in common.WC_SCORING:
+        category_list = list(filter(lambda x: x[0] >= category_score, scores_list))
+        if not category_list:
+            continue
+
+        desc = ">>> " + "\n".join(
+            (f"`{score}` **•** {mem} :medal:" for score, mem in category_list)
+        )
+
+        yield title, desc, False
+        scores_list = scores_list[len(category_list) :]
+
+
+async def give_wc_roles(member: discord.Member, score: int):
+    """
+    Updates the WC roles of a member based on their latest total score
+    """
+    got_role: bool = False
+    for min_score, role_id in common.ServerConstants.WC_ROLES:
+        if score >= min_score and not got_role:
+            # This is the role to give
+            got_role = True
+            if role_id not in map(lambda x: x.id, member.roles):
+                await member.add_roles(
+                    discord.Object(role_id),
+                    reason="Automatic bot action, adds WC event roles",
+                )
+
+        else:
+            # any other event related role to be removed
+            if role_id in map(lambda x: x.id, member.roles):
+                await member.remove_roles(
+                    discord.Object(role_id),
+                    reason="Automatic bot action, removes older WC event roles",
+                )

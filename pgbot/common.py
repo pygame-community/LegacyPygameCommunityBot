@@ -48,6 +48,7 @@ console_channel: discord.TextChannel
 db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
+entry_message_deletion_dict = {}
 
 __version__ = "1.5.3"
 
@@ -86,6 +87,13 @@ BROWSE_MESSAGE_LIMIT = 500
 GENERIC = False
 
 UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
+
+WC_SCORING = (
+    ("Legendary Guardian ⚜️💫", 42),
+    ("Elite Guardian ⚜️", 30),
+    ("Guardian ⚜️", 15),
+    ("Apprentice ⚜️", 1),
+)
 
 
 class ServerConstants:
@@ -154,6 +162,14 @@ class ServerConstants:
 
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
+
+    # remember to maintain the scores here in descending order
+    WC_ROLES = (
+        (42, 889170053013061683),  # Legendary Guardian
+        (30, 889169676398100480),  # Elite Guardian
+        (15, 889169351645749311),  # Guardian
+        (1, 889168765479178240),  # Apprentice
+    )
 
 
 # Link to pygame snake logo
