@@ -85,7 +85,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 if self.data.channel is None:
                     self.data.channel = await client.fetch_channel(channel_id)
             elif isinstance(self.data.channel, serials.ChannelSerializer):
-                self.data.channel = await self.data.channel.reconstructed(True)
+                self.data.channel = await self.data.channel.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'channel'")
 
@@ -99,7 +99,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                     raise ValueError("Invalid embed dictionary structure")
             elif isinstance(self.data.kwargs["embed"], serials.EmbedSerializer):
                 self.data.kwargs["embed"] = discord.Embed.from_dict(
-                    self.data.kwargs["embed"]
+                    self.data.kwargs["embed"].deserialized()
                 )
 
         if not isinstance(self.data.kwargs["file"], (discord.File, NoneType)):
@@ -109,9 +109,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 )
 
             elif isinstance(self.data.kwargs["file"], serials.FileSerializer):
-                self.data.kwargs["file"] = await self.data.kwargs[
-                    "file"
-                ].reconstructed()
+                self.data.kwargs["file"] = self.data.kwargs["file"].deserialized()
 
             elif isinstance(self.data.kwargs["file"], dict):
                 file_dict = self.data.kwargs["file"]
@@ -127,7 +125,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 if isinstance(obj, discord.File):
                     file_list.append(obj)
                 elif isinstance(obj, serials.FileSerializer):
-                    file_list.append(obj.reconstructed())
+                    file_list.append(obj.deserialized())
                 else:
                     raise TypeError(
                         f"Invalid object at index {i} in iterable given as 'files' argument"
@@ -141,7 +139,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             ):
                 self.data.kwargs["allowed_mentions"] = await self.data.kwargs[
                     "allowed_mentions"
-                ].reconstructed()
+                ].deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'allowed_mentions'")
 
@@ -156,11 +154,11 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 if self.data.kwargs["reference"].IS_ASYNC:
                     self.data.kwargs["reference"] = await self.data.kwargs[
                         "reference"
-                    ].reconstructed(True)
+                    ].deserialized_async()
                 else:
                     self.data.kwargs["reference"] = self.data.kwargs[
                         "reference"
-                    ].reconstructed()
+                    ].deserialized()
             else:
                 raise TypeError("Invalid type for argument 'reference'")
 
@@ -211,7 +209,7 @@ class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 if self.data.channel is None:
                     self.data.channel = await client.fetch_channel(channel_id)
             elif isinstance(self.data.channel, serials.ChannelSerializer):
-                self.data.channel = await self.data.channel.reconstructed(True)
+                self.data.channel = await self.data.channel.deserialized_async()
             elif self.data.channel is None:
                 if not isinstance(
                     self.data.message, (discord.Message, serials.MessageSerializer)
@@ -228,7 +226,7 @@ class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
                 if channel is None:
                     channel = await client.fetch_channel(self.data.channel.id)
             elif isinstance(self.data.message, serials.MessageSerializer):
-                self.data.message = await self.data.message.reconstructed(True)
+                self.data.message = await self.data.message.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
@@ -290,7 +288,7 @@ class MessageEdit(_MessageModify):
                     raise ValueError("Invalid embed dictionary structure")
             elif isinstance(self.data.kwargs["embed"], serials.EmbedSerializer):
                 self.data.kwargs["embed"] = discord.Embed.from_dict(
-                    self.data.kwargs["embed"]
+                    self.data.kwargs["embed"].deserialized()
                 )
 
         if not isinstance(
@@ -301,7 +299,7 @@ class MessageEdit(_MessageModify):
             ):
                 self.data.kwargs["allowed_mentions"] = await self.data.kwargs[
                     "allowed_mentions"
-                ].reconstructed()
+                ].deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'allowed_mentions'")
 
@@ -402,7 +400,7 @@ class ReactionAdd(_MessageModify):
                 self.data.emoji,
                 (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
-                self.data.emoji = self.data.emoji.reconstructed()
+                self.data.emoji = self.data.emoji.deserialized()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
@@ -482,7 +480,7 @@ class ReactionsAdd(_MessageModify):
                 elif isinstance(
                     emoji, (serials.EmojiSerializer, serials.PartialEmojiSerializer)
                 ):
-                    self.data.emojis[i] = emoji.reconstructed()
+                    self.data.emojis[i] = emoji.deserialized()
                 else:
                     raise TypeError(
                         f"Invalid type for argument 'emojis' at argument {3+i}"
@@ -562,13 +560,13 @@ class ReactionRemove(_MessageModify):
                 self.data.emoji,
                 (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
-                self.data.emoji = self.data.emoji.reconstructed()
+                self.data.emoji = self.data.emoji.deserialized()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
         if not isinstance(self.data.member, (discord.abc.Snowflake, discord.Member)):
             if isinstance(self.data.member, serials.MemberSerializer):
-                self.data.member = await self.data.member.reconstructed()
+                self.data.member = await self.data.member.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'member'")
 
@@ -632,7 +630,7 @@ class ReactionClearEmoji(_MessageModify):
                 self.data.emoji,
                 (serials.EmojiSerializer, serials.PartialEmojiSerializer),
             ):
-                self.data.emoji = self.data.emoji.reconstructed()
+                self.data.emoji = self.data.emoji.deserialized()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 

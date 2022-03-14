@@ -46,24 +46,18 @@ class MethodCall(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
 
     async def on_init(self):
         if isinstance(self.data.instance, serials.BaseSerializer):
-            self.data.instance = await self.data.instance.reconstructed_async(
-                always_fetch=False
-            )
+            self.data.instance = await self.data.instance.deserialized_async()
             getattr(self.data.instance, self.data.method_name)
 
         for i in range(len(self.data.instance_args)):
             arg = self.data.instance_args[i]
             if isinstance(arg, serials.BaseSerializer):
-                self.data.instance_args[i] = await arg.reconstructed_async(
-                    always_fetch=False
-                )
+                self.data.instance_args[i] = await arg.deserialized_async()
 
         for key in self.data.instance_kwargs:
             kwarg = self.data.instance_kwargs[key]
             if isinstance(kwarg, serials.BaseSerializer):
-                self.data.instance_kwargs[key] = await kwarg.reconstructed_async(
-                    always_fetch=False
-                )
+                self.data.instance_kwargs[key] = await kwarg.deserialized_async()
 
     async def on_run(self):
         output = getattr(self.data.instance, self.data.method_name)(

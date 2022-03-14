@@ -80,29 +80,44 @@ class BaseSerializer:
         return instance
 
     def to_dict(self):
+        """Return the serialized data of this serializer object as a dictionary.
+
+        Returns:
+            dict: The serialized data.
+        """
         return dict(_class_name=self.__class__.__name__, **self._dict)
 
     serialized = to_dict
 
-    def reconstructed(self):
+    def deserialized(self):
+        """A method for...
+
+        Raises:
+            NotImplementedError: This method must be overloaded in subclasses.
+        """
         raise NotImplementedError()
 
-    async def reconstructed_async(self, *args, **kwargs):
-        """A helper method to check and await reconstruction
-        coroutines if necessary, while defaulting to a
-        synchronous implementation if necessary.
+    async def deserialized_async(self, *args, **kwargs):
+        """An asynchronous version of `deserialized()`
+        that other `BaseSerializer` subclasses are
+        meant to overload. The default implementation
+        of this method calls the `deserialized()`
+        method and returns its output.
 
         Returns:
             object: The reconstruction output.
-        """
-        if self.IS_ASYNC:
-            return await self.reconstructed(*args, **kwargs)
 
-        return self.reconstructed(*args, **kwargs)
+        Raises:
+            NotImplementedError: No reconstruction methods were implemented.
+        """
+        if not self.IS_ASYNC:
+            return self.deserialized(*args, **kwargs)
+
+        raise NotImplementedError()
 
 
 class DiscordObjectSerializer(BaseSerializer):
-    pass
+    ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT = False
 
 
 class UserSerializer(DiscordObjectSerializer):
@@ -113,7 +128,10 @@ class UserSerializer(DiscordObjectSerializer):
             "id": user.id,
         }
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         user = client.get_user(self._dict["id"])
         if user is None:
             if always_fetch:
@@ -131,7 +149,10 @@ class MemberSerializer(DiscordObjectSerializer):
     def __init__(self, member: discord.Member):
         self._dict = {"id": member.id, "guild_id": member.guild.id}
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         guild: discord.Guild = client.get_guild(self._dict["guild_id"])
         if guild is None:
             if always_fetch:
@@ -160,7 +181,10 @@ class GuildSerializer(DiscordObjectSerializer):
             "id": guild.id,
         }
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         guild = client.get_guild(self._dict["id"])
         if guild is None:
             if always_fetch:
@@ -178,7 +202,7 @@ class EmojiSerializer(DiscordObjectSerializer):
             "id": emoji.id,
         }
 
-    def reconstructed(self):
+    def deserialized(self):
         emoji = client.get_emoji(self._dict["id"])
         if emoji is None:
             raise DeserializationError(
@@ -194,7 +218,7 @@ class PartialEmojiSerializer(DiscordObjectSerializer):
             "dict": emoji.to_dict(),
         }
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.PartialEmoji.from_dict(self._dict["dict"])
 
 
@@ -220,7 +244,7 @@ class FileSerializer(DiscordObjectSerializer):
                     "Could not serialize File object into pickleable dictionary"
                 ) from None
 
-    def reconstructed(self):
+    def deserialized(self):
         if self._dict["fp"] is None:
             data = self._dict["data"]
 
@@ -252,7 +276,10 @@ class RoleSerializer(DiscordObjectSerializer):
     def __init__(self, role: discord.Role):
         self._dict = {"id": role.id, "guild_id": role.guild.id}
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         guild = client.get_guild(self._dict["guild_id"])
 
         if guild is None:
@@ -288,7 +315,7 @@ class PermissionsSerializer(DiscordObjectSerializer):
     def __init__(self, permissions: discord.Permissions):
         self._dict = {"value": permissions.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Permissions(permissions=self._dict["value"])
 
 
@@ -296,7 +323,7 @@ class PermissionOverwriteSerializer(DiscordObjectSerializer):
     def __init__(self, permission_overwrite: discord.PermissionOverwrite):
         self._dict = {"_values": permission_overwrite._values}
 
-    def reconstructed(self):
+    def deserialized(self):
         permission_overwrite = discord.PermissionOverwrite()
         permission_overwrite._values = self._dict["_values"].copy()
         return permission_overwrite
@@ -317,7 +344,7 @@ class AllowedMentionsSerializer(DiscordObjectSerializer):
             else [UserSerializer(user).serialized() for user in allowed_mentions.users],
         }
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
         return discord.AllowedMentions(
             everyone=self._dict["everyone"],
             replied_user=self._dict["replied_user"],
@@ -340,7 +367,7 @@ class ColorSerializer(DiscordObjectSerializer):
     def __init__(self, color: discord.Color):
         self._dict = {"value": color.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Color(self._dict["value"])
 
 
@@ -348,7 +375,7 @@ class ActivitySerializer(DiscordObjectSerializer):
     def __init__(self, activity: discord.Activity):
         self._dict = {"dict": activity.to_dict()}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Activity(**self._dict["dict"])
 
 
@@ -356,7 +383,7 @@ class GameSerializer(DiscordObjectSerializer):
     def __init__(self, game: discord.Game):
         self._dict = {"dict": game.to_dict()}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Game(**self._dict["dict"])
 
 
@@ -364,7 +391,7 @@ class StreamingSerializer(DiscordObjectSerializer):
     def __init__(self, streaming: discord.Streaming):
         self._dict = {"dict": streaming.to_dict()}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Streaming(**self._dict["dict"])
 
 
@@ -372,7 +399,7 @@ class IntentsSerializer(DiscordObjectSerializer):
     def __init__(self, intents: discord.Intents):
         self._dict = {"value": intents.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         i = discord.Intents()
         i.value = self._dict["value"]
         return i
@@ -382,7 +409,7 @@ class MemberCacheFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, member_cache_flags: discord.MemberCacheFlags):
         self._dict = {"value": member_cache_flags.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         f = discord.MemberCacheFlags()
         f.value = self._dict["value"]
         return f
@@ -392,7 +419,7 @@ class SystemChannelFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, system_channel_flags: discord.SystemChannelFlags):
         self._dict = {"value": system_channel_flags.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         f = discord.SystemChannelFlags()
         f.value = self._dict["value"]
         return f
@@ -402,7 +429,7 @@ class MessageFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, message_flags: discord.MessageFlags):
         self._dict = {"value": message_flags.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         f = discord.SystemChannelFlags()
         f.value = self._dict["value"]
         return f
@@ -412,7 +439,7 @@ class PublicUserFlagsSerializer(DiscordObjectSerializer):
     def __init__(self, public_user_flags: discord.PublicUserFlags):
         self._dict = {"value": public_user_flags.value}
 
-    def reconstructed(self):
+    def deserialized(self):
         f = discord.PublicUserFlags()
         f.value = self._dict["value"]
         return f
@@ -420,6 +447,7 @@ class PublicUserFlagsSerializer(DiscordObjectSerializer):
 
 class MessageSerializer(DiscordObjectSerializer):
     IS_ASYNC = True
+    ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT = True
 
     def __init__(self, message: discord.Message):
         self._dict = {
@@ -427,7 +455,10 @@ class MessageSerializer(DiscordObjectSerializer):
             "channel_id": message.channel.id,
         }
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         channel = client.get_channel(self._dict["channel_id"])
 
         if channel is None:
@@ -446,7 +477,7 @@ class MessageReferenceSerializer(DiscordObjectSerializer):
     def __init__(self, message_reference: discord.MessageReference):
         self._dict = {"dict": message_reference.to_dict()}
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.MessageReference(**self._dict["dict"])
 
 
@@ -456,7 +487,7 @@ class EmbedSerializer(DiscordObjectSerializer):
             "dict": embed.to_dict(),
         }
 
-    def reconstructed(self):
+    def deserialized(self):
         return discord.Embed.from_dict(self._dict["dict"])
 
 
@@ -468,7 +499,10 @@ class ChannelSerializer(DiscordObjectSerializer):
             "id": channel.id,
         }
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         channel = client.get_channel(self._dict["id"])
         if channel is None:
             if always_fetch:
@@ -485,7 +519,10 @@ class GuildChannelSerializer(ChannelSerializer):
         super().__init__(channel=channel)
         self._dict.update(guild_id=channel.guild.id)
 
-    async def reconstructed(self, always_fetch=False):
+    async def deserialized_async(self, always_fetch: Optional[bool] = None):
+        if always_fetch is None:
+            always_fetch = self.ALWAYS_FETCH_ON_ASYNC_RECONSTRUCT
+
         guild = client.get_guild(self._dict["guild_id"])
         if guild is None:
             if always_fetch:

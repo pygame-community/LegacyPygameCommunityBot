@@ -265,7 +265,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
             job_kwargs=dict(
                 channel=841726972841558056,
-                content="Say 'I am cool.'",
+                content="Say 'I am cool'",
             ),
         )
 
@@ -273,7 +273,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             events.OnMessage,
             check=(
                 lambda x: x.message.channel.id == 841726972841558056
-                and x.message.content == "I am cool."
+                and x.message.content == "I am cool"
             ),
         )
 

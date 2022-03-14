@@ -1781,7 +1781,8 @@ class Job(JobBase):
 
                 self._guarded_job_proxies_dict.clear()
 
-            self._output_queue_proxies.clear()
+            if self.OUTPUT_QUEUES:
+                self._output_queue_proxies.clear()
 
         if self._is_being_completed:
             self._is_being_completed = False
