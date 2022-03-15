@@ -762,7 +762,7 @@ class JobProxy:
         Returns:
             bool: True/False
         """
-        return self.__j.idling()
+        return self.__j.is_idling()
 
     def idling_since(self):
         """The last time at which this job object began idling, if available.
@@ -1784,70 +1784,70 @@ class Job(JobBase):
             if self.OUTPUT_QUEUES:
                 self._output_queue_proxies.clear()
 
-        if self._is_being_completed:
-            self._is_being_completed = False
-            self._completed = True
-            self._completed_at_ts = time.time()
+            if self._is_being_completed:
+                self._is_being_completed = False
+                self._completed = True
+                self._completed_at_ts = time.time()
 
-            self._alive_since_ts = None
+                self._alive_since_ts = None
 
-            for fut, cancel_if_killed in self._done_futures:
-                if not fut.cancelled():
-                    fut.set_result(True)
-
-            self._done_futures.clear()
-
-            if self.OUTPUT_FIELDS:
-                for field_name, fut_list in self._output_field_futures.items():
-                    output = self._output_fields[field_name]
-                    for fut in fut_list:
-                        if not fut.cancelled():
-                            fut.set_result(output)
-
-                    fut_list.clear()
-
-                self._output_field_futures.clear()
-
-            if self.OUTPUT_QUEUES:
-                for fut_list in self._output_queue_futures.values():
-                    for fut, cancel_if_cleared in fut_list:
-                        if not fut.cancelled():
-                            fut.cancel(msg=f"Job object '{self}' has completed.")
-
-        elif self._is_being_killed:
-            self._is_being_killed = False
-            self._killed = True
-            self._killed_at_ts = time.time()
-
-            self._alive_since_ts = None
-
-            for fut, cancel_if_killed in self._done_futures:
-                if not fut.cancelled():
-                    if cancel_if_killed:
-                        fut.cancel(msg=f"Job object '{self}' was killed.")
-                    else:
+                for fut, cancel_if_killed in self._done_futures:
+                    if not fut.cancelled():
                         fut.set_result(True)
 
-            self._done_futures.clear()
+                self._done_futures.clear()
 
-            if self.OUTPUT_FIELDS:
-                for fut_list in self._output_field_futures.values():
-                    for fut in fut_list:
-                        if not fut.cancelled():
-                            fut.cancel(
-                                msg=f"Job object '{self}' was killed."
-                                " Job output would be incomplete."
-                            )
+                if self.OUTPUT_FIELDS:
+                    for field_name, fut_list in self._output_field_futures.items():
+                        output = self._output_fields[field_name]
+                        for fut in fut_list:
+                            if not fut.cancelled():
+                                fut.set_result(output)
 
-                    fut_list.clear()
+                        fut_list.clear()
 
-                self._output_field_futures.clear()
+                    self._output_field_futures.clear()
 
-            if self.OUTPUT_QUEUES:
-                for fut_list in self._output_queue_futures.values():
-                    for fut, cancel_if_cleared in fut_list:
-                        if not fut.cancelled():
+                if self.OUTPUT_QUEUES:
+                    for fut_list in self._output_queue_futures.values():
+                        for fut, cancel_if_cleared in fut_list:
+                            if not fut.cancelled():
+                                fut.cancel(msg=f"Job object '{self}' has completed.")
+
+            elif self._is_being_killed:
+                self._is_being_killed = False
+                self._killed = True
+                self._killed_at_ts = time.time()
+
+                self._alive_since_ts = None
+
+                for fut, cancel_if_killed in self._done_futures:
+                    if not fut.cancelled():
+                        if cancel_if_killed:
                             fut.cancel(msg=f"Job object '{self}' was killed.")
+                        else:
+                            fut.set_result(True)
+
+                self._done_futures.clear()
+
+                if self.OUTPUT_FIELDS:
+                    for fut_list in self._output_field_futures.values():
+                        for fut in fut_list:
+                            if not fut.cancelled():
+                                fut.cancel(
+                                    msg=f"Job object '{self}' was killed."
+                                    " Job output would be incomplete."
+                                )
+
+                        fut_list.clear()
+
+                    self._output_field_futures.clear()
+
+                if self.OUTPUT_QUEUES:
+                    for fut_list in self._output_queue_futures.values():
+                        for fut, cancel_if_cleared in fut_list:
+                            if not fut.cancelled():
+                                fut.cancel(msg=f"Job object '{self}' was killed.")
 
         self._is_idling = False
         self._idling_since_ts = None
