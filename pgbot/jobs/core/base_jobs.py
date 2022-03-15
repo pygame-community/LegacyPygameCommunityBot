@@ -729,7 +729,7 @@ class JobProxy:
         Returns:
             bool: True/False
         """
-        return self.__j.running()
+        return self.__j.is_running()
 
     def running_since(self):
         """The last time at which this job object started running, if available.
