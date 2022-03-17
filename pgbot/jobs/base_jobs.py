@@ -772,7 +772,7 @@ class JobProxy:
         Returns:
             bool: True/False
         """
-        return self.__j.idling()
+        return self.__j.is_idling()
 
     def idling_since(self):
         """The last time at which this job object began idling, if available.
