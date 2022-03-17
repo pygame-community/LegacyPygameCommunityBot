@@ -15,12 +15,13 @@ from pgbot import common, events, serializers
 from pgbot import serializers as serials
 from . import messaging
 
+
 class ClientEventJobBase(EventJobBase):
     """A subclass of `EventJobBase` for jobs that run in reaction to specific client events
     (Discord API events) passed to them by their `JobManager` object.
-    
+
     Excluding the value of the `EVENT_TYPES` class variable, this job object
-    is functionally equivalent to `EventJobBase`. 
+    is functionally equivalent to `EventJobBase`.
 
     Attributes:
         EVENT_TYPES:
@@ -32,6 +33,7 @@ class ClientEventJobBase(EventJobBase):
 
     EVENT_TYPES: tuple = (events.ClientEvent,)
 
+
 class SingleRunJob(IntervalJobBase):
     """A subclass of `IntervalJobBase` whose subclasses's
     job objects will only run once and then complete themselves.
@@ -42,6 +44,7 @@ class SingleRunJob(IntervalJobBase):
 
     async def on_stop(self, reason, by_force):
         self.COMPLETE()
+
 
 class RegisterDelayedJob(SingleRunJob):
     """A subclass of `SingleRunJob` that
@@ -75,6 +78,7 @@ class RegisterDelayedJob(SingleRunJob):
 
     async def on_stop(self, reason, by_force):
         self.COMPLETE()
+
 
 class MethodCallJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
     """A job class for calling a method on an object."""

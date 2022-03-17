@@ -34,6 +34,7 @@ EllipsisType = type(Ellipsis)
 _JOB_CLASS_MAP = {}
 # A dictionary of all Job subclasses that were created. Do not access outside of this module.
 
+
 def get_job_class_from_id(class_identifier: str, closest_match: bool = False):
 
     name, timestamp_str = class_identifier.split("-")
@@ -554,15 +555,18 @@ class JobNamespace(SimpleNamespace):
 
 
 class _SystemLevelMixinJobBase(ABC):
-    """An abstract base class for marking job classes as system-level.
-    """
+    """An abstract base class for marking job classes as system-level."""
+
     pass
+
 
 class _SingletonMixinJobBase(ABC):
     """An abstract base class for marking job classes as singletons,
     which can only be scheduled one at a time in a job manager.
     """
+
     pass
+
 
 def singletonjob(cls):
     """A class decorator for marking job classes as singletons,
@@ -573,10 +577,10 @@ def singletonjob(cls):
 
 
 def _sysjob(cls):
-    """A class decorator for marking job classes as system-level.
-    """
+    """A class decorator for marking job classes as system-level."""
     _SystemLevelMixinJobBase.register(cls)
     return cls
+
 
 class JobProxy:
     __slots__ = (
@@ -1188,7 +1192,7 @@ class JobProxy:
 
         Raises:
             TypeError: The class of this job proxy's job is not an 'IntervalJobBase' subclass.
-        
+
         Returns:
             datetime.datetime: The time at which the next iteration will occur,
             if available.
@@ -1438,6 +1442,7 @@ class JobOutputQueueProxy:
             queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared
         )
 
+
 def jobservice(func: Callable[[Any], Any]):
     """A simple decorator to mark job methods as services.
 
@@ -1531,7 +1536,7 @@ class JobBase:
 
         is_system_job = issubclass(cls, _SystemLevelMixinJobBase)
 
-        if is_system_job:            
+        if is_system_job:
             permission_level = JOB_PERMISSION_LEVELS.SYSTEM
 
         name = cls.__name__
@@ -1545,8 +1550,7 @@ class JobBase:
                     <= permission_level
                     <= JOB_PERMISSION_LEVELS.HIGHEST
                 ) or (
-                    is_system_job
-                    and permission_level == JOB_PERMISSION_LEVELS.SYSTEM
+                    is_system_job and permission_level == JOB_PERMISSION_LEVELS.SYSTEM
                 ):
                     cls._PERMISSION_LEVEL = permission_level
                 else:
@@ -2124,7 +2128,7 @@ class JobBase:
             self._stopped_since_ts = None
             self._stopping_by_self = True
             self._is_being_stopped = True
-            if force or self._is_idling: # forceful stopping is necessary when idling
+            if force or self._is_idling:  # forceful stopping is necessary when idling
                 self._stopping_by_force = True
                 self._task_loop.cancel()
             else:
@@ -2155,7 +2159,7 @@ class JobBase:
             self._stopped_since_ts = None
             self._stopping_by_self = False
             self._is_being_stopped = True
-            if force or self._is_idling: # forceful stopping is necessary when idling
+            if force or self._is_idling:  # forceful stopping is necessary when idling
                 self._stopping_by_force = True
                 self._task_loop.cancel()
             else:
@@ -2265,10 +2269,12 @@ class JobBase:
                 self._task_loop.start()
                 return True
 
-            if not self._is_being_stopped and self._STOP_EXTERNAL(force=self._reconnect):
+            if not self._is_being_stopped and self._STOP_EXTERNAL(
+                force=self._reconnect
+            ):
                 self._is_being_killed = True
                 return True
-        
+
         return False
 
     async def wait_for(self, awaitable, timeout: Optional[float] = None):
@@ -3183,9 +3189,15 @@ class IntervalJobBase(JobBase):
         """
 
         super().__init__()
-        self._interval_secs = self.DEFAULT_INTERVAL.total_seconds() if interval is None else interval.total_seconds()
+        self._interval_secs = (
+            self.DEFAULT_INTERVAL.total_seconds()
+            if interval is None
+            else interval.total_seconds()
+        )
         self._count = self.DEFAULT_COUNT if count <= 0 else count
-        self._reconnect = not not (self.DEFAULT_RECONNECT if reconnect is None else reconnect)
+        self._reconnect = not not (
+            self.DEFAULT_RECONNECT if reconnect is None else reconnect
+        )
         self._loop_count = 0
         self._task_loop = tasks.Loop(
             self._on_run,
@@ -3204,7 +3216,7 @@ class IntervalJobBase(JobBase):
     def next_iteration(self):
         """When the next iteration of `.on_run()` will occur.
         If not known, this method will return `None`.
-        
+
         Returns:
             Optional[datetime.datetime]:
                 The time at which the next iteration will occur,
@@ -3221,7 +3233,12 @@ class IntervalJobBase(JobBase):
         """
         return self._task_loop.seconds, self._task_loop.minutes, self._task_loop.hours
 
-    def change_interval(self, seconds: Optional[Union[int, float]] = 0, minutes: Optional[Union[int, float]] = 0, hours: Optional[Union[int, float]] = 0):
+    def change_interval(
+        self,
+        seconds: Optional[Union[int, float]] = 0,
+        minutes: Optional[Union[int, float]] = 0,
+        hours: Optional[Union[int, float]] = 0,
+    ):
         """Change the interval at which this job will run its `on_run()` method.
         This will only be applied on the next iteration of `on_run()`.
 
@@ -3293,18 +3310,18 @@ class EventJobBase(JobBase):
     """
 
     EVENT_TYPES: tuple = (events.BaseEvent,)
-    
+
     DEFAULT_INTERVAL: Optional[datetime.timedelta] = datetime.timedelta()
     DEFAULT_COUNT: Optional[int] = None
     DEFAULT_RECONNECT = True
 
     DEFAULT_MAX_EVENT_CHECKS_PER_ITERATION: Optional[int] = None
-    
+
     DEFAULT_EMPTY_QUEUE_TIMEOUT: Optional[datetime.timedelta] = datetime.timedelta()
 
     DEFAULT_MAX_QUEUE_SIZE: Optional[int] = None
 
-    DEFAULT_ALLOW_QUEUE_OVERFLOW = False 
+    DEFAULT_ALLOW_QUEUE_OVERFLOW = False
 
     DEFAULT_BLOCK_QUEUE_ON_STOP = False
     DEFAULT_START_ON_DISPATCH = True
@@ -3360,13 +3377,23 @@ class EventJobBase(JobBase):
         start_on_dispatch: Optional[bool] = None,
     ):
         super().__init__()
-        
-        self._interval_secs = self.DEFAULT_INTERVAL.total_seconds() if interval is None else interval.total_seconds()
-        self._count = self.DEFAULT_COUNT if count <= 0 else count
-        
-        self._reconnect = not not (self.DEFAULT_RECONNECT if reconnect is None else reconnect)
 
-        max_event_checks_per_iteration = self.DEFAULT_MAX_EVENT_CHECKS_PER_ITERATION if max_event_checks_per_iteration is Ellipsis else max_event_checks_per_iteration
+        self._interval_secs = (
+            self.DEFAULT_INTERVAL.total_seconds()
+            if interval is None
+            else interval.total_seconds()
+        )
+        self._count = self.DEFAULT_COUNT if count <= 0 else count
+
+        self._reconnect = not not (
+            self.DEFAULT_RECONNECT if reconnect is None else reconnect
+        )
+
+        max_event_checks_per_iteration = (
+            self.DEFAULT_MAX_EVENT_CHECKS_PER_ITERATION
+            if max_event_checks_per_iteration is Ellipsis
+            else max_event_checks_per_iteration
+        )
         if isinstance(max_event_checks_per_iteration, (int, float)):
             self._max_event_checks_per_iteration = int(max_event_checks_per_iteration)
             if self._max_event_checks_per_iteration <= 0:
@@ -3374,20 +3401,30 @@ class EventJobBase(JobBase):
         else:
             self._max_event_checks_per_iteration = None
 
-        empty_queue_timeout = self.DEFAULT_EMPTY_QUEUE_TIMEOUT if empty_queue_timeout is Ellipsis else empty_queue_timeout
+        empty_queue_timeout = (
+            self.DEFAULT_EMPTY_QUEUE_TIMEOUT
+            if empty_queue_timeout is Ellipsis
+            else empty_queue_timeout
+        )
         if isinstance(empty_queue_timeout, datetime.timedelta):
             self._empty_queue_timeout_secs = empty_queue_timeout.total_seconds()
         else:
             self._empty_queue_timeout_secs = None
 
-        max_queue_size = self.DEFAULT_MAX_QUEUE_SIZE if max_queue_size is None else max_queue_size
+        max_queue_size = (
+            self.DEFAULT_MAX_QUEUE_SIZE if max_queue_size is None else max_queue_size
+        )
         if isinstance(max_queue_size, (int, float)):
             self._max_queue_size = int(max_queue_size)
         else:
             self._max_queue_size = None
-        
-        self._allow_queue_overflow = not not (self.DEFAULT_ALLOW_QUEUE_OVERFLOW if allow_queue_overflow is None else allow_queue_overflow)
-        
+
+        self._allow_queue_overflow = not not (
+            self.DEFAULT_ALLOW_QUEUE_OVERFLOW
+            if allow_queue_overflow is None
+            else allow_queue_overflow
+        )
+
         self._block_queue_on_stop = not not (
             self.DEFAULT_BLOCK_QUEUE_ON_STOP
             if block_queue_on_stop is None
@@ -3420,7 +3457,7 @@ class EventJobBase(JobBase):
         self._pre_event_queue = deque()
         self._event_queue = deque(maxlen=self._max_queue_size)
         self._last_event = None
-        
+
         self._task_loop = tasks.Loop(
             self._on_run,
             seconds=0,
@@ -3473,12 +3510,19 @@ class EventJobBase(JobBase):
         if self._clear_queue_at_startup:
             self._event_queue.clear()
 
-        iterator_obj = range(self._max_event_checks_per_iteration) if self._max_event_checks_per_iteration else itertools.count()
-        
+        iterator_obj = (
+            range(self._max_event_checks_per_iteration)
+            if self._max_event_checks_per_iteration
+            else itertools.count()
+        )
+
         for _ in iterator_obj:
             if not self._pre_event_queue:
                 break
-            elif len(self._event_queue) == self._max_queue_size and not self._allow_queue_overflow:
+            elif (
+                len(self._event_queue) == self._max_queue_size
+                and not self._allow_queue_overflow
+            ):
                 break
             event = self._pre_event_queue.popleft()
             if self.check_event(event):
@@ -3495,7 +3539,9 @@ class EventJobBase(JobBase):
 
         if not self._event_queue:
             if not self._empty_queue_timeout_secs:
-                if self._empty_queue_timeout_secs is None: # idle indefinitely until an event is recieved.
+                if (
+                    self._empty_queue_timeout_secs is None
+                ):  # idle indefinitely until an event is recieved.
                     if not self._is_idling:
                         self._is_idling = True
                         self._idling_since_ts = time.time()
@@ -3513,7 +3559,8 @@ class EventJobBase(JobBase):
 
             if (
                 self._is_idling
-                and (time.time() - self._idling_since_ts) > self._empty_queue_timeout_secs
+                and (time.time() - self._idling_since_ts)
+                > self._empty_queue_timeout_secs
             ):
                 self._stopping_by_idling_timeout = True
                 self.STOP()
@@ -3524,7 +3571,7 @@ class EventJobBase(JobBase):
         elif self._loop_count == self._count:
             self.STOP()
             return
-        
+
         self._is_idling = False
         self._idling_since_ts = None
 
@@ -3545,7 +3592,6 @@ class EventJobBase(JobBase):
                 delta -= MAX_ASYNCIO_SECONDS
             await asyncio.sleep(max(delta, 0))
 
-    
     async def on_run(self, event: events.BaseEvent):
         """The code to run whenever an event is recieved.
         This method must be overloaded in subclasses.
@@ -3649,6 +3695,7 @@ class EventJobBase(JobBase):
             output = reason
         return output
 
+
 @singletonjob
 @_sysjob
 class JobManagerJob(IntervalJobBase):
@@ -3662,5 +3709,6 @@ class JobManagerJob(IntervalJobBase):
 
     async def on_run(self):
         pass
+
 
 from .manager import JobManagerProxy

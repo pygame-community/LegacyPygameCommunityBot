@@ -18,7 +18,17 @@ import inspect
 import pickle
 import re
 import time
-from typing import Any, Callable, Coroutine, Iterable, Literal, Optional, Sequence, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Iterable,
+    Literal,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+)
 
 import discord
 from discord.ext import tasks
@@ -876,7 +886,9 @@ class JobManager:
             return proxy
         return job
 
-    def _get_job_from_proxy(self, job_proxy: JobProxy) -> Union[EventJobBase, IntervalJobBase]:
+    def _get_job_from_proxy(
+        self, job_proxy: JobProxy
+    ) -> Union[EventJobBase, IntervalJobBase]:
         try:
             job = job_proxy._JobProxy__j
         except AttributeError:
@@ -1421,7 +1433,10 @@ class JobManager:
                 f" , not {job.__class__.__name__}"
             ) from None
 
-        if isinstance(job, IntervalJobBase) and job._identifier in self._interval_job_ids:
+        if (
+            isinstance(job, IntervalJobBase)
+            and job._identifier in self._interval_job_ids
+        ):
             self._interval_job_ids.remove(job._identifier)
 
         elif isinstance(job, EventJobBase):
@@ -1647,7 +1662,9 @@ class JobManager:
                     ) from None
 
             elif isinstance(classes, tuple):
-                if not all(issubclass(c, (EventJobBase, IntervalJobBase)) for c in classes):
+                if not all(
+                    issubclass(c, (EventJobBase, IntervalJobBase)) for c in classes
+                ):
                     raise TypeError(
                         f"'classes' must be a tuple of 'EventJobBase' or 'IntervalJobBase' subclasses or a single subclass"
                     ) from None
@@ -2081,7 +2098,9 @@ class JobManager:
 
         job._unguard_futures.clear()
 
-    def __contains__(self, job_or_proxy: Union[EventJobBase, IntervalJobBase, JobProxy]):
+    def __contains__(
+        self, job_or_proxy: Union[EventJobBase, IntervalJobBase, JobProxy]
+    ):
         job = (
             self._get_job_from_proxy(job_or_proxy)
             if isinstance(job_or_proxy, JobProxy)

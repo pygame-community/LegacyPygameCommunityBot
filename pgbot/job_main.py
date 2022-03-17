@@ -14,8 +14,14 @@ from time import perf_counter
 from pgbot import common, db, events, serializers
 import pgbot.jobs
 from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS, JobNamespace
-from pgbot.jobs.utils import messaging, ClientEventJobBase, RegisterDelayedJob, SingleRunJob
+from pgbot.jobs.utils import (
+    messaging,
+    ClientEventJobBase,
+    RegisterDelayedJob,
+    SingleRunJob,
+)
 from pgbot.utils import embed_utils
+
 
 class MessagingTest1(ClientEventJobBase):
     EVENT_TYPES = (events.OnMessageBase,)
