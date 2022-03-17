@@ -20,12 +20,11 @@ import pygame
 
 from discord.ext import tasks
 from pgbot import commands, common, db, emotion, routine, jobs
-from pgbot.jobs import core
 from pgbot import job_main
 from pgbot.utils import embed_utils, utils
 
 
-class BotJobManager(core.JobManager):
+class BotJobManager(jobs.JobManager):
     """A `JobManager` subclass tailored to the current database system."""
 
     @tasks.loop(seconds=5, reconnect=False)

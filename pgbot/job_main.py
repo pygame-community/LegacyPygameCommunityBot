@@ -13,13 +13,11 @@ from time import perf_counter
 
 from pgbot import common, db, events, serializers
 import pgbot.jobs
-from pgbot.jobs import core
-from pgbot.jobs.core import PERMISSION_LEVELS
-from pgbot.jobs.utils import messaging
+from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS, JobNamespace
+from pgbot.jobs.utils import messaging, ClientEventJobBase, RegisterDelayedJob, SingleRunJob
 from pgbot.utils import embed_utils
 
-
-class MessagingTest1(core.ClientEventJob):
+class MessagingTest1(ClientEventJobBase):
     EVENT_TYPES = (events.OnMessageBase,)
 
     def __init__(self, target_channel: discord.TextChannel):
@@ -87,7 +85,7 @@ class MessagingTest1(core.ClientEventJob):
         self.COMPLETE()
 
 
-class IntervalJobTest(core.IntervalJob):
+class IntervalJobTest(IntervalJobBase):
     default_seconds = 10
 
     async def on_init(self):
@@ -103,10 +101,10 @@ class IntervalJobTest(core.IntervalJob):
             await self.data.target_channel.send("*Are you annoyed yet?*")
 
 
-class MessagingTest2(core.ClientEventJob):
+class MessagingTest2(ClientEventJobBase):
     EVENT_TYPES = (events.OnMessage,)
 
-    class TestNamespace(core.JobNamespace):
+    class TestNamespace(JobNamespace):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
             self.target_channel: discord.TextChannel = None
@@ -146,7 +144,7 @@ class MessagingTest2(core.ClientEventJob):
             await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.MEDIUM):
+class MemberReminderJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.MEDIUM):
     DEFAULT_SECONDS = 3
 
     async def on_run(self):
@@ -201,7 +199,7 @@ class MemberReminderJob(core.IntervalJob, permission_level=PERMISSION_LEVELS.MED
                 reminder_obj.write(new_reminders)
 
 
-class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
+class Main(SingleRunJob, permission_level=JOB_PERMISSION_LEVELS.HIGHEST):
     DEFAULT_RECONNECT = False
 
     async def on_start(self):
@@ -235,7 +233,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
             await self.manager.register_job(job)
 
         await self.manager.create_and_register_job(
-            core.RegisterDelayedJob,
+            RegisterDelayedJob,
             10.0,
             self.manager.create_job(
                 messaging.MessageSend,
@@ -278,7 +276,7 @@ class Main(core.SingleRunJob, permission_level=PERMISSION_LEVELS.HIGHEST):
         )
 
         await self.manager.create_job_schedule(
-            pgbot.jobs.utils.MethodCall,
+            pgbot.jobs.utils.MethodCallJob,
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
             job_kwargs=dict(
                 instance=serializers.TextChannelSerializer(msg_event.message.channel),

@@ -27,7 +27,7 @@ if not isinstance(client, discord.Client):
 class ClientEvent(base_events.BaseEvent):
     """The base class for all discord API websocket event wrapper objects, with values as returned by discord.py."""
 
-    ALT_NAME: str = None
+    ALT_NAME: Optional[str] = None
     """The actual event name used by the current discord API wrapper,
     if available for a client event subclass.
     """
@@ -263,21 +263,21 @@ class _OnRawReactionToggle(OnRawReactionBase):
             user = client.get_user(self.payload.user_id)
             if not user:
                 user = await client.fetch_user(self.payload.user_id)
-            discord.Emoji
-            channel = client.get_channel(self.payload.channel_id)
-            if not channel:
-                channel = await client.fetch_channel(self.payload.channel_id)
 
-            message = await channel.fetch_message(self.payload.message_id)
-            partial_emoji = self.payload.emoji
-            reaction = None
+        channel = client.get_channel(self.payload.channel_id)
+        if not channel:
+            channel = await client.fetch_channel(self.payload.channel_id)
 
-            for msg_reaction in message.reactions:
-                if msg_reaction.emoji == partial_emoji:
-                    reaction = msg_reaction
-                    break
-            else:
-                raise LookupError("Cannot find reaction object.")
+        message = await channel.fetch_message(self.payload.message_id)
+        partial_emoji = self.payload.emoji
+        reaction = None
+
+        for msg_reaction in message.reactions:
+            if msg_reaction.emoji == partial_emoji:
+                reaction = msg_reaction
+                break
+        else:
+            raise LookupError("Cannot find reaction object.")
 
         if self.payload.event_type == "REACTION_ADD":
             return OnReactionAdd(
@@ -953,7 +953,3 @@ class OnRelationshipUpdate(OnRelationshipBase):
         super().__init__(*args, **kwargs)
         self.before = before
         self.after = after
-
-
-if __name__ == "__main__":
-    print(OnGuildBase.get_subclass_names())

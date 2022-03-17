@@ -1,5 +1,5 @@
 """
-This file is a part of the source code for the PygameCommunityBot.
+This file is a part of the source code for snakecore.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
@@ -91,7 +91,7 @@ class BaseEvent:
 
     __base_slots__ = __slots__
     # helper class attribute for faster copying by skipping initialization when
-    # shallow-copying jobs
+    # shallow-copying events
 
     def __init_subclass__(cls):
 
@@ -109,7 +109,7 @@ class BaseEvent:
 
         cls.__base_slots__ = tuple(get_all_slot_names(cls))
 
-    def __init__(self, event_created_at: datetime.datetime = None):
+    def __init__(self, event_created_at: Optional[datetime.datetime] = None):
         if event_created_at:
             self._event_created_at = event_created_at
         else:

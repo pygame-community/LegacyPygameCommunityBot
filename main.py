@@ -10,14 +10,13 @@ import datetime
 import discord
 import pickle
 from pgbot import common
-from pgbot.jobs.core import events
+from pgbot import events
 import pgbot
 
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
 job_manager = common.job_manager
 bot = common.bot
-
 
 @bot.event
 async def on_ready():

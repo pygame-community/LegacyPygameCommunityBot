@@ -3,14 +3,14 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file implements job classes for scheduling messaging events as jobs. 
+This file implements job classes for scheduling Discord communication methods as jobs. 
 """
 
 from __future__ import annotations
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
 import io
 import discord
-from pgbot.jobs.core import IntervalJob, PERMISSION_LEVELS
+from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS
 from pgbot.utils import embed_utils
 from pgbot import common, serializers
 from pgbot import serializers as serials
@@ -19,7 +19,7 @@ NoneType = type(None)
 client = common.bot
 
 
-class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
+class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
     """A job class for sending a message into a
     discord text channel.
     """
@@ -174,7 +174,7 @@ class MessageSend(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
             self.COMPLETE()
 
 
-class _MessageModify(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
+class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
     """A intermediary job class for modifying a message in a
     Discord text channel. Does not do anything on its own.
     """

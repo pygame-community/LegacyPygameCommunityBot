@@ -7,15 +7,76 @@ This module implements utility job classes.
 """
 
 from __future__ import annotations
+import asyncio
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
-from pgbot.jobs.core import IntervalJob, PERMISSION_LEVELS
+from pgbot.jobs import IntervalJobBase, JobProxy, EventJobBase, JOB_PERMISSION_LEVELS
 from pgbot.utils import embed_utils
-from pgbot import common, serializers
+from pgbot import common, events, serializers
 from pgbot import serializers as serials
 from . import messaging
 
+class ClientEventJobBase(EventJobBase):
+    """A subclass of `EventJobBase` for jobs that run in reaction to specific client events
+    (Discord API events) passed to them by their `JobManager` object.
+    
+    Excluding the value of the `EVENT_TYPES` class variable, this job object
+    is functionally equivalent to `EventJobBase`. 
 
-class MethodCall(IntervalJob, permission_level=PERMISSION_LEVELS.LOWEST):
+    Attributes:
+        EVENT_TYPES:
+            A tuple denoting the set of `ClientEvent` classes whose instances
+            should be recieved after their corresponding event is registered
+            by the `JobManager` of an instance of this class. By default,
+            all instances of `ClientEvent` will be propagated.
+    """
+
+    EVENT_TYPES: tuple = (events.ClientEvent,)
+
+class SingleRunJob(IntervalJobBase):
+    """A subclass of `IntervalJobBase` whose subclasses's
+    job objects will only run once and then complete themselves.
+    automatically. For more control, use `IntervalJobBase` directly.
+    """
+
+    DEFAULT_COUNT = 1
+
+    async def on_stop(self, reason, by_force):
+        self.COMPLETE()
+
+class RegisterDelayedJob(SingleRunJob):
+    """A subclass of `SingleRunJob` that
+    adds a given set of job proxies to its `JobManager`
+    only after a given period of time in seconds.
+
+    Attributes:
+        delay (float):
+            The delay for the input jobs in seconds.
+    """
+
+    def __init__(self, delay: float, *job_proxies: JobProxy, **kwargs):
+        """Create a new RegisterDelayedJob instance.
+
+        Args:
+            delay (float):
+                The delay for the input jobs in seconds.
+            *jobs Union[ClientEventJob, IntervalJobBase]:
+                The jobs to be delayed.
+        """
+        super().__init__(**kwargs)
+        self.data.delay = delay
+        self.data.jobs = job_proxies
+
+    async def on_start(self):
+        await asyncio.sleep(self.data.delay)
+
+    async def on_run(self):
+        for job_proxy in self.data.jobs:
+            await self.manager.register_job(job_proxy)
+
+    async def on_stop(self, reason, by_force):
+        self.COMPLETE()
+
+class MethodCallJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
     """A job class for calling a method on an object."""
 
     OUTPUT_FIELDS = frozenset(("output",))
