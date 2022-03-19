@@ -8,10 +8,9 @@ This module implements utility job classes.
 
 from __future__ import annotations
 import asyncio
-from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
+from typing import Optional
 from pgbot.jobs import IntervalJobBase, JobProxy, EventJobBase, JOB_PERMISSION_LEVELS
-from pgbot.utils import embed_utils
-from pgbot import common, events, serializers
+from pgbot import events
 from pgbot import serializers as serials
 from . import messaging
 

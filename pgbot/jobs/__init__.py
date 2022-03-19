@@ -10,7 +10,6 @@ from .base_jobs import (
     get_job_class_from_id,
     get_job_class_id,
     get_job_class_permission_level,
-    call_with_method,
     DEFAULT_JOB_EXCEPTION_WHITELIST,
     JOB_STATUS,
     JOB_VERBS,
@@ -23,13 +22,12 @@ from .base_jobs import (
     JobWarning,
     JobNamespace,
     singletonjob,
-    JobProxy,
-    JobOutputQueueProxy,
     jobservice,
     JobBase,
     IntervalJobBase,
     EventJobBase,
     JobManagerJob,
 )
-from .manager import JobManager, JobManagerProxy
+from .manager import JobManager
+from .proxies import *
 from . import utils

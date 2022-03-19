@@ -10,35 +10,14 @@ at runtime.
 from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from collections import deque
 import datetime
-from functools import partial
-import itertools
-import inspect
 import pickle
-import re
 import time
-from typing import (
-    Any,
-    Callable,
-    Coroutine,
-    Iterable,
-    Literal,
-    Optional,
-    Sequence,
-    Type,
-    Union,
-)
-
-import discord
-from discord.ext import tasks
-from pgbot.events.base_events import BaseEvent
+from typing import Callable, Literal, Optional, Type, Union
 
 from pgbot.utils import utils
-from pgbot import common, db, events
+from pgbot import common, events
 from .base_jobs import (
-    JobProxy,
-    JobBase,
     EventJobBase,
     IntervalJobBase,
     _SingletonMixinJobBase,
@@ -53,6 +32,7 @@ from .base_jobs import (
     get_job_class_from_id,
     get_job_class_permission_level,
 )
+from .proxies import JobProxy
 
 client = common.bot
 
@@ -70,9 +50,8 @@ class JobManager:
 
         Args:
             loop: The event loop to use. Defaults to None.
-            global_job_timeout (Optional[float]):
-                The default global job timeout in seconds.
-                Defaults to None.
+            global_job_timeout (Optional[float]): The default global job timeout
+              in seconds. Defaults to None.
         """
         if loop is None:
             try:
@@ -126,7 +105,7 @@ class JobManager:
         """
         if not isinstance(loop, asyncio.AbstractEventLoop):
             raise TypeError(
-                "invalid event loop, must be a subclass of asyncio.AbstractEventLoop"
+                "invalid event loop, must be a subclass of " "asyncio.AbstractEventLoop"
             ) from None
         self._loop = loop
 
@@ -177,7 +156,8 @@ class JobManager:
 
         if not isinstance(unpickled_data, dict):
             raise TypeError(
-                f"invalid object of type '{unpickled_data.__class__}' in pickle data, must be of type 'dict'"
+                f"invalid object of type '{unpickled_data.__class__}' in pickle data, "
+                "must be of type 'dict'"
             )
         return unpickled_data
 
@@ -185,8 +165,8 @@ class JobManager:
     def pickle_dict(target_dict):
         if not isinstance(target_dict, dict):
             raise TypeError(
-                f"argument 'target_dict' must be of type 'dict',"
-                f" not {target_dict.__class__}"
+                f"argument 'target_dict' must be of type 'dict', "
+                f"not {target_dict.__class__}"
             )
 
         pickled_data = pickle.dumps(target_dict)
@@ -251,7 +231,8 @@ class JobManager:
                                     continue
                             except OverflowError as e:
                                 print(
-                                    f"Job scheduling for {schedule_identifier} failed: Too high recurring timestamp value",
+                                    f"Job scheduling for {schedule_identifier} failed: "
+                                    "Too high recurring timestamp value",
                                     utils.format_code_exception(e),
                                 )
                                 deletion_list.append(schedule_identifier)
@@ -267,7 +248,8 @@ class JobManager:
                             )
                         except KeyError:
                             print(
-                                f"Job initiation failed: Could not find job type called '{schedule_data['class_id']}'"
+                                f"Job initiation failed: Could not find job type called "
+                                f"'{schedule_data['class_id']}'"
                             )
                             deletion_list.append(schedule_identifier)
                             self._schedule_ids.remove(schedule_identifier)
@@ -448,7 +430,7 @@ class JobManager:
 
         if self._scheduling_is_initialized:
             raise RuntimeError(
-                "cannot load scheduling data" f" while job scheduling is initialized."
+                "cannot load scheduling data while job scheduling is initialized."
             )
 
         elif len(self._schedule_dict) > 1 and not overwrite:
@@ -521,8 +503,8 @@ class JobManager:
         return self._scheduling_is_initialized
 
     def wait_for_job_scheduling_initialization(self, timeout: Optional[float] = None):
-        """This method returns a coroutine that can be used to wait until job scheduling
-        is initialized.
+        """This method returns a coroutine that can be used to wait until job
+        scheduling is initialized.
 
         Raises:
             RuntimeError: Job scheduling is already initialized.
@@ -539,8 +521,8 @@ class JobManager:
         raise RuntimeError("Job scheduling is already initialized.")
 
     def wait_for_job_scheduling_uninitialization(self, timeout: Optional[float] = None):
-        """This method returns a coroutine that can be used to wait until job scheduling
-        is uninitialized.
+        """This method returns a coroutine that can be used to wait until job
+        scheduling is uninitialized.
 
         Raises:
             RuntimeError: Job scheduling is not initialized.
@@ -589,12 +571,14 @@ class JobManager:
         target_cls_permission_level = None
         if not isinstance(op, str):
             raise TypeError(
-                "argument 'op' must be a string defined in the 'JOB_VERBS' class namespace"
+                "argument 'op' must be a string defined in the 'JOB_VERBS' "
+                "class namespace"
             )
 
         elif op not in JOB_VERBS.__dict__:
             raise ValueError(
-                "argument 'op' must be a string defined in the 'JOB_VERBS' class namespace"
+                "argument 'op' must be a string defined in the 'JOB_VERBS' "
+                "class namespace"
             )
 
         elif (
@@ -901,11 +885,11 @@ class JobManager:
         raise_exceptions: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
-        """Initialize this job object.
+        """Initialize a job object.
 
         Args:
-            raise_exceptions (bool, optional):
-                Whether exceptions should be raised. Defaults to True.
+            raise_exceptions (bool, optional): Whether exceptions should be raised.
+              Defaults to True.
 
         Raises:
             JobInitializationError: The job given was already initialized.
@@ -958,11 +942,10 @@ class JobManager:
         while initializing it if necessary.
 
         Args:
-            job (Union[EventJobBase, IntervalJobBase, JobProxy]):
-                The job object to be registered.
-            start (bool):
-                Whether the given job object should start automatically
-                upon registration.
+            job (Union[EventJobBase, IntervalJobBase, JobProxy]): The job object
+              to be registered.
+            start (bool): Whether the given job object should start automatically
+              upon registration.
 
         Raises:
             JobStateError: Invalid job state for registration.
@@ -1050,32 +1033,27 @@ class JobManager:
         Those arguments must be pickleable.
 
         Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job type to schedule.
-            timestamp (Union[int, float, datetime.datetime]):
-                The exact timestamp or offset at which to instantiate a job.
-            recur_interval (Optional[Union[int, float, datetime.timedelta]]):
-                The interval at which a job should be rescheduled in seconds.
-                `None` or 0 means that no recurrences will occur. -1 means that
-                the smallest possible recur interval should be used.
-                Defaults to None.
-            max_recurrences (int):
-                The maximum amount of recurrences for rescheduling.
-                A value of -1 means that no maximum is set. Otherwise, the value
-                of this argument must be a non-zero positive integer.
-                If no `recur_interval` value was provided, the value of this argument
-                will be ignored during scheduling and set to -1.
-                Defaults to -1.
-            job_args (tuple, optional):
-                Positional arguments to pass to the scheduled job upon
-                instantiation. Defaults to ().
-            job_kwargs (dict, optional):
-                Keyword arguments to pass to the scheduled job upon instantiation.
-                Defaults to None.
+            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job type to
+              schedule.
+            timestamp (Union[int, float, datetime.datetime]): The exact timestamp
+              or offset at which to instantiate a job.
+            recur_interval (Optional[Union[int, float, datetime.timedelta]]): The
+              interval at which a job should be rescheduled in seconds. `None` or
+              0 means that no recurrences will occur. -1 means that the smallest
+              possible recur interval should be used. Defaults to None.
+            max_recurrences (int): The maximum amount of recurrences for
+              rescheduling. A value of -1 means that no maximum is set. Otherwise,
+              the value of this argument must be a non-zero positive integer. If no
+              `recur_interval` value was provided, the value of this argument will
+              be ignored during scheduling and set to -1. Defaults to -1.
+            job_args (tuple, optional): Positional arguments to pass to the
+              scheduled job upon instantiation. Defaults to ().
+            job_kwargs (dict, optional): Keyword arguments to pass to the scheduled
+              job upon instantiation. Defaults to None.
 
         Raises:
-            RuntimeError:
-                The job manager has not yet initialized job scheduling,
-                or this job manager object is not initialized.
+            RuntimeError: The job manager has not yet initialized job scheduling,
+              or this job manager object is not initialized.
             TypeError: Invalid argument types were given.
 
         Returns:
@@ -1213,9 +1191,8 @@ class JobManager:
         identifier failed.
 
         Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
+            schedule_identifier (str): A string identifier following this structure:
+              'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
 
         Raises:
             ValueError: Invalid schedule identifier.
@@ -1236,9 +1213,8 @@ class JobManager:
         identifier exists.
 
         Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
+            schedule_identifier (str): A string identifier following this structure:
+              'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
 
         Raises:
             ValueError: Invalid schedule identifier.
@@ -1263,9 +1239,9 @@ class JobManager:
         of the schedule operation.
 
         Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
+            schedule_identifier (str): A string identifier following
+              this structure:
+              'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
 
         Raises:
             ValueError: Invalid schedule identifier.
@@ -1400,8 +1376,8 @@ class JobManager:
             self._interval_job_ids.add(job._identifier)
         else:
             raise TypeError(
-                f"expected an instance of EventJobBase or IntervalJobBase subclasses,"
-                f" not {job.__class__.__name__}"
+                f"expected an instance of EventJobBase or IntervalJobBase subclasses, "
+                f"not {job.__class__.__name__}"
             ) from None
 
         if job.__class__._IDENTIFIER not in self._job_type_count_dict:
@@ -1429,8 +1405,8 @@ class JobManager:
         """
         if not isinstance(job, (EventJobBase, IntervalJobBase)):
             raise TypeError(
-                f"expected an instance of class EventJobBase or IntervalJobBase"
-                f" , not {job.__class__.__name__}"
+                f"expected an instance of class EventJobBase or IntervalJobBase "
+                f", not {job.__class__.__name__}"
             ) from None
 
         if (
@@ -1463,8 +1439,8 @@ class JobManager:
         Remove the given job objects from this job manager.
 
         Args:
-            *jobs: Union[EventJobBase, IntervalJobBase]:
-                The jobs to be removed, if present.
+            *jobs: Union[EventJobBase, IntervalJobBase]: The jobs to be removed, if
+              present.
         Raises:
             TypeError: An invalid object was given as a job.
         """
@@ -1475,7 +1451,8 @@ class JobManager:
         """Whether a job is contained in this job manager.
 
         Args:
-            job_or_proxy (Union[EventJobBase, IntervalJobBase]): The job object to look for.
+            job_or_proxy (Union[EventJobBase, IntervalJobBase]): The job object to look
+              for.
 
         Returns:
             bool: True/False
@@ -1511,11 +1488,11 @@ class JobManager:
 
         Args:
 
-            identifier (Optional[str]):
-                The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
+            identifier (Optional[str]): The exact identifier of the job to find. This
+              argument overrides any other parameter below. Defaults to None.
 
-            created_at (Optional[datetime.datetime]):
-                The exact creation date of the job to find. Defaults to None.
+            created_at (Optional[datetime.datetime]): The exact creation date of the
+              job to find. Defaults to None.
 
         Raises:
             TypeError: One of the arguments must be specified.
@@ -1602,44 +1579,44 @@ class JobManager:
                         ]
                     ]
                 ]
-            ):
-                The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
-            exact_class_match (bool):
-                Whether an exact match is required for the classes in the previous parameter,
-                or subclasses are allowed too. Defaults to False.
+            ): The class(es) of the job objects to limit the job search to, excluding
+              subclasses. Defaults to None.
+            exact_class_match (bool): Whether an exact match is required for the
+              classes in the previous parameter, or subclasses are allowed too.
+              Defaults to False.
 
-            created_before (Optional[datetime.datetime]):
-                The lower age limit of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            permission_level (Optional[int]):
-                The permission level of the jobs to find. Defaults to None.
-            above_permission_level (Optional[int]):
-                The lower permission level value of the jobs to find. Defaults to None.
-            below_permission_level (Optional[int]):
-                The upper permission level value of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            alive (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_running (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_idling (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_awaiting (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_stopped (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            stopped (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_restarted (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_killed (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_completed (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
+            created_before (Optional[datetime.datetime]): The lower age limit of the
+              jobs to find. Defaults to None.
+            created_after (Optional[datetime.datetime]): The upper age limit of the
+              jobs to find. Defaults to None.
+            permission_level (Optional[int]): The permission level of the jobs to
+              find. Defaults to None.
+            above_permission_level (Optional[int]): The lower permission level
+              value of the jobs to find. Defaults to None.
+            below_permission_level (Optional[int]): The upper permission level
+              value of the jobs to find. Defaults to None.
+            created_after (Optional[datetime.datetime]): The upper age limit
+              of the jobs to find. Defaults to None.
+            created_after (Optional[datetime.datetime]): The upper age limit
+              of the jobs to find. Defaults to None.
+            alive (Optional[bool]): A boolean that a job's state should match.
+              Defaults to None.
+            is_running (Optional[bool]): A boolean that a job's state should
+              match. Defaults to None.
+            is_idling (Optional[bool]): A boolean that a job's state should
+              match. Defaults to None.
+            is_awaiting (Optional[bool]): A boolean that a job's state should
+              match. Defaults to None.
+            is_being_stopped (Optional[bool]): A boolean that a job's state
+              should match. Defaults to None.
+            stopped (Optional[bool]): A boolean that a job's state should
+              match. Defaults to None.
+            is_being_restarted (Optional[bool]): A boolean that a job's
+              state should match. Defaults to None.
+            is_being_killed (Optional[bool]): A boolean that a job's
+              state should match. Defaults to None.
+            is_being_completed (Optional[bool]): A boolean that a job's state
+              should match. Defaults to None.
 
         Returns:
             tuple: A tuple of the job object proxies that were found.
@@ -1681,7 +1658,8 @@ class JobManager:
                 filter_functions.append(lambda job: job.created_at < created_before)
             else:
                 raise TypeError(
-                    f"'created_before' must be of type 'datetime.datetime', not {type(created_before)}"
+                    f"'created_before' must be of type 'datetime.datetime', not "
+                    f"{type(created_before)}"
                 ) from None
 
         if created_after is not None:
@@ -1691,14 +1669,15 @@ class JobManager:
                 )
             else:
                 raise TypeError(
-                    f"'created_after' must be of type 'datetime.datetime', not {type(created_after)}"
+                    f"'created_after' must be of type 'datetime.datetime', not "
+                    f"{type(created_after)}"
                 ) from None
 
         if permission_level is not None:
             if not isinstance(permission_level, int):
                 raise TypeError(
-                    "argument 'permission_level' must be"
-                    f" of type 'int', not {below_permission_level.__class__}"
+                    "argument 'permission_level' must be "
+                    f"of type 'int', not {below_permission_level.__class__}"
                 )
 
             if (
@@ -1712,15 +1691,15 @@ class JobManager:
                 )
             else:
                 raise ValueError(
-                    "argument 'permission_level' must be"
-                    " a valid permission level integer"
+                    "argument 'permission_level' must be "
+                    "a valid permission level integer"
                 )
 
         if below_permission_level is not None:
             if not isinstance(below_permission_level, int):
                 raise TypeError(
-                    "argument 'below_permission_level' must be"
-                    f" of type 'int', not {below_permission_level.__class__}"
+                    "argument 'below_permission_level' must be "
+                    f"of type 'int', not {below_permission_level.__class__}"
                 )
 
             if (
@@ -1734,15 +1713,15 @@ class JobManager:
                 )
             else:
                 raise ValueError(
-                    "argument 'below_permission_level' must be"
-                    " a valid permission level integer"
+                    "argument 'below_permission_level' must be "
+                    "a valid permission level integer"
                 )
 
         if above_permission_level is not None:
             if not isinstance(above_permission_level, int):
                 raise TypeError(
-                    "argument 'above_permission_level' must be"
-                    f" of type 'int', not {above_permission_level.__class__}"
+                    "argument 'above_permission_level' must be "
+                    f"of type 'int', not {above_permission_level.__class__}"
                 )
 
             if (
@@ -1756,8 +1735,8 @@ class JobManager:
                 )
             else:
                 raise ValueError(
-                    "argument 'above_permission_level' must be"
-                    " a valid permission level integer"
+                    "argument 'above_permission_level' must be "
+                    "a valid permission level integer"
                 )
 
         if alive is not None:
@@ -1865,7 +1844,7 @@ class JobManager:
 
     def restart_job(
         self,
-        job_or_proxy: Union[IntervalJobBase, EventJobBase],
+        job_or_proxy: Union[IntervalJobBase, EventJobBase, JobProxy],
         stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
@@ -1875,10 +1854,10 @@ class JobManager:
 
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job while it is restarting. This overrides
-                the global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float]): An optional timeout in seconds
+              for the maximum time period
+              for stopping the job while it is restarting. This overrides
+              the global timeout of this `JobManager` if present.
         Returns:
             bool: Whether the operation was initiated by the job.
         """
@@ -1917,10 +1896,9 @@ class JobManager:
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
             force (bool): Whether to suspend all operations of the job forcefully.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job. This overrides the global timeout of this
-                `JobManager` if present.
+            stopping_timeout (Optional[float]): An optional timeout in seconds for
+              the maximum time period for stopping the job. This overrides the
+              global timeout of this `JobManager` if present.
 
         Returns:
             bool: Whether the operation was successful.
@@ -1960,10 +1938,10 @@ class JobManager:
 
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job while it is being killed. This overrides the
-                global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float]): An optional timeout in seconds
+              for the maximum time period for stopping the job while it is being
+              killed. This overrides the
+              global timeout of this `JobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
@@ -2003,11 +1981,9 @@ class JobManager:
             job_or_proxy (Union[EventJobBase, IntervalJobBase, JobProxy]): The job object.
 
         Raises:
-            JobStateError:
-                The given target job object is already being guarded by a job.
-            JobStateError:
-                The given target job object is already
-                being guarded by the invoker job object.
+            JobStateError: The given target job object is already being guarded by a job.
+            JobStateError: The given target job object is already being guarded by the
+            invoker job object.
         """
 
         job = (
@@ -2048,14 +2024,13 @@ class JobManager:
         modifications by other jobs.
 
         Args:
-            job_or_proxy (Union[EventJobBase, IntervalJobBase, JobProxy]): The job object.
+            job_or_proxy (Union[EventJobBase, IntervalJobBase, JobProxy]): The job
+              object.
 
         Raises:
-            JobStateError:
-                The given target job object is not being guarded by a job.
-            JobStateError:
-                The given target job object is already
-                being guarded by the invoker job object.
+            JobStateError: The given target job object is not being guarded by a job.
+            JobStateError: The given target job object is already being guarded by
+              the invoker job object.
         """
         job = (
             self._get_job_from_proxy(job_or_proxy)
@@ -2088,8 +2063,8 @@ class JobManager:
 
         else:
             raise JobStateError(
-                "the given target job object is not"
-                " being guarded by the invoker job object"
+                "the given target job object is not "
+                "being guarded by the invoker job object"
             )
 
         for fut in job._unguard_futures:
@@ -2184,22 +2159,20 @@ class JobManager:
         and return it as an event object using the given coroutine.
 
         Args:
-            *event_types (Type[events.BaseEvent]):
-                The event type/types to wait for. If any of its/their
-                instances is dispatched, that instance will be returned.
-            check (Optional[Callable[[events.BaseEvent], bool]]):
-                A callable obejct used to validate if a valid event that was recieved meets specific conditions.
-                Defaults to None.
-            timeout: (Optional[float]):
-                An optional timeout value in seconds for the maximum waiting period.
+            *event_types (Type[events.BaseEvent]): The event type/types to wait for. If
+              any of its/their instances is dispatched, that instance will be returned.
+            check (Optional[Callable[[events.BaseEvent], bool]]): A callable obejct
+              used to validate if a valid event that was recieved meets specific
+              conditions. Defaults to None.
+            timeout: (Optional[float]): An optional timeout value in seconds for
+              the maximum waiting period.
 
         Raises:
             TimeoutError: The timeout value was exceeded.
             CancelledError: The future used to wait for an event was cancelled.
 
         Returns:
-            Coroutine:
-                A coroutine that evaluates to a valid `BaseEvent` event object.
+            Coroutine: A coroutine that evaluates to a valid `BaseEvent` event object.
         """
 
         check = (lambda _: True) if check is None else check
@@ -2228,7 +2201,9 @@ class JobManager:
             job._KILL_EXTERNAL(awaken=True)
 
     def kill_all_interval_jobs(self):
-        """Kill all job objects inheriting from `IntervalJobBase` that are in this job manager."""
+        """Kill all job objects inheriting from `IntervalJobBase` that are in this job
+        manager.
+        """
         for job in (
             ij
             for ij in (
@@ -2239,7 +2214,9 @@ class JobManager:
                 job._KILL_EXTERNAL(awaken=True)
 
     def kill_all_event_jobs(self):
-        """Kill all job objects inheriting from `EventJobBase` that are in this job manager."""
+        """Kill all job objects inheriting from `EventJobBase` that are in this job
+        manager.
+        """
         for ej_id_set in self._event_job_ids.values():
             for job_identifier in ej_id_set:
                 job = self._job_id_map[job_identifier]
@@ -2254,633 +2231,4 @@ class JobManager:
         self._running = False
 
 
-class JobManagerProxy:
-
-    __slots__ = ("__mgr", "__j", "_job_stop_timeout")
-
-    def __init__(self, mgr: JobManager, job: Union[EventJobBase, IntervalJobBase]):
-        self.__mgr = mgr
-        self.__j = job
-        self._job_stop_timeout = None
-
-    def get_job_stop_timeout(self):
-        """Get the maximum time period in seconds for the job object managed
-        by this `JobManagerProxy` to stop when halted from the
-        `JobManager`, either due to being stopped, restarted or killed.
-        By default, this method returns the global job timeout set for the
-        current `JobManager`, but that can be overridden with a custom
-        timeout when trying to stop the job object.
-
-        Returns:
-            float: The timeout in seconds.
-            None:
-                No timeout was set for the job object or globally for the
-                current `JobManager`.
-        """
-
-        return (
-            self._job_stop_timeout
-            if self._job_stop_timeout
-            else self.__mgr.get_global_job_stop_timeout()
-        )
-
-    def verify_permissions(
-        self,
-        op: str,
-        target: Optional[JobProxy] = None,
-        target_cls: Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]] = None,
-        schedule_identifier: Optional[str] = None,
-        scheduler_identifier: Optional[str] = None,
-    ):
-        """Check if the permissions of the job of this `JobManagerProxy` object
-        are sufficient for carrying out the specified operation on the given input.
-
-        Args:
-            op (str):
-                The operation. Must be one of the operations defined in the `JOB_VERBS`
-                class namespace.
-
-            target (Optional[JobProxy]):
-                The target job for an operation. Defaults to None.
-
-            target_cls (Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]]):
-                The target job class for an operation. Defaults to None.
-
-            schedule_identifier (Optional[str]):
-                A target schedule identifier. Defaults to None.
-
-            scheduler_identifier (Optional[str]):
-                A target job with this specific identifier if existent,
-                but can also be an enpty string. Defaults to None.
-
-        Returns:
-            bool: The result of the permission check.
-        """
-
-        return self.__mgr._verify_permissions(
-            self.__j,
-            op,
-            target=self.__mgr._get_job_from_proxy(target)
-            if target is not None
-            else target,
-            target_cls=target_cls,
-            schedule_identifier=schedule_identifier,
-            scheduler_identifier=scheduler_identifier,
-            raise_exceptions=False,
-        )
-
-    def create_job(
-        self, cls: Union[Type[EventJobBase], Type[IntervalJobBase]], *args, **kwargs
-    ):
-        """Create an instance of a job class.
-
-        Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]):
-                The job class to instantiate a job object from.
-
-        Returns:
-            JobProxy: A job proxy object.
-        """
-        return self.__mgr.create_job(
-            cls, *args, _return_proxy=True, _invoker=self.__j, **kwargs
-        )
-
-    async def initialize_job(self, job_proxy: JobProxy, raise_exceptions: bool = True):
-        """This initializes a job object.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-            raise_exceptions (bool, optional):
-                Whether exceptions should be raised. Defaults to True.
-
-        Returns:
-            bool: Whether the initialization attempt was successful.
-        """
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return await self.__mgr.initialize_job(job, raise_exceptions=raise_exceptions)
-
-    async def register_job(self, job_proxy: JobProxy):
-        """Register a job object to this JobManager, while initializing it if necessary.
-
-        Args:
-            job_proxy (JobProxy): A job object proxy whose job should be registered.
-        """
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return await self.__mgr.register_job(job, _invoker=self.__j)
-
-    async def create_and_register_job(
-        self, cls: Union[Type[EventJobBase], Type[IntervalJobBase]], *args, **kwargs
-    ):
-        """Create an instance of a job class, and register it to this `BotTaskManager`.
-
-        Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]):
-                The job class to be used for instantiation.
-
-        Returns:
-            JobProxy: A job proxy object.
-        """
-
-        return await self.__mgr.create_and_register_job(
-            cls,
-            *args,
-            _return_proxy=True,
-            _invoker=self.__j,
-            **kwargs,
-        )
-
-    def restart_job(
-        self, job_proxy: JobProxy, stopping_timeout: Optional[float] = None
-    ):
-        """Restart the given job object. This provides a cleaner way
-        to forcefully stop a job and restart it, or to wake it up from
-        a stopped state after it was stoppd.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job while it is restarting. This overrides
-                the global timeout of this `JobManager` if present.
-
-        Returns:
-            bool: Whether the operation was initiated by the job.
-        """
-
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-
-        if job is self.__j:
-            job.RESTART()
-
-        return self.__mgr.restart_job(
-            job, stopping_timeout=stopping_timeout, _invoker=self.__j
-        )
-
-    def start_job(
-        self,
-        job_proxy: JobProxy,
-    ):
-        """Start the given job object.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-        """
-
-        return self.__mgr.start_job(job_proxy, _invoker=self.__j)
-
-    def stop_job(
-        self,
-        job_proxy: JobProxy,
-        stopping_timeout: Optional[float] = None,
-        force=False,
-    ):
-        """Stop the given job object.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job. This overrides the global timeout of this
-                `JobManager` if present.
-            force (bool): Whether to suspend all operations of the job forcefully.
-
-        Returns:
-            bool: Whether the operation was initiated by the job.
-        """
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-
-        if job is self.__j:
-            job.STOP(force=force)
-
-        return self.__mgr.stop_job(
-            job, stopping_timeout=stopping_timeout, force=force, _invoker=self.__j
-        )
-
-    def kill_job(self, job_proxy: JobProxy, stopping_timeout: Optional[float] = None):
-        """Stops a job's current execution unconditionally and remove it from its `JobManager`.
-        In order to check if a job was ended by killing it, one can call `.is_killed()`.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-            stopping_timeout (Optional[float]):
-                An optional timeout in seconds for the maximum time period
-                for stopping the job while it is being killed. This overrides the
-                global timeout of this `JobManager` if present.
-
-        Returns:
-            bool: Whether the operation was initiated by the job.
-        """
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-
-        if job is self.__j:
-            job.KILL()
-
-        return self.__mgr.kill_job(
-            job, stopping_timeout=stopping_timeout, _invoker=self.__j
-        )
-
-    def get_guarded_jobs(self):
-        return tuple(self.__j._guarded_job_proxies_set)
-
-    def guard_job(
-        self,
-        job_proxy: JobProxy,
-    ):
-        """Place a guard on the given job object, to prevent unintended state
-        modifications by other jobs.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-
-        Raises:
-            JobStateError:
-                The given target job object is already being guarded by a job.
-            JobStateError:
-                The given target job object is already
-                being guarded by the invoker job object.
-        """
-        return self.__mgr.guard_job(job_proxy, _invoker=self.__j)
-
-    def unguard_job(
-        self,
-        job_proxy: JobProxy,
-    ):
-        """Remove the guard on the given job object, to prevent unintended state
-        modifications by other jobs.
-
-        Args:
-            job_proxy (JobProxy): The job object's proxy.
-
-        Raises:
-            JobStateError:
-                The given target job object is not being guarded by a job.
-            JobStateError:
-                The given target job object is already
-                being guarded by the invoker job object.
-        """
-
-        return self.__mgr.unguard_job(job_proxy, _invoker=self.__j)
-
-    def _eject(self):
-        """
-        Irreversible job death. Do not call this method without ensuring that
-        a job is killed.
-        """
-        if not self.__j.alive():
-            self.__mgr._remove_job(self.__j)
-            self.__j._manager = None
-            self.__j = None
-            self.__mgr = None
-
-    def _unguard(self):
-        """
-        Unguard the job of this job manager proxy.
-        """
-        if self.__j._is_being_guarded:
-            guardian = self.__mgr._get_job_from_proxy(self.__j._guardian)
-            self.__mgr.unguard_job(self.__j, _invoker=guardian)
-
-    def job_scheduling_is_initialized(self):
-        """Whether the job scheduling process of this job manager is initialized."""
-        return self.__mgr.job_scheduling_is_initialized()
-
-    async def wait_for_job_scheduling_initialization(self):
-        """An awaitable coroutine that can be used to wait until job scheduling
-        is initialized.
-
-        Raises:
-            RuntimeError: Job scheduling is already initialized.
-        """
-        return await self.__mgr.wait_for_job_scheduling_initialization()
-
-    async def wait_for_job_scheduling_uninitialization(self):
-        """This method returns a `Future` that can be used to wait until job scheduling
-        is uninitialized.
-
-        Raises:
-            RuntimeError: Job scheduling is not initialized.
-
-        Returns:
-            Future: A future object.
-        """
-
-        return await self.__mgr.wait_for_job_scheduling_uninitialization()
-
-    async def create_job_schedule(
-        self,
-        cls: Union[Type[EventJobBase], Type[IntervalJobBase]],
-        timestamp: Union[datetime.datetime, datetime.timedelta],
-        recur_interval: Union[int, datetime.timedelta] = 0,
-        max_recurrences: int = 1,
-        job_args: tuple = (),
-        job_kwargs: Optional[dict] = None,
-    ):
-        """Schedule a job of a specific type to be instantiated and to run at
-        one or more specific periods of time. Each job can receive positional
-        or keyword arguments which are passed to this method.
-        Those arguments must be pickleable.
-
-        Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job type to schedule.
-            timestamp (Union[datetime.datetime, datetime.timedelta]):
-                The exact timestamp at which to instantiate a job.
-            recur_interval (Optional[datetime.timedelta]):
-                The interval at which a job should be rescheduled.
-                Defaults to None.
-            max_recurrences (int):
-                The maximum amount of recur intervals for rescheduling.
-                -1 sets the interval maximum to be unlimited.
-                Defaults to 1.
-            job_args (tuple, optional):
-                Positional arguments to pass to the scheduled job upon
-                instantiation. Defaults to None.
-            job_kwargs (dict, optional):
-                Keyword arguments to pass to the scheduled job upon instantiation.
-                Defaults to None.
-
-        Raises:
-            RuntimeError:
-                The job manager has not yet initialized job scheduling.
-            TypeError: Invalid argument types were given.
-
-        Returns:
-            str: The string identifier of the scheduling operation
-        """
-        return await self.__mgr.create_job_schedule(
-            cls=cls,
-            timestamp=timestamp,
-            recur_interval=recur_interval,
-            max_recurrences=max_recurrences,
-            job_args=job_args,
-            job_kwargs=job_kwargs,
-            _invoker=self.__j,
-        )
-
-    def get_job_schedule_identifiers(self):
-        """Return a tuple of all job schedule identifiers pointing to
-        scheduling data.
-
-        Returns:
-            tuple: All job schedule identifiers.
-        """
-
-        return self.__mgr.get_job_schedule_identifiers()
-
-    def job_schedule_has_failed(self, schedule_identifier: str):
-        """Whether the job schedule operation with the specified schedule
-        identifier failed.
-
-        Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
-
-        Raises:
-            ValueError: Invalid schedule identifier.
-
-        Returns:
-            bool: True/False
-        """
-        return self.__mgr.job_schedule_has_failed(schedule_identifier)
-
-    def has_job_schedule(self, schedule_identifier: str):
-        """Whether the job schedule operation with the specified schedule
-        identifier exists.
-
-        Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
-
-        Raises:
-            ValueError: Invalid schedule identifier.
-
-        Returns:
-            bool: Whether the schedule identifier leads to existing scheduling data.
-        """
-
-        return self.__mgr.has_job_schedule(schedule_identifier)
-
-    async def remove_job_schedule(
-        self,
-        schedule_identifier: str,
-    ):
-        """Remove a job schedule operation using the string identifier
-        of the schedule operation.
-
-        Args:
-            schedule_identifier (str):
-                A string identifier following this structure:
-                'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
-
-        Raises:
-            ValueError: Invalid schedule identifier.
-            KeyError: No operation matching the given schedule identifier was found.
-        """
-
-        return self.__mgr.remove_job_schedule(schedule_identifier, _invoker=self.__j)
-
-    def find_job(
-        self,
-        *,
-        identifier: Optional[str] = None,
-        created_at: Optional[datetime.datetime] = None,
-    ):
-        """Find the first job that matches the given criteria specified as arguments,
-        and return a proxy to it, otherwise return `None`.
-
-        Args:
-
-            identifier (Optional[str]):
-                The exact identifier of the job to find. This argument overrides any other parameter below. Defaults to None.
-
-            created_at (Optional[datetime.datetime]):
-                The exact creation date of the job to find. Defaults to None.
-
-        Raises:
-            TypeError: One of the arguments must be specified.
-
-        Returns:
-            JobProxy: The proxy of the job object, if present.
-        """
-        return self.__mgr.find_job(
-            identifier=identifier,
-            created_at=created_at,
-            _return_proxy=True,
-            _invoker=self.__j,
-        )
-
-    def find_jobs(
-        self,
-        *,
-        classes: Optional[
-            Union[
-                Type[EventJobBase],
-                Type[IntervalJobBase],
-                tuple[Union[Type[EventJobBase], Type[IntervalJobBase]]],
-            ]
-        ] = None,
-        exact_class_match: bool = False,
-        created_before: Optional[datetime.datetime] = None,
-        created_after: Optional[datetime.datetime] = None,
-        permission_level: Optional[int] = None,
-        above_permission_level: Optional[int] = None,
-        below_permission_level: Optional[int] = None,
-        alive: Optional[bool] = None,
-        is_starting: Optional[bool] = None,
-        is_running: Optional[bool] = None,
-        is_idling: Optional[bool] = None,
-        is_awaiting: Optional[bool] = None,
-        is_being_stopped: Optional[bool] = None,
-        stopped: Optional[bool] = None,
-        is_being_restarted: Optional[bool] = None,
-        is_being_killed: Optional[bool] = None,
-        is_being_completed: Optional[bool] = None,
-    ):
-        """Find jobs that match the given criteria specified as arguments,
-        and return a tuple of proxy objects to them.
-
-        Args:
-            classes: (
-                 Optional[
-                    Union[
-                        Type[EventJobBase],
-                        Type[IntervalJobBase],
-                        tuple[
-                            Union[
-                                Type[EventJobBase],
-                                Type[IntervalJobBase]
-                            ]
-                        ]
-                    ]
-                ]
-            ):
-                The class(es) of the job objects to limit the job search to, excluding subclasses. Defaults to None.
-            exact_class_match (bool):
-                Whether an exact match is required for the classes in the previous parameter,
-                or subclasses are allowed too. Defaults to False.
-
-            created_before (Optional[datetime.datetime]):
-                The lower age limit of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            permission_level (Optional[int]):
-                The permission level of the jobs to find. Defaults to None.
-            above_permission_level (Optional[int]):
-                The lower permission level value of the jobs to find. Defaults to None.
-            below_permission_level (Optional[int]):
-                The upper permission level value of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]):
-                The upper age limit of the jobs to find. Defaults to None.
-            alive (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_running (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_idling (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_awaiting (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_stopped (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            stopped (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_restarted (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_killed (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-            is_being_completed (Optional[bool]):
-                A boolean that a job's state should match. Defaults to None.
-
-        Returns:
-            tuple: A tuple of the job object proxies that were found.
-        """
-
-        return self.__mgr.find_jobs(
-            classes=classes,
-            exact_class_match=exact_class_match,
-            created_before=created_before,
-            created_after=created_after,
-            permission_level=permission_level,
-            above_permission_level=above_permission_level,
-            below_permission_level=below_permission_level,
-            alive=alive,
-            is_starting=is_starting,
-            is_running=is_running,
-            is_idling=is_idling,
-            is_awaiting=is_awaiting,
-            is_being_stopped=is_being_stopped,
-            is_being_restarted=is_being_restarted,
-            is_being_killed=is_being_killed,
-            is_being_completed=is_being_completed,
-            stopped=stopped,
-            _return_proxy=True,
-            _invoker=self.__j,
-        )
-
-    def wait_for_event(
-        self,
-        *event_types: Type[BaseEvent],
-        check: Optional[Callable[[events.BaseEvent], bool]] = None,
-        timeout: Optional[float] = None,
-    ):
-        """Wait for specific type of event to be dispatched, and return that.
-
-        Args:
-            *event_types (Type[events.BaseEvent]):
-                The event type/types to wait for. If any of its/their
-                instances is dispatched, that instance will be returned.
-            check (Optional[Callable[[events.BaseEvent], bool]]):
-                A callable obejct used to validate if a valid event that was recieved meets specific conditions.
-                Defaults to None.
-
-        Returns:
-            BaseEvent: A valid event object
-        """
-
-        return self.__mgr.wait_for_event(
-            *event_types,
-            check=check,
-            timeout=timeout,
-        )
-
-    async def dispatch_event(self, event: events.BaseEvent):
-        """Dispatch an instance of a `BaseEvent` subclass to all event job
-        objects in this job manager that are listening for it.
-
-        Args:
-            event (BaseEvent): The event to be dispatched.
-
-        Raises:
-            JobPermissionError: Insufficient permissions.
-        """
-
-        event._dispatcher = self.__j._proxy
-        return self.__mgr.dispatch_event(event, _invoker=self.__j)
-
-    def has_job(self, job_proxy: JobProxy):
-        """Whether a specific job object is currently in this
-        JobManager.
-
-        Args:
-            job_proxy (JobProxy): The target job's proxy.
-
-        Returns:
-            bool: True/False
-        """
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return self.__mgr.has_job(job)
-
-    __contains__ = has_job
-
-    def has_identifier(self, identifier: str):
-        """Whether a job with the given identifier is contained in this job manager.
-
-        Args:
-            identifier (str): The job identifier.
-
-        Returns:
-            bool: True/False
-        """
-        return self.__mgr.has_identifier(identifier)
+from .proxies import JobProxy, JobManagerProxy

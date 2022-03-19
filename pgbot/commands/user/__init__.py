@@ -321,7 +321,7 @@ class UserCommand(FunCommand, HelpCommand):
 
             if returned.img:
                 embed_dict["description"] += "\n**Image output:**"
-                if os.path.getsize(f"temp{tstamp}.png") < 2 ** 22:
+                if os.path.getsize(f"temp{tstamp}.png") < 2**22:
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
                     file = discord.File(f"temp{tstamp}.png")
                 else:
@@ -332,7 +332,7 @@ class UserCommand(FunCommand, HelpCommand):
 
             elif returned._imgs:
                 embed_dict["description"] += "\n**GIF output:**"
-                if os.path.getsize(f"temp{tstamp}.gif") < 2 ** 22:
+                if os.path.getsize(f"temp{tstamp}.gif") < 2**22:
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
                     file = discord.File(f"temp{tstamp}.gif")
                 else:

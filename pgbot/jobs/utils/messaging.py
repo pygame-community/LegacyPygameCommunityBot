@@ -7,13 +7,13 @@ This file implements job classes for scheduling Discord communication methods as
 """
 
 from __future__ import annotations
-from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
+from typing import Optional, Union
 import io
 import discord
 from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS
 from pgbot.utils import embed_utils
-from pgbot import common, serializers
-from pgbot import serializers as serials
+from pgbot import common
+from pgbot import serializers
 
 NoneType = type(None)
 client = common.bot
@@ -31,22 +31,22 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
 
     def __init__(
         self,
-        channel: Union[int, discord.abc.Messageable, serials.ChannelSerializer],
+        channel: Union[int, discord.abc.Messageable, serializers.ChannelSerializer],
         content: Optional[str] = None,
         tts: bool = False,
-        embed: Union[discord.Embed, serials.EmbedSerializer, dict] = None,
-        file: Union[discord.File, serials.FileSerializer] = None,
-        files: list[Union[discord.File, serials.FileSerializer]] = None,
+        embed: Union[discord.Embed, serializers.EmbedSerializer, dict] = None,
+        file: Union[discord.File, serializers.FileSerializer] = None,
+        files: list[Union[discord.File, serializers.FileSerializer]] = None,
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[
-            Union[discord.AllowedMentions, serials.AllowedMentionsSerializer]
+            Union[discord.AllowedMentions, serializers.AllowedMentionsSerializer]
         ] = None,
         reference: Union[
             discord.Message,
             discord.MessageReference,
-            serials.MessageSerializer,
-            serials.MessageReferenceSerializer,
+            serializers.MessageSerializer,
+            serializers.MessageReferenceSerializer,
         ] = None,
         mention_author: Optional[bool] = None,
         kill_if_failed: bool = True,
@@ -84,7 +84,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
                 self.data.channel = client.get_channel(channel_id)
                 if self.data.channel is None:
                     self.data.channel = await client.fetch_channel(channel_id)
-            elif isinstance(self.data.channel, serials.ChannelSerializer):
+            elif isinstance(self.data.channel, serializers.ChannelSerializer):
                 self.data.channel = await self.data.channel.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'channel'")
@@ -97,7 +97,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
                     )
                 else:
                     raise ValueError("Invalid embed dictionary structure")
-            elif isinstance(self.data.kwargs["embed"], serials.EmbedSerializer):
+            elif isinstance(self.data.kwargs["embed"], serializers.EmbedSerializer):
                 self.data.kwargs["embed"] = discord.Embed.from_dict(
                     self.data.kwargs["embed"].deserialized()
                 )
@@ -108,7 +108,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
                     io.BytesIO(self.data.kwargs["file"])
                 )
 
-            elif isinstance(self.data.kwargs["file"], serials.FileSerializer):
+            elif isinstance(self.data.kwargs["file"], serializers.FileSerializer):
                 self.data.kwargs["file"] = self.data.kwargs["file"].deserialized()
 
             elif isinstance(self.data.kwargs["file"], dict):
@@ -124,7 +124,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
             for i, obj in enumerate(self.data.kwargs["files"]):
                 if isinstance(obj, discord.File):
                     file_list.append(obj)
-                elif isinstance(obj, serials.FileSerializer):
+                elif isinstance(obj, serializers.FileSerializer):
                     file_list.append(obj.deserialized())
                 else:
                     raise TypeError(
@@ -135,7 +135,8 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
             self.data.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
         ):
             if isinstance(
-                self.data.kwargs["allowed_mentions"], serials.AllowedMentionsSerializer
+                self.data.kwargs["allowed_mentions"],
+                serializers.AllowedMentionsSerializer,
             ):
                 self.data.kwargs["allowed_mentions"] = await self.data.kwargs[
                     "allowed_mentions"
@@ -149,7 +150,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
         ):
             if isinstance(
                 self.data.kwargs["reference"],
-                (serials.MessageSerializer, serials.MessageReferenceSerializer),
+                (serializers.MessageSerializer, serializers.MessageReferenceSerializer),
             ):
                 if self.data.kwargs["reference"].IS_ASYNC:
                     self.data.kwargs["reference"] = await self.data.kwargs[
@@ -185,16 +186,16 @@ class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOW
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         kill_if_failed: bool = True,
     ):
         """Create a bot job instance.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serials.ChannelSerializer]): The target channel.
-            message (Union[int, discord.Message, serials.MessageSerializer]): [description]
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]): The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]): [description]
         """
         super().__init__()
         self.data.channel = channel
@@ -208,11 +209,11 @@ class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOW
                 self.data.channel = client.get_channel(channel_id)
                 if self.data.channel is None:
                     self.data.channel = await client.fetch_channel(channel_id)
-            elif isinstance(self.data.channel, serials.ChannelSerializer):
+            elif isinstance(self.data.channel, serializers.ChannelSerializer):
                 self.data.channel = await self.data.channel.deserialized_async()
             elif self.data.channel is None:
                 if not isinstance(
-                    self.data.message, (discord.Message, serials.MessageSerializer)
+                    self.data.message, (discord.Message, serializers.MessageSerializer)
                 ):
                     raise TypeError(
                         "argument 'channel' cannot be None when 'message' is an integer ID"
@@ -225,7 +226,7 @@ class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOW
                 channel = client.get_channel(self.data.channel.id)
                 if channel is None:
                     channel = await client.fetch_channel(self.data.channel.id)
-            elif isinstance(self.data.message, serials.MessageSerializer):
+            elif isinstance(self.data.message, serializers.MessageSerializer):
                 self.data.message = await self.data.message.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'message'")
@@ -246,14 +247,14 @@ class MessageEdit(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         content: Optional[str] = None,
-        embed: Union[discord.Embed, serials.EmbedSerializer, dict] = None,
+        embed: Union[discord.Embed, serializers.EmbedSerializer, dict] = None,
         delete_after: Optional[float] = None,
         allowed_mentions: Optional[
-            Union[discord.AllowedMentions, serials.AllowedMentionsSerializer]
+            Union[discord.AllowedMentions, serializers.AllowedMentionsSerializer]
         ] = None,
         **kwargs,
     ):
@@ -286,7 +287,7 @@ class MessageEdit(_MessageModify):
                     )
                 else:
                     raise ValueError("Invalid embed dictionary structure")
-            elif isinstance(self.data.kwargs["embed"], serials.EmbedSerializer):
+            elif isinstance(self.data.kwargs["embed"], serializers.EmbedSerializer):
                 self.data.kwargs["embed"] = discord.Embed.from_dict(
                     self.data.kwargs["embed"].deserialized()
                 )
@@ -295,7 +296,8 @@ class MessageEdit(_MessageModify):
             self.data.kwargs["allowed_mentions"], (discord.AllowedMentions, NoneType)
         ):
             if isinstance(
-                self.data.kwargs["allowed_mentions"], serials.AllowedMentionsSerializer
+                self.data.kwargs["allowed_mentions"],
+                serializers.AllowedMentionsSerializer,
             ):
                 self.data.kwargs["allowed_mentions"] = await self.data.kwargs[
                     "allowed_mentions"
@@ -315,9 +317,9 @@ class MessageDelete(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         delay: Optional[float] = None,
         **kwargs,
     ):
@@ -350,16 +352,16 @@ class ReactionAdd(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerializer,
+            serializers.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerializer,
+            serializers.PartialEmojiSerializer,
             str,
         ],
         **kwargs,
@@ -398,7 +400,7 @@ class ReactionAdd(_MessageModify):
                 self.data.emoji = emoji
             elif isinstance(
                 self.data.emoji,
-                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
+                (serializers.EmojiSerializer, serializers.PartialEmojiSerializer),
             ):
                 self.data.emoji = self.data.emoji.deserialized()
             else:
@@ -414,16 +416,16 @@ class ReactionsAdd(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         *emojis: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerializer,
+            serializers.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerializer,
+            serializers.PartialEmojiSerializer,
             str,
         ],
         stop_at_maximum=True,
@@ -432,17 +434,17 @@ class ReactionsAdd(_MessageModify):
         """Setup this object.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serials.ChannelSerializer, NoneType]):
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType]):
             The channel to get a message from.
-            message (Union[int, discord.Message, serials.MessageSerializer]): The message to react to.
+            message (Union[int, discord.Message, serializers.MessageSerializer]): The message to react to.
             *emojis (
                 Union[
                     int,
                     discord.Reaction,
                     discord.Emoji,
-                    serials.EmojiSerializer,
+                    serializers.EmojiSerializer,
                     discord.PartialEmoji,
-                    serials.PartialEmojiSerializer,
+                    serializers.PartialEmojiSerializer,
                     str]
             ):
                 A sequence of emojis to react with.
@@ -478,7 +480,8 @@ class ReactionsAdd(_MessageModify):
                         )
                     self.data.emojis[i] = emoji
                 elif isinstance(
-                    emoji, (serials.EmojiSerializer, serials.PartialEmojiSerializer)
+                    emoji,
+                    (serializers.EmojiSerializer, serializers.PartialEmojiSerializer),
                 ):
                     self.data.emojis[i] = emoji.deserialized()
                 else:
@@ -504,19 +507,21 @@ class ReactionRemove(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
-        message: Union[int, discord.Message, serials.MessageSerializer],
+        message: Union[int, discord.Message, serializers.MessageSerializer],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerializer,
+            serializers.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerializer,
+            serializers.PartialEmojiSerializer,
             str,
         ],
-        member: Union[discord.abc.Snowflake, discord.Member, serials.MemberSerializer],
+        member: Union[
+            discord.abc.Snowflake, discord.Member, serializers.MemberSerializer
+        ],
         **kwargs,
     ):
         """Setup this job ojbect.
@@ -558,14 +563,14 @@ class ReactionRemove(_MessageModify):
                 self.data.emoji = emoji
             elif isinstance(
                 self.data.emoji,
-                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
+                (serializers.EmojiSerializer, serializers.PartialEmojiSerializer),
             ):
                 self.data.emoji = self.data.emoji.deserialized()
             else:
                 raise TypeError("Invalid type for argument 'emoji'")
 
         if not isinstance(self.data.member, (discord.abc.Snowflake, discord.Member)):
-            if isinstance(self.data.member, serials.MemberSerializer):
+            if isinstance(self.data.member, serializers.MemberSerializer):
                 self.data.member = await self.data.member.deserialized_async()
             else:
                 raise TypeError("Invalid type for argument 'member'")
@@ -580,16 +585,16 @@ class ReactionClearEmoji(_MessageModify):
     def __init__(
         self,
         channel: Union[
-            int, discord.abc.Messageable, serials.ChannelSerializer, NoneType
+            int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType
         ],
         message: Union[int, discord.Message],
         emoji: Union[
             int,
             discord.Reaction,
             discord.Emoji,
-            serials.EmojiSerializer,
+            serializers.EmojiSerializer,
             discord.PartialEmoji,
-            serials.PartialEmojiSerializer,
+            serializers.PartialEmojiSerializer,
             str,
         ],
         **kwargs,
@@ -628,7 +633,7 @@ class ReactionClearEmoji(_MessageModify):
                 self.data.emoji = emoji
             elif isinstance(
                 self.data.emoji,
-                (serials.EmojiSerializer, serials.PartialEmojiSerializer),
+                (serializers.EmojiSerializer, serializers.PartialEmojiSerializer),
             ):
                 self.data.emoji = self.data.emoji.deserialized()
             else:

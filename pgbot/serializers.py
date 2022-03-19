@@ -7,21 +7,11 @@ This file implements wrapper classes used to pickle Discord models and dataclass
 """
 
 from __future__ import annotations
-import asyncio
-from collections import deque
-import datetime
 import io
-import itertools
-import pickle
-from selectors import BaseSelector
-import time
-from types import SimpleNamespace
-from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Type, Union
+from typing import Optional, Type
 
 import discord
-from discord.ext import tasks
 
-from pgbot.utils import utils
 from pgbot import common
 
 client = common.bot
@@ -53,8 +43,6 @@ class SerializationError(Exception):
 
 class BaseSerializer:
     IS_ASYNC = False
-
-    __slots__ = ("_dict",)
 
     def __init__(self):
         self._dict = None
