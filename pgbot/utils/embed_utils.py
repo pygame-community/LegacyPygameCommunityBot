@@ -26,6 +26,8 @@ from pgbot import common
 from pgbot.utils import utils
 from pgbot.commands.parser import BotException
 
+from .utils import recursive_dict_update, recursive_dict_delete
+
 EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT = {
     "provider": None,
     "type": None,
@@ -165,91 +167,6 @@ CONDENSED_EMBED_DATA_LIST_SYNTAX = """
     datetime(year, month, day[, hour[, minute[, second[, microsecond]]]]) or '2021-04-17T17:36:00.553' # embed timestamp
 ]
 """
-
-
-def recursive_update(
-    old_dict: dict,
-    update_dict: dict,
-    add_new_keys: bool = True,
-    skip_value: str = "\0",
-):
-    """
-    Update one embed dictionary with another, similar to dict.update(),
-    But recursively update dictionary values that are dictionaries as well.
-    based on the answers in
-    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-    """
-    for k, v in update_dict.items():
-        if isinstance(v, Mapping):
-            new_value = recursive_update(
-                old_dict.get(k, {}), v, add_new_keys=add_new_keys, skip_value=skip_value
-            )
-            if new_value != skip_value:
-                if k not in old_dict:
-                    if not add_new_keys:
-                        continue
-                old_dict[k] = new_value
-        else:
-            if v != skip_value:
-                if k not in old_dict:
-                    if not add_new_keys:
-                        continue
-                old_dict[k] = v
-
-    return old_dict
-
-
-def recursive_delete(
-    old_dict: dict,
-    update_dict: dict,
-    skip_value: str = "\0",
-    inverse: bool = False,
-):
-    """
-    Delete embed dictionary attributes present in another,
-    But recursively do the same dictionary values that are dictionaries as well.
-    based on the answers in
-    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-    """
-    if inverse:
-        for k, v in tuple(old_dict.items()):
-            if isinstance(v, dict):
-                lower_update_dict = None
-                if isinstance(update_dict, dict):
-                    lower_update_dict = update_dict.get(k, {})
-
-                new_value = recursive_delete(
-                    v, lower_update_dict, skip_value=skip_value, inverse=inverse
-                )
-                if (
-                    new_value != skip_value
-                    and isinstance(update_dict, dict)
-                    and k not in update_dict
-                ):
-                    old_dict[k] = new_value
-                    if not new_value:
-                        del old_dict[k]
-            else:
-                if (
-                    v != skip_value
-                    and isinstance(update_dict, dict)
-                    and k not in update_dict
-                ):
-                    del old_dict[k]
-    else:
-        for k, v in update_dict.items():
-            if isinstance(v, dict):
-                new_value = recursive_delete(
-                    old_dict.get(k, {}), v, skip_value=skip_value
-                )
-                if new_value != skip_value and k in old_dict:
-                    old_dict[k] = new_value
-                    if not new_value:
-                        del old_dict[k]
-            else:
-                if v != skip_value and k in old_dict:
-                    del old_dict[k]
-    return old_dict
 
 
 def create_embed_mask_dict(
@@ -1258,7 +1175,7 @@ async def edit(
                 for i in range(len(update_embed_dict["fields"]))
             }
 
-    recursive_update(
+    recursive_dict_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
@@ -1338,7 +1255,7 @@ async def edit_from_dict(
                 for i in range(len(update_embed_dict["fields"]))
             }
 
-    recursive_update(
+    recursive_dict_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
@@ -1381,7 +1298,7 @@ def edit_dict_from_dict(
                 for i in range(len(update_embed_dict["fields"]))
             }
 
-    recursive_update(
+    recursive_dict_update(
         old_embed_dict, update_embed_dict, add_new_keys=add_attributes, skip_value=""
     )
 
