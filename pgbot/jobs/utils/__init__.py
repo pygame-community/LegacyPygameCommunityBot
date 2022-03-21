@@ -58,10 +58,8 @@ class RegisterDelayedJob(SingleRunJob):
         """Create a new RegisterDelayedJob instance.
 
         Args:
-            delay (float):
-                The delay for the input jobs in seconds.
-            *jobs Union[ClientEventJob, IntervalJobBase]:
-                The jobs to be delayed.
+            delay (float): The delay for the input jobs in seconds.
+            *job_proxies Union[ClientEventJob, IntervalJobBase]: The jobs to be delayed.
         """
         super().__init__(**kwargs)
         self.data.delay = delay

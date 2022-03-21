@@ -54,11 +54,10 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
         """Setup this job ojbect's namespace.
 
         Args:
-            channel (Union[int, discord.abc.Messageable]):
-                The channel/channel ID to message to.
-            **kwargs:
-                The keyword arguments to pass to the `.send()`
-            coroutine method of the channel.
+            channel (Union[int, discord.abc.Messageable]): The channel/channel ID to
+              message to.
+            **kwargs: The keyword arguments to pass to the `.send()`
+              coroutine method of the channel.
         """
         super().__init__()
         self.data.channel = channel
@@ -194,8 +193,10 @@ class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOW
         """Create a bot job instance.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]): The target channel.
-            message (Union[int, discord.Message, serializers.MessageSerializer]): [description]
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
         """
         super().__init__()
         self.data.channel = channel
@@ -261,13 +262,12 @@ class MessageEdit(_MessageModify):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int):
-                The ID of a channel to get
-                a message from.
-            message_id (int): The ID of a message.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
+            **kwargs: The keyword arguments to pass to the coroutine methods of
+              the message.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         self.data.kwargs = dict(
@@ -326,11 +326,12 @@ class MessageDelete(_MessageModify):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int): The ID of a channel to get a message from.
-            message_id (int): The ID of a message.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
+            **kwargs: The keyword arguments to pass to the coroutine
+              methods of the message.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         self.data.kwargs = dict(delay=delay)
@@ -369,8 +370,10 @@ class ReactionAdd(_MessageModify):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int): The ID of a channel to get a message from.
-            message_id (int): The ID of a message.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
             emoji: (
                 Union[
                     discord.Emoji,
@@ -378,11 +381,8 @@ class ReactionAdd(_MessageModify):
                     discord.PartialEmoji,
                     str
                 ]
-            ):
-                The emoji to react with.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.
+            ): The emoji to react with.
+            **kwargs: More optional keyword arguments.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
@@ -434,9 +434,10 @@ class ReactionsAdd(_MessageModify):
         """Setup this object.
 
         Args:
-            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer, NoneType]):
-            The channel to get a message from.
-            message (Union[int, discord.Message, serializers.MessageSerializer]): The message to react to.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The message to react to.
             *emojis (
                 Union[
                     int,
@@ -448,13 +449,11 @@ class ReactionsAdd(_MessageModify):
                     str]
             ):
                 A sequence of emojis to react with.
-            stop_at_maximum (bool, optional):
-                Whether the reactions will be added until the maxmimum is reached. If False,
-                reaction emojis will be added to a target message until an exception is
-                raised from Discord. Defaults to True.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.
+            stop_at_maximum (bool, optional): Whether the reactions will be added until
+              the maxmimum is reached. If False, reaction emojis will be added to a
+              target message until an exception is
+              raised from Discord. Defaults to True.
+            **kwargs: More optional keyword arguments.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         if len(emojis) > 20:
@@ -527,10 +526,10 @@ class ReactionRemove(_MessageModify):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int):
-                The ID of a channel to get
-                a message from.
-            message_id (int): The ID of a message.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
             emoji: (
                 Union[
                     discord.Emoji,
@@ -540,11 +539,8 @@ class ReactionRemove(_MessageModify):
                 ]
             ):
                 The emoji to remove.
-            member: (discord.abc.Snowflake):
-                The member whose reaction should be removed.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.
+            member: (discord.abc.Snowflake): The member whose reaction should be removed.
+            **kwargs: More optional keyword arguments.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
@@ -602,8 +598,10 @@ class ReactionClearEmoji(_MessageModify):
         """Setup this job ojbect.
 
         Args:
-            channel_id (int): The ID of a channel to get a message from.
-            message_id (int): The ID of a message to edit.
+            channel (Union[int, discord.abc.Messageable, serializers.ChannelSerializer]):
+              The target channel.
+            message (Union[int, discord.Message, serializers.MessageSerializer]):
+              The target message.
             emoji: (
                 Union[
                     discord.Emoji,
@@ -613,9 +611,7 @@ class ReactionClearEmoji(_MessageModify):
                 ]
             ):
                 The emoji to clear.
-            **kwargs:
-                The keyword arguments to pass to the
-                coroutine methods of the message.s
+            **kwargs: More optional keyword arguments.
         """
         super().__init__(channel=channel, message=message, **kwargs)
         self.data.emoji = emoji
