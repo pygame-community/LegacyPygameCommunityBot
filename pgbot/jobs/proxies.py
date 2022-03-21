@@ -890,7 +890,7 @@ class JobManagerProxy:
         are sufficient for carrying out the specified operation on the given input.
 
         Args:
-            op (str): The operation. Must be one of the operations defined in the 
+            op (str): The operation. Must be one of the operations defined in the
               `JOB_VERBS` class namespace.
             target (Optional[JobProxy], optional): The target job for an operation.
               Defaults to None.

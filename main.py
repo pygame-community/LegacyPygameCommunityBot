@@ -304,6 +304,5 @@ async def on_invite_delete(invite: discord.Invite):
     job_manager.dispatch_event(events.OnInviteDelete(invite))
 
 
-
 if __name__ == "__main__":
     pgbot.run()
