@@ -51,8 +51,7 @@ class RegisterDelayedJob(SingleRunJob):
     only after a given period of time in seconds.
 
     Attributes:
-        delay (float):
-            The delay for the input jobs in seconds.
+        delay (float): The delay for the input jobs in seconds.
     """
 
     def __init__(self, delay: float, *job_proxies: JobProxy, **kwargs):

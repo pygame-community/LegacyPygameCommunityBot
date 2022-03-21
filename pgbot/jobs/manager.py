@@ -414,10 +414,10 @@ class JobManager:
             data (Union[bytes, dict]):
                 The data.
 
-            overwrite (bool):
-                Whether any previous schedule data should be overwritten with new data.
-                If set to `False`, attempting to add unto preexisting data will
-                raise a `RuntimeError`. Defaults to False.
+            overwrite (bool): Whether any previous schedule data should be overwritten
+              with new data.
+              If set to `False`, attempting to add unto preexisting data will
+              raise a `RuntimeError`. Defaults to False.
 
         Raises:
             RuntimeError:
@@ -1003,11 +1003,10 @@ class JobManager:
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]):
-                The job class to be used for instantiation.
-            start (bool):
-                Whether the given job object should start automatically
-                upon registration.
+            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job class to be
+              used for instantiation.
+            start (bool): Whether the given job object should start automatically
+              upon registration.
 
         Returns:
             JobProxy: A job proxy object.
@@ -1037,11 +1036,11 @@ class JobManager:
               schedule.
             timestamp (Union[int, float, datetime.datetime]): The exact timestamp
               or offset at which to instantiate a job.
-            recur_interval (Optional[Union[int, float, datetime.timedelta]]): The
-              interval at which a job should be rescheduled in seconds. `None` or
+            recur_interval (Optional[Union[int, float, datetime.timedelta]], optional):
+              The interval at which a job should be rescheduled in seconds. `None` or
               0 means that no recurrences will occur. -1 means that the smallest
               possible recur interval should be used. Defaults to None.
-            max_recurrences (int): The maximum amount of recurrences for
+            max_recurrences (int, optional): The maximum amount of recurrences for
               rescheduling. A value of -1 means that no maximum is set. Otherwise,
               the value of this argument must be a non-zero positive integer. If no
               `recur_interval` value was provided, the value of this argument will
@@ -1194,11 +1193,11 @@ class JobManager:
             schedule_identifier (str): A string identifier following this structure:
               'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
 
-        Raises:
-            ValueError: Invalid schedule identifier.
-
         Returns:
             bool: True/False
+
+        Raises:
+            ValueError: Invalid schedule identifier.
         """
 
         split_id = schedule_identifier.split("-")
@@ -1216,11 +1215,11 @@ class JobManager:
             schedule_identifier (str): A string identifier following this structure:
               'JOB_MANAGER_IDENTIFIER-TARGET_TIMESTAMP_IN_NS-SCHEDULING_TIMESTAMP_IN_NS'
 
-        Raises:
-            ValueError: Invalid schedule identifier.
-
         Returns:
             bool: Whether the schedule identifier leads to existing scheduling data.
+
+        Raises:
+            ValueError: Invalid schedule identifier.
         """
 
         split_id = schedule_identifier.split("-")
@@ -1488,10 +1487,9 @@ class JobManager:
 
         Args:
 
-            identifier (Optional[str]): The exact identifier of the job to find. This
+            identifier (Optional[str], optional): The exact identifier of the job to find. This
               argument overrides any other parameter below. Defaults to None.
-
-            created_at (Optional[datetime.datetime]): The exact creation date of the
+            created_at (Optional[datetime.datetime], optional): The exact creation date of the
               job to find. Defaults to None.
 
         Raises:
@@ -1567,7 +1565,7 @@ class JobManager:
 
         Args:
             classes: (
-                 Optional[
+                Optional[
                     Union[
                         Type[EventJobBase],
                         Type[IntervalJobBase],
@@ -1578,44 +1576,43 @@ class JobManager:
                             ]
                         ]
                     ]
-                ]
-            ): The class(es) of the job objects to limit the job search to, excluding
-              subclasses. Defaults to None.
+                ],
+            optional): The class(es) of the job objects to limit the job search
+              to, excluding subclasses. Defaults to None.
             exact_class_match (bool): Whether an exact match is required for the
               classes in the previous parameter, or subclasses are allowed too.
               Defaults to False.
-
-            created_before (Optional[datetime.datetime]): The lower age limit of the
+            created_before (Optional[datetime.datetime], optional): The lower age limit of the
               jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit of the
+            created_after (Optional[datetime.datetime], optional): The upper age limit of the
               jobs to find. Defaults to None.
-            permission_level (Optional[int]): The permission level of the jobs to
+            permission_level (Optional[int], optional): The permission level of the jobs to
               find. Defaults to None.
-            above_permission_level (Optional[int]): The lower permission level
+            above_permission_level (Optional[int], optional): The lower permission level
               value of the jobs to find. Defaults to None.
-            below_permission_level (Optional[int]): The upper permission level
+            below_permission_level (Optional[int], optional): The upper permission level
               value of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit
+            created_before (Optional[datetime.datetime], optional): The lower age limit
               of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit
+            created_after (Optional[datetime.datetime], optional): The upper age limit
               of the jobs to find. Defaults to None.
-            alive (Optional[bool]): A boolean that a job's state should match.
-              Defaults to None.
-            is_running (Optional[bool]): A boolean that a job's state should
+            alive (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_idling (Optional[bool]): A boolean that a job's state should
+            is_running (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_awaiting (Optional[bool]): A boolean that a job's state should
+            is_idling (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_being_stopped (Optional[bool]): A boolean that a job's state
+            is_awaiting (Optional[bool], optional): A boolean that a job's state should
+              match. Defaults to None.
+            is_being_stopped (Optional[bool], optional): A boolean that a job's state
               should match. Defaults to None.
-            stopped (Optional[bool]): A boolean that a job's state should
+            stopped (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_being_restarted (Optional[bool]): A boolean that a job's
+            is_being_restarted (Optional[bool], optional): A boolean that a job's
               state should match. Defaults to None.
-            is_being_killed (Optional[bool]): A boolean that a job's
+            is_being_killed (Optional[bool], optional): A boolean that a job's
               state should match. Defaults to None.
-            is_being_completed (Optional[bool]): A boolean that a job's state
+            is_being_completed (Optional[bool], optional): A boolean that a job's state
               should match. Defaults to None.
 
         Returns:
@@ -1854,8 +1851,8 @@ class JobManager:
 
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
-            stopping_timeout (Optional[float]): An optional timeout in seconds
-              for the maximum time period
+            stopping_timeout (Optional[float], optional):
+              An optional timeout in seconds for the maximum time period
               for stopping the job while it is restarting. This overrides
               the global timeout of this `JobManager` if present.
         Returns:
@@ -1896,9 +1893,9 @@ class JobManager:
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
             force (bool): Whether to suspend all operations of the job forcefully.
-            stopping_timeout (Optional[float]): An optional timeout in seconds for
-              the maximum time period for stopping the job. This overrides the
-              global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float], optional): An optional timeout in
+              seconds for the maximum time period for stopping the job. This
+              overrides the global timeout of this `JobManager` if present.
 
         Returns:
             bool: Whether the operation was successful.
@@ -1938,9 +1935,9 @@ class JobManager:
 
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
-            stopping_timeout (Optional[float]): An optional timeout in seconds
-              for the maximum time period for stopping the job while it is being
-              killed. This overrides the
+            stopping_timeout (Optional[float], optional):
+              An optional timeout in seconds for the maximum time period for
+              stopping the job while it is being killed. This overrides the
               global timeout of this `JobManager` if present.
 
         Returns:
@@ -2161,11 +2158,11 @@ class JobManager:
         Args:
             *event_types (Type[events.BaseEvent]): The event type/types to wait for. If
               any of its/their instances is dispatched, that instance will be returned.
-            check (Optional[Callable[[events.BaseEvent], bool]]): A callable obejct
-              used to validate if a valid event that was recieved meets specific
+            check (Optional[Callable[[events.BaseEvent], bool]], optional): A callable
+              obejct used to validate if a valid event that was recieved meets specific
               conditions. Defaults to None.
-            timeout: (Optional[float]): An optional timeout value in seconds for
-              the maximum waiting period.
+            timeout: (Optional[float], optional): An optional timeout value in seconds
+              for the maximum waiting period.
 
         Raises:
             TimeoutError: The timeout value was exceeded.

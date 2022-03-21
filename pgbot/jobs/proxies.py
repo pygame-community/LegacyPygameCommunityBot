@@ -333,7 +333,7 @@ class JobProxy:
 
         Args:
             timeout (float, optional): Timeout for awaiting. Defaults to None.
-            cancel_if_killed (bool): Whether `asyncio.CancelledError`
+            cancel_if_killed (bool, optional): Whether `asyncio.CancelledError`
               should be raised if the job is killed. Defaults to False.
 
         Raises:
@@ -579,8 +579,8 @@ class JobProxy:
         Args:
             timeout (float, optional): The maximum amount of time to wait in
               seconds. Defaults to None.
-            cancel_if_cleared (bool): Whether `asyncio.CancelledError` should
-              be raised if the output queue is cleared. If set to `False`,
+            cancel_if_cleared (bool, optional): Whether `asyncio.CancelledError`
+              should be raised if the output queue is cleared. If set to `False`,
               `Ellipsis` will be the result of the coroutine. Defaults to False.
 
         Raises:
@@ -683,7 +683,7 @@ class JobOutputQueueProxy:
 
         Args:
             queue_name (str): The name of the output queue to set.
-            raise_exceptions (Optional[bool]): Whether exceptions should
+            raise_exceptions (Optional[bool], optional): Whether exceptions should
               be raised. Defaults to False.
 
         Raises:
@@ -715,8 +715,8 @@ class JobOutputQueueProxy:
 
         Args:
             queue_name (str): The name of the output queue to set.
-            use_rescue_buffer (Optional[bool]): Set up a rescue buffer for the
-              specified output queue, which automatically collects queue values
+            use_rescue_buffer (Optional[bool], optional): Set up a rescue buffer for
+              the specified output queue, which automatically collects queue values
               when a job cleares a queue. Defaults to None.
         """
         self.verify_queue_name(queue_name, raise_exceptions=True)
@@ -766,17 +766,14 @@ class JobOutputQueueProxy:
         """Whether the specified output queue is empty.
 
         Args:
-            queue_name (str):
-                The name of the target output queue.
+            queue_name (str): The name of the target output queue.
             ignore_rescue_buffer (bool): Whether the contents of the rescue buffer
               should be consideredas well. Defaults to False.
 
         Raises:
-            TypeError:
-                `queue_name` is not a string.
-            LookupError:
-                The specified queue name is not defined by this
-                output queue proxy's job.
+            TypeError: `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by this output
+            queue proxy's job.
 
         Returns:
             bool: True/False
@@ -795,18 +792,15 @@ class JobOutputQueueProxy:
         meaning that no new values are available.
 
         Args:
-            queue_name (str):
-                The name of the target output queue.
-            ignore_rescue_buffer (bool):
-                Whether the contents of the rescue buffer should be considered
-                as well. Defaults to False.
+            queue_name (str): The name of the target output queue.
+            ignore_rescue_buffer (bool): Whether the contents of
+            the rescue buffer should be considered as well.
+            Defaults to False.
 
         Raises:
-            TypeError:
-                `queue_name` is not a string.
-            LookupError:
-                The specified queue name is not defined by this
-                output queue proxy's job.
+            TypeError: `queue_name` is not a string.
+            LookupError: The specified queue name is not defined by
+              this output queue proxy's job.
 
         Returns:
             bool: True/False
@@ -829,17 +823,15 @@ class JobOutputQueueProxy:
         output queue while it is running, using the coroutine output of this method.
 
         Args:
-            timeout (float, optional):
-                The maximum amount of time to wait in seconds. Defaults to None.
-            cancel_if_cleared (bool):
-                Whether `asyncio.CancelledError` should be raised if the
-                output queue is cleared. If set to `False`, `Ellipsis`
-                will be the result of the coroutine. Defaults to False.
+            timeout (float, optional): The maximum amount of time to wait in seconds.
+              Defaults to None.
+            cancel_if_cleared (bool): Whether `asyncio.CancelledError` should be
+              raised if the output queue is cleared. If set to `False`, `Ellipsis`
+              will be the result of the coroutine. Defaults to False.
 
         Raises:
-            TypeError:
-                Output fields aren't supported for this job,
-                or `field_name` is not a string.
+            TypeError: Output fields aren't supported for this job, or `field_name`
+              is not a string.
             LookupError: The specified field name is not defined by this job
             JobStateError: This job object is already done.
             asyncio.TimeoutError: The timeout was exceeded.
@@ -876,9 +868,8 @@ class JobManagerProxy:
 
         Returns:
             float: The timeout in seconds.
-            None:
-                No timeout was set for the job object or globally for the
-                current `JobManager`.
+            None: No timeout was set for the job object or globally for the
+              current `JobManager`.
         """
 
         return (
@@ -899,22 +890,17 @@ class JobManagerProxy:
         are sufficient for carrying out the specified operation on the given input.
 
         Args:
-            op (str):
-                The operation. Must be one of the operations defined in the `JOB_VERBS`
-                class namespace.
-
-            target (Optional[JobProxy]):
-                The target job for an operation. Defaults to None.
-
+            op (str): The operation. Must be one of the operations defined in the 
+              `JOB_VERBS` class namespace.
+            target (Optional[JobProxy], optional): The target job for an operation.
+              Defaults to None.
             target_cls (Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]]):
-                The target job class for an operation. Defaults to None.
-
+              The target job class for an operation. Defaults to None.
             schedule_identifier (Optional[str]):
-                A target schedule identifier. Defaults to None.
-
+              A target schedule identifier. Defaults to None.
             scheduler_identifier (Optional[str]):
-                A target job with this specific identifier if existent,
-                but can also be an enpty string. Defaults to None.
+              A target job with this specific identifier if existent, but can also be
+              an enpty string. Defaults to None.
 
         Returns:
             bool: The result of the permission check.
@@ -938,8 +924,8 @@ class JobManagerProxy:
         """Create an instance of a job class, and return it.
 
         Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]):
-               The job class to instantiate a job object from.
+            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job class
+              to instantiate a job object from.
 
         Raises:
             RuntimeError: This job manager object is not initialized.
@@ -991,8 +977,8 @@ class JobManagerProxy:
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
-            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]):
-                The job class to be used for instantiation.
+            cls (Union[Type[EventJobBase], Type[IntervalJobBase]]): The job class to be
+             used for instantiation.
 
         Returns:
             JobProxy: A job proxy object.
@@ -1054,11 +1040,11 @@ class JobManagerProxy:
               schedule.
             timestamp (Union[int, float, datetime.datetime]): The exact timestamp
               or offset at which to instantiate a job.
-            recur_interval (Optional[Union[int, float, datetime.timedelta]]): The
-              interval at which a job should be rescheduled in seconds. `None` or
+            recur_interval (Optional[Union[int, float, datetime.timedelta]], optional):
+              The interval at which a job should be rescheduled in seconds. `None` or
               0 means that no recurrences will occur. -1 means that the smallest
               possible recur interval should be used. Defaults to None.
-            max_recurrences (int): The maximum amount of recurrences for
+            max_recurrences (int, optional): The maximum amount of recurrences for
               rescheduling. A value of -1 means that no maximum is set. Otherwise,
               the value of this argument must be a non-zero positive integer. If no
               `recur_interval` value was provided, the value of this argument will
@@ -1157,10 +1143,10 @@ class JobManagerProxy:
 
         Args:
             job_proxy (JobProxy): The job object's proxy.
-            stopping_timeout (Optional[float]): An optional timeout in seconds
-              for the maximum time period
-              for stopping the job while it is restarting. This overrides
-              the global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float], optional): An optional timeout in
+              seconds for the maximum time period for stopping the job while it
+              is restarting. This overrides the global timeout of this
+              `JobManager` if present.
         Returns:
             bool: Whether the operation was initiated by the job.
         """
@@ -1200,9 +1186,9 @@ class JobManagerProxy:
         Args:
             job_proxy (JobProxy): The job object's proxy.
             force (bool): Whether to suspend all operations of the job forcefully.
-            stopping_timeout (Optional[float]): An optional timeout in seconds for
-              the maximum time period for stopping the job. This overrides the
-              global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float], optional): An optional timeout in
+              seconds for the maximum time period for stopping the job. This
+              overrides the global timeout of this `JobManager` if present.
 
         Returns:
             bool: Whether the operation was successful.
@@ -1223,10 +1209,10 @@ class JobManagerProxy:
 
         Args:
             job_proxy (JobProxy): The job object's proxy.
-            stopping_timeout (Optional[float]): An optional timeout in seconds
-              for the maximum time period for stopping the job while it is being
-              killed. This overrides the
-              global timeout of this `JobManager` if present.
+            stopping_timeout (Optional[float], optional): An optional timeout in
+              seconds for the maximum time period for stopping the job while it
+              is being killed. This overrides the global timeout of this
+              `JobManager` if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
@@ -1308,11 +1294,12 @@ class JobManagerProxy:
 
         Args:
 
-            identifier (Optional[str]): The exact identifier of the job to find. This
-              argument overrides any other parameter below. Defaults to None.
+            identifier (Optional[str], optional): The exact identifier of the job to
+              find. This argument overrides any other parameter below. Defaults to
+              None.
 
-            created_at (Optional[datetime.datetime]): The exact creation date of the
-              job to find. Defaults to None.
+            created_at (Optional[datetime.datetime], optional): The exact creation
+              date of the job to find. Defaults to None.
 
         Raises:
             TypeError: One of the arguments must be specified.
@@ -1371,43 +1358,42 @@ class JobManagerProxy:
                         ]
                     ]
                 ]
-            ): The class(es) of the job objects to limit the job search to, excluding
-              subclasses. Defaults to None.
-            exact_class_match (bool): Whether an exact match is required for the
-              classes in the previous parameter, or subclasses are allowed too.
+            , optional): The class(es) of the job objects to limit the job search to,
+              excluding subclasses. Defaults to None.
+            exact_class_match (bool, optional): Whether an exact match is required for
+              the classes in the previous parameter, or subclasses are allowed too.
               Defaults to False.
-
-            created_before (Optional[datetime.datetime]): The lower age limit of the
-              jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit of the
-              jobs to find. Defaults to None.
+            created_before (Optional[datetime.datetime], optional): The lower age limit
+              of the jobs to find. Defaults to None.
+            created_after (Optional[datetime.datetime], optional): The upper age limit
+              of the jobs to find. Defaults to None.
             permission_level (Optional[int]): The permission level of the jobs to
               find. Defaults to None.
-            above_permission_level (Optional[int]): The lower permission level
-              value of the jobs to find. Defaults to None.
-            below_permission_level (Optional[int]): The upper permission level
-              value of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit
+            above_permission_level (Optional[int], optional): The lower permission
+              level value of the jobs to find. Defaults to None.
+            below_permission_level (Optional[int], optional): The upper permission
+              level value of the jobs to find. Defaults to None.
+            created_before (Optional[datetime.datetime], optional): The lower age limit
               of the jobs to find. Defaults to None.
-            created_after (Optional[datetime.datetime]): The upper age limit
+            created_after (Optional[datetime.datetime], optional): The upper age limit
               of the jobs to find. Defaults to None.
-            alive (Optional[bool]): A boolean that a job's state should match.
-              Defaults to None.
-            is_running (Optional[bool]): A boolean that a job's state should
+            alive (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_idling (Optional[bool]): A boolean that a job's state should
-              match. Defaults to None.
-            is_awaiting (Optional[bool]): A boolean that a job's state should
-              match. Defaults to None.
-            is_being_stopped (Optional[bool]): A boolean that a job's state
+            is_running (Optional[bool], optional): A boolean that a job's state
               should match. Defaults to None.
-            stopped (Optional[bool]): A boolean that a job's state should
+            is_idling (Optional[bool], optional): A boolean that a job's state
+              should match. Defaults to None.
+            is_awaiting (Optional[bool], optional): A boolean that a job's state
+              should match. Defaults to None.
+            is_being_stopped (Optional[bool], optional): A boolean that a job's state
+              should match. Defaults to None.
+            stopped (Optional[bool], optional): A boolean that a job's state should
               match. Defaults to None.
-            is_being_restarted (Optional[bool]): A boolean that a job's
+            is_being_restarted (Optional[bool], optional): A boolean that a job's
               state should match. Defaults to None.
-            is_being_killed (Optional[bool]): A boolean that a job's
+            is_being_killed (Optional[bool], optional): A boolean that a job's
               state should match. Defaults to None.
-            is_being_completed (Optional[bool]): A boolean that a job's state
+            is_being_completed (Optional[bool], optional): A boolean that a job's state
               should match. Defaults to None.
 
         Returns:
@@ -1448,11 +1434,11 @@ class JobManagerProxy:
         Args:
             *event_types (Type[events.BaseEvent]): The event type/types to wait for. If
               any of its/their instances is dispatched, that instance will be returned.
-            check (Optional[Callable[[events.BaseEvent], bool]]): A callable obejct
-              used to validate if a valid event that was recieved meets specific
+            check (Optional[Callable[[events.BaseEvent], bool]], optional): A callable
+              obejct used to validate if a valid event that was recieved meets specific
               conditions. Defaults to None.
-            timeout: (Optional[float]): An optional timeout value in seconds for
-              the maximum waiting period.
+            timeout: (Optional[float], optional): An optional timeout value in seconds
+              for the maximum waiting period.
 
         Raises:
             TimeoutError: The timeout value was exceeded.

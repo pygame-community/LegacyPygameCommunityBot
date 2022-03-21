@@ -1113,7 +1113,7 @@ class JobBase:
         """Clear all the exceptions whitelisted for reconnection.
 
         Args:
-            keep_default: Preserve the default set of exceptions
+            keep_default (bool, optional): Preserve the default set of exceptions
             in the whitelist. Defaults to True.
 
         """
@@ -1644,7 +1644,7 @@ class JobBase:
 
         Args:
             timeout (float, optional): Timeout for awaiting. Defaults to None.
-            cancel_if_killed (bool): Whether `asyncio.CancelledError`
+            cancel_if_killed (bool, optional): Whether `asyncio.CancelledError`
               should be raised if the job is killed. Defaults to False.
 
         Raises:
@@ -1732,7 +1732,7 @@ class JobBase:
 
         Args:
             field_name (str): The name of the output field to set.
-            raise_exceptions (Optional[bool]): Whether exceptions
+            raise_exceptions (bool, optional): Whether exceptions
               should be raised. Defaults to False.
 
         Raises:
@@ -1771,7 +1771,7 @@ class JobBase:
 
         Args:
             queue_name (str): The name of the output queue to set.
-            raise_exceptions (Optional[bool]): Whether exceptions should be
+            raise_exceptions (bool, optional): Whether exceptions should be
               raised. Defaults to False.
 
         Raises:
@@ -1804,7 +1804,7 @@ class JobBase:
 
         return True
 
-    def set_output_field(self, field_name: str, value):
+    def set_output_field(self, field_name: str, value: Any):
         """Set the specified output field to have the given value,
         while releasing the value to external jobs awaiting the field.
 
@@ -1838,7 +1838,7 @@ class JobBase:
 
         self._output_field_futures[field_name].clear()
 
-    def push_output_queue(self, field_name: str, value):
+    def push_output_queue(self, field_name: str, value: Any):
         """Add a value to the specified output queue,
         while releasing the value to external jobs
         awaiting the field.
@@ -1878,7 +1878,7 @@ class JobBase:
 
         Args:
             field_name (str): The name of the target output field.
-            default (str): The value to return if the specified
+            default (object, optional): The value to return if the specified
               output field does not exist, has not been set,
               or if this job doesn't support them at all.
               Defaults to the `Ellipsis` singleton, which will
@@ -1923,7 +1923,7 @@ class JobBase:
 
         Args:
             queue_name (str): The name of the target output queue.
-            default (str): The value to return if the specified
+            default (object, optional): The value to return if the specified
               output queue does not exist, is empty,
               or if this job doesn't support them at all.
               Defaults to the `Ellipsis` singleton, which will
@@ -1964,7 +1964,7 @@ class JobBase:
         """Clear all values in the specified output queue.
 
         Args:
-            field_name (str): The name of the target output field.
+            queue_name (str): The name of the target output field.
         """
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
@@ -2081,6 +2081,7 @@ class JobBase:
         coroutine output of this method.
 
         Args:
+            field_name (str): The name of the target output field.
             timeout (float, optional): The maximum amount of
               time to wait in seconds. Defaults to None.
 
@@ -2119,7 +2120,7 @@ class JobBase:
         Args:
             timeout (float, optional): The maximum amount of time to wait in
               seconds. Defaults to None.
-            cancel_if_cleared (bool): Whether `asyncio.CancelledError` should
+            cancel_if_cleared (bool, optional): Whether `asyncio.CancelledError` should
               be raised if the output queue is cleared. If set to `False`,
               `Ellipsis` will be the result of the coroutine. Defaults to False.
 
@@ -2226,9 +2227,9 @@ class IntervalJobBase(JobBase):
         """Create a new `IntervalJobBase` instance.
 
         Args:
-            interval (Optional[datetime.timedelta]):
-            count (Optional[int]):
-            reconnect (Optional[bool]): Overrides for the default class
+            interval (Optional[datetime.timedelta], optional):
+            count (Optional[int], optional):
+            reconnect (Optional[bool], optional): Overrides for the default class
               variables for an `IntervalJobBase` instance.
         """
 
@@ -2286,9 +2287,9 @@ class IntervalJobBase(JobBase):
         This will only be applied on the next iteration of `on_run()`.
 
         Args:
-            seconds (Optional[Union[int, float]]): Defaults to 0.
-            minutes (Optional[Union[int, float]]): Defaults to 0.
-            hours (Optional[Union[int, float]]): Defaults to 0.
+            seconds (Optional[Union[int, float]], optional): Defaults to 0.
+            minutes (Optional[Union[int, float]], optional): Defaults to 0.
+            hours (Optional[Union[int, float]], optional): Defaults to 0.
         """
         self._task_loop.change_interval(
             seconds=seconds,
