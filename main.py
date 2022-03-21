@@ -304,32 +304,6 @@ async def on_invite_delete(invite: discord.Invite):
     job_manager.dispatch_event(events.OnInviteDelete(invite))
 
 
-@bot.event
-async def on_group_join(channel: discord.GroupChannel, user: discord.User):
-    job_manager.dispatch_event(events.OnGroupJoin(channel, user))
-
-
-@bot.event
-async def on_group_remove(channel: discord.GroupChannel, user: discord.User):
-    job_manager.dispatch_event(events.OnGroupRemove(channel, user))
-
-
-@bot.event
-async def on_relationship_add(relationship: discord.Relationship):
-    job_manager.dispatch_event(events.OnRelationshipAdd(relationship))
-
-
-@bot.event
-async def on_relationship_remove(relationship: discord.Relationship):
-    job_manager.dispatch_event(events.OnRelationshipRemove(relationship))
-
-
-@bot.event
-async def on_relationship_update(
-    before: discord.Relationship, after: discord.Relationship
-):
-    job_manager.dispatch_event(events.OnRelationshipUpdate(before, after))
-
 
 if __name__ == "__main__":
     pgbot.run()
