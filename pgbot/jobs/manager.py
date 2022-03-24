@@ -2071,16 +2071,6 @@ class JobManager:
         )
         return job._identifier in self._job_id_map
 
-    @staticmethod
-    def _dispatch_add_to_waiting_list(
-        event, target_event_waiting_queue, deletion_queue_indices
-    ):
-        for i, waiting_list in enumerate(target_event_waiting_queue):
-            if isinstance(event, waiting_list[0]) and waiting_list[1](event):
-                if not waiting_list[2].cancelled():
-                    waiting_list[2].set_result(event.copy())
-                deletion_queue_indices.append(i)
-
     def dispatch_event(
         self,
         event: events.BaseEvent,
