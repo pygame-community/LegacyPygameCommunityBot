@@ -9,7 +9,7 @@ This module implements utility job classes.
 from __future__ import annotations
 import asyncio
 from typing import Optional
-from pgbot.jobs import IntervalJobBase, JobProxy, EventJobBase, JOB_PERMISSION_LEVELS
+from pgbot.jobs import IntervalJobBase, JobProxy, EventJobBase, PERM_LEVELS
 from pgbot import events
 from pgbot import serializers as serials
 from . import messaging
@@ -76,7 +76,7 @@ class RegisterDelayedJob(SingleRunJob):
         self.COMPLETE()
 
 
-class MethodCallJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
+class MethodCallJob(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
     """A job class for calling a method on an object."""
 
     OUTPUT_FIELDS = frozenset(("output",))

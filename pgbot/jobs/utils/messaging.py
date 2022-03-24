@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Optional, Union
 import io
 import discord
-from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS
+from pgbot.jobs import IntervalJobBase, PERM_LEVELS
 from pgbot.utils import embed_utils
 from pgbot import common
 from pgbot import serializers
@@ -19,7 +19,7 @@ NoneType = type(None)
 client = common.bot
 
 
-class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
+class MessageSend(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
     """A job class for sending a message into a
     discord text channel.
     """
@@ -174,7 +174,7 @@ class MessageSend(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST
             self.COMPLETE()
 
 
-class _MessageModify(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.LOWEST):
+class _MessageModify(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
     """A intermediary job class for modifying a message in a
     Discord text channel. Does not do anything on its own.
     """

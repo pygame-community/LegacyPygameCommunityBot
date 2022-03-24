@@ -8,7 +8,7 @@ This file defines some constants and variables used across the whole codebase
 
 import io
 import os
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import discord
 import pygame
@@ -51,6 +51,26 @@ entry_channels = {}
 entry_message_deletion_dict = {}
 
 __version__ = "1.5.3"
+
+
+class _UnsetValue:
+    __slots__ = ()
+
+    def __eq__(self, other):
+        return False
+
+    def __bool__(self):
+        return False
+
+    def __hash__(self):
+        return 0
+
+    def __repr__(self):
+        return "UnsetValue"
+
+
+UNSET: Any = _UnsetValue()
+UNSET_TYPE = _UnsetValue
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"

@@ -27,7 +27,7 @@ from .base_jobs import (
     JobInitializationError,
     JobPermissionError,
     JOB_VERBS,
-    JOB_PERMISSION_LEVELS,
+    PERM_LEVELS,
     get_job_class_id,
     get_job_class_from_id,
     get_job_class_permission_level,
@@ -561,7 +561,6 @@ class JobManager:
         scheduler_identifier=None,
         raise_exceptions=True,
     ):
-
         invoker_cls = invoker.__class__
 
         target_cls = target.__class__ if target else target_cls
@@ -583,36 +582,36 @@ class JobManager:
 
         elif (
             op.startswith(JOB_VERBS.FIND)
-            and invoker_cls_permission_level < JOB_PERMISSION_LEVELS.LOW
+            and invoker_cls_permission_level < PERM_LEVELS.LOW
         ):
             if raise_exceptions:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
-                    f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                     f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                 )
             return False
 
         elif (
             op.startswith(JOB_VERBS.CUSTOM_EVENT_DISPATCH)
-            and invoker_cls_permission_level < JOB_PERMISSION_LEVELS.HIGH
+            and invoker_cls_permission_level < PERM_LEVELS.HIGH
         ):
             if raise_exceptions:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
-                    f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                     f" for dispatching custom events to job objects"
                 )
             return False
 
         elif (
             op.startswith(JOB_VERBS.EVENT_DISPATCH)
-            and invoker_cls_permission_level < JOB_PERMISSION_LEVELS.HIGH
+            and invoker_cls_permission_level < PERM_LEVELS.HIGH
         ):
             if raise_exceptions:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
-                    f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                     f" for dispatching non-custom events to job objects"
                 )
             return False
@@ -624,11 +623,11 @@ class JobManager:
                     " cannot be None if argument 'op' is 'UNSCHEDULE'"
                 )
 
-            if invoker_cls_permission_level < JOB_PERMISSION_LEVELS.MEDIUM:
+            if invoker_cls_permission_level < PERM_LEVELS.MEDIUM:
                 if raise_exceptions:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
-                        f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                        f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                         f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
@@ -643,32 +642,32 @@ class JobManager:
                 target_cls_permission_level = get_job_class_permission_level(target_cls)
 
                 if (
-                    invoker_cls_permission_level == JOB_PERMISSION_LEVELS.MEDIUM
+                    invoker_cls_permission_level == PERM_LEVELS.MEDIUM
                     and invoker._identifier != scheduler_identifier
                 ):
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" jobs that were scheduled by the class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                             " when the scheduler job is still alive and is not the"
                             " invoker job"
                         )
                     return False
 
                 elif (
-                    invoker_cls_permission_level == JOB_PERMISSION_LEVELS.HIGH
-                    and target_cls_permission_level >= JOB_PERMISSION_LEVELS.HIGH
+                    invoker_cls_permission_level == PERM_LEVELS.HIGH
+                    and target_cls_permission_level >= PERM_LEVELS.HIGH
                 ):
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" jobs that were scheduled by the class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
 
@@ -682,41 +681,41 @@ class JobManager:
         ):
             target_cls_permission_level = get_job_class_permission_level(target_cls)
 
-            if invoker_cls_permission_level < JOB_PERMISSION_LEVELS.MEDIUM:
+            if invoker_cls_permission_level < PERM_LEVELS.MEDIUM:
                 if raise_exceptions:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
-                        f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                        f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                         f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
 
-            elif invoker_cls_permission_level == JOB_PERMISSION_LEVELS.MEDIUM:
-                if target_cls_permission_level >= JOB_PERMISSION_LEVELS.MEDIUM:
+            elif invoker_cls_permission_level == PERM_LEVELS.MEDIUM:
+                if target_cls_permission_level >= PERM_LEVELS.MEDIUM:
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
 
             elif (
-                invoker_cls_permission_level == JOB_PERMISSION_LEVELS.HIGH
-                and target_cls_permission_level > JOB_PERMISSION_LEVELS.HIGH
+                invoker_cls_permission_level == PERM_LEVELS.HIGH
+                and target_cls_permission_level > PERM_LEVELS.HIGH
             ) or (
-                invoker_cls_permission_level == JOB_PERMISSION_LEVELS.HIGHEST
-                and target_cls_permission_level > JOB_PERMISSION_LEVELS.HIGHEST
+                invoker_cls_permission_level == PERM_LEVELS.HIGHEST
+                and target_cls_permission_level > PERM_LEVELS.HIGHEST
             ):
                 if raise_exceptions:
                     raise JobPermissionError(
                         f"insufficient permission level of '{invoker_cls.__name__}'"
-                        f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                        f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                         f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                         f" job objects of the specified class '{target_cls.__name__}'"
-                        f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                        f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                     )
                 return False
 
@@ -731,27 +730,27 @@ class JobManager:
 
             target_cls_permission_level = get_job_class_permission_level(target_cls)
 
-            if invoker_cls_permission_level < JOB_PERMISSION_LEVELS.HIGH:
+            if invoker_cls_permission_level < PERM_LEVELS.HIGH:
                 if raise_exceptions:
                     raise JobPermissionError(
                         f"insufficient permission level of {invoker_cls.__name__}"
-                        f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                        f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                         f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                     )
                 return False
 
             elif invoker_cls_permission_level in (
-                JOB_PERMISSION_LEVELS.HIGH,
-                JOB_PERMISSION_LEVELS.HIGHEST,
+                PERM_LEVELS.HIGH,
+                PERM_LEVELS.HIGHEST,
             ):
                 if target._creator is not invoker:
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                             " its instance did not create."
                         )
                     return False
@@ -773,60 +772,60 @@ class JobManager:
 
             target_cls_permission_level = get_job_class_permission_level(target_cls)
 
-            if invoker_cls_permission_level < JOB_PERMISSION_LEVELS.MEDIUM:
+            if invoker_cls_permission_level < PERM_LEVELS.MEDIUM:
                 raise JobPermissionError(
                     f"insufficient permission level of {invoker_cls.__name__}"
-                    f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                    f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                     f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()} job objects"
                 )
-            elif invoker_cls_permission_level == JOB_PERMISSION_LEVELS.MEDIUM:
+            elif invoker_cls_permission_level == PERM_LEVELS.MEDIUM:
                 if (
-                    target_cls_permission_level < JOB_PERMISSION_LEVELS.MEDIUM
+                    target_cls_permission_level < PERM_LEVELS.MEDIUM
                     and target._creator is not invoker
                 ):
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)}) that"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)}) that"
                             " its instance did not create."
                         )
                     return False
 
-                elif target_cls_permission_level >= JOB_PERMISSION_LEVELS.MEDIUM:
+                elif target_cls_permission_level >= PERM_LEVELS.MEDIUM:
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
 
-            elif invoker_cls_permission_level == JOB_PERMISSION_LEVELS.HIGH:
-                if target_cls_permission_level >= JOB_PERMISSION_LEVELS.HIGH:
+            elif invoker_cls_permission_level == PERM_LEVELS.HIGH:
+                if target_cls_permission_level >= PERM_LEVELS.HIGH:
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
 
-            elif invoker_cls_permission_level == JOB_PERMISSION_LEVELS.HIGHEST:
-                if target_cls_permission_level > JOB_PERMISSION_LEVELS.HIGHEST:
+            elif invoker_cls_permission_level == PERM_LEVELS.HIGHEST:
+                if target_cls_permission_level > PERM_LEVELS.HIGHEST:
                     if raise_exceptions:
                         raise JobPermissionError(
                             f"insufficient permission level of '{invoker_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(invoker_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(invoker_cls_permission_level)})"
                             f" for {JOB_VERBS._PRESENT_CONTINUOUS_TENSE[op].lower()}"
                             f" job objects of the specified class '{target_cls.__name__}'"
-                            f" ({JOB_PERMISSION_LEVELS.get_name(target_cls_permission_level)})"
+                            f" ({PERM_LEVELS.get_name(target_cls_permission_level)})"
                         )
                     return False
 
@@ -1385,7 +1384,6 @@ class JobManager:
         self._job_type_count_dict[job.__class__._IDENTIFIER] += 1
 
         self._job_id_map[job._identifier] = job
-        job._manager = JobManagerProxy(self, job)
 
         job._registered_at_ts = time.time()
 
@@ -1546,7 +1544,7 @@ class JobManager:
         created_after: Optional[datetime.datetime] = None,
         permission_level: Optional[int] = None,
         above_permission_level: Optional[int] = None,
-        below_permission_level: Optional[int] = None,
+        below_permission_level: Optional[int] = PERM_LEVELS.SYSTEM,
         alive: Optional[bool] = None,
         is_starting: Optional[bool] = None,
         is_running: Optional[bool] = None,
@@ -1591,7 +1589,7 @@ class JobManager:
             above_permission_level (Optional[int], optional): The lower permission level
               value of the jobs to find. Defaults to None.
             below_permission_level (Optional[int], optional): The upper permission level
-              value of the jobs to find. Defaults to None.
+              value of the jobs to find. Defaults to `PERM_LEVELS.SYSTEM`.
             created_before (Optional[datetime.datetime], optional): The lower age limit
               of the jobs to find. Defaults to None.
             created_after (Optional[datetime.datetime], optional): The upper age limit
@@ -1679,9 +1677,7 @@ class JobManager:
 
             if (
                 not permission_level % 2
-                and JOB_PERMISSION_LEVELS.LOWEST
-                <= permission_level
-                <= JOB_PERMISSION_LEVELS.HIGHEST
+                and PERM_LEVELS.LOWEST <= permission_level <= PERM_LEVELS.SYSTEM
             ):
                 filter_functions.append(
                     lambda job: job.permission_level == permission_level
@@ -1701,9 +1697,7 @@ class JobManager:
 
             if (
                 not below_permission_level % 2
-                and JOB_PERMISSION_LEVELS.LOWEST
-                <= below_permission_level
-                <= JOB_PERMISSION_LEVELS.HIGHEST
+                and PERM_LEVELS.LOWEST <= below_permission_level <= PERM_LEVELS.SYSTEM
             ):
                 filter_functions.append(
                     lambda job: job.permission_level < below_permission_level
@@ -1723,9 +1717,7 @@ class JobManager:
 
             if (
                 not above_permission_level % 2
-                and JOB_PERMISSION_LEVELS.LOWEST
-                <= above_permission_level
-                <= JOB_PERMISSION_LEVELS.HIGHEST
+                and PERM_LEVELS.LOWEST <= above_permission_level <= PERM_LEVELS.HIGHEST
             ):
                 filter_functions.append(
                     lambda job: job.permission_level > above_permission_level
@@ -1854,7 +1846,7 @@ class JobManager:
             stopping_timeout (Optional[float], optional):
               An optional timeout in seconds for the maximum time period
               for stopping the job while it is restarting. This overrides
-              the global timeout of this `JobManager` if present.
+              the global timeout of this job manager if present.
         Returns:
             bool: Whether the operation was initiated by the job.
         """
@@ -1895,7 +1887,7 @@ class JobManager:
             force (bool): Whether to suspend all operations of the job forcefully.
             stopping_timeout (Optional[float], optional): An optional timeout in
               seconds for the maximum time period for stopping the job. This
-              overrides the global timeout of this `JobManager` if present.
+              overrides the global timeout of this job manager if present.
 
         Returns:
             bool: Whether the operation was successful.
@@ -1930,15 +1922,14 @@ class JobManager:
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
         """Stops a job's current execution unconditionally and remove it from its
-        `JobManager`. In order to check if a job was ended by killing it, one
-        can call `.is_killed()`.
+        job manager.
 
         Args:
             job_or_proxy (Union[IntervalJobBase, EventJobBase]): The job object.
             stopping_timeout (Optional[float], optional):
               An optional timeout in seconds for the maximum time period for
               stopping the job while it is being killed. This overrides the
-              global timeout of this `JobManager` if present.
+              global timeout of this job manager if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.

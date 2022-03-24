@@ -9,11 +9,13 @@ for extra features and encapsulation.
 
 from collections import deque
 import datetime
-from typing import Callable, Optional, Type, Union
+import itertools
+from typing import Any, Callable, Optional, Type, Union
 from pgbot import events
+from pgbot.common import UNSET
 
 from pgbot.events import BaseEvent
-from .base_jobs import EventJobBase, IntervalJobBase, JobBase
+from .base_jobs import PERM_LEVELS, EventJobBase, IntervalJobBase, JobBase
 
 
 class JobProxy:
@@ -25,7 +27,7 @@ class JobProxy:
         "__registered_at",
     )
 
-    def __init__(self, job: JobBase):
+    def __init__(self, job: Union[JobBase, EventJobBase, IntervalJobBase]):
         self.__j = job
         self.__job_class = job.__class__
         self.__identifier = job._identifier
@@ -418,7 +420,7 @@ class JobProxy:
             queue_name, raise_exceptions=raise_exceptions
         )
 
-    def get_output_field(self, field_name: str, default=Ellipsis):
+    def get_output_field(self, field_name: str, default=UNSET):
         """Get the value of a specified output field.
 
         Args:
@@ -426,7 +428,7 @@ class JobProxy:
             default (str): The value to return if the specified
               output field does not exist, has not been set,
               or if this job doesn't support them at all.
-              Defaults to the `Ellipsis` singleton, which will
+              Defaults to `UNSET`, which will
               trigger an exception.
 
         Raises:
@@ -441,7 +443,7 @@ class JobProxy:
 
         return self.__j.get_output_field(field_name, default=default)
 
-    def get_output_queue_contents(self, queue_name: str, default=Ellipsis):
+    def get_output_queue_contents(self, queue_name: str, default=UNSET):
         """Get a list of all values present in the specified output queue.
         For continuous access to job output queues, consider requesting
         a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.
@@ -451,11 +453,11 @@ class JobProxy:
             default (str): The value to return if the specified
               output queue does not exist, is empty,
               or if this job doesn't support them at all.
-              Defaults to the `Ellipsis` singleton, which will
+              Defaults to `UNSET`, which will
               trigger an exception.
 
         Raises:
-            TypeError: Output fields aren't supported for this job,
+            TypeError: Output queues aren't supported for this job,
               or `queue_name` is not a string.
             LookupError: The specified queue name is not defined by this job.
             JobStateError: The specified output queue is empty.
@@ -567,13 +569,13 @@ class JobProxy:
 
         return self.__j.await_output_field(field_name, timeout=timeout)
 
-    def await_output_queue_update(
+    def await_output_queue_add(
         self,
         queue_name: str,
         timeout: Optional[float] = None,
         cancel_if_cleared: bool = True,
     ):
-        """Wait for this job object to update the specified output queue while
+        """Wait for this job object to add to the specified output queue while
         it is running, using the coroutine output of this method.
 
         Args:
@@ -581,7 +583,7 @@ class JobProxy:
               seconds. Defaults to None.
             cancel_if_cleared (bool, optional): Whether `asyncio.CancelledError`
               should be raised if the output queue is cleared. If set to `False`,
-              `Ellipsis` will be the result of the coroutine. Defaults to False.
+              `UNSET` will be the result of the coroutine. Defaults to False.
 
         Raises:
             TypeError: Output fields aren't supported for this job,
@@ -594,12 +596,66 @@ class JobProxy:
 
         Returns:
             Coroutine: A coroutine that evaluates to the most recent output
-              queue value, or `Ellipsis` if the queue is cleared.
+              queue value, or `UNSET` if the queue is cleared.
         """
 
-        return self.__j.await_output_queue_update(
+        return self.__j.await_output_queue_add(
             queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared
         )
+
+    def verify_public_method_suppport(self, method_name: str, raise_exceptions=False):
+        """Verify if a job has a public method exposed under the specified name is
+        supported by this job, or if it supports public methods at all.
+
+        Args:
+            method_name (str): The name of the public method.
+            raise_exceptions (bool, optional): Whether exceptions
+              should be raised. Defaults to False.
+
+        Raises:
+            TypeError: Output fields aren't supported for this job,
+              or `field_name` is not a string.
+            LookupError: The specified field name is not defined by this job.
+        """
+        return self.__j.verify_public_method_suppport(
+            method_name, raise_exceptions=raise_exceptions
+        )
+
+    def has_public_method_name(self, method_name: str):
+        """Whether a public method under the specified name is supported by this job.
+
+        Args:
+            method_name (str): The name of the target method
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.has_public_method_name(method_name)
+
+    def public_method_is_async(self, method_name: str):
+        """Whether a public method under the specified name is a coroutine function.
+
+        Args:
+            method_name (str): The name of the target method.
+
+        Returns:
+            bool: True/False
+        """
+
+        return self.__j.public_method_is_async(method_name)
+
+    def run_public_method(self, method_name: str, *args, **kwargs):
+        """Run a public method under the specified name and return the
+        result.
+
+        Args:
+            method_name (str): The name of the target method.
+
+        Returns:
+            object: The result of the call.
+        """
+        return self.__j.run_public_method(method_name, *args, **kwargs)
 
     def interval_job_next_iteration(self):
         """
@@ -646,8 +702,11 @@ class JobProxy:
                 " proxy is not an 'IntervalJobBase' subclass"
             ) from None
 
-    def __repr__(self):
+    def __str__(self):
         return f"<JobProxy ({self.__j})>"
+
+    def __repr__(self):
+        return f"<JobProxy ({self.__j.__class__.__name__})>"
 
 
 class JobOutputQueueProxy:
@@ -662,7 +721,7 @@ class JobOutputQueueProxy:
         self.__job_proxy = job._proxy
         job_output_queues = self.__j._output_queues
         self._output_queue_proxy_dict: dict[
-            str, list[Union[int, Optional[deque], list]]
+            str, list[Union[int, Optional[deque[Any]], list]]
         ] = {
             queue_name: [0, None, job_output_queues[queue_name]]
             for queue_name in self.__j.OUTPUT_QUEUES
@@ -697,7 +756,7 @@ class JobOutputQueueProxy:
                 raise (
                     LookupError(
                         f"queue name '{queue_name}' is not defined in"
-                        f" 'OUTPUT_FIELDS' of the {self.__class__.__name__}"
+                        f" 'OUTPUT_QUEUES' of the {self.__class__.__name__}"
                         " class of this job output queue proxy"
                     )
                     if isinstance(queue_name, str)
@@ -727,40 +786,75 @@ class JobOutputQueueProxy:
             self._output_queue_proxy_dict[queue_name][1] = None
 
     def _queue_clear_alert(self, queue_name: str):
+        # Alerts OutputQueueProxy objects that their job
+        # object is about to clear its output queues.
         queue_list = self._output_queue_proxy_dict[queue_name]
 
         if queue_list[1] is not None:
             queue_list[1].extend(queue_list[2])
 
-    def pop_output_queue(self, queue_name: str):
-        """Get the oldest value in the speficied output queue.
+        queue_list[0] = 0
 
+    def pop_output_queue(
+        self, queue_name: str, amount: Optional[int] = None, all_values: bool = False
+    ):
+        """Get the oldest or a list of the specified amount of oldest entries in the
+        speficied output queue.
 
         Args:
             queue_name (str): The name of the target output queue.
+            amount (Optional[int], optional): The maximum amount of entries to return.
+              If there are less entries available than this amount, only
+              Defaults to None.
+            all_entries (bool, optional): Whether all entries should be released at once.
+              Defaults to False.
 
         Raises:
             LookupError: The target queue is exhausted, or empty.
 
         Returns:
-            object: The oldest value.
+            object: The oldest value, or a list of the specified amount of them, if
+              possible.
         """
         self.verify_queue_name(queue_name, raise_exceptions=True)
 
         queue_list = self._output_queue_proxy_dict[queue_name]
 
-        if queue_list[1]:
-            return queue_list[1].popleft()
-        elif queue_list[2]:
-            if queue_list[0] < len(queue_list[2]):
-                output = queue_list[2][queue_list[0]]
-                queue_list[0] += 1
-                return output
+        if not all_values and amount is None:
 
-            raise LookupError(f"the target queue with name '{queue_name}' is exhausted")
+            if queue_list[1]:
+                return queue_list[1].popleft()
+            elif queue_list[2]:
+                if queue_list[0] < len(queue_list[2]):
+                    output = queue_list[2][queue_list[0]]
+                    queue_list[0] += 1
+                    return output
 
-        else:
-            raise LookupError(f"the target queue with name '{queue_name}' is empty")
+                raise LookupError(
+                    f"the target queue with name '{queue_name}' is exhausted"
+                )
+
+            else:
+                raise LookupError(f"the target queue with name '{queue_name}' is empty")
+
+        elif all_values or isinstance(amount, int) and amount > 0:
+            entries = []
+
+            for _ in itertools.count() if all_values else range(amount):
+                if queue_list[1]:
+                    entries.append(queue_list[1].popleft())
+                elif queue_list[2]:
+                    if queue_list[0] < len(queue_list[2]):
+                        entries.append(queue_list[2][queue_list[0]])
+                        queue_list[0] += 1
+                    else:
+                        break
+                else:
+                    break
+
+            return entries
+
+        raise TypeError(f"argument 'amount' must be None or a positive integer")
 
     def output_queue_is_empty(self, queue_name: str, ignore_rescue_buffer=False):
         """Whether the specified output queue is empty.
@@ -768,7 +862,7 @@ class JobOutputQueueProxy:
         Args:
             queue_name (str): The name of the target output queue.
             ignore_rescue_buffer (bool): Whether the contents of the rescue buffer
-              should be consideredas well. Defaults to False.
+              should be considered as well. Defaults to False.
 
         Raises:
             TypeError: `queue_name` is not a string.
@@ -788,7 +882,7 @@ class JobOutputQueueProxy:
         return not queue_list[1] and not queue_list[2]
 
     def queue_is_exhausted(self, queue_name: str):
-        """Whether the specified output queue is esxhausted,
+        """Whether the specified output queue is exhausted,
         meaning that no new values are available.
 
         Args:
@@ -813,20 +907,20 @@ class JobOutputQueueProxy:
             return True
         return False
 
-    def await_output_queue_update(
+    def await_output_queue_add(
         self,
         queue_name: str,
         timeout: Optional[float] = None,
         cancel_if_cleared: bool = True,
     ):
-        """Wait for the job object of this output queue proxy to update the specified
+        """Wait for the job object of this output queue proxy to add to the specified
         output queue while it is running, using the coroutine output of this method.
 
         Args:
             timeout (float, optional): The maximum amount of time to wait in seconds.
               Defaults to None.
             cancel_if_cleared (bool): Whether `asyncio.CancelledError` should be
-              raised if the output queue is cleared. If set to `False`, `Ellipsis`
+              raised if the output queue is cleared. If set to `False`, `UNSET`
               will be the result of the coroutine. Defaults to False.
 
         Raises:
@@ -839,12 +933,11 @@ class JobOutputQueueProxy:
                 The job was killed, or the output queue was cleared.
 
         Returns:
-            Coroutine:
-                A coroutine that evaluates to the most recent output queue
-                value, or `Ellipsis` if the queue is cleared.
+            Coroutine: A coroutine that evaluates to the most recent output queue
+              value, or `UNSET` if the queue is cleared.
         """
 
-        return self.__j.await_output_queue_update(
+        return self.__j.await_output_queue_add(
             queue_name, timeout=timeout, cancel_if_cleared=cancel_if_cleared
         )
 
@@ -861,15 +954,15 @@ class JobManagerProxy:
     def get_job_stop_timeout(self):
         """Get the maximum time period in seconds for the job object managed
         by this `JobManagerProxy` to stop when halted from the
-        `JobManager`, either due to being stopped, restarted or killed.
+        job manager, either due to being stopped, restarted or killed.
         By default, this method returns the global job timeout set for the
-        current `JobManager`, but that can be overridden with a custom
+        current job manager, but that can be overridden with a custom
         timeout when trying to stop the job object.
 
         Returns:
             float: The timeout in seconds.
             None: No timeout was set for the job object or globally for the
-              current `JobManager`.
+              current job manager.
         """
 
         return (
@@ -1146,7 +1239,7 @@ class JobManagerProxy:
             stopping_timeout (Optional[float], optional): An optional timeout in
               seconds for the maximum time period for stopping the job while it
               is restarting. This overrides the global timeout of this
-              `JobManager` if present.
+              job manager if present.
         Returns:
             bool: Whether the operation was initiated by the job.
         """
@@ -1188,7 +1281,7 @@ class JobManagerProxy:
             force (bool): Whether to suspend all operations of the job forcefully.
             stopping_timeout (Optional[float], optional): An optional timeout in
               seconds for the maximum time period for stopping the job. This
-              overrides the global timeout of this `JobManager` if present.
+              overrides the global timeout of this job manager if present.
 
         Returns:
             bool: Whether the operation was successful.
@@ -1204,15 +1297,14 @@ class JobManagerProxy:
 
     def kill_job(self, job_proxy: JobProxy, stopping_timeout: Optional[float] = None):
         """Stops a job's current execution unconditionally and remove it from its
-        `JobManager`. In order to check if a job was ended by killing it, one
-        can call `.is_killed()`.
+        job manager.
 
         Args:
             job_proxy (JobProxy): The job object's proxy.
             stopping_timeout (Optional[float], optional): An optional timeout in
               seconds for the maximum time period for stopping the job while it
               is being killed. This overrides the global timeout of this
-              `JobManager` if present.
+              job manager if present.
 
         Returns:
             bool: Whether the operation was initiated by the job.
@@ -1329,7 +1421,7 @@ class JobManagerProxy:
         created_after: Optional[datetime.datetime] = None,
         permission_level: Optional[int] = None,
         above_permission_level: Optional[int] = None,
-        below_permission_level: Optional[int] = None,
+        below_permission_level: Optional[int] = PERM_LEVELS.SYSTEM,
         alive: Optional[bool] = None,
         is_starting: Optional[bool] = None,
         is_running: Optional[bool] = None,
@@ -1372,7 +1464,7 @@ class JobManagerProxy:
             above_permission_level (Optional[int], optional): The lower permission
               level value of the jobs to find. Defaults to None.
             below_permission_level (Optional[int], optional): The upper permission
-              level value of the jobs to find. Defaults to None.
+              level value of the jobs to find. Defaults to `PERM_LEVELS.SYSTEM`.
             created_before (Optional[datetime.datetime], optional): The lower age limit
               of the jobs to find. Defaults to None.
             created_after (Optional[datetime.datetime], optional): The upper age limit

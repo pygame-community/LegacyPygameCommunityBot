@@ -13,7 +13,7 @@ from time import perf_counter
 
 from pgbot import common, db, events, serializers
 import pgbot.jobs
-from pgbot.jobs import IntervalJobBase, JOB_PERMISSION_LEVELS, JobNamespace
+from pgbot.jobs import IntervalJobBase, PERM_LEVELS, JobNamespace
 from pgbot.jobs.utils import (
     messaging,
     ClientEventJobBase,
@@ -150,7 +150,7 @@ class MessagingTest2(ClientEventJobBase):
             await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MemberReminderJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.MEDIUM):
+class MemberReminderJob(IntervalJobBase, permission_level=PERM_LEVELS.MEDIUM):
     DEFAULT_SECONDS = 3
 
     async def on_run(self):
@@ -205,7 +205,7 @@ class MemberReminderJob(IntervalJobBase, permission_level=JOB_PERMISSION_LEVELS.
                 reminder_obj.write(new_reminders)
 
 
-class Main(SingleRunJob, permission_level=JOB_PERMISSION_LEVELS.HIGHEST):
+class Main(SingleRunJob, permission_level=PERM_LEVELS.HIGHEST):
     DEFAULT_RECONNECT = False
 
     async def on_start(self):
