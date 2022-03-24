@@ -514,7 +514,7 @@ def publicjobmethod(func: Callable[[], Any]):
     """A simple decorator to expose a method as public to other job objects.
 
     Args:
-        func (Callable[[Any], Any]): The job method to be treated as a job service.
+        func (Callable[[Any], Any]): The job method to expose.
     """
 
     if isinstance(func, FunctionType):
@@ -542,7 +542,6 @@ class JobBase:
         "_identifier",
         "_schedule_identifier",
         "_data",
-        "_job_service_request_queues",
         "_output_fields",
         "_output_queues",
         "_output_queue_proxies",
@@ -593,7 +592,6 @@ class JobBase:
     OUTPUT_QUEUES = frozenset()
 
     NAMESPACE_CLASS = JobNamespace
-    MAXIMUM_ACTIVE_SERVICES: Optional[int] = None
 
     def __init_subclass__(cls, permission_level=None):
         for field in itertools.chain(cls.OUTPUT_FIELDS, cls.OUTPUT_QUEUES):
@@ -2173,6 +2171,14 @@ class JobBase:
             return False
 
         return True
+
+    def get_public_method_names(self):
+        """Get the names of all public methods that this job supports.
+
+        Returns:
+            tuple: A tuple of the names of the supported methods.
+        """
+        return tuple(self.PUBLIC_METHODS.keys())
 
     def has_public_method_name(self, method_name: str):
         """Whether a public method under the specified name is supported by this job.

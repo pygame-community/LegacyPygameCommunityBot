@@ -621,6 +621,14 @@ class JobProxy:
             method_name, raise_exceptions=raise_exceptions
         )
 
+    def get_public_method_names(self):
+        """Get the names of all public methods that this job supports.
+
+        Returns:
+            tuple: A tuple of the names of the supported methods.
+        """
+        return self.__j.get_public_method_names()
+
     def has_public_method_name(self, method_name: str):
         """Whether a public method under the specified name is supported by this job.
 
