@@ -450,18 +450,6 @@ class JobInitializationError(JobError):
     pass
 
 
-class JobServiceError(Exception):
-    pass
-
-
-class JobServiceStateError(JobServiceError):
-    pass
-
-
-class JobServiceCancelledError(JobServiceError):
-    pass
-
-
 class JobWarning(Warning):
     """Base class for job related warnings."""
 
