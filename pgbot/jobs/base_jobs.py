@@ -2630,10 +2630,7 @@ class EventJobBase(JobBase):
         """The current amount of `on_run()` calls completed by this job object."""
         return self._loop_count
 
-    async def _on_start(self):
-        if self._clear_queue_at_startup:
-            self._event_queue.clear()
-
+    def _filter_events(self):
         iterator_obj = (
             range(self._max_event_checks_per_iteration)
             if self._max_event_checks_per_iteration
@@ -2648,9 +2645,15 @@ class EventJobBase(JobBase):
                 and not self._allow_queue_overflow
             ):
                 break
+
             event = self._pre_event_queue.popleft()
+
             if self.check_event(event):
                 self._event_queue.append(event)
+
+    async def _on_start(self):
+        if self._clear_queue_at_startup:
+            self._event_queue.clear()
 
         await super()._on_start()
 
@@ -2660,6 +2663,9 @@ class EventJobBase(JobBase):
     async def _on_run(self):
         if self._startup_kill or self._skip_on_run:
             return
+
+        if self._pre_event_queue:
+            self._filter_events()
 
         if not self._event_queue:
             if not self._empty_queue_timeout_secs:
