@@ -3,18 +3,18 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-A asynchronous job module based on OOP principles.
+A module for creating asynchronous task execution system based on OOP principles.
 """
 
-from .base_jobs import (
+from .jobs import (
     get_job_class_from_id,
     get_job_class_id,
     get_job_class_permission_level,
     DEFAULT_JOB_EXCEPTION_WHITELIST,
-    JOB_STATUS,
-    JOB_VERBS,
-    JOB_STOP_REASONS,
-    PERM_LEVELS,
+    JobStatus,
+    JobVerbs,
+    JobStopReasons,
+    JobPermissionLevels,
     JobError,
     JobPermissionError,
     JobStateError,
@@ -29,5 +29,6 @@ from .base_jobs import (
     JobManagerJob,
 )
 from .manager import JobManager
-from .proxies import *
-from . import utils
+from .proxies import JobProxy, JobOutputQueueProxy, JobManagerProxy
+from .groupings import JobGroup
+from . import jobutils

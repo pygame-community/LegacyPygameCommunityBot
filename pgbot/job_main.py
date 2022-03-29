@@ -13,11 +13,11 @@ from time import perf_counter
 
 from pgbot import common, db, events, serializers
 import pgbot.jobs
-from pgbot.jobs import IntervalJobBase, PERM_LEVELS, JobNamespace
-from pgbot.jobs.utils import (
+from pgbot.jobs import IntervalJobBase, JobPermissionLevels, JobNamespace
+from pgbot.jobs.jobutils import (
     messaging,
     ClientEventJobBase,
-    RegisterDelayedJob,
+    RegisterDelayedJobGroup,
     SingleRunJob,
 )
 from pgbot.utils import embed_utils
@@ -92,7 +92,7 @@ class MessagingTest1(ClientEventJobBase):
 
 
 class IntervalJobTest(IntervalJobBase):
-    default_seconds = 10
+    DEFAULT_SECONDS = 10
 
     async def on_init(self):
         if "target_channel" not in self.data:
@@ -150,7 +150,7 @@ class MessagingTest2(ClientEventJobBase):
             await self.data.target_channel.send(f"Hi, {user_name}")
 
 
-class MemberReminderJob(IntervalJobBase, permission_level=PERM_LEVELS.MEDIUM):
+class MemberReminderJob(IntervalJobBase, permission_level=JobPermissionLevels.MEDIUM):
     DEFAULT_SECONDS = 3
 
     async def on_run(self):
@@ -205,7 +205,8 @@ class MemberReminderJob(IntervalJobBase, permission_level=PERM_LEVELS.MEDIUM):
                 reminder_obj.write(new_reminders)
 
 
-class Main(SingleRunJob, permission_level=PERM_LEVELS.HIGHEST):
+class Main(IntervalJobBase, permission_level=JobPermissionLevels.HIGHEST):
+    DEFAULT_COUNT = 1
     DEFAULT_RECONNECT = False
 
     async def on_start(self):
@@ -238,8 +239,8 @@ class Main(SingleRunJob, permission_level=PERM_LEVELS.HIGHEST):
 
             await self.manager.register_job(job)
 
-        await self.manager.create_and_register_job(
-            RegisterDelayedJob,
+        reg_delay_job = await self.manager.create_and_register_job(
+            RegisterDelayedJobGroup.HighPermLevel.OUTPUT_FIELDS,
             10.0,
             self.manager.create_job(
                 messaging.MessageSend,
@@ -247,6 +248,12 @@ class Main(SingleRunJob, permission_level=PERM_LEVELS.HIGHEST):
                 content="This will only happen once.",
             ),
         )
+
+        print(reg_delay_job)
+
+        await asyncio.sleep(3)
+
+        self.manager.kill_job(reg_delay_job)
 
         if not self.manager.job_scheduling_is_initialized():
             await self.manager.wait_for_job_scheduling_initialization()
@@ -282,7 +289,7 @@ class Main(SingleRunJob, permission_level=PERM_LEVELS.HIGHEST):
         )
 
         await self.manager.create_job_schedule(
-            pgbot.jobs.utils.MethodCallJob,
+            pgbot.jobs.jobutils.MethodCallJob,
             timestamp=datetime.datetime.now() + datetime.timedelta(seconds=10),
             job_kwargs=dict(
                 instance=serializers.TextChannelSerializer(msg_event.message.channel),

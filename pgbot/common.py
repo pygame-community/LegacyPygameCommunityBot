@@ -53,7 +53,32 @@ entry_message_deletion_dict = {}
 __version__ = "1.5.3"
 
 
-class _UnsetValue:
+class _SingletonMeta(type):
+    def __init__(cls, name, bases, dct):
+        super(_SingletonMeta, cls).__init__(name, bases, dct)
+        super(_SingletonMeta, cls).__setattr__(f"_{cls.__name__}__inst", None)
+
+    def __call__(cls, *args, **kw):
+        if getattr(cls, f"_{cls.__name__}__inst", None) is None:
+            super(_SingletonMeta, cls).__setattr__(
+                f"_{cls.__name__}__inst",
+                super(_SingletonMeta, cls).__call__(*args, **kw),
+            )
+        return getattr(cls, f"_{cls.__name__}__inst")
+
+    def __setattr__(cls, name: str, value: object):
+        if (
+            name == f"_{cls.__name__}__inst"
+            and getattr(cls, f"_{cls.__name__}__inst", None) is not None
+        ):
+            raise ValueError("cannot modify the specified attribute")
+
+    def __delattr__(cls, name: str):
+        if name == f"_{cls.__name__}__inst":
+            raise ValueError("cannot delete the specified attribute")
+
+
+class _UnsetType(metaclass=_SingletonMeta):
     __slots__ = ()
 
     def __eq__(self, other):
@@ -66,11 +91,10 @@ class _UnsetValue:
         return 0
 
     def __repr__(self):
-        return "UnsetValue"
+        return "UnsetType"
 
 
-UNSET: Any = _UnsetValue()
-UNSET_TYPE = _UnsetValue
+UNSET: Any = _UnsetType()
 
 # BONCC quiky stuff
 BONK = "<:pg_bonk:780423317718302781>"

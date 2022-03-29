@@ -10,7 +10,8 @@ from __future__ import annotations
 from typing import Optional, Union
 import io
 import discord
-from pgbot.jobs import IntervalJobBase, PERM_LEVELS
+from pgbot.jobs import IntervalJobBase, JobPermissionLevels
+from pgbot.jobs.groupings import OutputNameRecord
 from pgbot.utils import embed_utils
 from pgbot import common
 from pgbot import serializers
@@ -19,12 +20,20 @@ NoneType = type(None)
 client = common.bot
 
 
-class MessageSend(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
+class MessageSend(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST):
     """A job class for sending a message into a
     discord text channel.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+
+    Output Fields:
+        message: The message that was sent.
     """
 
-    OUTPUT_FIELDS = frozenset(("message",))
+    class OUTPUT_FIELDS(OutputNameRecord):
+        message: str
+        "The message that was sent."
 
     DEFAULT_COUNT = 1
     DEFAULT_RECONNECT = False
@@ -166,17 +175,20 @@ class MessageSend(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
         msg = await self.data.channel.send(**self.data.kwargs)
         self.set_output_field("message", msg)
 
-    async def on_stop(self, reason, by_force):
-        if self.failed():
+    async def on_stop(self):
+        if self.run_failed():
             if self.data.kill_if_failed:
                 self.KILL()
         else:
             self.COMPLETE()
 
 
-class _MessageModify(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
+class _MessageModify(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST):
     """A intermediary job class for modifying a message in a
     Discord text channel. Does not do anything on its own.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
     """
 
     DEFAULT_COUNT = 1
@@ -232,8 +244,8 @@ class _MessageModify(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
             else:
                 raise TypeError("Invalid type for argument 'message'")
 
-    async def on_stop(self, reason, by_force):
-        if self.failed():
+    async def on_stop(self):
+        if self.run_failed():
             if self.data.kill_if_failed:
                 self.KILL()
         else:
@@ -243,6 +255,9 @@ class _MessageModify(IntervalJobBase, permission_level=PERM_LEVELS.LOWEST):
 class MessageEdit(_MessageModify):
     """A job class for editing a message in a
     Discord text channel.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
     """
 
     def __init__(
@@ -312,6 +327,9 @@ class MessageEdit(_MessageModify):
 class MessageDelete(_MessageModify):
     """A job class for deleting a message in a
     Discord text channel.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
     """
 
     def __init__(
@@ -348,7 +366,11 @@ class MessageDelete(_MessageModify):
 
 
 class ReactionAdd(_MessageModify):
-    """Adds a given reaction to a message."""
+    """Adds a given reaction to a message.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+    """
 
     def __init__(
         self,
@@ -411,7 +433,11 @@ class ReactionAdd(_MessageModify):
 
 
 class ReactionsAdd(_MessageModify):
-    """Adds a sequence of reactions to a message."""
+    """Adds a sequence of reactions to a message.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+    """
 
     def __init__(
         self,
@@ -501,7 +527,11 @@ class ReactionsAdd(_MessageModify):
 
 
 class ReactionRemove(_MessageModify):
-    """Removes a given reaction from a message."""
+    """Removes a given reaction from a message.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+    """
 
     def __init__(
         self,
@@ -576,7 +606,11 @@ class ReactionRemove(_MessageModify):
 
 
 class ReactionClearEmoji(_MessageModify):
-    """Clears a set of reactions from a message."""
+    """Clears a set of reactions from a message.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+    """
 
     def __init__(
         self,
@@ -640,7 +674,11 @@ class ReactionClearEmoji(_MessageModify):
 
 
 class ReactionClear(_MessageModify):
-    """Clears all reactions from a message."""
+    """Clears all reactions from a message.
+
+    Permission Level:
+        JobPermissionLevels.LOWEST
+    """
 
     async def on_run(self):
         await self.data.message.clear_reactions()

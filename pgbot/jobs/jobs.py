@@ -3,38 +3,40 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file implements the base classes for a task object system that
-can be used to implement background processes for the bot. 
+This file implements the base classes for job objects, which are a core part of the
+asynchronous task execution system.
 """
 
 from __future__ import annotations
 from abc import ABC
 import asyncio
 from aiohttp import ClientError
-from collections import deque
+from collections import ChainMap, deque
 from contextlib import contextmanager
 import datetime
+from enum import Enum, IntEnum, auto
 import itertools
 import inspect
 import re
 import sys
 import time
 from types import FunctionType, SimpleNamespace
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Awaitable, Callable, Coroutine, Optional, Type, Union
 
 import discord
 from discord.ext import tasks
-from discord.utils import MAX_ASYNCIO_SECONDS
 
 from pgbot.utils import utils
 from pgbot import common, events
-from pgbot.common import UNSET, UNSET_TYPE
+from pgbot.common import UNSET, _UnsetType
 
 _JOB_CLASS_MAP = {}
 # A dictionary of all Job subclasses that were created. Do not access outside of this module.
 
 
-def get_job_class_from_id(class_identifier: str, closest_match: bool = False):
+def get_job_class_from_id(
+    class_identifier: str, closest_match: bool = False
+) -> JobBase:
 
     name, timestamp_str = class_identifier.split("-")
 
@@ -51,7 +53,7 @@ def get_job_class_from_id(class_identifier: str, closest_match: bool = False):
     )
 
 
-def get_job_class_id(cls: Type[JobBase], raise_exceptions=True):
+def get_job_class_id(cls: Type[JobBase], raise_exceptions=True) -> Optional[str]:
 
     if raise_exceptions and not issubclass(cls, JobBase):
         raise TypeError("argument 'cls' must be a subclass of a job base class")
@@ -94,7 +96,9 @@ def get_job_class_id(cls: Type[JobBase], raise_exceptions=True):
         )
 
 
-def get_job_class_permission_level(cls: Type[JobBase], raise_exceptions=True):
+def get_job_class_permission_level(
+    cls: Type[JobBase], raise_exceptions=True
+) -> Optional[JobPermissionLevels]:
     if not issubclass(cls, JobBase):
         if raise_exceptions:
             raise TypeError("argument 'cls' must be a subclass of a job base class")
@@ -120,7 +124,7 @@ def get_job_class_permission_level(cls: Type[JobBase], raise_exceptions=True):
         return
 
     if issubclass(cls, _SystemLevelMixinJobBase):
-        return PERM_LEVELS.SYSTEM
+        return JobPermissionLevels.SYSTEM
 
     if name in _JOB_CLASS_MAP:
         if timestamp_str in _JOB_CLASS_MAP[name]:
@@ -157,165 +161,181 @@ DEFAULT_JOB_EXCEPTION_WHITELIST = (
 upon reconnecting."""
 
 
-class JOB_STATUS:
-    """A class namespace of constants representing the main statuses a job
+class JobStatus(Enum):
+    """An enum of constants representing the main statuses a job
     object can be in.
     """
 
-    FRESH = "FRESH"
+    FRESH = auto()
     """This job object is freshly created and unmodified.
     """
-    INITIALIZED = "INITIALIZED"
+    INITIALIZED = auto()
 
-    STARTING = "STARTING"
-    RUNNING = "RUNNING"
-    AWAITING = "AWAITING"
-    IDLING = "IDLING"
-    COMPLETING = "COMPLETING"
-    DYING = "DYING"
-    RESTARTING = "RESTARTING"
-    STOPPING = "STOPPING"
+    STARTING = auto()
+    RUNNING = auto()
+    AWAITING = auto()
+    IDLING = auto()
+    COMPLETING = auto()
+    BEING_KILLED = auto()
+    RESTARTING = auto()
+    STOPPING = auto()
 
-    STOPPED = "STOPPED"
-    KILLED = "KILLED"
-    COMPLETED = "COMPLETED"
+    STOPPED = auto()
+    KILLED = auto()
+    COMPLETED = auto()
 
 
-class JOB_VERBS:
-    """A class namespace of constants representing the operations that job
+class JobVerbs(Enum):
+    """An enum of constants representing the operations that job
     objects can perform on each other.
     """
 
-    CREATE = "CREATE"
+    CREATE = auto()
     """The act of creating/instantiating a job object.
     """
-    INITIALIZE = "INITIALIZE"
+    INITIALIZE = auto()
     """The act of initializing a job object.
     """
-    REGISTER = "REGISTER"
+    REGISTER = auto()
     """The act of registering a job object.
     """
-    SCHEDULE = "SCHEDULE"
+    SCHEDULE = auto()
     """The act of scheduling a job type for instantiation in the future.
     """
-    GUARD = "GUARD"
+    GUARD = auto()
     """The act of placing a modification guard on a job object.
     """
 
-    FIND = "FIND"
+    FIND = auto()
     """The act of finding job objects based on specific parameters.
     """
 
-    CUSTOM_EVENT_DISPATCH = "CUSTOM_EVENT_DISPATCH"
+    CUSTOM_EVENT_DISPATCH = auto()
     """The act of dispatching only custom events to job objects.
     """
 
-    EVENT_DISPATCH = "EVENT_DISPATCH"
+    EVENT_DISPATCH = auto()
     """The act of dispatching any type of event to job objects.
     """
 
-    START = "START"
+    START = auto()
     """The act of starting a job object.
     """
-    STOP = "STOP"
+    STOP = auto()
     """The act of stopping a job object.
     """
-    RESTART = "RESTART"
+    RESTART = auto()
     """The act of restarting a job object.
     """
 
-    UNSCHEDULE = "UNSCHEDULE"
+    UNSCHEDULE = auto()
     """The act of unscheduling a specific job schedule operation.
     """
-    UNGUARD = "UNGUARD"
+    UNGUARD = auto()
     """The act of removing a modification guard on a job object.
     """
 
-    KILL = "KILL"
+    KILL = auto()
     """The act of killing a job object.
     """
 
-    _SIMPLE_PAST_TENSE = dict(
-        CREATE="CREATED",
-        INITIALIZE="INITIALIZED",
-        REGISTER="REGISTERED",
-        SCHEDULE="SCHEDULED",
-        GUARD="GUARDED",
-        FIND="FOUND",
-        CUSTOM_EVENT_DISPATCH="CUSTOM_EVENT_DISPATCHED",
-        EVENT_DISPATCH="EVENT_DISPATCHED",
-        START="STARTED",
-        STOP="STOPPED",
-        RESTART="RESTARTED",
-        UNSCHEDULE="UNSCHEDULED",
-        UNGUARD="UNGUARDED",
-        KILL="KILLED",
-    )
 
-    _PRESENT_CONTINUOUS_TENSE = dict(
-        CREATE="CREATING",
-        INITIALIZE="INITIALIZING",
-        REGISTER="REGISTERING",
-        SCHEDULE="SCHEDULING",
-        GUARD="GUARDING",
-        FIND="FINDING",
-        CUSTOM_EVENT_DISPATCH="CUSTOM_EVENT_DISPATCHING",
-        EVENT_DISPATCH="EVENT_DISPATCHING",
-        START="STARTING",
-        STOP="STOPPING",
-        RESTART="RESTARTING",
-        UNSCHEDULE="UNSCHEDULING",
-        UNGUARD="UNGUARDING",
-        KILL="KILLING",
-    )
+_JOB_VERBS_SIMP_PAST = dict(
+    CREATE="CREATED",
+    INITIALIZE="INITIALIZED",
+    REGISTER="REGISTERED",
+    SCHEDULE="SCHEDULED",
+    GUARD="GUARDED",
+    FIND="FOUND",
+    CUSTOM_EVENT_DISPATCH="CUSTOM-EVENT-DISPATCHED",
+    EVENT_DISPATCH="EVENT-DISPATCHED",
+    START="STARTED",
+    STOP="STOPPED",
+    RESTART="RESTARTED",
+    UNSCHEDULE="UNSCHEDULED",
+    UNGUARD="UNGUARDED",
+    KILL="KILLED",
+)
+
+_JOB_VERBS_PRES_CONT = dict(
+    CREATE="CREATING",
+    INITIALIZE="INITIALIZING",
+    REGISTER="REGISTERING",
+    SCHEDULE="SCHEDULING",
+    GUARD="GUARDING",
+    FIND="FINDING",
+    CUSTOM_EVENT_DISPATCH="CUSTOM-EVENT-DISPATCHING",
+    EVENT_DISPATCH="EVENT-DISPATCHING",
+    START="STARTING",
+    STOP="STOPPING",
+    RESTART="RESTARTING",
+    UNSCHEDULE="UNSCHEDULING",
+    UNGUARD="UNGUARDING",
+    KILL="KILLING",
+)
 
 
-class JOB_STOP_REASONS:
-    """A class namespace of constants representing the different reasons job
+class JobStopReasons:
+    """A class namespace of enums representing the different reasons job
     objects might stop running.
     """
 
-    INTERNAL = "INTERNAL"
-    """Job is stopping due to an internal reason.
-    """
-    INTERNAL_ERROR = "INTERNAL_ERROR"
-    """Job is stopping due to an internal error.
-    """
-    INTERNAL_RESTART = "INTERNAL_RESTART"
-    """Job is stopping due to an internal restart.
-    """
-    INTERNAL_COUNT_LIMIT = "INTERNAL_COUNT_LIMIT"
-    """Job is stopping due to hitting its maximimum execution
-    count before stopping.
-    """
-    INTERNAL_COMPLETION = "INTERNAL_COMPLETION"
-    """Job is stopping for finishing all execution, it has completed.
-    """
-    INTERNAL_KILLING = "INTERNAL_KILLING"
-    """Job is stopping due to killing itself internally.
-    """
+    class Internal(Enum):
+        """An enum of constants representing the different internal reasons job
+        objects might stop running.
+        """
 
-    INTERNAL_IDLING_TIMEOUT = "INTERNAL_IDLING_TIMEOUT"
-    """Job is stopping after staying idle beyond a specified timeout.
-    """
+        UNSPECIFIC = auto()
+        """Job is stopping due to an unspecific internal reason.
+        """
+        ERROR = auto()
+        """Job is stopping due to an internal error.
+        """
+        RESTART = auto()
+        """Job is stopping due to an internal restart.
+        """
 
-    INTERNAL_EMPTY_QUEUE = "INTERNAL_EMPTY_QUEUE"
-    """Job is stopping due to an empty internal queue of recieved events.
-    """
+        EXECUTION_COUNT_LIMIT = auto()
+        """Job is stopping due to hitting its maximimum execution
+        count before stopping.
+        """
 
-    EXTERNAL = "EXTERNAL"
-    """Job is stopping due to an unknown external reason.
-    """
-    EXTERNAL_RESTART = "EXTERNAL_RESTART"
-    """Job is stopping due to an external restart.
-    """
-    EXTERNAL_KILLING = "EXTERNAL_KILLING"
-    """Job is stopping due to being killed externally.
-    """
+        COMPLETION = auto()
+        """Job is stopping for finishing all execution, it has completed.
+        """
+
+        KILLING = auto()
+        """Job is stopping due to killing itself internally.
+        """
+
+        IDLING_TIMEOUT = auto()
+        """Job is stopping after staying idle beyond a specified timeout.
+        """
+
+        EMPTY_QUEUE = auto()
+        """Job is stopping due to an empty internal queue of recieved events.
+        """
+
+    class External(Enum):
+        """An enum of constants representing the different external reasons job
+        objects might stop running.
+        """
+
+        UNKNOWN = auto()
+        """Job is stopping due to an unknown external reason.
+        """
+
+        RESTART = auto()
+        """Job is stopping due to an external restart.
+        """
+
+        KILLING = auto()
+        """Job is stopping due to being killed externally.
+        """
 
 
-class PERM_LEVELS:
-    """A class namespace of constants representing the permission levels
+class JobPermissionLevels(IntEnum):
+    """An enum of constants representing the permission levels
     applicable to job objects.
     """
 
@@ -334,7 +354,7 @@ class PERM_LEVELS:
         - Can discover and view all alive jobs, and request data from them.
     """
 
-    MEDIUM = DEFAULT = 1 << 2
+    MEDIUM = 1 << 2
     """The default permission level, with simple job management permissions.
 
     Permissions:
@@ -373,6 +393,7 @@ class PERM_LEVELS:
         - Can stop, restart, kill or unschedule any job of a lower permission level.
         - Can guard and unguard jobs of a lower permission level instantiated by itself.
         - Can guard and unguard jobs of the same permission level instantiated by itself.
+        - Can dispatch custom events to other jobs (`CustomEvent` subclasses).
         - Can dispatch any event to other jobs (`BaseEvent` subclasses).
         - Can instantiate, register, start and schedule jobs of the same permission level.
         - Can stop, restart, kill or unschedule any job of the same permission level.
@@ -390,40 +411,12 @@ class PERM_LEVELS:
         - Can unschedule jobs that don't have an alive job as a scheduler.
         - Can stop, restart, kill or unschedule any job of a lower permission level.
         - Can guard and unguard jobs of a lower permission level instantiated by itself.
-        - Can guard and unguard jobs of the same permission level instantiated by itself.
+        - Can dispatch custom events to other jobs (`CustomEvent` subclasses).
+        - Can dispatch any event to other jobs (`BaseEvent` subclasses).
         - Can instantiate, register, start and schedule jobs of the same permission level.
         - Can stop, restart, kill or unschedule any job of the same permission level.
         - Can guard or unguard any job.
     """
-
-    @staticmethod
-    def get_name(level: int):
-        if not isinstance(level, int):
-            raise TypeError(
-                "argument 'level' must be" f" of type 'int', not {level.__class__}"
-            )
-        elif level % 2 or not (PERM_LEVELS.LOWEST <= level <= PERM_LEVELS.SYSTEM):
-            raise ValueError(
-                "argument 'level' must be" " a valid permission level integer"
-            )
-
-        if level == PERM_LEVELS.LOWEST:
-            return "LOWEST"
-
-        elif level == PERM_LEVELS.LOW:
-            return "LOW"
-
-        elif level == PERM_LEVELS.MEDIUM:
-            return "MEDIUM"
-
-        elif level == PERM_LEVELS.HIGH:
-            return "HIGH"
-
-        elif level == PERM_LEVELS.HIGHEST:
-            return "HIGHEST"
-
-        elif level == PERM_LEVELS.SYSTEM:
-            return "SYSTEM"
 
 
 class JobError(Exception):
@@ -468,9 +461,9 @@ class JobNamespace(SimpleNamespace):
         return iter(self.__dict__.items())
 
     def copy(self):
-        return JobNamespace(**self.__dict__)
+        return self.__class__(**self.__dict__)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return dict(self.__dict__)
 
     @staticmethod
@@ -494,7 +487,7 @@ class _SingletonMixinJobBase(ABC):
     pass
 
 
-def singletonjob(cls):
+def singletonjob(cls: JobBase) -> JobBase:
     """A class decorator for marking job classes as singletons,
     meaning that their instances can only be scheduled one at a time in a job manager.
     """
@@ -503,14 +496,15 @@ def singletonjob(cls):
     return cls
 
 
-def _sysjob(cls):
+def _sysjob(cls: JobBase) -> JobBase:
     """A class decorator for marking job classes as system-level."""
     if issubclass(cls, JobBase):
         _SystemLevelMixinJobBase.register(cls)
+        cls.__init_subclass__()
     return cls
 
 
-def publicjobmethod(func: Callable[[], Any]):
+def publicjobmethod(func: Callable[...]) -> Callable[...]:
     """A simple decorator to expose a method as public to other job objects.
 
     Args:
@@ -522,6 +516,41 @@ def publicjobmethod(func: Callable[[], Any]):
         return func
 
     raise TypeError("argument 'func' must be a function")
+
+
+class CustomLoop(tasks.Loop):
+    """A small subclass of `discord.ext.tasks.Loop`
+    for getting more control over the `Task` cancelling process.
+    """
+
+    def cancel(self):
+        """Cancels the internal task, if it is running."""
+        if self._can_be_cancelled():
+            self._task.cancel(msg="CANCEL_BY_TASK_LOOP")
+
+    def restart(self, *args, **kwargs):
+        r"""A convenience method to restart the internal task.
+
+        .. note::
+
+            Due to the way this function works, the task is not
+            returned like :meth:`start`.
+
+        Parameters
+        ------------
+        \*args
+            The arguments to to use.
+        \*\*kwargs
+            The keyword arguments to use.
+        """
+
+        def restart_when_over(fut, *, args=args, kwargs=kwargs):
+            self._task.remove_done_callback(restart_when_over)
+            self.start(*args, **kwargs)
+
+        if self._can_be_cancelled():
+            self._task.add_done_callback(restart_when_over)
+            self._task.cancel(msg="CANCEL_BY_TASK_LOOP")
 
 
 class JobBase:
@@ -558,20 +587,21 @@ class JobBase:
         "_on_run_exception",
         "_on_stop_exception",
         "_initialized",
-        "_is_being_initialized",
+        "_is_initializing",
         "_is_starting",
         "_completed",
-        "_is_being_completed",
+        "_told_to_complete",
         "_killed",
-        "_is_being_killed",
+        "_told_to_be_killed",
         "_startup_kill",
         "_skip_on_run",
-        "_stopping_by_self",
-        "_stopping_by_force",
-        "_is_being_stopped",
-        "_last_stop_reason",
+        "_told_to_stop",
+        "_stop_by_self",
+        "_stop_by_force",
+        "_is_stopping",
+        "_last_stopping_reason",
         "_is_awaiting",
-        "_is_being_restarted",
+        "_told_to_restart",
         "_stopped",
         "_is_idling",
         "_initialized_since_ts",
@@ -584,55 +614,48 @@ class JobBase:
 
     _CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
     _IDENTIFIER = f"JobBase-{int(_CREATED_AT.timestamp()*1_000_000_000)}"
-    _PERMISSION_LEVEL = PERM_LEVELS.MEDIUM
+    _PERMISSION_LEVEL = JobPermissionLevels.MEDIUM
 
     PUBLIC_METHODS: Optional[dict[str, Callable[..., Any]]] = None
+    PUBLIC_METHODS_CHAIN: Optional[ChainMap[str, Callable[..., Any]]] = None
 
-    OUTPUT_FIELDS = frozenset()
-    OUTPUT_QUEUES = frozenset()
+    OUTPUT_FIELDS: Optional[Type[groupings.OutputNameRecord]] = None
+    OUTPUT_QUEUES: Optional[Type[groupings.OutputNameRecord]] = None
 
     NAMESPACE_CLASS = JobNamespace
 
-    def __init_subclass__(cls, permission_level=None):
-        for field in itertools.chain(cls.OUTPUT_FIELDS, cls.OUTPUT_QUEUES):
-            if re.search(r"\s", field):
-                raise ValueError(
-                    "field names in 'OUTPUT_FIELDS' or 'OUTPUT_QUEUES'"
-                    " cannot contain any whitespace"
-                )
-
-        cls.OUTPUT_FIELDS = frozenset(cls.OUTPUT_FIELDS)
-        cls.OUTPUT_QUEUES = frozenset(cls.OUTPUT_QUEUES)
+    def __init_subclass__(cls, permission_level: Optional[JobPermissionLevels] = None):
 
         cls._CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
 
         is_system_job = issubclass(cls, _SystemLevelMixinJobBase)
 
         if is_system_job:
-            permission_level = PERM_LEVELS.SYSTEM
+            permission_level = JobPermissionLevels.SYSTEM
 
         name = cls.__name__
         timestamp = f"{int(cls._CREATED_AT.timestamp()*1_000_000_000)}"
 
         if permission_level is not None:
-            if isinstance(permission_level, int):
+            if isinstance(permission_level, JobPermissionLevels):
                 if (
-                    not permission_level % 2
-                    and PERM_LEVELS.LOWEST <= permission_level <= PERM_LEVELS.HIGHEST
-                ) or (is_system_job and permission_level == PERM_LEVELS.SYSTEM):
+                    JobPermissionLevels.LOWEST
+                    <= permission_level
+                    <= JobPermissionLevels.HIGHEST
+                ) or (is_system_job and permission_level is JobPermissionLevels.SYSTEM):
                     cls._PERMISSION_LEVEL = permission_level
                 else:
                     raise ValueError(
                         "argument 'permission_level' must be a usable permission "
-                        "level from the 'PERM_LEVELS' class namespace"
+                        "level from the 'JobPermissionLevels' enum"
                     )
             else:
                 raise TypeError(
                     "argument 'permission_level' must be a usable permission "
-                    "level from the 'PERM_LEVELS' class namespace"
+                    "level from the 'JobPermissionLevels' enum"
                 )
         else:
-            permission_level = cls._PERMISSION_LEVEL
+            permission_level = JobBase._PERMISSION_LEVEL
 
         cls._IDENTIFIER = f"{name}-{timestamp}"
 
@@ -644,22 +667,70 @@ class JobBase:
             "permission_level": permission_level,
         }
 
+        if isinstance(cls.OUTPUT_FIELDS, type):
+            if not issubclass(cls.OUTPUT_FIELDS, groupings.OutputNameRecord):
+                if cls.OUTPUT_FIELDS.__base__ is not object:
+                    raise ValueError(
+                        "the 'OUTPUT_FIELDS' variable must be a subclass of 'groupings.OutputNameRecord' "
+                        "or an immediate subclass of object"
+                    )
+
+                bases = (
+                    groupings.OutputNameRecord,
+                    *(
+                        utils.class_getattr_unique(
+                            cls,
+                            "OUTPUT_FIELDS",
+                            filter_func=lambda v: isinstance(v, groupings.OutputNameRecord),
+                        )
+                    ),
+                )
+                cls.OUTPUT_FIELDS = type(
+                    "OUTPUT_FIELDS", bases, dict(**cls.OUTPUT_FIELDS.__dict__)
+                )
+
+        if isinstance(cls.OUTPUT_QUEUES, type):
+            if not issubclass(cls.OUTPUT_QUEUES, groupings.OutputNameRecord):
+                if cls.OUTPUT_QUEUES.__base__ is not object:
+                    raise ValueError(
+                        "the 'OUTPUT_QUEUES' variable must be a subclass of 'groupings.OutputNameRecord' "
+                        "or an immediate subclass of object that acts as a pllaceholder"
+                    )
+
+                bases = (
+                    groupings.OutputNameRecord,
+                    *(
+                        utils.class_getattr_unique(
+                            cls,
+                            "OUTPUT_QUEUES",
+                            filter_func=lambda v: isinstance(v, groupings.OutputNameRecord),
+                        )
+                    ),
+                )
+                cls.OUTPUT_QUEUES = type(
+                    "OUTPUT_QUEUES", bases, dict(**cls.OUTPUT_QUEUES.__dict__)
+                )
+
         public_methods = {}
         for obj in cls.__dict__.values():
             if isinstance(obj, FunctionType) and "__public" in obj.__dict__:
                 public_methods[obj.__name__] = obj
 
         cls.PUBLIC_METHODS = public_methods
+        cls.PUBLIC_METHODS_CHAIN = ChainMap(
+            public_methods,
+            *(utils.class_getattr_unique(cls, "PUBLIC_METHODS", type_filter=(dict,))),
+        )
 
     def __init__(self):
         self._interval_secs = 0
-        self._count = -1
+        self._count = None
         self._reconnect = False
 
         self._loop_count = 0
 
-        self._manager: Optional[JobManagerProxy] = None  # type: ignore
-        self._creator: Optional[JobProxy] = None
+        self._manager: Optional[proxies.JobManagerProxy] = None  # type: ignore
+        self._creator: Optional[proxies.JobProxy] = None
         self._created_at_ts = time.time()
         self._registered_at_ts = None
         self._completed_at_ts = None
@@ -672,7 +743,7 @@ class JobBase:
         self._output_field_futures = None
 
         self._output_fields = None
-        self._output_queue_proxies: Optional[list[JobOutputQueueProxy]] = None
+        self._output_queue_proxies: Optional[list[proxies.JobOutputQueueProxy]] = None
 
         if self.OUTPUT_FIELDS:
             self._output_field_futures = {
@@ -689,9 +760,9 @@ class JobBase:
             }
             self._output_queues = {queue_name: [] for queue_name in self.OUTPUT_QUEUES}
 
-        self._task_loop: Optional[tasks.Loop] = None
+        self._task_loop: Optional[CustomLoop] = None
 
-        self._proxy = JobProxy(self)
+        self._proxy = proxies.JobProxy(self)
 
         self._unguard_futures: Optional[list] = None
         self._guardian: Optional[JobBase] = None
@@ -705,24 +776,28 @@ class JobBase:
         self._on_stop_exception = None
 
         self._is_awaiting = False
-        self._is_being_initialized = False
+        self._is_initializing = False
         self._initialized = False
         self._is_starting = False
         self._completed = False
-        self._is_being_completed = False
+        self._told_to_complete = False
 
         self._killed = False
-        self._is_being_killed = False
+        self._told_to_be_killed = False
         self._startup_kill = False
+
+        self._told_to_stop = False
+        self._stop_by_self = False
+        self._stop_by_force = False
         self._skip_on_run = False
-
-        self._stopping_by_self = False
-        self._stopping_by_force = True
-        self._is_being_stopped = False
-        self._last_stop_reason: Optional[str] = None
-
-        self._is_being_restarted = False
+        self._is_stopping = False
         self._stopped = False
+        self._last_stopping_reason: Optional[
+            Union[JobStopReasons.Internal, JobStopReasons.External]
+        ] = None
+
+        self._told_to_restart = False
+
         self._is_idling = False
 
         self._initialized_since_ts = None
@@ -733,25 +808,25 @@ class JobBase:
         self._stopped_since_ts: Optional[float] = None
 
     @property
-    def identifier(self):
+    def identifier(self) -> str:
         return self._identifier
 
     @property
-    def created_at(self):
+    def created_at(self) -> Optional[datetime.datetime]:
         if self._created_at_ts:
             return datetime.datetime.fromtimestamp(
                 self._created_at_ts, tz=datetime.timezone.utc
             )
 
     @property
-    def registered_at(self):
+    def registered_at(self) -> Optional[datetime.datetime]:
         if self._registered_at_ts:
             return datetime.datetime.fromtimestamp(
                 self._registered_at_ts, tz=datetime.timezone.utc
             )
 
     @property
-    def permission_level(self):
+    def permission_level(self) -> JobPermissionLevels:
         return self._PERMISSION_LEVEL
 
     @property
@@ -760,41 +835,41 @@ class JobBase:
         return self._data
 
     @property
-    def manager(self):
+    def manager(self) -> proxies.JobManagerProxy:
         """The `JobManagerProxy` object bound to this job object."""
         return self._manager
 
     @property
-    def creator(self):
+    def creator(self) -> proxies.JobProxy:
         """The `JobProxy` of the creator of this job object."""
         return self._creator
 
     @property
-    def guardian(self):
+    def guardian(self) -> proxies.JobProxy:
         """The `JobProxy` of the current guardian of this job object."""
         return self._guardian
 
     @property
-    def proxy(self):
+    def proxy(self) -> proxies.JobProxy:
         """The `JobProxy` object bound to this job object."""
         return self._proxy
 
     @property
-    def schedule_identifier(self):
+    def schedule_identifier(self) -> Optional[str]:
         """The identfier of the scheduling operation that instantiated
-        this job object.
+        this job object, if that was the case.
         """
         return self._schedule_identifier
 
     async def _on_init(self):
         try:
-            self._is_being_initialized = True
+            self._is_initializing = True
             await self.on_init()
         except Exception:
-            self._is_being_initialized = False
+            self._is_initializing = False
             raise
         else:
-            self._is_being_initialized = False
+            self._is_initializing = False
             self._initialized = True
             self._initialized_since_ts = time.time()
 
@@ -824,14 +899,16 @@ class JobBase:
         try:
             if not self._startup_kill:
                 await self.on_start()
+
         except Exception as exc:
             self._on_start_exception = exc
-            self._stopping_by_self = True
-            self._is_being_stopped = True
-            self._stopping_by_force = True
+            self._told_to_stop = True
+            self._stop_by_self = True
+            self._is_stopping = True
             await self.on_start_error(exc)
-            self._stop_cleanup(JOB_STOP_REASONS.INTERNAL_ERROR)
+            self._stop_cleanup(reason=JobStopReasons.Internal.ERROR)
             raise
+
         finally:
             self._is_starting = False
 
@@ -865,17 +942,31 @@ class JobBase:
         """
         raise NotImplementedError()
 
-    def _stop_cleanup(self, reason):
-        self._last_stop_reason = reason
+    def _stop_cleanup(
+        self,
+        reason: Optional[
+            Union[JobStopReasons.Internal, JobStopReasons.External]
+        ] = None,
+    ):
+        self._last_stopping_reason = (
+            reason
+            if isinstance(reason, (JobStopReasons.External, JobStopReasons.Internal))
+            else self.get_stopping_reason()
+        )
+
         self._skip_on_run = False
         self._is_starting = False
         self._startup_kill = False
-        self._stopping_by_self = False
-        self._stopping_by_force = False
-        self._is_being_stopped = False
-        self._is_being_restarted = False
 
-        if self._is_being_completed or self._is_being_killed:
+        self._told_to_stop = False
+        self._stop_by_self = False
+        self._stop_by_force = False
+        self._is_stopping = False
+        self._told_to_restart = False
+
+        self._loop_count = 0
+
+        if self._told_to_complete or self._told_to_be_killed:
             self._initialized = False
             if self._is_being_guarded:
                 if self._unguard_futures is not None:
@@ -895,8 +986,8 @@ class JobBase:
             if self.OUTPUT_QUEUES:
                 self._output_queue_proxies.clear()
 
-            if self._is_being_completed:
-                self._is_being_completed = False
+            if self._told_to_complete:
+                self._told_to_complete = False
                 self._completed = True
                 self._completed_at_ts = time.time()
 
@@ -904,7 +995,7 @@ class JobBase:
 
                 for fut in self._done_futures:
                     if not fut.cancelled():
-                        fut.set_result(JOB_STATUS.COMPLETED)
+                        fut.set_result(JobStatus.COMPLETED)
 
                 self._done_futures.clear()
 
@@ -925,8 +1016,8 @@ class JobBase:
                             if not fut.cancelled():
                                 fut.cancel(msg=f"Job object '{self}' has completed.")
 
-            elif self._is_being_killed:
-                self._is_being_killed = False
+            elif self._told_to_be_killed:
+                self._told_to_be_killed = False
                 self._killed = True
                 self._killed_at_ts = time.time()
 
@@ -934,7 +1025,7 @@ class JobBase:
 
                 for fut in self._done_futures:
                     if not fut.cancelled():
-                        fut.set_result(JOB_STATUS.KILLED)
+                        fut.set_result(JobStatus.KILLED)
 
                 self._done_futures.clear()
 
@@ -971,20 +1062,19 @@ class JobBase:
             self._stopped_since_ts = time.time()
 
     async def _on_stop(self):
-        self._is_being_stopped = True
-        reason = self.is_being_stopped(get_reason=True)
+        self._is_stopping = True
         try:
-            if not self._stopping_by_self:
+            if not self._stop_by_self:
                 await asyncio.wait_for(
-                    self.on_stop(reason=reason, by_force=self._stopping_by_force),
+                    self.on_stop(),
                     self._manager.get_job_stop_timeout(),
                 )
             else:
-                await self.on_stop(reason=reason, by_force=self._stopping_by_force)
+                await self.on_stop()
 
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as exc:
             self._on_stop_exception = exc
-            if not self._stopping_by_self:
+            if not self._stop_by_self:
                 await self.on_stop_error(exc)
             raise
 
@@ -994,9 +1084,9 @@ class JobBase:
             raise
 
         finally:
-            self._stop_cleanup(reason)
+            self._stop_cleanup()
 
-    async def on_stop(self, reason, by_force):
+    async def on_stop(self):
         """DO NOT CALL THIS METHOD MANUALLY, EXCEPT WHEN USING `super()` WITHIN
         OVERLOADED VERSIONS OF THIS METHOD TO ACCESS A SUPERCLASS METHOD.
 
@@ -1021,13 +1111,16 @@ class JobBase:
             exc (Exception): The exception that occured.
         """
         print(
-            f"{self}:\n" f"An Exception occured in 'on_start':\n\n",
+            f"An Exception occured in 'on_start' method of job " f"'{self!r}':\n\n",
             utils.format_code_exception(exc),
             file=sys.stderr,
         )
 
     async def _on_run_error(self, exc: Exception):
         self._on_run_exception = exc
+        self._told_to_stop = True
+        self._stop_by_self = True
+        self._is_stopping = True
         await self.on_run_error(exc)
 
     async def on_run_error(self, exc: Exception):
@@ -1038,7 +1131,7 @@ class JobBase:
             exc (Exception): The exception that occured.
         """
         print(
-            f"{self}:\n" f"An Exception occured in 'on_run':\n\n",
+            f"An Exception occured in 'on_run' method of job " f"'{self!r}':\n\n",
             utils.format_code_exception(exc),
             file=sys.stderr,
         )
@@ -1054,50 +1147,67 @@ class JobBase:
             exc (Exception): The exception that occured.
         """
         print(
-            f"{self}:\n" f"An Exception occured in 'on_stop':\n\n",
+            f"An Exception occured in 'on_stop' method of job " f"'{self!r}':\n\n",
             utils.format_code_exception(exc),
             file=sys.stderr,
         )
 
-    def is_being_stopped(self, get_reason: bool = False):
-        """Whether this job object is being stopped.
-
-        Args:
-            get_reason (bool, optional): Whether the reason for stopping should
-              be returned as a string. Defaults to False.
+    def is_stopping(self) -> bool:
+        """Whether this job object is stopping.
 
         Returns:
-            Union[bool, str]: Returns a boolean if `get_reason` is False, otherwise
-              a string is returned. If the string is empty, no stopping is occuring.
+            bool: True/False
         """
-        output = self._is_being_stopped
-        if get_reason:
-            reason = None
-            if not self._is_being_stopped:
-                reason = ""
-            elif self._task_loop.failed():
-                reason = JOB_STOP_REASONS.INTERNAL_ERROR
-            elif self._task_loop.current_loop == self._count:
-                reason = JOB_STOP_REASONS.INTERNAL_COUNT_LIMIT
-            elif self._stopping_by_self:
-                if self._is_being_restarted:
-                    reason = JOB_STOP_REASONS.INTERNAL_RESTART
-                elif self._is_being_completed:
-                    reason = JOB_STOP_REASONS.INTERNAL_COMPLETION
-                elif self._is_being_killed:
-                    reason = JOB_STOP_REASONS.INTERNAL_KILLING
-                else:
-                    reason = JOB_STOP_REASONS.INTERNAL
-            elif not self._stopping_by_self:
-                if self._is_being_restarted:
-                    reason = JOB_STOP_REASONS.EXTERNAL_RESTART
-                elif self._is_being_killed:
-                    reason = JOB_STOP_REASONS.EXTERNAL_KILLING
-                else:
-                    reason = JOB_STOP_REASONS.EXTERNAL
+        return self._is_stopping
 
-            output = reason
-        return output
+    def is_stopping_by_force(self) -> bool:
+        """Whether this job object is stopping forcefully.
+        This also applies when it is being restarted, killed or
+        completed. Errors that occur during execution and lead
+        to a job stopping do not count as being forcefully stopped.
+
+        Returns:
+            bool: True/False
+        """
+        return self._is_stopping and self._stop_by_force
+
+    def get_stopping_reason(
+        self,
+    ) -> Union[JobStopReasons.Internal, JobStopReasons.External]:
+        """Get the reason this job is stopping, if it is the case.
+
+        Returns:
+            Union[JobStopReasons.Internal, JobStopReasons.External]: An enum value
+            from the `Internal` or `External` enums of the `JobStopReasons` namespace.
+            None: This job is not stopping.
+        """
+
+        if not self._is_stopping:
+            return
+        elif (
+            self._on_start_exception
+            or self._on_run_exception
+            or self._on_stop_exception
+        ):
+            return JobStopReasons.Internal.ERROR
+        elif self._task_loop.current_loop == self._count:
+            return JobStopReasons.Internal.EXECUTION_COUNT_LIMIT
+        elif self._stop_by_self:
+            if self._told_to_restart:
+                return JobStopReasons.Internal.RESTART
+            elif self._told_to_complete:
+                return JobStopReasons.Internal.COMPLETION
+            elif self._told_to_be_killed:
+                return JobStopReasons.Internal.KILLING
+            else:
+                return JobStopReasons.Internal.UNSPECIFIC
+        else:
+            if self._told_to_restart:
+                return JobStopReasons.External.RESTART
+            elif self._told_to_be_killed:
+                return JobStopReasons.External.KILLING
+            else:
+                return JobStopReasons.External.UNKNOWN
 
     def add_to_exception_whitelist(self, *exception_types):
         """Add exceptions to a whitelist, which allows them to be ignored
@@ -1126,17 +1236,19 @@ class JobBase:
         if keep_default:
             self._task_loop.add_exception_type(*DEFAULT_JOB_EXCEPTION_WHITELIST)
 
-    def get_last_stop_reason(self):
+    def get_last_stopping_reason(self) -> Optional[JobStopReasons]:
         """Get the last reason this job object stopped, when applicable.
 
         Returns:
-            Optional[str]: The reason for stopping.
+            Optional[Union[JobStopReasons.Internal, JobStopReasons.External]]:
+              The reason for stopping.
         """
-        return self._last_stop_reason
+        return self._last_stopping_reason
 
-    def get_start_exception(self):
+    def get_start_exception(self) -> Optional[Exception]:
         """Get the exception that caused this job to fail at startup
-        within the `on_start()` method, otherwise return None.
+        within the `on_start()` method if it is the case,
+        otherwise return None.
 
         Returns:
             Exception: The exception instance.
@@ -1144,10 +1256,10 @@ class JobBase:
         """
         return self._on_start_exception
 
-    def get_run_exception(self):
+    def get_run_exception(self) -> Optional[Exception]:
         """Get the exception that caused this job to fail while running
-        its main loop within the `on_run()` method. This is the same
-        exception passed to `on_run_error()`, otherwise return None.
+        its main loop within the `on_run()` method if it is the case,
+        otherwise return None.
 
         Returns:
             Exception: The exception instance.
@@ -1155,9 +1267,10 @@ class JobBase:
         """
         return self._on_run_exception
 
-    def get_stop_exception(self):
-        """Get the exception that caused this job to fail while
-        shutting down within the `on_stop()` method, otherwise return None.
+    def get_stop_exception(self) -> Optional[Exception]:
+        """Get the exception that caused this job to fail while shutting
+        down with the `on_stop()` method if it is the case,
+        otherwise return None.
 
         Returns:
             Exception: The exception instance.
@@ -1175,15 +1288,26 @@ class JobBase:
             await self._on_init()
             self._alive_since_ts = time.time()
 
-    def STOP(self, force=False):
+    def _START(self) -> bool:
+        if not self.is_running():
+            self._task_loop.start()
+            return True
+
+        return False
+
+    def _START_EXTERNAL(self) -> bool:
+        return self._START()
+
+    def STOP(self, force=False) -> bool:
         """DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
 
         Stop this job object.
 
         Args:
-            force (bool, optional): Whether this job object should be stopped
-              forcefully instead of gracefully, thereby ignoring any exceptions
-              that it might have handled if reconnecting is enabled for it.
+            force (bool, optional): Whether this job object should always
+              be stopped forcefully instead of gracefully, thereby ignoring any
+              exceptions that it might have handled when reconnecting is enabled
+              for it. Job objects that are idling are always stopped forcefully.
               Defaults to False.
 
         Returns:
@@ -1191,120 +1315,132 @@ class JobBase:
         """
 
         task = self._task_loop.get_task()
-        if not self._is_being_stopped and task is not None and not task.done():
-            self._stopped = False
-            self._stopped_since_ts = None
-            self._stopping_by_self = True
-            self._is_being_stopped = True
-            if force or self._is_idling:  # forceful stopping is necessary when idling
-                self._stopping_by_force = True
-                self._task_loop.cancel()
-            else:
-                self._skip_on_run = True
-                # graceful stopping doesn't
-                # skip `on_run()` when called in `on_start()`
-                self._task_loop.stop()
-            return True
-        return False
 
-    def _STOP_EXTERNAL(self, force=False):
-        """DO NOT CALL THIS METHOD MANUALLY.
-
-        Stop this job object.
-
-        Args:
-            force (bool, optional): Whether this job object should be stopped
-              forcefully instead of gracefully, thereby ignoring any exceptions
-              that it might have handled when reconnecting is enabled for it.
-              Defaults to False.
-
-        Returns:
-            bool: Whether the call was successful.
-        """
-        task = self._task_loop.get_task()
-        if not self._is_being_stopped and task is not None and not task.done():
-            self._stopped = False
-            self._stopped_since_ts = None
-            self._stopping_by_self = False
-            self._is_being_stopped = True
-            if force or self._is_idling:  # forceful stopping is necessary when idling
-                self._stopping_by_force = True
-                self._task_loop.cancel()
-            else:
-                self._skip_on_run = True
-                # graceful stopping doesn't
-                # skip `on_run()` when called in `on_start()`
-                self._task_loop.stop()
-            return True
-        return False
-
-    def RESTART(self):
-        """DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
-
-        Restart this job object by forcefully stopping it
-        (cancelling its task loop), before starting it again automatically.
-
-        This will cause 'INTERNAL_RESTART' to be passed to `on_stop`.
-        """
-        task = self._task_loop.get_task()
-        if (
-            not self._is_being_restarted
-            and not self._task_loop.is_being_cancelled()
+        if not (
+            self._told_to_stop
+            and not self._is_stopping
+            and not self._stopped
             and task is not None
             and not task.done()
         ):
-            self._is_being_restarted = True
-            self._is_being_stopped = True
-            self._stopping_by_self = True
-            self._stopping_by_force = True
-            self._task_loop.restart()
+            self._stop_by_self = True
+            if force or self._is_idling:  # forceful stopping is necessary when idling
+                self._stop_by_force = True
+                self._task_loop.cancel()
+            else:
+                self._skip_on_run = True
+                # graceful stopping doesn't
+                # skip `on_run()` when called in `on_start()`
+                self._task_loop.stop()
+
+            self._told_to_stop = True
             return True
+
         return False
 
-    def _RESTART_EXTERNAL(self):
+    def _STOP_EXTERNAL(self, force=False) -> bool:
+        """DO NOT CALL THIS METHOD MANUALLY.
+        See `STOP()`.
+
+        Returns:
+            bool: Whether the call was successful.
+        """
+
+        if self.STOP(force=force):
+            self._stop_by_self = False
+            return True
+
+        return False
+
+    def RESTART(self) -> bool:
+        """DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
+
+        Restart this job object by forcefully stopping it, before
+        starting it again automatically. Restarting a job object is
+        only possible when it isn't being stopped forcefully, being
+        killed, being completed or already being restarted. If a job
+        object is being stopped gracefully, it will be restarted immediately
+        after it stops.
+
+        Returns:
+            bool: Whether the call was successful.
+        """
+
+        task = self._task_loop.get_task()
+        if (
+            not self._told_to_restart
+            and not self._told_to_be_killed
+            and not self._told_to_complete
+            and not self._stop_by_force
+            and task is not None
+            and not task.done()
+        ):
+
+            def restart_when_over(fut):
+                task.remove_done_callback(restart_when_over)
+                self._START()
+
+            if not self._told_to_stop and not self._is_stopping:  # forceful restart
+                self.STOP(force=True)
+
+            task.add_done_callback(restart_when_over)
+            self._told_to_restart = True
+            return True
+
+        return False
+
+    def _RESTART_EXTERNAL(self) -> bool:
         """DO NOT CALL THIS METHOD MANUALLY.
 
-        Restart this job object by forcefully stopping it
-        (cancelling its task loop), before starting it again automatically.
-
-        This will cause 'EXTERNAL_RESTART' to be passed to `on_stop`.
+        See `RESTART()`.
         """
         task = self._task_loop.get_task()
         if (
-            not self._is_being_restarted
-            and not self._task_loop.is_being_cancelled()
-            and task is not None  # disallow restart without ever starting
+            not self._told_to_restart
+            and not self._told_to_be_killed
+            and not self._told_to_complete
+            and not self._stop_by_force
+            and task is not None
             and not task.done()
         ):
-            self._is_being_restarted = True
-            self._is_being_stopped = True
-            self._stopping_by_self = False
-            self._stopping_by_force = True
-            self._task_loop.restart()
+
+            def restart_when_over(fut):
+                task.remove_done_callback(restart_when_over)
+                self._START_EXTERNAL()
+
+            if not self._told_to_stop and not self._is_stopping:  # forceful restart
+                self._STOP_EXTERNAL(force=True)
+
+            task.add_done_callback(restart_when_over)
+            self._told_to_restart = True
             return True
+
         return False
 
-    def COMPLETE(self):
+    def COMPLETE(self) -> bool:
         """DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
 
-        Stops this job object gracefully, before removing it
+        Stops this job object forcefullys, before removing it
         from its job manager. Any job that was completed
         has officially finished execution, and all jobs waiting
         for this job to complete will be notified. If a job had
         reconnecting enabled, then it will be silently cancelled
         to ensure that it suspends all execution.
+
+        Returns:
+            bool: Whether the call was successful.
         """
 
-        if not self._is_being_killed and not self._is_being_completed:
-            if not self._is_being_stopped:
+        if not self._told_to_be_killed and not self._told_to_complete:
+            if not self._is_stopping:
                 self.STOP(force=True)
 
-            self._is_being_completed = True
+            self._told_to_complete = True
             return True
 
         return False
 
-    def KILL(self):
+    def KILL(self) -> bool:
         """
         DO NOT CALL THIS METHOD FROM OUTSIDE YOUR JOB SUBCLASS.
 
@@ -1314,43 +1450,52 @@ class JobBase:
             bool: Whether this method was successful.
         """
 
-        if not self._is_being_killed and not self._is_being_completed:
-            if not self._is_being_stopped:
+        if not self._told_to_be_killed and not self._told_to_complete:
+            if not self._is_stopping:
                 self.STOP(force=True)
 
-            self._is_being_killed = True
+            self._told_to_be_killed = True
             return True
 
         return False
 
-    def _KILL_EXTERNAL(self, awaken=True):
+    def _KILL_EXTERNAL(self, awaken=True) -> bool:
         """DO NOT CALL THIS METHOD MANUALLY.
 
         Stops this job object forcefully, before removing it from its job manager.
+        If a job is already stopped, it can be awoken using this method, or simply
+        uninitialized and removed from its job manager without it being able to
+        react to the process.
 
         Args:
             awaken (bool, optional): Whether to awaken this job object before
-              killing it. Defaults to True.
+              killing it, if it is stopped. Defaults to True.
 
         Returns:
             bool: Whether this method was successful.
         """
 
-        if not self._is_being_killed and not self._is_being_completed:
-            if not self.is_running() and awaken:
-                self._startup_kill = True  # start and kill immediately
-                self._task_loop.start()
-                return True
+        if not self._told_to_be_killed and not self._told_to_complete:
+            if self.is_running():
+                if not self._is_stopping:
+                    self._STOP_EXTERNAL(force=True)
 
-            if not self._is_being_stopped:
-                self._STOP_EXTERNAL(force=True)
+            elif awaken:
+                self._startup_kill = True  # start and kill as fast as possible
+                self._START_EXTERNAL()
 
-            self._is_being_killed = True
+            else:
+                self._told_to_be_killed = True
+                self._stop_cleanup(reason=JobStopReasons.External.KILLING)
+
+            self._told_to_be_killed = True
             return True
 
         return False
 
-    async def wait_for(self, awaitable, timeout: Optional[float] = None):
+    async def wait_for(
+        self, awaitable: Awaitable, timeout: Optional[float] = None
+    ) -> Any:
         """Wait for a given awaitable object to complete.
         While awaiting the awaitable, this job object
         will be marked as waiting.
@@ -1359,10 +1504,10 @@ class JobBase:
             awaitable: An awaitable object
 
         Returns:
-            Any: The result of the given coroutine.
+            Any: The result of the given awaitable.
 
         Raises:
-            TypeError: The given object was not a coroutine.
+            TypeError: The given object was not awaitable.
         """
         if inspect.isawaitable(awaitable):
             try:
@@ -1376,11 +1521,11 @@ class JobBase:
 
         raise TypeError("argument 'awaitable' must be an awaitable object")
 
-    def loop_count(self):
+    def loop_count(self) -> int:
         """The current amount of `on_run()` calls completed by this job object."""
         return self._loop_count
 
-    def is_awaiting(self):
+    def is_awaiting(self) -> bool:
         """Whether this job is currently waiting
         for a coroutine to complete, which was awaited
         using `.wait_for(awaitable)`.
@@ -1390,7 +1535,7 @@ class JobBase:
         """
         return self._is_awaiting
 
-    def awaiting_since(self):
+    def awaiting_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object began awaiting, if available.
 
         Returns:
@@ -1401,7 +1546,7 @@ class JobBase:
                 self._awaiting_since_ts, tz=datetime.timezone.utc
             )
 
-    def initialized(self):
+    def initialized(self) -> bool:
         """Whether this job has been initialized.
 
         Returns:
@@ -1409,16 +1554,16 @@ class JobBase:
         """
         return self._initialized
 
-    def is_being_initialized(self):
-        """Whether this job object is being initialized.
+    def is_initializing(self) -> bool:
+        """Whether this job object is initializing.
 
         Returns:
             bool: True/False
         """
 
-        return self._is_being_initialized
+        return self._is_initializing
 
-    def initialized_since(self):
+    def initialized_since(self) -> Optional[datetime.datetime]:
         """The time at which this job object was initialized, if available.
 
         Returns:
@@ -1429,7 +1574,7 @@ class JobBase:
                 self._initialized_since_ts, tz=datetime.timezone.utc
             )
 
-    def alive(self):
+    def alive(self) -> bool:
         """Whether this job is currently alive
         (initialized and bound to a job manager, not completed or killed).
 
@@ -1443,7 +1588,7 @@ class JobBase:
             and not self._completed
         )
 
-    def alive_since(self):
+    def alive_since(self) -> Optional[Exception]:
         """The last time at which this job object became alive, if available.
 
         Returns:
@@ -1454,7 +1599,7 @@ class JobBase:
                 self._alive_since_ts, tz=datetime.timezone.utc
             )
 
-    def is_starting(self):
+    def is_starting(self) -> bool:
         """Whether this job is currently starting to run.
 
         Returns:
@@ -1462,7 +1607,7 @@ class JobBase:
         """
         return self._is_starting
 
-    def is_running(self):
+    def is_running(self) -> bool:
         """Whether this job is currently running (alive and not stopped).
 
         Returns:
@@ -1470,7 +1615,7 @@ class JobBase:
         """
         return self.alive() and self._task_loop.is_running() and not self._stopped
 
-    def running_since(self):
+    def running_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object started running, if available.
 
         Returns:
@@ -1481,7 +1626,7 @@ class JobBase:
                 self._running_since_ts, tz=datetime.timezone.utc
             )
 
-    def stopped(self):
+    def stopped(self) -> bool:
         """Whether this job is currently stopped (alive and not running).
 
         Returns:
@@ -1489,7 +1634,7 @@ class JobBase:
         """
         return self._stopped
 
-    def stopped_since(self):
+    def stopped_since(self) -> bool:
         """The last time at which this job object stopped, if available.
 
         Returns:
@@ -1500,7 +1645,7 @@ class JobBase:
                 self._stopped_since_ts, tz=datetime.timezone.utc
             )
 
-    def is_idling(self):
+    def is_idling(self) -> bool:
         """Whether this task is currently idling
         (running, waiting for the next opportunity to continue execution)
 
@@ -1509,7 +1654,7 @@ class JobBase:
         """
         return self._is_idling
 
-    def idling_since(self):
+    def idling_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object began idling, if available.
 
         Returns:
@@ -1520,7 +1665,7 @@ class JobBase:
                 self._idling_since_ts, tz=datetime.timezone.utc
             )
 
-    def failed(self):
+    def run_failed(self) -> bool:
         """Whether this job's `.on_run()` method failed an execution attempt,
         due to an unhandled exception being raised.
 
@@ -1529,11 +1674,11 @@ class JobBase:
         """
         return self._task_loop.failed()
 
-    def killed(self):
+    def killed(self) -> bool:
         """Whether this job was killed."""
         return self._killed
 
-    def killed_at(self):
+    def killed_at(self) -> Optional[datetime.datetime]:
         """The last time at which this job object was killed, if available.
 
         Returns:
@@ -1544,35 +1689,22 @@ class JobBase:
                 self._killed_at_ts, tz=datetime.timezone.utc
             )
 
-    def is_being_killed(self, get_reason=False):
+    def is_being_killed(self) -> bool:
         """Whether this job is being killed.
-
-        Args:
-            get_reason (bool, optional): If set to True, the reason
-              for killing will be returned. Defaults to False.
 
         Returns:
             bool: True/False
-            str: 'INTERNAL_KILLING' or 'EXTERNAL_KILLING' or ''
-              depending on if this job is being killed or not.
         """
-        if get_reason:
-            reason = self.is_being_stopped(get_reason=get_reason)
-            if reason in ("INTERNAL_KILLING", "EXTERNAL_KILLING"):
-                return reason
-            else:
-                return ""
+        return self._is_stopping and self._told_to_be_killed
 
-        return self._is_being_restarted
-
-    def is_being_startup_killed(self):
+    def is_being_startup_killed(self) -> bool:
         """Whether this job was started up only for it to be killed.
         This is useful for knowing if a job skipped `on_start()` and `on_run()`
         due to that, and can be checked for within `on_stop()`.
         """
-        return self._is_being_killed and self._startup_kill
+        return self._startup_kill and self._is_stopping and self._told_to_be_killed
 
-    def completed(self):
+    def completed(self) -> bool:
         """Whether this job completed successfully.
 
         Returns:
@@ -1580,7 +1712,7 @@ class JobBase:
         """
         return self._completed
 
-    def completed_at(self):
+    def completed_at(self) -> Optional[datetime.datetime]:
         """The last time at which this job object completed successfully,
         if available.
 
@@ -1592,15 +1724,15 @@ class JobBase:
                 self._completed_at_ts, tz=datetime.timezone.utc
             )
 
-    def is_being_completed(self):
+    def is_completing(self) -> bool:
         """Whether this job is currently completing.
 
         Returns:
             bool: True/False
         """
-        return self._is_being_completed
+        return self._is_stopping and self._told_to_complete
 
-    def done(self):
+    def done(self) -> bool:
         """Whether this job was killed or has completed.
 
         Returns:
@@ -1608,7 +1740,7 @@ class JobBase:
         """
         return self._killed or self._completed
 
-    def done_since(self):
+    def done_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object completed successfully or was killed, if available.
 
         Returns:
@@ -1616,29 +1748,28 @@ class JobBase:
         """
         return self._completed_at_ts or self._killed_at_ts
 
-    def is_being_restarted(self, get_reason=False):
-        """Whether this job is being restarted.
-
-        Args:
-            get_reason (bool, optional):
-                If set to True, the restart reason will be returned.
-                Defaults to False.
+    def is_restarting(self) -> bool:
+        """Whether this job is restarting.
 
         Returns:
             bool: True/False
-            str: 'INTERNAL_RESTART' or 'EXTERNAL_RESTART' or ''
-              depending on if a restart applies.
         """
-        if get_reason:
-            reason = self.is_being_stopped(get_reason=get_reason)
-            if reason in ("INTERNAL_RESTART", "EXTERNAL_RESTART"):
-                return reason
-            else:
-                return ""
 
-        return self._is_being_restarted
+        return self._is_stopping and self._told_to_restart
 
-    def is_being_guarded(self):
+    def was_restarted(self) -> bool:
+        """A convenience method to check if a job was restarted.
+
+        Returns:
+            bool: True/False
+
+        """
+        return self._last_stopping_reason in (
+            JobStopReasons.Internal.RESTART,
+            JobStopReasons.External.RESTART,
+        )
+
+    def is_being_guarded(self) -> bool:
         """Whether this job object is being guarded.
 
         Returns:
@@ -1648,7 +1779,7 @@ class JobBase:
 
     def await_done(
         self, timeout: Optional[float] = None, cancel_if_killed: bool = False
-    ):
+    ) -> Coroutine:
         """Wait for this job object to be done (completed or killed) using the
         coroutine output of this method.
 
@@ -1662,7 +1793,7 @@ class JobBase:
 
         Returns:
             Coroutine: A coroutine that evaluates to either `KILLED`
-              or `COMPLETED` from the `JOB_STATUS` class namespace.
+              or `COMPLETED` from the `JobStatus` enum.
         """
         if not self.alive():
             raise JobStateError("this job object is not alive.")
@@ -1675,7 +1806,7 @@ class JobBase:
 
         return asyncio.wait_for(fut, timeout)
 
-    def await_unguard(self, timeout: Optional[float] = None):
+    def await_unguard(self, timeout: Optional[float] = None) -> Coroutine:
         """Wait for this job object to be unguarded using the
         coroutine output of this method.
 
@@ -1709,7 +1840,7 @@ class JobBase:
 
         return asyncio.wait_for(fut, timeout)
 
-    def get_output_queue_proxy(self):
+    def get_output_queue_proxy(self) -> proxies.JobOutputQueueProxy:
         """Get a job output queue proxy object for more convenient
         reading of job output queues while this job is running.
 
@@ -1729,13 +1860,15 @@ class JobBase:
             raise JobStateError("this job object is already done and not alive")
 
         if self.OUTPUT_QUEUES:
-            output_queue_proxy = JobOutputQueueProxy(self)
+            output_queue_proxy = proxies.JobOutputQueueProxy(self)
             self._output_queue_proxies.append(output_queue_proxy)
             return output_queue_proxy
 
         raise TypeError("this job object does not support output queues")
 
-    def verify_output_field_support(self, field_name: str, raise_exceptions=False):
+    def verify_output_field_support(
+        self, field_name: str, raise_exceptions=False
+    ) -> bool:
         """Verify if a specified output field name is supported by this job,
         or if it supports output fields at all.
 
@@ -1749,20 +1882,24 @@ class JobBase:
               or `field_name` is not a string.
             LookupError: The specified field name is not defined by this job.
         """
+
         if not self.OUTPUT_FIELDS:
             if raise_exceptions:
                 raise TypeError(
                     f"'{self.__class__.__name__}' class does not"
-                    f" define any fields in 'OUTPUT_FIELDS' class attribute"
+                    f" implement or inherit an 'OUTPUT_FIELDS' class namespace"
                 )
             return False
 
-        elif field_name not in self.OUTPUT_FIELDS:
+        value = getattr(self.OUTPUT_FIELDS, field_name, default=None)
+
+        if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
                         f"field name '{field_name}' is not defined in"
-                        f" 'OUTPUT_FIELDS' of '{self.__class__.__name__}' class"
+                        f" 'OUTPUT_FIELDS' class namespace of "
+                        f"'{self.__class__.__name__}' class"
                     )
                     if isinstance(field_name, str)
                     else TypeError(
@@ -1772,9 +1909,17 @@ class JobBase:
                 )
             return False
 
+        elif value == "DISABLED":
+            raise ValueError(
+                f"the field name '{field_name}' has been marked as disabled by this "
+                "job class"
+            )
+
         return True
 
-    def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
+    def verify_output_queue_support(
+        self, queue_name: str, raise_exceptions=False
+    ) -> bool:
         """Verify if a specified output queue name is supported by this job,
         or if it supports output queues at all.
 
@@ -1792,24 +1937,33 @@ class JobBase:
             if raise_exceptions:
                 raise TypeError(
                     f"'{self.__class__.__name__}' class does not"
-                    f" define any fields in 'OUTPUT_FIELDS' class attribute"
+                    f" implement or inherit an 'OUTPUT_QUEUES' class namespace"
                 )
             return False
 
-        elif queue_name not in self.OUTPUT_QUEUES:
+        value = getattr(self.OUTPUT_QUEUES, queue_name, default=None)
+
+        if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
                         f"field name '{queue_name}' is not defined in"
-                        f" 'OUTPUT_FIELDS' of '{self.__class__.__name__}' class"
+                        f" 'OUTPUT_QUEUES' class namespace of "
+                        f"'{self.__class__.__name__}' class"
                     )
                     if isinstance(queue_name, str)
                     else TypeError(
-                        f"'queue_name' argument must be of type str,"
+                        f"'field_name' argument must be of type str,"
                         f" not {queue_name.__class__.__name__}"
                     )
                 )
             return False
+
+        elif value == "DISABLED":
+            raise ValueError(
+                f"the field name '{queue_name}' has been marked as disabled by this "
+                "job class"
+            )
 
         return True
 
@@ -1829,7 +1983,7 @@ class JobBase:
 
         self.verify_output_field_support(field_name, raise_exceptions=True)
 
-        field_value = self._output_fields[field_name]
+        field_value = self._output_fields.get(field_name, UNSET)
 
         if field_value is not UNSET:
             raise JobStateError(
@@ -1839,11 +1993,12 @@ class JobBase:
 
         self._output_fields[field_name] = value
 
-        for fut in self._output_field_futures[field_name]:
-            if not fut.cancelled():
-                fut.set_result(field_value)
+        if field_name in self._output_field_futures:
+            for fut in self._output_field_futures[field_name]:
+                if not fut.cancelled():
+                    fut.set_result(value)
 
-        self._output_field_futures[field_name].clear()
+            self._output_field_futures[field_name].clear()
 
     def push_output_queue(self, queue_name: str, value: Any):
         """Add a value to the specified output queue,
@@ -1862,6 +2017,9 @@ class JobBase:
 
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
+        if queue_name not in self._output_queues:
+            self._output_queues[queue_name] = []
+
         queue_entries: list = self._output_queues[queue_name]
         queue_entries.append(value)
 
@@ -1871,7 +2029,7 @@ class JobBase:
 
         self._output_queue_futures[queue_name].clear()
 
-    def get_output_field(self, field_name: str, default=UNSET):
+    def get_output_field(self, field_name: str, default=UNSET) -> Any:
         """Get the value of a specified output field.
 
         Args:
@@ -1897,10 +2055,13 @@ class JobBase:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
 
-        elif field_name not in self.OUTPUT_FIELDS:
+        elif getattr(self.OUTPUT_FIELDS, field_name, default=None) in (None, "DISABLED"):
             if default is UNSET:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
+
+        if field_name not in self._output_fields:
+            self._output_fields[field_name] = [UNSET, False]
 
         old_field_data_list: list = self._output_fields[field_name]
 
@@ -1914,7 +2075,7 @@ class JobBase:
 
         return old_field_data_list[0]
 
-    def get_output_queue_contents(self, queue_name: str):
+    def get_output_queue_contents(self, queue_name: str) -> list[Any]:
         """Get a list of all values present in the specified output queue.
         For continuous access to job output queues, consider requesting
         a `JobOutputQueueProxy` object using `.get_output_queue_proxy()`.
@@ -1937,6 +2098,9 @@ class JobBase:
         """
 
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
+
+        if queue_name not in self._output_queues:
+            raise JobStateError(f"The specified output queue '{queue_name}' is empty")
 
         queue_data_list: list = self._output_queues[queue_name]
 
@@ -1965,23 +2129,32 @@ class JobBase:
 
         self._output_queues[queue_name].clear()
 
-    def get_output_field_names(self):
+    def get_output_field_names(self) -> tuple[str]:
         """Get all output field names that this job supports.
+        An empty tuple means that none are supported.
 
         Returns:
             tuple: A tuple of the supported output fields.
         """
-        return tuple(self.OUTPUT_FIELDS)
 
-    def get_output_queue_names(self):
+        if self.OUTPUT_FIELDS is None:
+            return ()
+        
+        return self.OUTPUT_FIELDS.get_all_output_names()
+
+    def get_output_queue_names(self) -> tuple[str]:
         """Get all output queue names that this job supports.
+        An empty tuple means that none are supported.
 
         Returns:
             tuple: A tuple of the supported output queues.
         """
-        return tuple(self.OUTPUT_QUEUES)
+        if self.OUTPUT_QUEUES is None:
+            return ()
+        
+        return self.OUTPUT_QUEUES.get_all_output_names()
 
-    def has_output_field_name(self, field_name: str):
+    def has_output_field_name(self, field_name: str) -> bool:
         """Whether the specified field name is supported as an
         output field.
 
@@ -1998,9 +2171,9 @@ class JobBase:
                 f" not {field_name.__class__.__name__}"
             )
 
-        return field_name in self.OUTPUT_FIELDS
+        return field_name in self.OUTPUT_FIELDS.__frozen_output_names__
 
-    def has_output_queue_name(self, queue_name: str):
+    def has_output_queue_name(self, queue_name: str) -> bool:
         """Whether the specified queue name is supported as an
         output queue.
 
@@ -2017,9 +2190,9 @@ class JobBase:
                 f" not {queue_name.__class__.__name__}"
             )
 
-        return queue_name in self.OUTPUT_QUEUES
+        return queue_name in self.OUTPUT_QUEUES.__frozen_output_names__
 
-    def output_field_is_set(self, field_name: str):
+    def output_field_is_set(self, field_name: str) -> bool:
         """Whether a value for the specified output field
         has been set.
 
@@ -2037,11 +2210,11 @@ class JobBase:
 
         self.verify_output_field_support(field_name, raise_exceptions=True)
 
-        field_value = self._output_fields[field_name]
+        field_value = self._output_fields.get(field_name, UNSET)
 
         return field_value is not UNSET
 
-    def output_queue_is_empty(self, queue_name: str):
+    def output_queue_is_empty(self, queue_name: str) -> bool:
         """Whether the specified output queue is empty.
 
         Args:
@@ -2058,9 +2231,11 @@ class JobBase:
 
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
-        return not self._output_queues[queue_name]
+        return not self._output_queues.get(queue_name, None)
 
-    def await_output_field(self, field_name: str, timeout: Optional[float] = None):
+    def await_output_field(
+        self, field_name: str, timeout: Optional[float] = None
+    ) -> Coroutine:
         """Wait for this job object to release the value of a
         specified output field while it is running, using the
         coroutine output of this method.
@@ -2089,6 +2264,10 @@ class JobBase:
             raise JobStateError("this job object is already done and not alive.")
 
         fut = self._task_loop.loop.create_future()
+        
+        if field_name not in self._output_field_futures:
+            self._output_field_futures[field_name] = []
+
         self._output_field_futures[field_name].append(fut)
 
         return asyncio.wait_for(fut, timeout=timeout)
@@ -2098,7 +2277,7 @@ class JobBase:
         queue_name: str,
         timeout: Optional[float] = None,
         cancel_if_cleared: bool = True,
-    ):
+    ) -> Coroutine:
         """Wait for this job object to add to the specified output queue while
         it is running, using the coroutine output of this method.
 
@@ -2128,12 +2307,17 @@ class JobBase:
         if self.done():
             raise JobStateError("this job object is already done and not alive.")
 
+        if queue_name not in self._output_queue_futures:
+            self._output_queue_futures[queue_name] = []
+
         fut = self._task_loop.loop.create_future()
         self._output_queue_futures[queue_name].append((fut, cancel_if_cleared))
 
         return asyncio.wait_for(fut, timeout=timeout)
 
-    def verify_public_method_suppport(self, method_name: str, raise_exceptions=False):
+    def verify_public_method_suppport(
+        self, method_name: str, raise_exceptions=False
+    ) -> bool:
         """Verify if a job has a public method exposed under the specified name is
         supported by this job, or if it supports public methods at all.
 
@@ -2147,7 +2331,7 @@ class JobBase:
               or `field_name` is not a string.
             LookupError: The specified field name is not defined by this job.
         """
-        if not self.PUBLIC_METHODS:
+        if not self.PUBLIC_METHODS_CHAIN:
             if raise_exceptions:
                 raise TypeError(
                     f"'{self.__class__.__name__}' class does not"
@@ -2155,12 +2339,12 @@ class JobBase:
                 )
             return False
 
-        elif method_name not in self.PUBLIC_METHODS:
+        elif method_name not in self.PUBLIC_METHODS_CHAIN:
             if raise_exceptions:
                 raise (
                     LookupError(
                         f"no public method under the specified name '{method_name}' is "
-                        "not defined by the class of this job"
+                        "defined by the class of this job"
                     )
                     if isinstance(method_name, str)
                     else TypeError(
@@ -2172,15 +2356,15 @@ class JobBase:
 
         return True
 
-    def get_public_method_names(self):
+    def get_public_method_names(self) -> tuple[str]:
         """Get the names of all public methods that this job supports.
 
         Returns:
             tuple: A tuple of the names of the supported methods.
         """
-        return tuple(self.PUBLIC_METHODS.keys())
+        return tuple(self.PUBLIC_METHODS_CHAIN.keys())
 
-    def has_public_method_name(self, method_name: str):
+    def has_public_method_name(self, method_name: str) -> bool:
         """Whether a public method under the specified name is supported by this job.
 
         Args:
@@ -2196,9 +2380,9 @@ class JobBase:
                 f" not {method_name.__class__.__name__}"
             )
 
-        return method_name in self.PUBLIC_METHODS
+        return method_name in self.PUBLIC_METHODS_CHAIN
 
-    def public_method_is_async(self, method_name: str):
+    def public_method_is_async(self, method_name: str) -> bool:
         """Whether a public method under the specified name is a coroutine function.
 
         Args:
@@ -2210,9 +2394,11 @@ class JobBase:
 
         self.verify_public_method_suppport(method_name, raise_exceptions=True)
 
-        return inspect.iscoroutinefunction(self.PUBLIC_METHODS[method_name])
+        return inspect.iscoroutinefunction(
+            utils.chainmap_getitem(self.PUBLIC_METHODS_CHAIN, method_name)
+        )
 
-    def run_public_method(self, method_name: str, *args, **kwargs):
+    def run_public_method(self, method_name: str, *args, **kwargs) -> Any:
         """Run a public method under the specified name and return the
         result.
 
@@ -2225,13 +2411,13 @@ class JobBase:
 
         self.verify_public_method_suppport(method_name, raise_exceptions=True)
 
-        method = self.PUBLIC_METHODS[method_name]
+        method = utils.chainmap_getitem(self.PUBLIC_METHODS_CHAIN, method_name)
 
         return method(self, *args, **kwargs)
 
-    def status(self):
+    def status(self) -> JobStatus:
         """Get the job status of this job as a value from the
-        `JOB_STATUS` class namespace.
+        `JobStatus` enum.
 
         Returns:
             str: A status value.
@@ -2240,42 +2426,47 @@ class JobBase:
         if self.alive():
             if self.is_running():
                 if self.is_starting():
-                    output = JOB_STATUS.STARTING
+                    output = JobStatus.STARTING
                 elif self.is_idling():
-                    output = JOB_STATUS.IDLING
+                    output = JobStatus.IDLING
                 elif self.is_awaiting():
-                    output = JOB_STATUS.AWAITING
-                elif self.is_being_completed():
-                    output = JOB_STATUS.COMPLETING
+                    output = JobStatus.AWAITING
+                elif self.is_completing():
+                    output = JobStatus.COMPLETING
                 elif self.is_being_killed():
-                    output = JOB_STATUS.DYING
-                elif self.is_being_restarted():
-                    output = JOB_STATUS.RESTARTING
-                elif self.is_being_stopped():
-                    output = JOB_STATUS.STOPPING
+                    output = JobStatus.BEING_KILLED
+                elif self.is_restarting():
+                    output = JobStatus.RESTARTING
+                elif self.is_stopping():
+                    output = JobStatus.STOPPING
                 else:
-                    output = JOB_STATUS.RUNNING
+                    output = JobStatus.RUNNING
             elif self.stopped():
-                output = JOB_STATUS.STOPPED
+                output = JobStatus.STOPPED
             elif self.initialized():
-                output = JOB_STATUS.INITIALIZED
+                output = JobStatus.INITIALIZED
 
         elif self.completed():
-            output = JOB_STATUS.COMPLETED
+            output = JobStatus.COMPLETED
         elif self.killed():
-            output = JOB_STATUS.KILLED
+            output = JobStatus.KILLED
         else:
-            output = JOB_STATUS.FRESH
+            output = JobStatus.FRESH
 
         return output
 
     def __str__(self):
         output_str = (
-            f"<{self.__class__.__name__} "
+            f"<{self.__class__.__qualname__} "
             f"(ID={self._identifier} CREATED_AT={self.created_at} "
-            f"PERM_LVL={PERM_LEVELS.get_name(self._PERMISSION_LEVEL)} "
-            f"STATUS={self.status()})>"
+            f"PERM_LVL={self._PERMISSION_LEVEL.name} "
+            f"STATUS={self.status().name})>"
         )
+
+        return output_str
+
+    def __repr__(self):
+        output_str = f"<{self.__class__.__qualname__} " f"(ID={self._identifier})>"
 
         return output_str
 
@@ -2286,12 +2477,11 @@ class IntervalJobBase(JobBase):
     `on_start()` and `on_stop()` and `on_run_error(exc)`
     can optionally be overloaded.
 
-    One can override the class variables `DEFAULT_SECONDS`,
-    `DEFAULT_MINUTES`, `DEFAULT_HOURS`, `DEFAULT_COUNT`
-    and `DEFAULT_RECONNECT` in subclasses. They are derived
-    from the keyword arguments of the `discord.ext.tasks.Loop`
-    constructor. These will act as defaults for each job
-    object created from this class.
+    One can override the class variables `DEFAULT_INTERVAL`,
+    `DEFAULT_COUNT` and `DEFAULT_RECONNECT` in subclasses.
+    They are derived from the keyword arguments of the
+    `discord.ext.tasks.Loop` constructor. These will act as
+    defaults for each job object created from this class.
     """
 
     DEFAULT_INTERVAL = datetime.timedelta()
@@ -2302,7 +2492,7 @@ class IntervalJobBase(JobBase):
     def __init__(
         self,
         interval: Optional[datetime.timedelta] = None,
-        count: int = -1,
+        count: Union[int, _UnsetType] = UNSET,
         reconnect: Optional[bool] = None,
     ):
         """Create a new `IntervalJobBase` instance.
@@ -2320,12 +2510,14 @@ class IntervalJobBase(JobBase):
             if interval is None
             else interval.total_seconds()
         )
-        self._count = self.DEFAULT_COUNT if count <= 0 else count
+        self._count = self.DEFAULT_COUNT if count is UNSET else count
+
         self._reconnect = not not (
             self.DEFAULT_RECONNECT if reconnect is None else reconnect
         )
+
         self._loop_count = 0
-        self._task_loop = tasks.Loop(
+        self._task_loop = CustomLoop(
             self._on_run,
             seconds=self._interval_secs,
             hours=0,
@@ -2380,11 +2572,15 @@ class IntervalJobBase(JobBase):
 
         self._interval_secs = seconds + (minutes * 60.0) + (hours * 3600.0)
 
-    async def on_start(self):
+    async def on_start(self):  # make this optional for subclasses
         pass
 
     async def _on_run(self):
-        if self._startup_kill or self._skip_on_run:
+        if self._startup_kill:
+            self._KILL_EXTERNAL()
+            return
+
+        elif self._skip_on_run:
             return
 
         self._is_idling = False
@@ -2409,7 +2605,7 @@ class IntervalJobBase(JobBase):
         """
         raise NotImplementedError()
 
-    async def on_stop(self, reason, by_force):
+    async def on_stop(self):  # make this optional for subclasses
         pass
 
 
@@ -2441,32 +2637,33 @@ class EventJobBase(JobBase):
 
     DEFAULT_MAX_EVENT_CHECKS_PER_ITERATION: Optional[int] = None
 
-    DEFAULT_EMPTY_QUEUE_TIMEOUT: Optional[datetime.timedelta] = datetime.timedelta()
+    DEFAULT_EMPTY_EVENT_QUEUE_TIMEOUT: Optional[datetime.timedelta] = None
 
-    DEFAULT_MAX_QUEUE_SIZE: Optional[int] = None
+    DEFAULT_MAX_EVENT_QUEUE_SIZE: Optional[int] = None
 
-    DEFAULT_ALLOW_QUEUE_OVERFLOW: bool = False
+    DEFAULT_ALLOW_EVENT_QUEUE_OVERFLOW: bool = False
 
-    DEFAULT_BLOCK_QUEUE_ON_STOP: bool = False
-    DEFAULT_START_ON_DISPATCH: bool = True
-    DEFAULT_BLOCK_QUEUE_WHILE_STOPPED: bool = False
-    DEFAULT_CLEAR_QUEUE_AT_STARTUP: bool = False
+    DEFAULT_BLOCK_EVENTS_ON_STOP: bool = True
+    DEFAULT_START_ON_DISPATCH: bool = False
+    DEFAULT_BLOCK_EVENTS_WHILE_STOPPED: bool = True
+    DEFAULT_CLEAR_EVENTS_AT_STARTUP: bool = True
 
     __slots__ = (
         "_pre_event_queue",
         "_event_queue",
         "_last_event",
         "_max_event_checks_per_iteration",
-        "_empty_queue_timeout_secs",
-        "_max_queue_size",
-        "_allow_queue_overflow",
-        "_block_queue_on_stop",
+        "_empty_event_queue_timeout_secs",
+        "_max_event_queue_size",
+        "_allow_event_queue_overflow",
+        "_block_events_on_stop",
         "_start_on_dispatch",
-        "_block_queue_while_stopped",
-        "_clear_queue_at_startup",
+        "_block_events_while_stopped",
+        "_clear_events_at_startup",
         "_allow_dispatch",
         "_stopping_by_empty_queue",
         "_stopping_by_idling_timeout",
+        "_empty_event_queue_future",
     )
 
     def __init_subclass__(cls, permission_level=None):
@@ -2489,15 +2686,17 @@ class EventJobBase(JobBase):
     def __init__(
         self,
         interval: Optional[datetime.timedelta] = None,
-        count: Union[int, UNSET_TYPE] = UNSET,
+        count: Union[int, _UnsetType] = UNSET,
         reconnect: Optional[bool] = None,
-        max_event_checks_per_iteration: Optional[Union[int, UNSET_TYPE]] = UNSET,
-        empty_queue_timeout: Optional[Union[datetime.timedelta, UNSET_TYPE]] = UNSET,
-        max_queue_size: Optional[int] = None,
-        allow_queue_overflow: Optional[bool] = None,
-        block_queue_on_stop: Optional[bool] = None,
-        block_queue_while_stopped: Optional[bool] = None,
-        clear_queue_at_startup: Optional[bool] = None,
+        max_event_checks_per_iteration: Optional[Union[int, _UnsetType]] = UNSET,
+        empty_event_queue_timeout: Optional[
+            Union[datetime.timedelta, _UnsetType]
+        ] = UNSET,
+        max_event_queue_size: Optional[int] = None,
+        allow_event_queue_overflow: Optional[bool] = None,
+        block_events_on_stop: Optional[bool] = None,
+        block_events_while_stopped: Optional[bool] = None,
+        clear_events_at_startup: Optional[bool] = None,
         start_on_dispatch: Optional[bool] = None,
     ):
         super().__init__()
@@ -2525,52 +2724,57 @@ class EventJobBase(JobBase):
         else:
             self._max_event_checks_per_iteration = None
 
-        empty_queue_timeout = (
-            self.DEFAULT_EMPTY_QUEUE_TIMEOUT
-            if empty_queue_timeout is UNSET
-            else empty_queue_timeout
+        empty_event_queue_timeout = (
+            self.DEFAULT_EMPTY_EVENT_QUEUE_TIMEOUT
+            if empty_event_queue_timeout is UNSET
+            else empty_event_queue_timeout
         )
-        if isinstance(empty_queue_timeout, datetime.timedelta):
-            self._empty_queue_timeout_secs = empty_queue_timeout.total_seconds()
+
+        if isinstance(empty_event_queue_timeout, datetime.timedelta):
+            self._empty_event_queue_timeout_secs = (
+                empty_event_queue_timeout.total_seconds()
+            )
         else:
-            self._empty_queue_timeout_secs = None
+            self._empty_event_queue_timeout_secs = None
 
-        max_queue_size = (
-            self.DEFAULT_MAX_QUEUE_SIZE if max_queue_size is UNSET else max_queue_size
+        max_event_queue_size = (
+            self.DEFAULT_MAX_EVENT_QUEUE_SIZE
+            if max_event_queue_size is UNSET
+            else max_event_queue_size
         )
-        if isinstance(max_queue_size, (int, float)):
-            self._max_queue_size = int(max_queue_size)
+        if isinstance(max_event_queue_size, (int, float)):
+            self._max_event_queue_size = int(max_event_queue_size)
         else:
-            self._max_queue_size = None
+            self._max_event_queue_size = None
 
-        self._allow_queue_overflow = not not (
-            self.DEFAULT_ALLOW_QUEUE_OVERFLOW
-            if allow_queue_overflow is None
-            else allow_queue_overflow
+        self._allow_event_queue_overflow = not not (
+            self.DEFAULT_ALLOW_EVENT_QUEUE_OVERFLOW
+            if allow_event_queue_overflow is None
+            else allow_event_queue_overflow
         )
 
-        self._block_queue_on_stop = not not (
-            self.DEFAULT_BLOCK_QUEUE_ON_STOP
-            if block_queue_on_stop is None
-            else block_queue_on_stop
+        self._block_events_on_stop = not not (
+            self.DEFAULT_BLOCK_EVENTS_ON_STOP
+            if block_events_on_stop is None
+            else block_events_on_stop
         )
         self._start_on_dispatch = not not (
             self.DEFAULT_START_ON_DISPATCH
             if start_on_dispatch is None
             else start_on_dispatch
         )
-        self._block_queue_while_stopped = not not (
-            self.DEFAULT_BLOCK_QUEUE_WHILE_STOPPED
-            if block_queue_while_stopped is None
-            else block_queue_while_stopped
+        self._block_events_while_stopped = not not (
+            self.DEFAULT_BLOCK_EVENTS_WHILE_STOPPED
+            if block_events_while_stopped is None
+            else block_events_while_stopped
         )
-        self._clear_queue_at_startup = not not (
-            self.DEFAULT_CLEAR_QUEUE_AT_STARTUP
-            if clear_queue_at_startup is None
-            else clear_queue_at_startup
+        self._clear_events_at_startup = not not (
+            self.DEFAULT_CLEAR_EVENTS_AT_STARTUP
+            if clear_events_at_startup is None
+            else clear_events_at_startup
         )
 
-        if self._block_queue_while_stopped or self._clear_queue_at_startup:
+        if self._block_events_while_stopped or self._clear_events_at_startup:
             self._start_on_dispatch = False
 
         self._allow_dispatch = True
@@ -2578,13 +2782,16 @@ class EventJobBase(JobBase):
         self._stopping_by_empty_queue = False
         self._stopping_by_idling_timeout = False
 
-        self._pre_event_queue = deque()
-        self._event_queue = deque(maxlen=self._max_queue_size)
-        self._last_event = None
+        self._empty_event_queue_future: asyncio.Future = None
+        # used to idle while no events are available to conserve processing power
 
-        self._task_loop = tasks.Loop(
+        self._pre_event_queue = deque()
+        self._event_queue = deque(maxlen=self._max_event_queue_size)
+        self._last_event: Optional[events.BaseEvent] = None
+
+        self._task_loop = CustomLoop(
             self._on_run,
-            seconds=0,
+            seconds=self._interval_secs,
             hours=0,
             minutes=0,
             count=None,
@@ -2599,14 +2806,21 @@ class EventJobBase(JobBase):
         task_is_running = self._task_loop.is_running()
         if (
             not self._allow_dispatch
-            or (self._block_queue_on_stop and self._is_being_stopped)
-            or (self._block_queue_while_stopped and not task_is_running)
+            or (self._block_events_on_stop and self._is_stopping)
+            or (self._block_events_while_stopped and not task_is_running)
         ):
             return
 
         self._pre_event_queue.append(event)
         if self._start_on_dispatch and not task_is_running:
             self._task_loop.start()
+
+        elif (
+            self._empty_event_queue_future is not None
+            and not self._empty_event_queue_future.done()
+            and not self._empty_event_queue_future.cancelled()
+        ):
+            self._empty_event_queue_future.set_result(True)
 
     def check_event(self, event: events.BaseEvent):
         """A method for subclasses that can be overloaded to perform validations on a `BaseEvent`
@@ -2618,7 +2832,7 @@ class EventJobBase(JobBase):
         """
         return True
 
-    def get_last_event(self):
+    def get_last_event(self) -> Optional[events.BaseEvent]:
         """Get the last event dispatched to this event job object.
 
         Returns:
@@ -2626,14 +2840,10 @@ class EventJobBase(JobBase):
         """
         return self._last_event
 
-    def loop_count(self):
-        """The current amount of `on_run()` calls completed by this job object."""
-        return self._loop_count
-
-    def _filter_events(self):
+    def _validate_and_pump_events(self):
         iterator_obj = (
             range(self._max_event_checks_per_iteration)
-            if self._max_event_checks_per_iteration
+            if self._max_event_checks_per_iteration is not None
             else itertools.count()
         )
 
@@ -2641,71 +2851,120 @@ class EventJobBase(JobBase):
             if not self._pre_event_queue:
                 break
             elif (
-                len(self._event_queue) == self._max_queue_size
-                and not self._allow_queue_overflow
+                len(self._event_queue) == self._max_event_queue_size
+                and not self._allow_event_queue_overflow
             ):
                 break
 
             event = self._pre_event_queue.popleft()
-
             if self.check_event(event):
                 self._event_queue.append(event)
 
     async def _on_start(self):
-        if self._clear_queue_at_startup:
+        if self._clear_events_at_startup:
+            self._pre_event_queue.clear()
             self._event_queue.clear()
 
         await super()._on_start()
 
-    async def on_start(self):
+    async def on_start(self):  # make this optional for subclasses
         pass
 
     async def _on_run(self):
-        if self._startup_kill or self._skip_on_run:
+        self._is_idling = False
+        self._idling_since_ts = None
+        self._stopping_by_idling_timeout = False
+
+        if self._startup_kill:
+            self._KILL_EXTERNAL()
             return
 
-        if self._pre_event_queue:
-            self._filter_events()
+        elif self._skip_on_run:
+            return
+
+        if self._pre_event_queue:  # only if new events are available
+            self._validate_and_pump_events()
 
         if not self._event_queue:
-            if not self._empty_queue_timeout_secs:
+            if not self._empty_event_queue_timeout_secs:
                 if (
-                    self._empty_queue_timeout_secs is None
+                    self._empty_event_queue_timeout_secs is None
                 ):  # idle indefinitely until an event is recieved.
-                    if not self._is_idling:
-                        self._is_idling = True
-                        self._idling_since_ts = time.time()
-                        return
-                    else:
-                        return
-                else:  # self._empty_queue_timeout_secs is zero
+                    self._is_idling = True
+                    self._idling_since_ts = time.time()
+
+                    while not self._event_queue:
+                        self._empty_event_queue_future = (
+                            self._task_loop.loop.create_future()
+                        )
+                        try:
+                            await self._empty_event_queue_future  # wait till an event is dispatched
+                        except asyncio.CancelledError as exc:
+                            if exc.args[0] == "CANCEL_BY_TASK_LOOP":
+                                # stopping because of task loop cancellation
+                                raise
+
+                        self._validate_and_pump_events()
+
+                    self._is_idling = False
+                    self._idling_since_ts = None
+
+                else:  # self._empty_event_queue_timeout_secs is zero
                     self._stopping_by_empty_queue = True
                     self.STOP()
                     return
-
-            elif not self._is_idling:
-                self._is_idling = True
-                self._idling_since_ts = time.time()
-
-            if (
-                self._is_idling
-                and (time.time() - self._idling_since_ts)
-                > self._empty_queue_timeout_secs
-            ):
-                self._stopping_by_idling_timeout = True
-                self.STOP()
-                return
             else:
-                return
+                if not self._is_idling:
+                    self._is_idling = True
+                    self._idling_since_ts = time.time()
+
+                while not self._event_queue:
+                    event_was_dispatched = False
+
+                    try:
+                        self._empty_event_queue_future = (
+                            self._task_loop.loop.create_future()
+                        )
+
+                        handle = self._task_loop.loop.call_later(  # copied from asyncio.sleep
+                            self._empty_event_queue_timeout_secs,
+                            lambda fut: None
+                            if fut.cancelled() or fut.done()
+                            else fut.set_result(False),
+                            self._empty_event_queue_future,
+                        )
+
+                        try:
+                            event_was_dispatched = (
+                                await self._empty_event_queue_future
+                            )  # wait till an event is dispatched
+                        finally:
+                            handle.cancel()
+
+                        self._is_idling = False
+                        self._idling_since_ts = None
+
+                    except asyncio.CancelledError as exc:
+                        # ignore CancelledError that is not from job task loop object
+                        print(repr(exc))
+                        if exc.args[0] == "CANCEL_BY_TASK_LOOP":
+                            # stopping because of task loop cancellation
+                            raise
+                    else:
+                        if event_was_dispatched:
+                            # an event was dispatched, even if that event did not
+                            # reach the main event queue
+                            continue
+                        else:
+                            self._stopping_by_idling_timeout = True
+                            self.STOP()
+                            return
+
+                    self._validate_and_pump_events()
 
         elif self._loop_count == self._count:
             self.STOP()
             return
-
-        self._is_idling = False
-        self._idling_since_ts = None
-
-        self._stopping_by_idling_timeout = False
 
         event = self._event_queue.popleft()
         await self.on_run(event)
@@ -2716,11 +2975,6 @@ class EventJobBase(JobBase):
         if self._interval_secs:
             self._is_idling = True
             self._idling_since_ts = time.time()
-            delta = self._interval_secs
-            while delta > MAX_ASYNCIO_SECONDS:
-                await asyncio.sleep(MAX_ASYNCIO_SECONDS)
-                delta -= MAX_ASYNCIO_SECONDS
-            await asyncio.sleep(max(delta, 0))
 
     async def on_run(self, event: events.BaseEvent):
         """The code to run whenever an event is recieved.
@@ -2731,25 +2985,24 @@ class EventJobBase(JobBase):
         """
         raise NotImplementedError()
 
-    async def _on_stop(self):
-        try:
-            await super()._on_stop()
-        finally:  # reset some attributes in case an exception is raised
-            self._loop_count = 0
-            self._stopping_by_idling_timeout = False
+    def _stop_cleanup(self):
+        self._stopping_by_idling_timeout = False
+        self._stopping_by_empty_queue = False
+        super()._stop_cleanup()
 
-    async def on_stop(self, reason, by_force):
+    async def on_stop(self):  # make this optional for subclasses
         pass
 
-    def get_queue_size(self):
-        """Get the count of events stored in the queue.
+    def get_event_queue_size(self) -> int:
+        """Get the amount of filtered events
+        stored in the event queue of this job object.
 
         Returns:
             int: The queue sizee.
         """
         return len(self._event_queue)
 
-    def clear_queue(self):
+    def clear_event_queue(self):
         """Clear the current event queue."""
         self._pre_event_queue.clear()
         self._event_queue.clear()
@@ -2766,7 +3019,7 @@ class EventJobBase(JobBase):
         finally:
             self._allow_dispatch = True
 
-    def queue_is_blocked(self):
+    def queue_is_blocked(self) -> bool:
         """Whether event dispatching to this event job's event queue
         is disabled and its event queue is blocked.
 
@@ -2787,43 +3040,45 @@ class EventJobBase(JobBase):
         """
         self._allow_dispatch = True
 
-    def is_being_stopped(self, get_reason: bool = False):
-        output = self._is_being_stopped
-        if get_reason:
-            reason = None
-            if not self._is_being_stopped:
-                reason = ""
-            elif self._task_loop.failed():
-                reason = JOB_STOP_REASONS.INTERNAL_ERROR
-            elif (
-                not self._empty_queue_timeout_secs
-                and self._empty_queue_timeout_secs is not None
-                and self._stopping_by_empty_queue
-            ):
-                reason = JOB_STOP_REASONS.INTERNAL_EMPTY_QUEUE
-            elif self._stopping_by_idling_timeout:
-                reason = JOB_STOP_REASONS.INTERNAL_IDLING_TIMEOUT
-            elif self._loop_count == self._count:
-                reason = JOB_STOP_REASONS.INTERNAL_COUNT_LIMIT
-            elif self._stopping_by_self:
-                if self._is_being_restarted:
-                    reason = JOB_STOP_REASONS.INTERNAL_RESTART
-                elif self._is_being_completed:
-                    reason = JOB_STOP_REASONS.INTERNAL_COMPLETION
-                elif self._is_being_killed:
-                    reason = JOB_STOP_REASONS.INTERNAL_KILLING
-                else:
-                    reason = JOB_STOP_REASONS.INTERNAL
-            elif not self._stopping_by_self:
-                if self._is_being_restarted:
-                    reason = JOB_STOP_REASONS.EXTERNAL_RESTART
-                elif self._is_being_killed:
-                    reason = JOB_STOP_REASONS.EXTERNAL_KILLING
-                else:
-                    reason = JOB_STOP_REASONS.EXTERNAL
+    def get_stopping_reason(
+        self,
+    ) -> Union[JobStopReasons.Internal, JobStopReasons.External]:
+        if not self._is_stopping:
+            return
+        elif (
+            self._on_start_exception
+            or self._on_run_exception
+            or self._on_stop_exception
+        ):
+            return JobStopReasons.Internal.ERROR
+        elif (
+            not self._empty_event_queue_timeout_secs
+            and self._empty_event_queue_timeout_secs is not None
+            and self._stopping_by_empty_queue
+        ):
+            return JobStopReasons.Internal.EMPTY_QUEUE
 
-            output = reason
-        return output
+        elif self._stopping_by_idling_timeout:
+            return JobStopReasons.Internal.IDLING_TIMEOUT
+
+        elif self._task_loop.current_loop == self._count:
+            return JobStopReasons.Internal.EXECUTION_COUNT_LIMIT
+        elif self._stop_by_self:
+            if self._told_to_restart:
+                return JobStopReasons.Internal.RESTART
+            elif self._told_to_complete:
+                return JobStopReasons.Internal.COMPLETION
+            elif self._told_to_be_killed:
+                return JobStopReasons.Internal.KILLING
+            else:
+                return JobStopReasons.Internal.UNSPECIFIC
+        else:
+            if self._told_to_restart:
+                return JobStopReasons.External.RESTART
+            elif self._told_to_be_killed:
+                return JobStopReasons.External.KILLING
+            else:
+                return JobStopReasons.External.UNKNOWN
 
 
 @singletonjob
@@ -2841,8 +3096,5 @@ class JobManagerJob(IntervalJobBase):
         await self.await_done()
 
 
-JobManagerJob.__init_subclass__()
+from . import proxies, groupings  # allow this module to finish initialization
 
-
-from .manager import JobManagerProxy
-from .proxies import JobProxy, JobOutputQueueProxy
