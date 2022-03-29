@@ -6,7 +6,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This module implements utility job classes. 
 """
 
-from __future__ import annotations
 import asyncio
 from collections import deque
 from typing import Optional

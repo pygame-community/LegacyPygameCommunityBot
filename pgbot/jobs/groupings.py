@@ -7,7 +7,7 @@ This file implements a base class for grouping together job classes
 into class namespaces.
 """
 
-from typing import Type, Union
+from typing import Optional, Type, Union
 
 from pgbot.utils.utils import class_getattr_unique, class_getattr
 
@@ -83,8 +83,8 @@ class OutputNameRecord:
     of this class that begins with an underscore is automatically ignored.
     """
 
-    __output_names__ = None
-    __frozen_output_names__ = frozenset()
+    __output_names__: tuple[str] = ()
+    __frozen_output_names__: frozenset[str] = frozenset()
 
     def __init_subclass__(cls):
         bases_dir_set = set().union(*(dir(base_cls) for base_cls in cls.__bases__))
@@ -113,7 +113,7 @@ class OutputNameRecord:
             if key.startswith("_") or key in cls.__dict__:
                 continue
 
-            if anno is not str:
+            if anno not in (str, "str"):
                 raise ValueError("only annotations with the 'str' type are supported")
             else:
                 setattr(cls, key, key)

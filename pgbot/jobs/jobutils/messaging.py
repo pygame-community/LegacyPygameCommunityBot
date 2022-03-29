@@ -6,7 +6,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file implements job classes for scheduling Discord communication methods as jobs. 
 """
 
-from __future__ import annotations
 from typing import Optional, Union
 import io
 import discord

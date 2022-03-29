@@ -7,7 +7,6 @@ This file implements the base classes for job objects, which are a core part of 
 asynchronous task execution system.
 """
 
-from __future__ import annotations
 from abc import ABC
 import asyncio
 from aiohttp import ClientError
@@ -36,7 +35,7 @@ _JOB_CLASS_MAP = {}
 
 def get_job_class_from_id(
     class_identifier: str, closest_match: bool = False
-) -> JobBase:
+) -> 'JobBase':
 
     name, timestamp_str = class_identifier.split("-")
 
@@ -53,7 +52,7 @@ def get_job_class_from_id(
     )
 
 
-def get_job_class_id(cls: Type[JobBase], raise_exceptions=True) -> Optional[str]:
+def get_job_class_id(cls: Type['JobBase'], raise_exceptions=True) -> Optional[str]:
 
     if raise_exceptions and not issubclass(cls, JobBase):
         raise TypeError("argument 'cls' must be a subclass of a job base class")
@@ -97,8 +96,8 @@ def get_job_class_id(cls: Type[JobBase], raise_exceptions=True) -> Optional[str]
 
 
 def get_job_class_permission_level(
-    cls: Type[JobBase], raise_exceptions=True
-) -> Optional[JobPermissionLevels]:
+    cls: Type['JobBase'], raise_exceptions=True
+) -> Optional['JobPermissionLevels']:
     if not issubclass(cls, JobBase):
         if raise_exceptions:
             raise TypeError("argument 'cls' must be a subclass of a job base class")
@@ -487,7 +486,7 @@ class _SingletonMixinJobBase(ABC):
     pass
 
 
-def singletonjob(cls: JobBase) -> JobBase:
+def singletonjob(cls: 'JobBase') -> 'JobBase':
     """A class decorator for marking job classes as singletons,
     meaning that their instances can only be scheduled one at a time in a job manager.
     """
@@ -496,7 +495,7 @@ def singletonjob(cls: JobBase) -> JobBase:
     return cls
 
 
-def _sysjob(cls: JobBase) -> JobBase:
+def _sysjob(cls: 'JobBase') -> 'JobBase':
     """A class decorator for marking job classes as system-level."""
     if issubclass(cls, JobBase):
         _SystemLevelMixinJobBase.register(cls)
@@ -504,19 +503,28 @@ def _sysjob(cls: JobBase) -> JobBase:
     return cls
 
 
-def publicjobmethod(func: Callable[...]) -> Callable[...]:
+def publicjobmethod(disabled: bool = False) -> Callable[[Any], Any]:
     """A simple decorator to expose a method as public to other job objects.
 
     Args:
-        func (Callable[[Any], Any]): The job method to expose.
+        disabled (bool): Whether to mark this public job method as disabled.
+          Defaults to False.
     """
 
-    if isinstance(func, FunctionType):
-        func.__public = True
-        return func
+    def inner_deco(func: Callable[...]):
+        if isinstance(func, FunctionType):
+            func.__public = True
+            if disabled:
+                func.__disabled = True
+            else:
+                func.__disabled = False
+        
+            return func
+        
+        raise TypeError("argument 'func' must be a function")
 
-    raise TypeError("argument 'func' must be a function")
-
+    return inner_deco
+        
 
 class CustomLoop(tasks.Loop):
     """A small subclass of `discord.ext.tasks.Loop`
@@ -619,8 +627,8 @@ class JobBase:
     PUBLIC_METHODS: Optional[dict[str, Callable[..., Any]]] = None
     PUBLIC_METHODS_CHAIN: Optional[ChainMap[str, Callable[..., Any]]] = None
 
-    OUTPUT_FIELDS: Optional[Type[groupings.OutputNameRecord]] = None
-    OUTPUT_QUEUES: Optional[Type[groupings.OutputNameRecord]] = None
+    OUTPUT_FIELDS: Optional['groupings.OutputNameRecord'] = None
+    OUTPUT_QUEUES: Optional['groupings.OutputNameRecord'] = None
 
     NAMESPACE_CLASS = JobNamespace
 
@@ -719,7 +727,7 @@ class JobBase:
         cls.PUBLIC_METHODS = public_methods
         cls.PUBLIC_METHODS_CHAIN = ChainMap(
             public_methods,
-            *(utils.class_getattr_unique(cls, "PUBLIC_METHODS", type_filter=(dict,))),
+            *(utils.class_getattr_unique(cls, "PUBLIC_METHODS", filter_func=lambda v: isinstance(v, dict))),
         )
 
     def __init__(self):
@@ -729,8 +737,8 @@ class JobBase:
 
         self._loop_count = 0
 
-        self._manager: Optional[proxies.JobManagerProxy] = None  # type: ignore
-        self._creator: Optional[proxies.JobProxy] = None
+        self._manager: Optional['proxies.JobManagerProxy'] = None
+        self._creator: Optional[JobProxy] = None
         self._created_at_ts = time.time()
         self._registered_at_ts = None
         self._completed_at_ts = None
@@ -743,22 +751,16 @@ class JobBase:
         self._output_field_futures = None
 
         self._output_fields = None
-        self._output_queue_proxies: Optional[list[proxies.JobOutputQueueProxy]] = None
+        self._output_queue_proxies: Optional[list[JobOutputQueueProxy]] = None
 
-        if self.OUTPUT_FIELDS:
-            self._output_field_futures = {
-                field_name: [] for field_name in self.OUTPUT_FIELDS
-            }
-            self._output_fields = {
-                field_name: UNSET for field_name in self.OUTPUT_FIELDS
-            }
+        if self.OUTPUT_FIELDS is not None:
+            self._output_field_futures = {}
+            self._output_fields = {}
 
-        if self.OUTPUT_QUEUES:
+        if self.OUTPUT_QUEUES is not None:
             self._output_queue_proxies = []
-            self._output_queue_futures = {
-                queue_name: [] for queue_name in self.OUTPUT_QUEUES
-            }
-            self._output_queues = {queue_name: [] for queue_name in self.OUTPUT_QUEUES}
+            self._output_queue_futures = {}
+            self._output_queues = {}
 
         self._task_loop: Optional[CustomLoop] = None
 
@@ -835,22 +837,22 @@ class JobBase:
         return self._data
 
     @property
-    def manager(self) -> proxies.JobManagerProxy:
+    def manager(self) -> 'proxies.JobManagerProxy':
         """The `JobManagerProxy` object bound to this job object."""
         return self._manager
 
     @property
-    def creator(self) -> proxies.JobProxy:
+    def creator(self) -> 'proxies.JobProxy':
         """The `JobProxy` of the creator of this job object."""
         return self._creator
 
     @property
-    def guardian(self) -> proxies.JobProxy:
+    def guardian(self) -> 'proxies.JobProxy':
         """The `JobProxy` of the current guardian of this job object."""
         return self._guardian
 
     @property
-    def proxy(self) -> proxies.JobProxy:
+    def proxy(self) -> 'proxies.JobProxy':
         """The `JobProxy` object bound to this job object."""
         return self._proxy
 
@@ -983,7 +985,7 @@ class JobBase:
 
                 self._guarded_job_proxies_dict.clear()
 
-            if self.OUTPUT_QUEUES:
+            if self.OUTPUT_QUEUES is not None:
                 self._output_queue_proxies.clear()
 
             if self._told_to_complete:
@@ -999,7 +1001,7 @@ class JobBase:
 
                 self._done_futures.clear()
 
-                if self.OUTPUT_FIELDS:
+                if self.OUTPUT_FIELDS is not None:
                     for field_name, fut_list in self._output_field_futures.items():
                         output = self._output_fields[field_name]
                         for fut in fut_list:
@@ -1010,7 +1012,7 @@ class JobBase:
 
                     self._output_field_futures.clear()
 
-                if self.OUTPUT_QUEUES:
+                if self.OUTPUT_QUEUES is not None:
                     for fut_list in self._output_queue_futures.values():
                         for fut, cancel_if_cleared in fut_list:
                             if not fut.cancelled():
@@ -1029,7 +1031,7 @@ class JobBase:
 
                 self._done_futures.clear()
 
-                if self.OUTPUT_FIELDS:
+                if self.OUTPUT_FIELDS is not None:
                     for fut_list in self._output_field_futures.values():
                         for fut in fut_list:
                             if not fut.cancelled():
@@ -1042,7 +1044,7 @@ class JobBase:
 
                     self._output_field_futures.clear()
 
-                if self.OUTPUT_QUEUES:
+                if self.OUTPUT_QUEUES is not None:
                     for fut_list in self._output_queue_futures.values():
                         for fut, cancel_if_cleared in fut_list:
                             if not fut.cancelled():
@@ -1840,7 +1842,7 @@ class JobBase:
 
         return asyncio.wait_for(fut, timeout)
 
-    def get_output_queue_proxy(self) -> proxies.JobOutputQueueProxy:
+    def get_output_queue_proxy(self) -> 'proxies.JobOutputQueueProxy':
         """Get a job output queue proxy object for more convenient
         reading of job output queues while this job is running.
 
@@ -1859,7 +1861,7 @@ class JobBase:
         elif self.done():
             raise JobStateError("this job object is already done and not alive")
 
-        if self.OUTPUT_QUEUES:
+        if self.OUTPUT_QUEUES is not None:
             output_queue_proxy = proxies.JobOutputQueueProxy(self)
             self._output_queue_proxies.append(output_queue_proxy)
             return output_queue_proxy
@@ -1870,7 +1872,8 @@ class JobBase:
         self, field_name: str, raise_exceptions=False
     ) -> bool:
         """Verify if a specified output field name is supported by this job,
-        or if it supports output fields at all.
+        or if it supports output fields at all. Disabled output field names
+        are seen as unsupported.
 
         Args:
             field_name (str): The name of the output field to set.
@@ -1880,10 +1883,14 @@ class JobBase:
         Raises:
             TypeError: Output fields aren't supported for this job,
               or `field_name` is not a string.
+              ValueError: The specified field name was marked as disabled.
             LookupError: The specified field name is not defined by this job.
+
+        Returns:
+            bool: True/False
         """
 
-        if not self.OUTPUT_FIELDS:
+        if self.OUTPUT_FIELDS is None:
             if raise_exceptions:
                 raise TypeError(
                     f"'{self.__class__.__name__}' class does not"
@@ -1891,7 +1898,7 @@ class JobBase:
                 )
             return False
 
-        value = getattr(self.OUTPUT_FIELDS, field_name, default=None)
+        value = getattr(self.OUTPUT_FIELDS, field_name, None)
 
         if value is None:
             if raise_exceptions:
@@ -1910,10 +1917,11 @@ class JobBase:
             return False
 
         elif value == "DISABLED":
-            raise ValueError(
-                f"the field name '{field_name}' has been marked as disabled by this "
-                "job class"
-            )
+            if raise_exceptions:
+                raise ValueError(
+                    f"the output field name '{field_name}' has been marked as disabled"
+                )
+            return False
 
         return True
 
@@ -1921,7 +1929,8 @@ class JobBase:
         self, queue_name: str, raise_exceptions=False
     ) -> bool:
         """Verify if a specified output queue name is supported by this job,
-        or if it supports output queues at all.
+        or if it supports output queues at all. Disabled output queue names
+        are seen as unsupported.
 
         Args:
             queue_name (str): The name of the output queue to set.
@@ -1931,9 +1940,13 @@ class JobBase:
         Raises:
             TypeError: Output queues aren't supported for this job,
               or `queue_name` is not a string.
+            ValueError: The specified queue name was marked as disabled.
             LookupError: The specified queue name is not defined by this job.
+
+        Returns:
+            bool: True/False
         """
-        if not self.OUTPUT_QUEUES:
+        if self.OUTPUT_QUEUES is None:
             if raise_exceptions:
                 raise TypeError(
                     f"'{self.__class__.__name__}' class does not"
@@ -1941,29 +1954,30 @@ class JobBase:
                 )
             return False
 
-        value = getattr(self.OUTPUT_QUEUES, queue_name, default=None)
+        value = getattr(self.OUTPUT_QUEUES, queue_name, None)
 
         if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
-                        f"field name '{queue_name}' is not defined in"
+                        f"queue name '{queue_name}' is not defined in"
                         f" 'OUTPUT_QUEUES' class namespace of "
                         f"'{self.__class__.__name__}' class"
                     )
                     if isinstance(queue_name, str)
                     else TypeError(
-                        f"'field_name' argument must be of type str,"
+                        f"'queue_name' argument must be of type str,"
                         f" not {queue_name.__class__.__name__}"
                     )
                 )
             return False
 
         elif value == "DISABLED":
-            raise ValueError(
-                f"the field name '{queue_name}' has been marked as disabled by this "
-                "job class"
-            )
+            if raise_exceptions:
+                raise ValueError(
+                    f"the output queue name '{queue_name}' has been marked as disabled"
+                )
+            return False
 
         return True
 
@@ -2018,18 +2032,21 @@ class JobBase:
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
         if queue_name not in self._output_queues:
-            self._output_queues[queue_name] = []
+            self._output_queues[queue_name] = queue = []
+            for proxy in self._output_queue_proxies:
+                proxy._new_output_queue_alert(queue_name, queue)
 
         queue_entries: list = self._output_queues[queue_name]
         queue_entries.append(value)
 
-        for fut, cancel_if_cleared in self._output_queue_futures[queue_name]:
-            if not fut.cancelled():
-                fut.set_result(value)
+        if queue_name in self._output_queue_futures:
+            for fut, cancel_if_cleared in self._output_queue_futures[queue_name]:
+                if not fut.cancelled():
+                    fut.set_result(value)
 
-        self._output_queue_futures[queue_name].clear()
+            self._output_queue_futures[queue_name].clear()
 
-    def get_output_field(self, field_name: str, default=UNSET) -> Any:
+    def get_output_field(self, field_name: str, default=UNSET, /) -> Any:
         """Get the value of a specified output field.
 
         Args:
@@ -2050,18 +2067,23 @@ class JobBase:
             object: The output field value.
         """
 
-        if not self.OUTPUT_FIELDS:
+        if self.OUTPUT_FIELDS is None:
             if default is UNSET:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
 
-        elif getattr(self.OUTPUT_FIELDS, field_name, default=None) in (None, "DISABLED"):
+        elif getattr(self.OUTPUT_FIELDS, field_name, None) in (None, "DISABLED"):
             if default is UNSET:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
 
         if field_name not in self._output_fields:
-            self._output_fields[field_name] = [UNSET, False]
+            if default is UNSET:
+                raise JobStateError(
+                    "An output field value has not been set for the field"
+                    f" '{field_name}'"
+                )
+            return default
 
         old_field_data_list: list = self._output_fields[field_name]
 
@@ -2117,17 +2139,18 @@ class JobBase:
         """
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
-        for output_queue_proxy in self._output_queue_proxies:
-            output_queue_proxy._queue_clear_alert(queue_name)
+        if queue_name in self._output_queues:
+            for output_queue_proxy in self._output_queue_proxies:
+                output_queue_proxy._output_queue_clear_alert(queue_name)
 
-        for fut, cancel_if_cleared in self._output_queue_futures[queue_name]:
-            if not fut.cancelled():
-                if cancel_if_cleared:
-                    fut.cancel(f"The job output queue '{queue_name}' was cleared")
-                else:
-                    fut.set_result(UNSET)
+            for fut, cancel_if_cleared in self._output_queue_futures[queue_name]:
+                if not fut.cancelled():
+                    if cancel_if_cleared:
+                        fut.cancel(f"The job output queue '{queue_name}' was cleared")
+                    else:
+                        fut.set_result(f"{queue_name}_CLEARED")
 
-        self._output_queues[queue_name].clear()
+            self._output_queues[queue_name].clear()
 
     def get_output_field_names(self) -> tuple[str]:
         """Get all output field names that this job supports.
@@ -2140,7 +2163,7 @@ class JobBase:
         if self.OUTPUT_FIELDS is None:
             return ()
         
-        return self.OUTPUT_FIELDS.get_all_output_names()
+        return self.OUTPUT_FIELDS.__output_names__
 
     def get_output_queue_names(self) -> tuple[str]:
         """Get all output queue names that this job supports.
@@ -2152,7 +2175,7 @@ class JobBase:
         if self.OUTPUT_QUEUES is None:
             return ()
         
-        return self.OUTPUT_QUEUES.get_all_output_names()
+        return self.OUTPUT_QUEUES.__output_names__
 
     def has_output_field_name(self, field_name: str) -> bool:
         """Whether the specified field name is supported as an
@@ -2171,7 +2194,7 @@ class JobBase:
                 f" not {field_name.__class__.__name__}"
             )
 
-        return field_name in self.OUTPUT_FIELDS.__frozen_output_names__
+        return self.verify_output_field_support(field_name)
 
     def has_output_queue_name(self, queue_name: str) -> bool:
         """Whether the specified queue name is supported as an
@@ -2190,7 +2213,7 @@ class JobBase:
                 f" not {queue_name.__class__.__name__}"
             )
 
-        return queue_name in self.OUTPUT_QUEUES.__frozen_output_names__
+        return self.verify_output_queue_support(queue_name)
 
     def output_field_is_set(self, field_name: str) -> bool:
         """Whether a value for the specified output field
@@ -2319,7 +2342,9 @@ class JobBase:
         self, method_name: str, raise_exceptions=False
     ) -> bool:
         """Verify if a job has a public method exposed under the specified name is
-        supported by this job, or if it supports public methods at all.
+        supported by this job, or if it supports public methods at all. Disabled
+        public method names are seen as unsupported.
+
 
         Args:
             method_name (str): The name of the public method.
@@ -2329,7 +2354,11 @@ class JobBase:
         Raises:
             TypeError: Output fields aren't supported for this job,
               or `field_name` is not a string.
-            LookupError: The specified field name is not defined by this job.
+            LookupError: No public method under the specified name is defined by this
+              job.
+        
+        Returns:
+            bool: True/False
         """
         if not self.PUBLIC_METHODS_CHAIN:
             if raise_exceptions:
@@ -2351,6 +2380,13 @@ class JobBase:
                         f"'method_name' argument must be of type str,"
                         f" not {method_name.__class__.__name__}"
                     )
+                )
+            return False
+
+        elif self.PUBLIC_METHODS_CHAIN.get("__disabled", False):
+            if raise_exceptions:
+                raise ValueError(
+                    f"the public method under the name '{method_name}' has been marked as disabled"
                 )
             return False
 
@@ -3098,3 +3134,7 @@ class JobManagerJob(IntervalJobBase):
 
 from . import proxies, groupings  # allow this module to finish initialization
 
+JobManagerProxy = proxies.JobManagerProxy
+JobProxy = proxies.JobProxy
+JobOutputQueueProxy = proxies.JobOutputQueueProxy
+OutputNameRecord = groupings.OutputNameRecord

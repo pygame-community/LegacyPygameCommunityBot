@@ -366,10 +366,10 @@ class _JobProxy:
             queue_name, raise_exceptions=raise_exceptions
         )
 
-    def get_output_field(self, field_name: str, default=UNSET):
+    def get_output_field(self, field_name: str, default=UNSET, /):
         return self.__j.get_output_field(field_name, default=default)
 
-    def get_output_queue_contents(self, queue_name: str, default=UNSET):
+    def get_output_queue_contents(self, queue_name: str, default=UNSET, /):
         return self.__j.get_output_queue_contents(queue_name, default=default)
 
     def get_output_field_names(self):
@@ -424,6 +424,8 @@ class _JobProxy:
 class JobOutputQueueProxy:
     """A helper class for job objects to share
     data with other jobs in a continuous manner.
+    This class should not be instantiated directly,
+    but instances can be requested from job obects that support it.
     """
 
     __slots__ = ("__j", "__job_proxy", "_output_queue_proxy_dict")
@@ -431,6 +433,7 @@ class JobOutputQueueProxy:
     def __init__(self, job: JobBase):
         self.__j = job
         self.__job_proxy = job._proxy
+        self.__output_queue_names = job.OUTPUT_QUEUES
         job_output_queues = self.__j._output_queues
         self._output_queue_proxy_dict: dict[
             str, list[Union[int, Optional[deque[Any]], list]]
@@ -448,9 +451,10 @@ class JobOutputQueueProxy:
         """
         return self.__job_proxy
 
-    def verify_queue_name(self, queue_name: str, raise_exceptions=False):
+    def verify_output_queue_support(self, queue_name: str, raise_exceptions=False):
         """Verify if a specified output queue name is supported by this
-        output queue proxy's job.
+        output queue proxy's job. Disabled output queue names are seen
+        as unsupported.
 
         Args:
             queue_name (str): The name of the output queue to set.
@@ -459,17 +463,24 @@ class JobOutputQueueProxy:
 
         Raises:
             TypeError: `queue_name` is not a string.
+            ValueError: The specified queue name was marked as disabled.
             LookupError: The specified queue name is not defined by this
               output queue proxy's job.
+            
+        Returns:
+            bool: True/False
         """
 
-        if queue_name not in self._output_queue_proxy_dict:
+        value = getattr(self.__output_queue_names, queue_name, None)
+
+        if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
-                        f"queue name '{queue_name}' is not defined in"
-                        f" 'OUTPUT_QUEUES' of the {self.__class__.__name__}"
-                        " class of this job output queue proxy"
+                        f"queue name '{queue_name}' is not defined in "
+                        f"'OUTPUT_QUEUES' class namespace of class "
+                        f"'{self.__j.__class__.__name__}' that this proxy "
+                        "references"
                     )
                     if isinstance(queue_name, str)
                     else TypeError(
@@ -479,9 +490,18 @@ class JobOutputQueueProxy:
                 )
             return False
 
+        elif value == "DISABLED":
+            if raise_exceptions:
+                raise ValueError(
+                    f"the output queue name '{queue_name}' has been marked as disabled"
+                )
+            return False
+
         return True
 
-    def config_queue(self, queue_name: str, use_rescue_buffer: Optional[bool] = None):
+
+
+    def config_output_queue(self, queue_name: str, use_rescue_buffer: Optional[bool] = None):
         """Configure settings for a speficied output queue.
 
         Args:
@@ -490,14 +510,14 @@ class JobOutputQueueProxy:
               the specified output queue, which automatically collects queue values
               when a job cleares a queue. Defaults to None.
         """
-        self.verify_queue_name(queue_name, raise_exceptions=True)
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
         if use_rescue_buffer:
             self._output_queue_proxy_dict[queue_name][1] = deque()
         elif use_rescue_buffer is False:
             self._output_queue_proxy_dict[queue_name][1] = None
 
-    def _queue_clear_alert(self, queue_name: str):
+    def _output_queue_clear_alert(self, queue_name: str):
         # Alerts OutputQueueProxy objects that their job
         # object is about to clear its output queues.
         queue_list = self._output_queue_proxy_dict[queue_name]
@@ -508,7 +528,7 @@ class JobOutputQueueProxy:
         queue_list[0] = 0
 
     
-    def _new_queue_alert(self, queue_name, queue_list):
+    def _new_output_queue_alert(self, queue_name: str, queue_list: list):
         self._output_queue_proxy_dict[queue_name] = [0, None, queue_list]
 
     def pop_output_queue(
@@ -532,7 +552,7 @@ class JobOutputQueueProxy:
             object: The oldest value, or a list of the specified amount of them, if
               possible.
         """
-        self.verify_queue_name(queue_name, raise_exceptions=True)
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
         queue_list = self._output_queue_proxy_dict[queue_name]
 
@@ -589,7 +609,7 @@ class JobOutputQueueProxy:
             bool: True/False
         """
 
-        self.verify_queue_name(queue_name, raise_exceptions=True)
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
         if ignore_rescue_buffer:
             return not self._output_queue_proxy_dict[queue_name][2]
@@ -597,7 +617,7 @@ class JobOutputQueueProxy:
         queue_list = self._output_queue_proxy_dict[queue_name]
         return not queue_list[1] and not queue_list[2]
 
-    def queue_is_exhausted(self, queue_name: str):
+    def output_queue_is_exhausted(self, queue_name: str):
         """Whether the specified output queue is exhausted,
         meaning that no new values are available.
 
@@ -616,8 +636,11 @@ class JobOutputQueueProxy:
             bool: True/False
         """
 
-        self.verify_queue_name(queue_name, raise_exceptions=True)
-        queue_list = self._output_queue_proxy_dict[queue_name]
+        self.verify_output_queue_support(queue_name, raise_exceptions=True)
+        queue_list = self._output_queue_proxy_dict.get(queue_name, UNSET)
+
+        if queue_list is UNSET:
+            return False
 
         if queue_list[2] and queue_list[0] >= len(queue_list[2]):
             return True

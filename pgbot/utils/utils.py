@@ -88,6 +88,7 @@ def class_getattr(
     cls: type,
     name: str,
     default: Any = UNSET,
+    /,
     filter_func: Callable[[Any], bool] = lambda obj: True,
     check_dicts_only: bool = False,
     _is_top_lvl=True,

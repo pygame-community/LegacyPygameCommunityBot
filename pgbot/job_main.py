@@ -240,7 +240,7 @@ class Main(IntervalJobBase, permission_level=JobPermissionLevels.HIGHEST):
             await self.manager.register_job(job)
 
         reg_delay_job = await self.manager.create_and_register_job(
-            RegisterDelayedJobGroup.HighPermLevel.OUTPUT_FIELDS,
+            RegisterDelayedJobGroup.HighPermLevel,
             10.0,
             self.manager.create_job(
                 messaging.MessageSend,

@@ -7,7 +7,6 @@ This file implements a job manager class for running and managing job objects
 at runtime. 
 """
 
-from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import datetime
@@ -863,7 +862,7 @@ class JobManager:
         _return_proxy=True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
         **kwargs,
-    ) -> proxies.JobProxy:
+    ) -> 'proxies.JobProxy':
         """Create an instance of a job class, and return it.
 
         Args:
@@ -895,7 +894,7 @@ class JobManager:
         return job
 
     def _get_job_from_proxy(
-        self, job_proxy: proxies.JobProxy
+        self, job_proxy: 'proxies.JobProxy'
     ) -> Union[EventJobBase, IntervalJobBase]:
         try:
             job = job_proxy._JobProxy__j
@@ -905,7 +904,7 @@ class JobManager:
 
     async def initialize_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         raise_exceptions: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ) -> bool:
@@ -956,7 +955,7 @@ class JobManager:
 
     async def register_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         start: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
@@ -1021,7 +1020,7 @@ class JobManager:
         _return_proxy: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
         **kwargs,
-    ) -> proxies.JobProxy:
+    ) -> 'proxies.JobProxy':
         """Create an instance of a job class, and register it to this `BotTaskManager`.
 
         Args:
@@ -1480,7 +1479,7 @@ class JobManager:
             self._remove_job(job)
 
     def has_job(
-        self, job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy]
+        self, job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy']
     ) -> bool:
         """Whether a job is contained in this job manager.
 
@@ -1517,7 +1516,7 @@ class JobManager:
         created_at: Optional[datetime.datetime] = None,
         _return_proxy: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
-    ) -> Optional[proxies.JobProxy]:
+    ) -> Optional['proxies.JobProxy']:
         """Find the first job that matches the given criteria specified as arguments,
         and return a proxy to it, otherwise return `None`.
 
@@ -1598,7 +1597,7 @@ class JobManager:
         stopped: Optional[bool] = None,
         _return_proxy: bool = True,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
-    ) -> tuple[proxies.JobProxy]:
+    ) -> tuple['proxies.JobProxy']:
         """Find jobs that match the given criteria specified as arguments,
         and return a tuple of proxy objects to them.
 
@@ -1807,7 +1806,7 @@ class JobManager:
 
     def start_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ) -> bool:
 
@@ -1840,7 +1839,7 @@ class JobManager:
 
     def restart_job(
         self,
-        job_or_proxy: Union[IntervalJobBase, EventJobBase, proxies.JobProxy],
+        job_or_proxy: Union[IntervalJobBase, EventJobBase, 'proxies.JobProxy'],
         stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ) -> bool:
@@ -1882,7 +1881,7 @@ class JobManager:
 
     def stop_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         stopping_timeout: Optional[float] = None,
         force: bool = False,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
@@ -1924,7 +1923,7 @@ class JobManager:
 
     def kill_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         stopping_timeout: Optional[float] = None,
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ) -> bool:
@@ -1966,7 +1965,7 @@ class JobManager:
 
     def guard_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
         """Place a guard on the given job object, to prevent unintended state
@@ -2012,7 +2011,7 @@ class JobManager:
 
     def unguard_job(
         self,
-        job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy],
+        job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy'],
         _invoker: Optional[Union[EventJobBase, IntervalJobBase]] = None,
     ):
         """Remove the guard on the given job object, to prevent unintended state
@@ -2069,7 +2068,7 @@ class JobManager:
         job._unguard_futures.clear()
 
     def __contains__(
-        self, job_or_proxy: Union[EventJobBase, IntervalJobBase, proxies.JobProxy]
+        self, job_or_proxy: Union[EventJobBase, IntervalJobBase, 'proxies.JobProxy']
     ):
         job = (
             self._get_job_from_proxy(job_or_proxy)
