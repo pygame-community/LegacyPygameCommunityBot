@@ -1,3 +1,4 @@
+# type: ignore
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
@@ -39,7 +40,6 @@ class MessagingTest1(ClientEventJobBase):
     async def on_run(self, event: events.OnMessageBase, *args, **kwargs):
         if isinstance(event, events.OnMessage):
             if event.message.channel == self.data.target_channel:
-                event: events.OnMessage
                 if event.message.content.lower().startswith(("hi", "hello")):
                     await self.data.target_channel.send(
                         f"Hi, {event.message.author.mention}"
@@ -251,14 +251,16 @@ class Main(IntervalJobBase, permission_level=JobPermissionLevels.HIGHEST):
 
         print(reg_delay_job)
 
-        await asyncio.sleep(3)
+        successes = await reg_delay_job.run_public_method(
+            RegisterDelayedJobGroup.HighPermLevel.PublicMethods.get_successes_async
+        )
 
-        self.manager.kill_job(reg_delay_job)
+        print(successes)
 
         if not self.manager.job_scheduling_is_initialized():
             await self.manager.wait_for_job_scheduling_initialization()
 
-        await self.manager.create_job_schedule(
+        test_sched_id = await self.manager.create_job_schedule(
             messaging.MessageSend,
             timestamp=datetime.datetime.now(),
             recur_interval=datetime.timedelta(seconds=10),
@@ -279,6 +281,8 @@ class Main(IntervalJobBase, permission_level=JobPermissionLevels.HIGHEST):
                 content="Say 'I am cool'",
             ),
         )
+
+        await self.manager.remove_job_schedule(test_sched_id)
 
         msg_event: events.OnMessage = await self.manager.wait_for_event(
             events.OnMessage,

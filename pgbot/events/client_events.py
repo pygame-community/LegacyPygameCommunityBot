@@ -1,3 +1,4 @@
+# type: ignore
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
@@ -6,7 +7,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file implements wrapper classes used to capture Discord Gateway events.
 All classes inherit from `ClientEvent`, which inherits from `BaseEvents`. 
 """
-
 from __future__ import annotations
 import asyncio
 from collections import deque

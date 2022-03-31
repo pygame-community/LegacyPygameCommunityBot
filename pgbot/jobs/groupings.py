@@ -7,9 +7,10 @@ This file implements a base class for grouping together job classes
 into class namespaces.
 """
 
-from typing import Optional, Type, Union
+from tkinter import DISABLED
+from typing import Any, Callable, Generic, Literal, Optional, Type, Union
 
-from pgbot.utils.utils import class_getattr_unique, class_getattr
+from pgbot.common import UNSET
 
 from . import proxies
 from .jobs import JobBase
@@ -17,7 +18,10 @@ from .jobs import JobBase
 
 class JobGroup:
     """A base class for job groups, which are class namespaces in which job classes can
-    be defined.
+    be defined. A JobGroup subclass should be a direct subclass of this base class.
+    Inheritance of job classes defined in a superclass job group that inherits from
+    this class is not supported, as the set of jobs in a job group are not transferrable
+    to subclasses.
     """
 
     __frozen_job_class_members__ = frozenset()
@@ -25,6 +29,9 @@ class JobGroup:
 
     def __init_subclass__(cls):
         members = []
+
+        if cls.__base__ is not JobGroup:
+            raise ValueError("subclassing subclasses of JobGroup is not supported")
 
         for obj in cls.__dict__.values():
             if isinstance(obj, type) and issubclass(obj, JobBase):
@@ -76,18 +83,85 @@ class JobGroup:
         return issubclass(job_cls, cls.__job_class_members__)
 
 
-class OutputNameRecord:
-    """A custom class that acts like an extendable enum of strings,
-    which is used for defining supported types of output fields, queues,
-    public methods and more within job classes. A class attribute of a subclass
-    of this class that begins with an underscore is automatically ignored.
+class NameRecord:
+    """A base class that acts like an extendable enum of strings, which stores
+    variables with string values in its class namespace. Variables starting with
+    an underscore are automatically ignored. Variables can be defined without
+    assignment by annotating them, in which case their value defaults to their name.
     """
 
-    __output_names__: tuple[str] = ()
-    __frozen_output_names__: frozenset[str] = frozenset()
+    __record_names__: tuple[str] = tuple()
+    __frozen_record_names__: frozenset[str] = frozenset()
+
+    def __init_subclass__(cls):
+
+        for key, obj in cls.__dict__.items():
+            if key.startswith("_"):
+                continue
+
+            if not isinstance(obj, str):
+                TypeError(
+                    "can only set NameRecord variables to strings, bare "
+                    "NameRecord variable definitions whose value should "
+                    "match their variable name must be annotations"
+                )
+
+        for key in cls.__dict__.get("__annotations__", ()):
+            if key.startswith("_") or key in cls.__dict__:
+                continue
+
+            setattr(cls, key, key)
+
+        cls.__record_names__ = cls.get_all_names()
+        cls.__frozen_record_names__ = frozenset(cls.__record_names__)
+
+    def __new__(cls):
+        raise TypeError("cannot instantiate a NameRecord")
+
+    @classmethod
+    def has_name(
+        cls,
+        name: str,
+        check_bases: bool = True,
+    ):
+        if not isinstance(name, str):
+            raise TypeError("argument 'name' must be a string")
+        elif name.startswith("_"):
+            return False
+
+        if check_bases:
+            if name in cls.__frozen_record_names__:
+                return isinstance(getattr(cls, name, None), str)
+            return False
+
+        return name in cls.__dict__ and isinstance((value := cls.__dict__[name]), str)
+
+    @classmethod
+    def get_all_names(cls):
+        if cls.__record_names__ is not None:
+            return cls.__record_names__
+
+        return tuple(
+            name
+            for name in dir(cls)
+            if not name.startswith("_")
+            and isinstance((value := getattr(cls, name, None)), str)
+        )
+
+
+class OutputNameRecord(NameRecord):
+    """A subclass of NameRecord used for defining names of output fields
+    and queues in job classes. Unlike NameRecord, this subclass does not
+    allow assigments to variables other than 'DISABLED', which is used
+    for marking inherited output types as disabled within job classes.
+    Additionally, all annotated must be annotated with the 'str' type
+    or 'Literal['DISABLED']', which automatically assigns 'DISABLED'.
+    """
 
     def __init_subclass__(cls):
         bases_dir_set = set().union(*(dir(base_cls) for base_cls in cls.__bases__))
+
+        disabled_type_hint = Literal["DISABLED"]
 
         for key, obj in cls.__dict__.items():
             if key.startswith("_"):
@@ -105,24 +179,30 @@ class OutputNameRecord:
                 setattr(cls, key, "DISABLED")
             else:
                 TypeError(
-                    "can only set output name variables to the 'DISABLED' string, bare ",
-                    "output name variable definitions must be annotations with the 'str' type",
+                    "can only set output name variables to the 'DISABLED' string, "
+                    "bare output name variable definitions must be annotations with "
+                    "the 'str' type or 'Literal['DISABLED']'"
                 )
 
-        for key, anno in cls.__annotations__.items():
+        for key, anno in cls.__dict__.get("__annotations__", {}).items():
             if key.startswith("_") or key in cls.__dict__:
                 continue
 
-            if anno not in (str, "str"):
-                raise ValueError("only annotations with the 'str' type are supported")
+            if anno not in (str, "str", disabled_type_hint):
+                raise ValueError(
+                    "only annotations with the 'str' type or 'Literal['DISABLED']' "
+                    "are supported"
+                )
+            elif anno == disabled_type_hint:
+                setattr(cls, key, "DISABLED")
             else:
                 setattr(cls, key, key)
 
-        cls.__output_names__ = cls.get_all_output_names()
-        cls.__frozen_output_names__ = frozenset(cls.__output_names__)
+        cls.__record_names__ = cls.get_all_names()
+        cls.__frozen_record_names__ = frozenset(cls.__record_names__)
 
     @classmethod
-    def has_output_name(
+    def has_name(
         cls, name: str, check_bases: bool = True, include_disabled: bool = True
     ):
         if not isinstance(name, str):
@@ -131,12 +211,15 @@ class OutputNameRecord:
             return False
 
         if check_bases:
-            result = getattr(cls, name, None)
-            return (
-                (isinstance(result, str) and result in (name, "DISABLED"))
-                if include_disabled
-                else (isinstance(result, str) and result == name)
-            )
+            if name in cls.__frozen_record_names__:
+                result = getattr(cls, name, None)
+                return (
+                    (isinstance(result, str) and result in (name, "DISABLED"))
+                    if include_disabled
+                    else (isinstance(result, str) and result == name)
+                )
+
+            return False
 
         return name in cls.__dict__ and (
             name in (cls.__dict__[name], "DISABLED")
@@ -145,9 +228,10 @@ class OutputNameRecord:
         )
 
     @classmethod
-    def output_name_is_disabled(cls, name: str):
-        """Whether the topmost occurence of the specified
-        output name has been marked as disabled.
+    def name_is_disabled(cls, name: str):
+        """Whether the topmost occurence in this OutputRecordName subclass
+        of the specified output name has been marked as disabled, which
+        means that the value of the name equals 'DISABLED'.
 
         Args:
             name (str): The output name.
@@ -164,24 +248,31 @@ class OutputNameRecord:
         elif name.startswith("_"):
             raise ValueError("output names cannot start with underscores")
 
-        value = getattr(cls, name, None)
-
-        if value is None:
+        if name not in cls.__frozen_record_names__:
             raise LookupError(
                 "the specified output name is not contained in this output name class or any of its bases"
             )
 
-        return value == "DISABLED"
+        return getattr(cls, name, None) == "DISABLED"
 
     @classmethod
-    def get_all_output_names(cls, include_disabled: bool = True):
-        if include_disabled and cls.__output_names__ is not None:
-            return cls.__output_names__
+    def get_all_names(cls, include_disabled: bool = True):
+        if include_disabled and cls.__record_names__ is not None:
+            return cls.__record_names__
 
-        return tuple(
-            name
-            for name in dir(cls)
-            if not name.startswith("_")
-            and isinstance((value := getattr(cls, name)), str)
-            and value != "DISABLED"
+        return (
+            tuple(
+                name
+                for name in dir(cls)
+                if not name.startswith("_")
+                and isinstance((value := getattr(cls, name, None)), str)
+            )
+            if include_disabled
+            else tuple(
+                name
+                for name in dir(cls)
+                if not name.startswith("_")
+                and isinstance((value := getattr(cls, name, None)), str)
+                and value != "DISABLED"
+            )
         )

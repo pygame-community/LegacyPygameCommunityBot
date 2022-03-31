@@ -6,13 +6,15 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This module implements utility job classes. 
 """
 
+from ast import arg
 import asyncio
 from collections import deque
-from typing import Optional
+from typing import Any, Callable, Coroutine, Literal, Optional, Union
 from pgbot.jobs import IntervalJobBase, JobProxy, EventJobBase, JobPermissionLevels
 from pgbot import events
 from pgbot import serializers as serials
-from pgbot.jobs.groupings import JobGroup, OutputNameRecord
+from pgbot.jobs.groupings import JobGroup, NameRecord, OutputNameRecord
+from pgbot.jobs.jobs import publicjobmethod
 from . import messaging
 
 
@@ -59,15 +61,19 @@ class RegisterDelayedJobGroup(JobGroup):
     """
 
     class _RegisterDelayedJob(IntervalJobBase):
-        class OUTPUT_FIELDS(OutputNameRecord):
+        class OutputFields(OutputNameRecord):
             success_failure_tuple: str
             """A tuple containing two tuples,
             with the successfully registered job proxies in the
             first one and the failed proxies in the second.
             """
 
-        class OUTPUT_QUEUES(OutputNameRecord):
+        class OutputQueues(OutputNameRecord):
             successes: str
+
+        class PublicMethods(NameRecord):
+            get_successes_async: Optional[Callable[[], Coroutine]]
+            """get successes lol"""
 
         DEFAULT_COUNT = 1
 
@@ -82,6 +88,7 @@ class RegisterDelayedJobGroup(JobGroup):
             self.data.delay = delay
             self.data.jobs = deque(job_proxies)
             self.data.success_jobs = []
+            self.data.success_futures = []
             self.data.failure_jobs = []
 
         async def on_run(self):
@@ -96,29 +103,54 @@ class RegisterDelayedJobGroup(JobGroup):
                     self.data.success_jobs.append(job_proxy)
                     self.push_output_queue("successes", job_proxy)
 
+            success_jobs_tuple = tuple(self.data.success_jobs)
+
             self.set_output_field(
                 "success_failure_tuple",
-                (tuple(self.data.success_jobs), tuple(self.data.failure_jobs)),
+                (success_jobs_tuple, tuple(self.data.failure_jobs)),
             )
+
+            for fut in self.data.success_futures:
+                if not fut.cancelled():
+                    fut.set_result(success_jobs_tuple)
+
+        @publicjobmethod(is_async=True)
+        def get_successes_async(self):
+            loop = asyncio.get_event_loop()
+            fut = loop.create_future()
+            self.data.success_futures.append(fut)
+            return asyncio.wait_for(fut, None)
 
         async def on_stop(self):
             self.COMPLETE()
 
     class MediumPermLevel(
-        _RegisterDelayedJob, permission_level=JobPermissionLevels.MEDIUM
+        _RegisterDelayedJob,
+        scheduling_identifier="8d2330f4-7a2a-4fd1-8144-62ca57d4799c",
+        permission_level=JobPermissionLevels.MEDIUM,
     ):
         pass
 
-    class HighPermLevel(_RegisterDelayedJob, permission_level=JobPermissionLevels.HIGH):
+    class HighPermLevel(
+        _RegisterDelayedJob,
+        scheduling_identifier="129f8662-f72d-4ee3-81ea-f302a15b2cca",
+        permission_level=JobPermissionLevels.HIGH,
+    ):
         pass
 
     class HighestPermLevel(
-        _RegisterDelayedJob, permission_level=JobPermissionLevels.HIGHEST
+        _RegisterDelayedJob,
+        scheduling_identifier="6b7e5a87-1727-4f4b-ae89-418f4e90f3d4",
+        permission_level=JobPermissionLevels.HIGHEST,
     ):
         pass
 
 
-class MethodCallJob(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST):
+class MethodCallJob(
+    IntervalJobBase,
+    scheduling_identifier="7d2fee26-d8b9-4e93-b761-4d152d355bae",
+    permission_level=JobPermissionLevels.LOWEST,
+):
     """A job class for calling the method of a specified name on an object given as
     argument.
 
@@ -129,7 +161,7 @@ class MethodCallJob(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST
         'output': The returned output of the method call.
     """
 
-    class OUTPUT_FIELDS(OutputNameRecord):
+    class OutputFields(OutputNameRecord):
         output: str
         "The returned output of the method call."
 
@@ -141,7 +173,7 @@ class MethodCallJob(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST
         instance: object,
         method_name: str,
         is_async: bool = False,
-        instance_args: Optional[tuple] = (),
+        instance_args: tuple[Any, ...] = (),
         instance_kwargs: Optional[dict] = None,
     ):
 
@@ -155,7 +187,7 @@ class MethodCallJob(IntervalJobBase, permission_level=JobPermissionLevels.LOWEST
             getattr(instance, method_name)
 
         self.data.instance_args = list(instance_args)
-        self.data.instance_kwargs = instance_kwargs
+        self.data.instance_kwargs = instance_kwargs or {}
 
     async def on_init(self):
         if isinstance(self.data.instance, serials.BaseSerializer):

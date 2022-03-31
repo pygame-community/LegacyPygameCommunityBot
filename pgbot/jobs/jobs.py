@@ -8,7 +8,10 @@ asynchronous task execution system.
 """
 
 from abc import ABC
+import abc
 import asyncio
+import functools
+from optparse import Option
 from aiohttp import ClientError
 from collections import ChainMap, deque
 from contextlib import contextmanager
@@ -20,22 +23,25 @@ import re
 import sys
 import time
 from types import FunctionType, SimpleNamespace
-from typing import Any, Awaitable, Callable, Coroutine, Optional, Type, Union
+from typing import Any, Awaitable, Callable, Coroutine, Optional, Type, TypeVar, Union
 
 import discord
 from discord.ext import tasks
+from matplotlib import collections
 
 from pgbot.utils import utils
 from pgbot import common, events
-from pgbot.common import UNSET, _UnsetType
+from pgbot.common import STANDARD_JOB_IDENTIFIERS, UNSET, _UnsetType
 
 _JOB_CLASS_MAP = {}
 # A dictionary of all Job subclasses that were created. Do not access outside of this module.
 
+_JOB_CLASS_SCHEDULING_MAP = {}
 
-def get_job_class_from_id(
-    class_identifier: str, closest_match: bool = False
-) -> 'JobBase':
+
+def get_job_class_from_runtime_identifier(
+    class_identifier: str, default: Any = UNSET, /, closest_match: bool = False
+) -> "JobBase":
 
     name, timestamp_str = class_identifier.split("-")
 
@@ -46,107 +52,212 @@ def get_job_class_from_id(
             for ts_str in _JOB_CLASS_MAP[name]:
                 return _JOB_CLASS_MAP[name][ts_str]["class"]
 
-    raise KeyError(
-        f"cannot find job class with an identifier of "
-        f"'{class_identifier}' in the job class registry"
-    )
+    if default is UNSET:
+        raise LookupError(
+            f"cannot find job class with an identifier of "
+            f"'{class_identifier}' in the job class registry"
+        )
+    return default
 
 
-def get_job_class_id(cls: Type['JobBase'], raise_exceptions=True) -> Optional[str]:
+def get_job_class_from_scheduling_identifier(
+    class_scheduling_identifier: str,
+    default: Any = UNSET,
+    /,
+) -> Union["JobBase", Any]:
 
-    if raise_exceptions and not issubclass(cls, JobBase):
-        raise TypeError("argument 'cls' must be a subclass of a job base class")
+    if class_scheduling_identifier in _JOB_CLASS_SCHEDULING_MAP:
+        return _JOB_CLASS_SCHEDULING_MAP[class_scheduling_identifier]
+
+    if default is UNSET:
+        raise KeyError(
+            f"cannot find job class with a scheduling identifier of "
+            f"'{class_scheduling_identifier}'in the job class registry for "
+            "schedulable classes"
+        )
+
+    return default
+
+
+def get_job_class_scheduling_identifier(
+    cls: Type["JobBase"],
+    default: Any = UNSET,
+    /,
+) -> Union[str, Any]:
+    """Get a job class by its scheduling identifier string. This is the safe way
+    of looking up job class scheduling identifiers.
+
+    Args:
+        cls (Type[JobBase]): The job class whose identifier should be fetched.
+        default (Any): A default value which will be returned if this function
+          fails to produce the desired output. If omitted, exceptions will be
+          raised.
+
+    Raises:
+        TypeError: 'cls' does not inherit from a job base class.
+        LookupError: The given job class does not exist in the job class registry.
+          This exception should not occur if job classes inherit their base classes
+          correctly.
+
+    Returns:
+        str: The string identifier.
+    """
+
+    if not issubclass(cls, JobBase):
+        if default is UNSET:
+            raise TypeError("argument 'cls' must be a subclass of a job base class")
+        return default
+
+    try:
+        class_scheduling_identifier = cls._SCHEDULING_IDENTIFIER
+    except AttributeError:
+        if default is UNSET:
+            raise TypeError(
+                "argument 'cls' must be a subclass of a job base class"
+            ) from None
+        return default
+    else:
+        if class_scheduling_identifier is None:
+            if default is UNSET:
+                raise TypeError(f"job class '{cls.__qualname__}' is not schedulable")
+
+    if (
+        class_scheduling_identifier in _JOB_CLASS_SCHEDULING_MAP
+        and _JOB_CLASS_SCHEDULING_MAP[class_scheduling_identifier] is cls
+    ):
+        return class_scheduling_identifier
+
+    if default is UNSET:
+        raise LookupError(
+            f"The given job class does not exist in the job class registry for "
+            "schedulable classes"
+        )
+
+    return default
+
+
+def get_job_class_runtime_identifier(
+    cls: Type["JobBase"],
+    default: Any = UNSET,
+    /,
+) -> Union[str, Any]:
+    """Get a job class by its runtime identifier string. This is the safe way
+    of looking up job class runtime identifiers.
+
+    Args:
+        cls (Type[JobBase]): The job class whose identifier should be fetched.
+        default (Any): A default value which will be returned if this function
+          fails to produce the desired output. If omitted, exceptions will be
+          raised.
+
+    Raises:
+        TypeError: 'cls' does not inherit from a job base class.
+        LookupError: The given job class does not exist in the job class registry.
+          This exception should not occur if job classes inherit their base classes
+          correctly.
+
+    Returns:
+        str: The string identifier.
+    """
+
+    if not issubclass(cls, JobBase):
+        if default is UNSET:
+            raise TypeError("argument 'cls' must be a subclass of a job base class")
+        return default
 
     try:
         class_identifier = cls._IDENTIFIER
     except AttributeError:
-        raise TypeError(
-            "invalid job class, must be" " a subclass of a job base class"
-        ) from None
+        if default is UNSET:
+            raise TypeError(
+                "argument 'cls' must be a subclass of a job base class"
+            ) from None
+        return default
 
     try:
         name, timestamp_str = class_identifier.split("-")
-    except ValueError:
-        if raise_exceptions:
+    except (ValueError, AttributeError):
+        if default is UNSET:
             raise ValueError(
                 "invalid identifier found in the given job class"
             ) from None
-        return
+        return default
 
     if name in _JOB_CLASS_MAP:
         if timestamp_str in _JOB_CLASS_MAP[name]:
             if _JOB_CLASS_MAP[name][timestamp_str]["class"] is cls:
                 return class_identifier
             else:
-                if raise_exceptions:
+                if default is UNSET:
                     raise ValueError(
                         f"The given job class has the incorrect identifier"
                     )
         else:
-            if raise_exceptions:
+            if default is UNSET:
                 ValueError(
                     f"The given job class is registered under "
                     "a different identifier in the job class registry"
                 )
 
-    if raise_exceptions:
+    if default is UNSET:
         raise LookupError(
             f"The given job class does not exist in the job class registry"
         )
 
+    return default
+
 
 def get_job_class_permission_level(
-    cls: Type['JobBase'], raise_exceptions=True
-) -> Optional['JobPermissionLevels']:
+    cls: Type["JobBase"],
+    default: Any = UNSET,
+    /,
+) -> "JobPermissionLevels":
+
     if not issubclass(cls, JobBase):
-        if raise_exceptions:
+        if default is UNSET:
             raise TypeError("argument 'cls' must be a subclass of a job base class")
-        return
+        return default
 
     try:
         class_identifier = cls._IDENTIFIER
     except AttributeError:
-        if raise_exceptions:
+        if default is UNSET:
             raise TypeError(
-                "invalid job class, must be "
-                "a subclass of a job base class with an identifier"
+                "argument 'cls' must be a subclass of a job base class"
             ) from None
-        return
+        return default
 
     try:
         name, timestamp_str = class_identifier.split("-")
-    except ValueError:
-        if raise_exceptions:
+    except (ValueError, AttributeError):
+        if default is UNSET:
             raise ValueError(
                 "invalid identifier found in the given job class"
             ) from None
-        return
-
-    if issubclass(cls, _SystemLevelMixinJobBase):
-        return JobPermissionLevels.SYSTEM
+        return default
 
     if name in _JOB_CLASS_MAP:
         if timestamp_str in _JOB_CLASS_MAP[name]:
             if _JOB_CLASS_MAP[name][timestamp_str]["class"] is cls:
                 return _JOB_CLASS_MAP[name][timestamp_str]["permission_level"]
             else:
-                if raise_exceptions:
+                if default is UNSET:
                     raise ValueError(
                         f"The given job class has the incorrect identifier"
                     )
-                return
         else:
-            if raise_exceptions:
+            if default is UNSET:
                 ValueError(
                     f"The given job class is registered under "
                     "a different identifier in the job class registry"
                 )
-            return
 
-    if raise_exceptions:
+    if default is UNSET:
         raise LookupError(
             f"The given job class does not exist in the job class registry"
         )
+
+    return default
 
 
 DEFAULT_JOB_EXCEPTION_WHITELIST = (
@@ -338,7 +449,7 @@ class JobPermissionLevels(IntEnum):
     applicable to job objects.
     """
 
-    LOWEST = 0
+    LOWEST = 1
     """The lowest permission level.
     An Isolated job which has no information about other jobs being executed.
     Permissions:
@@ -473,8 +584,6 @@ class JobNamespace(SimpleNamespace):
 
 
 class _SystemLevelMixinJobBase(ABC):
-    """An abstract base class for marking job classes as system-level."""
-
     pass
 
 
@@ -486,7 +595,7 @@ class _SingletonMixinJobBase(ABC):
     pass
 
 
-def singletonjob(cls: 'JobBase') -> 'JobBase':
+def singletonjob(cls: Type["JobBase"]) -> Type["JobBase"]:
     """A class decorator for marking job classes as singletons,
     meaning that their instances can only be scheduled one at a time in a job manager.
     """
@@ -495,36 +604,63 @@ def singletonjob(cls: 'JobBase') -> 'JobBase':
     return cls
 
 
-def _sysjob(cls: 'JobBase') -> 'JobBase':
-    """A class decorator for marking job classes as system-level."""
+def _sysjob(cls: Type["JobBase"]) -> Type["JobBase"]:
     if issubclass(cls, JobBase):
         _SystemLevelMixinJobBase.register(cls)
-        cls.__init_subclass__()
+
+        name, created_timestamp_ns_str = cls._IDENTIFIER.split("-")
+
+        if name not in _JOB_CLASS_MAP:
+            _JOB_CLASS_MAP[name] = {}
+
+        _JOB_CLASS_MAP[name][created_timestamp_ns_str] = {
+            "class": cls,
+            "permission_level": JobPermissionLevels.SYSTEM,
+        }
+
+        cls._PERMISSION_LEVEL = JobPermissionLevels.SYSTEM
+
     return cls
 
 
-def publicjobmethod(disabled: bool = False) -> Callable[[Any], Any]:
-    """A simple decorator to expose a method as public to other job objects.
+def publicjobmethod(
+    func: Optional[Callable[[Any], Any]] = None,
+    is_async: Optional[bool] = None,
+    disabled: bool = False,
+) -> Callable[[Any], Any]:
+    """A special decorator to expose a method as public to other job objects.
+    Can be used as a decorator function with or without extra arguments.
 
     Args:
-        disabled (bool): Whether to mark this public job method as disabled.
+        func (Optional[Callable[[Any], Any]]): The function to mark as a public method.
+          disabled (bool): Whether to mark this public job method as disabled.
           Defaults to False.
+        is_async (Optional[bool]): An indicator for whether the returned value of the
+          public method should be awaited upon being called, either because of it being a
+          coroutine function or it returning an awaitable object. If set to `None`, it
+          will be checked for whether it is a coroutine function.
+          that the function will be checked.
+
     """
 
-    def inner_deco(func: Callable[...]):
+    def inner_deco(func: Callable[[Any], Any]):
         if isinstance(func, FunctionType):
             func.__public = True
-            if disabled:
-                func.__disabled = True
-            else:
-                func.__disabled = False
-        
+            func.__disabled = bool(disabled)
+            func.__is_async = (
+                is_async
+                if isinstance(is_async, bool)
+                else inspect.iscoroutinefunction(func)
+            )
             return func
-        
-        raise TypeError("argument 'func' must be a function")
+
+        raise TypeError("first decorator function argument must be a function")
+
+    if func is not None:
+        return inner_deco(func)
 
     return inner_deco
-        
+
 
 class CustomLoop(tasks.Loop):
     """A small subclass of `discord.ext.tasks.Loop`
@@ -622,17 +758,26 @@ class JobBase:
 
     _CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
     _IDENTIFIER = f"JobBase-{int(_CREATED_AT.timestamp()*1_000_000_000)}"
-    _PERMISSION_LEVEL = JobPermissionLevels.MEDIUM
+    _SCHEDULING_IDENTIFIER: Optional[str] = None
+    _PERMISSION_LEVEL: JobPermissionLevels = JobPermissionLevels.MEDIUM
 
-    PUBLIC_METHODS: Optional[dict[str, Callable[..., Any]]] = None
-    PUBLIC_METHODS_CHAIN: Optional[ChainMap[str, Callable[..., Any]]] = None
+    OutputFields: Optional[Union[Any, "groupings.OutputNameRecord"]] = None
+    OutputQueues: Optional[Union[Any, "groupings.OutputNameRecord"]] = None
+    PublicMethods: Optional[Union[Any, "groupings.NameRecord"]] = None
 
-    OUTPUT_FIELDS: Optional['groupings.OutputNameRecord'] = None
-    OUTPUT_QUEUES: Optional['groupings.OutputNameRecord'] = None
+    PUBLIC_METHODS_MAP: Optional[dict[str, Callable[..., Any]]] = None
+    PUBLIC_METHODS_CHAINMAP: Optional[ChainMap[str, Callable[..., Any]]] = None
 
     NAMESPACE_CLASS = JobNamespace
 
-    def __init_subclass__(cls, permission_level: Optional[JobPermissionLevels] = None):
+    def __init_subclass__(
+        cls,
+        scheduling_identifier: Optional[str] = None,
+        permission_level: Optional[JobPermissionLevels] = None,
+    ):
+
+        if getattr(cls, f"{cls.__qualname__}_INIT", False):
+            raise RuntimeError("This job class was already initialized.")
 
         cls._CREATED_AT = datetime.datetime.now(datetime.timezone.utc)
 
@@ -641,8 +786,8 @@ class JobBase:
         if is_system_job:
             permission_level = JobPermissionLevels.SYSTEM
 
-        name = cls.__name__
-        timestamp = f"{int(cls._CREATED_AT.timestamp()*1_000_000_000)}"
+        name = cls.__qualname__
+        created_timestamp_ns_str = f"{int(cls._CREATED_AT.timestamp()*1_000_000_000)}"
 
         if permission_level is not None:
             if isinstance(permission_level, JobPermissionLevels):
@@ -665,70 +810,109 @@ class JobBase:
         else:
             permission_level = JobBase._PERMISSION_LEVEL
 
-        cls._IDENTIFIER = f"{name}-{timestamp}"
+        if scheduling_identifier is not None:
+            if not isinstance(scheduling_identifier, str):
+                raise TypeError(
+                    "argument 'scheduling_identifier' must be a string unique to this job class"
+                )
+
+            elif scheduling_identifier in _JOB_CLASS_SCHEDULING_MAP:
+                raise ValueError(
+                    f"the given scheduling identifier for class '{cls.__qualname__}' "
+                    "must be unique to it and cannot be used by other job classes"
+                )
+
+            cls._SCHEDULING_IDENTIFIER = scheduling_identifier
+
+            _JOB_CLASS_SCHEDULING_MAP[scheduling_identifier] = cls
+
+        cls._IDENTIFIER = f"{name}-{created_timestamp_ns_str}"
 
         if name not in _JOB_CLASS_MAP:
             _JOB_CLASS_MAP[name] = {}
 
-        _JOB_CLASS_MAP[name][timestamp] = {
+        _JOB_CLASS_MAP[name][created_timestamp_ns_str] = {
             "class": cls,
             "permission_level": permission_level,
         }
 
-        if isinstance(cls.OUTPUT_FIELDS, type):
-            if not issubclass(cls.OUTPUT_FIELDS, groupings.OutputNameRecord):
-                if cls.OUTPUT_FIELDS.__base__ is not object:
-                    raise ValueError(
-                        "the 'OUTPUT_FIELDS' variable must be a subclass of 'groupings.OutputNameRecord' "
-                        "or an immediate subclass of object"
+        if isinstance(cls.OutputFields, type):
+            if not issubclass(cls.OutputFields, groupings.OutputNameRecord):
+                if cls.OutputFields.__base__ is not object:
+                    raise TypeError(
+                        "the 'OutputFields' variable must be a subclass of 'OutputNameRecord' "
+                        "or an immediate subclass of object that acts as a placeholder"
+                    )
+
+                cls.OutputFields = type(
+                    "OutputFields",
+                    (groupings.OutputNameRecord,),
+                    dict(**cls.OutputFields.__dict__),
+                )
+
+        if isinstance(cls.OutputQueues, type):
+            if not issubclass(cls.OutputQueues, groupings.OutputNameRecord):
+                if cls.OutputQueues.__base__ is not object:
+                    raise TypeError(
+                        "the 'OutputQueues' variable must be a subclass of 'OutputNameRecord' "
+                        "or an immediate subclass of object that acts as a placeholder"
+                    )
+
+                cls.OutputQueues = type(
+                    "OutputQueues",
+                    (groupings.OutputNameRecord,),
+                    dict(**cls.OutputQueues.__dict__),
+                )
+
+        if isinstance(cls.PublicMethods, type):
+            if not issubclass(cls.PublicMethods, groupings.NameRecord):
+                if cls.PublicMethods.__base__ is not object:
+                    raise TypeError(
+                        "the 'PublicMethods' variable must be a subclass of 'NameRecord' "
+                        "or an immediate subclass of object that acts as a placeholder"
                     )
 
                 bases = (
-                    groupings.OutputNameRecord,
+                    groupings.NameRecord,
                     *(
                         utils.class_getattr_unique(
                             cls,
-                            "OUTPUT_FIELDS",
-                            filter_func=lambda v: isinstance(v, groupings.OutputNameRecord),
-                        )
+                            "PublicMethods",
+                            filter_func=lambda v: isinstance(v, groupings.NameRecord),
+                            check_dicts_only=True,
+                        ),
                     ),
                 )
-                cls.OUTPUT_FIELDS = type(
-                    "OUTPUT_FIELDS", bases, dict(**cls.OUTPUT_FIELDS.__dict__)
+                cls.PublicMethods = type(
+                    "PublicMethods", bases, dict(**cls.PublicMethods.__dict__)
+                )
+            elif issubclass(cls.PublicMethods, groupings.OutputNameRecord):
+                raise TypeError(
+                    "the 'PublicMethods' variable must not be a subclass of "
+                    "'OutputNameRecord', but a subclass of 'NameRecord' "
+                    "or an immediate subclass of object that acts as a placeholder"
                 )
 
-        if isinstance(cls.OUTPUT_QUEUES, type):
-            if not issubclass(cls.OUTPUT_QUEUES, groupings.OutputNameRecord):
-                if cls.OUTPUT_QUEUES.__base__ is not object:
-                    raise ValueError(
-                        "the 'OUTPUT_QUEUES' variable must be a subclass of 'groupings.OutputNameRecord' "
-                        "or an immediate subclass of object that acts as a pllaceholder"
-                    )
-
-                bases = (
-                    groupings.OutputNameRecord,
-                    *(
-                        utils.class_getattr_unique(
-                            cls,
-                            "OUTPUT_QUEUES",
-                            filter_func=lambda v: isinstance(v, groupings.OutputNameRecord),
-                        )
-                    ),
-                )
-                cls.OUTPUT_QUEUES = type(
-                    "OUTPUT_QUEUES", bases, dict(**cls.OUTPUT_QUEUES.__dict__)
-                )
-
-        public_methods = {}
+        public_methods_map = {}
         for obj in cls.__dict__.values():
             if isinstance(obj, FunctionType) and "__public" in obj.__dict__:
-                public_methods[obj.__name__] = obj
+                public_methods_map[obj.__name__] = obj
 
-        cls.PUBLIC_METHODS = public_methods
-        cls.PUBLIC_METHODS_CHAIN = ChainMap(
-            public_methods,
-            *(utils.class_getattr_unique(cls, "PUBLIC_METHODS", filter_func=lambda v: isinstance(v, dict))),
+        cls.PUBLIC_METHODS_MAP = public_methods_map or None
+
+        mro_public_methods = utils.class_getattr_unique(
+            cls,
+            "PUBLIC_METHODS_MAP",
+            filter_func=lambda v: v and isinstance(v, dict),
+            check_dicts_only=True,
         )
+
+        if mro_public_methods:
+            cls.PUBLIC_METHODS_CHAINMAP = ChainMap(
+                *mro_public_methods,
+            )
+
+        setattr(cls, f"{cls.__qualname__}_INIT", True)
 
     def __init__(self):
         self._interval_secs = 0
@@ -737,8 +921,8 @@ class JobBase:
 
         self._loop_count = 0
 
-        self._manager: Optional['proxies.JobManagerProxy'] = None
-        self._creator: Optional[JobProxy] = None
+        self._manager: Optional["proxies.JobManagerProxy"] = None
+        self._creator: Optional["proxies.JobProxy"] = None
         self._created_at_ts = time.time()
         self._registered_at_ts = None
         self._completed_at_ts = None
@@ -747,17 +931,17 @@ class JobBase:
         self._schedule_identifier = None
         self._data = self.NAMESPACE_CLASS()
 
-        self._done_futures = []
+        self._done_futures: list[asyncio.Future] = []
         self._output_field_futures = None
 
         self._output_fields = None
-        self._output_queue_proxies: Optional[list[JobOutputQueueProxy]] = None
+        self._output_queue_proxies: Optional[list["proxies.JobOutputQueueProxy"]] = None
 
-        if self.OUTPUT_FIELDS is not None:
+        if self.OutputFields is not None:
             self._output_field_futures = {}
             self._output_fields = {}
 
-        if self.OUTPUT_QUEUES is not None:
+        if self.OutputQueues is not None:
             self._output_queue_proxies = []
             self._output_queue_futures = {}
             self._output_queues = {}
@@ -766,9 +950,9 @@ class JobBase:
 
         self._proxy = proxies.JobProxy(self)
 
-        self._unguard_futures: Optional[list] = None
+        self._unguard_futures: Optional[list[asyncio.Future]] = None
         self._guardian: Optional[JobBase] = None
-        self._guarded_job_proxies_dict: Optional[dict] = None
+        self._guarded_job_proxies_dict: Optional[dict[str, "proxies.JobProxy"]] = None
         # will be assigned by job manager
 
         self._is_being_guarded = False
@@ -809,6 +993,19 @@ class JobBase:
         self._running_since_ts: Optional[float] = None
         self._stopped_since_ts: Optional[float] = None
 
+    @classmethod
+    def schedulable(cls: Type["JobBase"]) -> bool:
+        """Whether this job class is schedulable, meaning that
+        it has a scheduling identifier.
+
+        Args:
+            cls (Type[JobBase]): The job class.
+
+        Returns:
+            bool: True/False
+        """
+        return bool(get_job_class_scheduling_identifier(cls, False))
+
     @property
     def identifier(self) -> str:
         return self._identifier
@@ -837,22 +1034,22 @@ class JobBase:
         return self._data
 
     @property
-    def manager(self) -> 'proxies.JobManagerProxy':
+    def manager(self) -> "proxies.JobManagerProxy":
         """The `JobManagerProxy` object bound to this job object."""
         return self._manager
 
     @property
-    def creator(self) -> 'proxies.JobProxy':
+    def creator(self) -> "proxies.JobProxy":
         """The `JobProxy` of the creator of this job object."""
         return self._creator
 
     @property
-    def guardian(self) -> 'proxies.JobProxy':
+    def guardian(self) -> "proxies.JobProxy":
         """The `JobProxy` of the current guardian of this job object."""
         return self._guardian
 
     @property
-    def proxy(self) -> 'proxies.JobProxy':
+    def proxy(self) -> "proxies.JobProxy":
         """The `JobProxy` object bound to this job object."""
         return self._proxy
 
@@ -985,7 +1182,7 @@ class JobBase:
 
                 self._guarded_job_proxies_dict.clear()
 
-            if self.OUTPUT_QUEUES is not None:
+            if self.OutputQueues is not None:
                 self._output_queue_proxies.clear()
 
             if self._told_to_complete:
@@ -1001,7 +1198,7 @@ class JobBase:
 
                 self._done_futures.clear()
 
-                if self.OUTPUT_FIELDS is not None:
+                if self.OutputFields is not None:
                     for field_name, fut_list in self._output_field_futures.items():
                         output = self._output_fields[field_name]
                         for fut in fut_list:
@@ -1012,7 +1209,7 @@ class JobBase:
 
                     self._output_field_futures.clear()
 
-                if self.OUTPUT_QUEUES is not None:
+                if self.OutputQueues is not None:
                     for fut_list in self._output_queue_futures.values():
                         for fut, cancel_if_cleared in fut_list:
                             if not fut.cancelled():
@@ -1031,7 +1228,7 @@ class JobBase:
 
                 self._done_futures.clear()
 
-                if self.OUTPUT_FIELDS is not None:
+                if self.OutputFields is not None:
                     for fut_list in self._output_field_futures.values():
                         for fut in fut_list:
                             if not fut.cancelled():
@@ -1044,7 +1241,7 @@ class JobBase:
 
                     self._output_field_futures.clear()
 
-                if self.OUTPUT_QUEUES is not None:
+                if self.OutputQueues is not None:
                     for fut_list in self._output_queue_futures.values():
                         for fut, cancel_if_cleared in fut_list:
                             if not fut.cancelled():
@@ -1175,7 +1372,7 @@ class JobBase:
 
     def get_stopping_reason(
         self,
-    ) -> Union[JobStopReasons.Internal, JobStopReasons.External]:
+    ) -> Optional[Union[JobStopReasons.Internal, JobStopReasons.External]]:
         """Get the reason this job is stopping, if it is the case.
 
         Returns:
@@ -1238,7 +1435,9 @@ class JobBase:
         if keep_default:
             self._task_loop.add_exception_type(*DEFAULT_JOB_EXCEPTION_WHITELIST)
 
-    def get_last_stopping_reason(self) -> Optional[JobStopReasons]:
+    def get_last_stopping_reason(
+        self,
+    ) -> Optional[Union[JobStopReasons.Internal, JobStopReasons.External]]:
         """Get the last reason this job object stopped, when applicable.
 
         Returns:
@@ -1590,7 +1789,7 @@ class JobBase:
             and not self._completed
         )
 
-    def alive_since(self) -> Optional[Exception]:
+    def alive_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object became alive, if available.
 
         Returns:
@@ -1636,7 +1835,7 @@ class JobBase:
         """
         return self._stopped
 
-    def stopped_since(self) -> bool:
+    def stopped_since(self) -> Optional[datetime.datetime]:
         """The last time at which this job object stopped, if available.
 
         Returns:
@@ -1748,7 +1947,9 @@ class JobBase:
         Returns:
             datetime.datetime: The time, if available.
         """
-        return self._completed_at_ts or self._killed_at_ts
+        ts = self._completed_at_ts or self._killed_at_ts
+        if ts is not None:
+            return datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
 
     def is_restarting(self) -> bool:
         """Whether this job is restarting.
@@ -1842,7 +2043,7 @@ class JobBase:
 
         return asyncio.wait_for(fut, timeout)
 
-    def get_output_queue_proxy(self) -> 'proxies.JobOutputQueueProxy':
+    def get_output_queue_proxy(self) -> "proxies.JobOutputQueueProxy":
         """Get a job output queue proxy object for more convenient
         reading of job output queues while this job is running.
 
@@ -1861,7 +2062,7 @@ class JobBase:
         elif self.done():
             raise JobStateError("this job object is already done and not alive")
 
-        if self.OUTPUT_QUEUES is not None:
+        if self.OutputQueues is not None:
             output_queue_proxy = proxies.JobOutputQueueProxy(self)
             self._output_queue_proxies.append(output_queue_proxy)
             return output_queue_proxy
@@ -1890,23 +2091,23 @@ class JobBase:
             bool: True/False
         """
 
-        if self.OUTPUT_FIELDS is None:
+        if self.OutputFields is None:
             if raise_exceptions:
                 raise TypeError(
-                    f"'{self.__class__.__name__}' class does not"
-                    f" implement or inherit an 'OUTPUT_FIELDS' class namespace"
+                    f"'{self.__class__.__qualname__}' class does not"
+                    f" implement or inherit an 'OutputFields' class namespace"
                 )
             return False
 
-        value = getattr(self.OUTPUT_FIELDS, field_name, None)
+        value = getattr(self.OutputFields, field_name, None)
 
         if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
                         f"field name '{field_name}' is not defined in"
-                        f" 'OUTPUT_FIELDS' class namespace of "
-                        f"'{self.__class__.__name__}' class"
+                        f" 'OutputFields' class namespace of "
+                        f"'{self.__class__.__qualname__}' class"
                     )
                     if isinstance(field_name, str)
                     else TypeError(
@@ -1946,23 +2147,23 @@ class JobBase:
         Returns:
             bool: True/False
         """
-        if self.OUTPUT_QUEUES is None:
+        if self.OutputQueues is None:
             if raise_exceptions:
                 raise TypeError(
-                    f"'{self.__class__.__name__}' class does not"
-                    f" implement or inherit an 'OUTPUT_QUEUES' class namespace"
+                    f"'{self.__class__.__qualname__}' class does not"
+                    f" implement or inherit an 'OutputQueues' class namespace"
                 )
             return False
 
-        value = getattr(self.OUTPUT_QUEUES, queue_name, None)
+        value = getattr(self.OutputQueues, queue_name, None)
 
         if value is None:
             if raise_exceptions:
                 raise (
                     LookupError(
                         f"queue name '{queue_name}' is not defined in"
-                        f" 'OUTPUT_QUEUES' class namespace of "
-                        f"'{self.__class__.__name__}' class"
+                        f" 'OutputQueues' class namespace of "
+                        f"'{self.__class__.__qualname__}' class"
                     )
                     if isinstance(queue_name, str)
                     else TypeError(
@@ -2067,12 +2268,12 @@ class JobBase:
             object: The output field value.
         """
 
-        if self.OUTPUT_FIELDS is None:
+        if self.OutputFields is None:
             if default is UNSET:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
 
-        elif getattr(self.OUTPUT_FIELDS, field_name, None) in (None, "DISABLED"):
+        elif getattr(self.OutputFields, field_name, None) in (None, "DISABLED"):
             if default is UNSET:
                 self.verify_output_field_support(field_name, raise_exceptions=True)
             return default
@@ -2160,10 +2361,10 @@ class JobBase:
             tuple: A tuple of the supported output fields.
         """
 
-        if self.OUTPUT_FIELDS is None:
-            return ()
-        
-        return self.OUTPUT_FIELDS.__output_names__
+        if self.OutputFields is None:
+            return tuple()
+
+        return self.OutputFields.__record_names__
 
     def get_output_queue_names(self) -> tuple[str]:
         """Get all output queue names that this job supports.
@@ -2172,10 +2373,10 @@ class JobBase:
         Returns:
             tuple: A tuple of the supported output queues.
         """
-        if self.OUTPUT_QUEUES is None:
-            return ()
-        
-        return self.OUTPUT_QUEUES.__output_names__
+        if self.OutputQueues is None:
+            return tuple()
+
+        return self.OutputQueues.__record_names__
 
     def has_output_field_name(self, field_name: str) -> bool:
         """Whether the specified field name is supported as an
@@ -2287,7 +2488,7 @@ class JobBase:
             raise JobStateError("this job object is already done and not alive.")
 
         fut = self._task_loop.loop.create_future()
-        
+
         if field_name not in self._output_field_futures:
             self._output_field_futures[field_name] = []
 
@@ -2356,19 +2557,20 @@ class JobBase:
               or `field_name` is not a string.
             LookupError: No public method under the specified name is defined by this
               job.
-        
+
         Returns:
             bool: True/False
         """
-        if not self.PUBLIC_METHODS_CHAIN:
+
+        if self.PUBLIC_METHODS_CHAINMAP is None:
             if raise_exceptions:
                 raise TypeError(
-                    f"'{self.__class__.__name__}' class does not"
+                    f"'{self.__class__.__qualname__}' class does not"
                     f" support any public methods"
                 )
             return False
 
-        elif method_name not in self.PUBLIC_METHODS_CHAIN:
+        elif method_name not in self.PUBLIC_METHODS_CHAINMAP:
             if raise_exceptions:
                 raise (
                     LookupError(
@@ -2383,10 +2585,11 @@ class JobBase:
                 )
             return False
 
-        elif self.PUBLIC_METHODS_CHAIN.get("__disabled", False):
+        elif getattr(self, method_name).__dict__.get("__disabled", False):
             if raise_exceptions:
                 raise ValueError(
-                    f"the public method under the name '{method_name}' has been marked as disabled"
+                    f"the public method of this job of class '{self.__class__.__qualname__} "
+                    f"under the name '{method_name}' has been marked as disabled"
                 )
             return False
 
@@ -2398,7 +2601,10 @@ class JobBase:
         Returns:
             tuple: A tuple of the names of the supported methods.
         """
-        return tuple(self.PUBLIC_METHODS_CHAIN.keys())
+        if self.PUBLIC_METHODS_CHAINMAP is None:
+            return tuple()
+
+        return tuple(self.PUBLIC_METHODS_CHAINMAP.keys())
 
     def has_public_method_name(self, method_name: str) -> bool:
         """Whether a public method under the specified name is supported by this job.
@@ -2416,7 +2622,7 @@ class JobBase:
                 f" not {method_name.__class__.__name__}"
             )
 
-        return method_name in self.PUBLIC_METHODS_CHAIN
+        return self.verify_public_method_suppport(method_name)
 
     def public_method_is_async(self, method_name: str) -> bool:
         """Whether a public method under the specified name is a coroutine function.
@@ -2430,11 +2636,9 @@ class JobBase:
 
         self.verify_public_method_suppport(method_name, raise_exceptions=True)
 
-        return inspect.iscoroutinefunction(
-            utils.chainmap_getitem(self.PUBLIC_METHODS_CHAIN, method_name)
-        )
+        return inspect.iscoroutinefunction(getattr(self, method_name))
 
-    def run_public_method(self, method_name: str, *args, **kwargs) -> Any:
+    def run_public_method(self, method_name, *args, **kwargs) -> Any:
         """Run a public method under the specified name and return the
         result.
 
@@ -2447,9 +2651,9 @@ class JobBase:
 
         self.verify_public_method_suppport(method_name, raise_exceptions=True)
 
-        method = utils.chainmap_getitem(self.PUBLIC_METHODS_CHAIN, method_name)
+        method = getattr(self, method_name)
 
-        return method(self, *args, **kwargs)
+        return method(*args, **kwargs)
 
     def status(self) -> JobStatus:
         """Get the job status of this job as a value from the
@@ -2702,7 +2906,11 @@ class EventJobBase(JobBase):
         "_empty_event_queue_future",
     )
 
-    def __init_subclass__(cls, permission_level=None):
+    def __init_subclass__(
+        cls,
+        scheduling_identifier: Optional[str] = None,
+        permission_level: Optional[JobPermissionLevels] = None,
+    ):
         if not cls.EVENT_TYPES:
             raise TypeError("the 'EVENT_TYPES' class attribute must not be empty")
 
@@ -2717,7 +2925,10 @@ class EventJobBase(JobBase):
                 "must contain one or more subclasses of `BaseEvent`"
             )
 
-        super().__init_subclass__(permission_level=permission_level)
+        super().__init_subclass__(
+            scheduling_identifier=scheduling_identifier,
+            permission_level=permission_level,
+        )
 
     def __init__(
         self,
@@ -2818,7 +3029,7 @@ class EventJobBase(JobBase):
         self._stopping_by_empty_queue = False
         self._stopping_by_idling_timeout = False
 
-        self._empty_event_queue_future: asyncio.Future = None
+        self._empty_event_queue_future: Optional[asyncio.Future] = None
         # used to idle while no events are available to conserve processing power
 
         self._pre_event_queue = deque()
@@ -2950,11 +3161,11 @@ class EventJobBase(JobBase):
                     self.STOP()
                     return
             else:
-                if not self._is_idling:
-                    self._is_idling = True
-                    self._idling_since_ts = time.time()
-
                 while not self._event_queue:
+                    if not self._is_idling:
+                        self._is_idling = True
+                        self._idling_since_ts = time.time()
+
                     event_was_dispatched = False
 
                     try:
@@ -3078,7 +3289,7 @@ class EventJobBase(JobBase):
 
     def get_stopping_reason(
         self,
-    ) -> Union[JobStopReasons.Internal, JobStopReasons.External]:
+    ) -> Optional[Union[JobStopReasons.Internal, JobStopReasons.External]]:
         if not self._is_stopping:
             return
         elif (
@@ -3127,14 +3338,10 @@ class JobManagerJob(IntervalJobBase):
 
     def __init__(self):
         super().__init__()
+        self._identifier = STANDARD_JOB_IDENTIFIERS["JobManagerJob"]
 
     async def on_run(self):
         await self.await_done()
 
 
 from . import proxies, groupings  # allow this module to finish initialization
-
-JobManagerProxy = proxies.JobManagerProxy
-JobProxy = proxies.JobProxy
-JobOutputQueueProxy = proxies.JobOutputQueueProxy
-OutputNameRecord = groupings.OutputNameRecord

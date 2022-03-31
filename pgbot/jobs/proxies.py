@@ -11,7 +11,7 @@ from collections import deque
 import datetime
 import itertools
 from types import FunctionType
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Sequence, Type, Union
 from pgbot import events
 from pgbot.common import UNSET
 
@@ -428,19 +428,27 @@ class JobOutputQueueProxy:
     but instances can be requested from job obects that support it.
     """
 
-    __slots__ = ("__j", "__job_proxy", "_output_queue_proxy_dict")
+    __slots__ = (
+        "__j",
+        "__job_proxy",
+        "_default_queue_config",
+        "__output_queue_names",
+        "_output_queue_proxy_dict",
+    )
 
     def __init__(self, job: JobBase):
         self.__j = job
         self.__job_proxy = job._proxy
-        self.__output_queue_names = job.OUTPUT_QUEUES
+        self.__output_queue_names = job.OutputQueues
         job_output_queues = self.__j._output_queues
         self._output_queue_proxy_dict: dict[
-            str, list[Union[int, Optional[deque[Any]], list]]
+            str, list[Union[int, Optional[deque[Any]], list[Any]]]
         ] = {
             queue_name: [0, None, job_output_queues[queue_name]]
-            for queue_name in self.__j.OUTPUT_QUEUES
+            for queue_name in self.__j.OutputQueues.get_all_names()
         }
+
+        self._default_queue_config = {"use_rescue_buffer": False}
 
     @property
     def job_proxy(self):
@@ -466,7 +474,7 @@ class JobOutputQueueProxy:
             ValueError: The specified queue name was marked as disabled.
             LookupError: The specified queue name is not defined by this
               output queue proxy's job.
-            
+
         Returns:
             bool: True/False
         """
@@ -478,7 +486,7 @@ class JobOutputQueueProxy:
                 raise (
                     LookupError(
                         f"queue name '{queue_name}' is not defined in "
-                        f"'OUTPUT_QUEUES' class namespace of class "
+                        f"'OutputQueues' class namespace of class "
                         f"'{self.__j.__class__.__name__}' that this proxy "
                         "references"
                     )
@@ -499,9 +507,9 @@ class JobOutputQueueProxy:
 
         return True
 
-
-
-    def config_output_queue(self, queue_name: str, use_rescue_buffer: Optional[bool] = None):
+    def config_output_queue(
+        self, queue_name: str, use_rescue_buffer: Optional[bool] = None
+    ):
         """Configure settings for a speficied output queue.
 
         Args:
@@ -512,10 +520,25 @@ class JobOutputQueueProxy:
         """
         self.verify_output_queue_support(queue_name, raise_exceptions=True)
 
+        if queue_name not in self._output_queue_proxy_dict:
+            self._output_queue_proxy_dict[queue_name] = [0, None, []]
+
         if use_rescue_buffer:
             self._output_queue_proxy_dict[queue_name][1] = deque()
         elif use_rescue_buffer is False:
             self._output_queue_proxy_dict[queue_name][1] = None
+
+    def config_output_queue_defaults(self, use_rescue_buffer: Optional[bool] = None):
+        """Configure default settings for output queues.
+
+        Args:
+            use_rescue_buffer (Optional[bool], optional): Set up a rescue buffer for
+              an output queue, which automatically collects queue values
+              when a job cleares a queue. Defaults to None.
+        """
+
+        if use_rescue_buffer is not None:
+            self._default_queue_config["use_rescue_buffer"] = bool(use_rescue_buffer)
 
     def _output_queue_clear_alert(self, queue_name: str):
         # Alerts OutputQueueProxy objects that their job
@@ -527,9 +550,14 @@ class JobOutputQueueProxy:
 
         queue_list[0] = 0
 
-    
     def _new_output_queue_alert(self, queue_name: str, queue_list: list):
-        self._output_queue_proxy_dict[queue_name] = [0, None, queue_list]
+        if queue_name not in self._output_queue_proxy_dict:
+            self._output_queue_proxy_dict[queue_name] = [0, None, queue_list]
+        else:
+            self._output_queue_proxy_dict[queue_name][2] = queue_list
+
+        if self._default_queue_config["use_rescue_buffer"]:
+            self._output_queue_proxy_dict[queue_name][1] = deque()
 
     def pop_output_queue(
         self, queue_name: str, amount: Optional[int] = None, all_values: bool = False
@@ -685,12 +713,12 @@ class JobManagerProxy:
 
     __slots__ = ("__mgr", "__j", "_job_stop_timeout")
 
-    def __init__(
-        self, mgr: manager.JobManager, job: Union[EventJobBase, IntervalJobBase]
-    ):
+    def __init__(self, mgr, job: Union[EventJobBase, IntervalJobBase]):
         self.__mgr = mgr
         self.__j = job
         self._job_stop_timeout = None
+
+    is_running = JobManager.is_running
 
     def get_job_stop_timeout(self):  # placeholder method with docstring
         """Get the maximum time period in seconds for the job object managed
@@ -713,7 +741,7 @@ class JobManagerProxy:
         target: Optional[JobProxy] = None,
         target_cls: Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]] = None,
         schedule_identifier: Optional[str] = None,
-        scheduler_identifier: Optional[str] = None,
+        invoker_identifier: Optional[str] = None,
     ):
         """Check if the permissions of the job of this `JobManagerProxy` object
         are sufficient for carrying out the specified operation on the given input.
@@ -721,13 +749,15 @@ class JobManagerProxy:
         Args:
             op (str): The operation. Must be one of the operations defined in the
               `JobVerbs` class namespace.
-            target (Optional[JobProxy], optional): The target job for an operation.
+            target (Optional[JobProxy], optional): The target job's proxy for an
+              operation.
               Defaults to None.
-            target_cls (Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]]):
+            target_cls (Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]],
+              optional):
               The target job class for an operation. Defaults to None.
-            schedule_identifier (Optional[str]):
+            schedule_identifier (Optional[str], optional):
               A target schedule identifier. Defaults to None.
-            scheduler_identifier (Optional[str]):
+            invoker_identifier (Optional[str], optional):
               A target job with this specific identifier if existent, but can also be
               an enpty string. Defaults to None.
 
@@ -785,7 +815,7 @@ class JobManagerProxy:
 
     unguard_job = JobManager.unguard_job
 
-    def has_job(self, job_proxy: JobProxy):
+    def has_job(self, job_proxy: JobProxy) -> bool:
         """Whether a specific job object is currently in this
         job manager.
 
@@ -799,7 +829,7 @@ class JobManagerProxy:
 
     __contains__ = has_job
 
-    has_identifier = JobManager.has_identifier
+    has_job_identifier = JobManager.has_job_identifier
 
 
 class _JobManagerProxy:  # hidden implementation to trick type-checker engines
@@ -809,6 +839,9 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         self.__mgr = mgr
         self.__j = job
         self._job_stop_timeout = None
+
+    def is_running(self):
+        return self.__mgr.is_running()
 
     def get_job_stop_timeout(self):
         return (
@@ -823,17 +856,15 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         target: Optional[JobProxy] = None,
         target_cls: Optional[Union[Type[EventJobBase], Type[IntervalJobBase]]] = None,
         schedule_identifier: Optional[str] = None,
-        scheduler_identifier: Optional[str] = None,
-    ):
+        invoker_identifier: Optional[str] = None,
+    ) -> bool:
         return self.__mgr._verify_permissions(
             self.__j,
             op,
-            target=self.__mgr._get_job_from_proxy(target)
-            if target is not None
-            else target,
+            target=target if target is not None else target,
             target_cls=target_cls,
             schedule_identifier=schedule_identifier,
-            scheduler_identifier=scheduler_identifier,
+            invoker_identifier=invoker_identifier,
             raise_exceptions=False,
         )
 
@@ -841,16 +872,16 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         self, cls: Union[Type[EventJobBase], Type[IntervalJobBase]], *args, **kwargs
     ):
         return self.__mgr.create_job(
-            cls, *args, _return_proxy=True, _invoker=self.__j, **kwargs
+            cls, *args, _return_proxy=True, _iv=self.__j, **kwargs
         )
 
     async def initialize_job(self, job_proxy: JobProxy, raise_exceptions: bool = True):
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return await self.__mgr.initialize_job(job, raise_exceptions=raise_exceptions)
+        return await self.__mgr.initialize_job(
+            job_proxy, raise_exceptions=raise_exceptions
+        )
 
     async def register_job(self, job_proxy: JobProxy):
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return await self.__mgr.register_job(job, _invoker=self.__j)
+        return await self.__mgr.register_job(job_proxy, _iv=self.__j)
 
     async def create_and_register_job(
         self, cls: Union[Type[EventJobBase], Type[IntervalJobBase]], *args, **kwargs
@@ -859,17 +890,17 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             cls,
             *args,
             _return_proxy=True,
-            _invoker=self.__j,
+            _iv=self.__j,
             **kwargs,
         )
 
     def job_scheduling_is_initialized(self):
         return self.__mgr.job_scheduling_is_initialized()
 
-    async def wait_for_job_scheduling_initialization(self):
-        return await self.__mgr.wait_for_job_scheduling_initialization()
+    def wait_for_job_scheduling_initialization(self):
+        return self.__mgr.wait_for_job_scheduling_initialization()
 
-    async def wait_for_job_scheduling_uninitialization(self):
+    def wait_for_job_scheduling_uninitialization(self):
         return self.__mgr.wait_for_job_scheduling_uninitialization()
 
     async def create_job_schedule(
@@ -880,7 +911,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         max_recurrences: int = 1,
         job_args: tuple = (),
         job_kwargs: Optional[dict] = None,
-    ):
+    ) -> str:
         return await self.__mgr.create_job_schedule(
             cls=cls,
             timestamp=timestamp,
@@ -888,7 +919,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             max_recurrences=max_recurrences,
             job_args=job_args,
             job_kwargs=job_kwargs,
-            _invoker=self.__j,
+            _iv=self.__j,
         )
 
     def get_job_schedule_identifiers(self):
@@ -904,7 +935,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         self,
         schedule_identifier: str,
     ):
-        return self.__mgr.remove_job_schedule(schedule_identifier, _invoker=self.__j)
+        return await self.__mgr.remove_job_schedule(schedule_identifier, _iv=self.__j)
 
     def restart_job(
         self, job_proxy: JobProxy, stopping_timeout: Optional[float] = None
@@ -915,14 +946,14 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             job.RESTART()
 
         return self.__mgr.restart_job(
-            job, stopping_timeout=stopping_timeout, _invoker=self.__j
+            job_proxy, stopping_timeout=stopping_timeout, _iv=self.__j
         )
 
     def start_job(
         self,
         job_proxy: JobProxy,
     ):
-        return self.__mgr.start_job(job_proxy, _invoker=self.__j)
+        return self.__mgr.start_job(job_proxy, _iv=self.__j)
 
     def stop_job(
         self,
@@ -936,7 +967,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             job.STOP(force=force)
 
         return self.__mgr.stop_job(
-            job, stopping_timeout=stopping_timeout, force=force, _invoker=self.__j
+            job_proxy, stopping_timeout=stopping_timeout, force=force, _iv=self.__j
         )
 
     def kill_job(self, job_proxy: JobProxy, stopping_timeout: Optional[float] = None):
@@ -946,7 +977,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             job.KILL()
 
         return self.__mgr.kill_job(
-            job, stopping_timeout=stopping_timeout, _invoker=self.__j
+            job_proxy, stopping_timeout=stopping_timeout, _iv=self.__j
         )
 
     def get_guarded_jobs(self) -> tuple:
@@ -956,13 +987,13 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         self,
         job_proxy: JobProxy,
     ):
-        return self.__mgr.guard_job(job_proxy, _invoker=self.__j)
+        return self.__mgr.guard_job(job_proxy, _iv=self.__j)
 
     def unguard_job(
         self,
         job_proxy: JobProxy,
     ):
-        return self.__mgr.unguard_job(job_proxy, _invoker=self.__j)
+        return self.__mgr.unguard_job(job_proxy, _iv=self.__j)
 
     def _eject(self):
         """
@@ -978,31 +1009,30 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
     def _unguard(self):
         if self.__j._is_being_guarded:
             guardian = self.__mgr._get_job_from_proxy(self.__j._guardian)
-            self.__mgr.unguard_job(self.__j, _invoker=guardian)
+            self.__mgr.unguard_job(self.__j, _iv=guardian)
 
     def find_job(
         self,
         *,
         identifier: Optional[str] = None,
         created_at: Optional[datetime.datetime] = None,
-    ):
+    ) -> Optional["JobProxy"]:
         return self.__mgr.find_job(
             identifier=identifier,
             created_at=created_at,
             _return_proxy=True,
-            _invoker=self.__j,
+            _iv=self.__j,
         )
 
     def find_jobs(
         self,
         *,
-        classes: Optional[
+        classes: tuple[
             Union[
                 Type[EventJobBase],
                 Type[IntervalJobBase],
-                tuple[Union[Type[EventJobBase], Type[IntervalJobBase]]],
             ]
-        ] = None,
+        ] = tuple(),
         exact_class_match: bool = False,
         created_before: Optional[datetime.datetime] = None,
         created_after: Optional[datetime.datetime] = None,
@@ -1017,11 +1047,12 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
         is_idling: Optional[bool] = None,
         is_awaiting: Optional[bool] = None,
         is_stopping: Optional[bool] = None,
-        stopped: Optional[bool] = None,
         is_restarting: Optional[bool] = None,
         is_being_killed: Optional[bool] = None,
         is_being_completed: Optional[bool] = None,
-    ):
+        stopped: Optional[bool] = None,
+    ) -> tuple["JobProxy"]:
+
         return self.__mgr.find_jobs(
             classes=classes,
             exact_class_match=exact_class_match,
@@ -1041,7 +1072,7 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             is_being_completed=is_being_completed,
             stopped=stopped,
             _return_proxy=True,
-            _invoker=self.__j,
+            _iv=self.__j,
         )
 
     def wait_for_event(
@@ -1056,18 +1087,17 @@ class _JobManagerProxy:  # hidden implementation to trick type-checker engines
             timeout=timeout,
         )
 
-    async def dispatch_event(self, event: events.BaseEvent):
+    def dispatch_event(self, event: events.BaseEvent):
         event._dispatcher = self.__j._proxy
-        return self.__mgr.dispatch_event(event, _invoker=self.__j)
+        return self.__mgr.dispatch_event(event, _iv=self.__j)
 
     def has_job(self, job_proxy: JobProxy):
-        job = self.__mgr._get_job_from_proxy(job_proxy)
-        return self.__mgr.has_job(job)
+        return self.__mgr.has_job(job_proxy)
 
     __contains__ = has_job
 
-    def has_identifier(self, identifier: str):
-        return self.__mgr.has_identifier(identifier)
+    def has_job_identifier(self, identifier: str):
+        return self.__mgr.has_job_identifier(identifier)
 
 
 for key, obj in _JobProxy.__dict__.items():

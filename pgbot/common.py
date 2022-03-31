@@ -38,7 +38,7 @@ stdout: Optional[io.StringIO] = None
 # Tuple containing all admin commands, gets monkey-patched later
 admin_commands = ()
 
-job_manager: object
+job_manager: object = None
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
@@ -49,6 +49,8 @@ db_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
+
+STANDARD_JOB_IDENTIFIERS = {"JobManagerJob": "0-0"}
 
 __version__ = "1.5.3"
 

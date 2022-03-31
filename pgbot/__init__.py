@@ -8,12 +8,14 @@ This file is the main file of pgbot subdir
 
 import asyncio
 import datetime
+import functools
 import io
 import os
 import re
 import random
 import signal
 import sys
+from typing import Literal, Union
 
 import discord
 import pygame
@@ -21,6 +23,7 @@ import pygame
 from discord.ext import tasks
 from pgbot import commands, common, db, emotion, routine, jobs
 from pgbot import job_main
+from pgbot.jobs.jobs import JobVerbs
 from pgbot.utils import embed_utils, utils
 
 
@@ -32,7 +35,7 @@ class BotJobManager(jobs.JobManager):
         await super().job_scheduling_loop()
 
     @job_scheduling_loop.before_loop
-    async def initialize_job_scheduling(self):
+    async def start_job_scheduling(self):
         async with db.DiscordDB("job_schedule") as db_obj:
             db_data = db_obj.get({"identifiers": [], "data": {}})
 
@@ -44,21 +47,48 @@ class BotJobManager(jobs.JobManager):
                 + utils.format_code_exception(e)
             )
 
-        super().initialize_job_scheduling()
+        self.initialize_job_scheduling()
 
     @job_scheduling_loop.after_loop
-    async def uninitialize_job_scheduling(self):
-        self.job_scheduling_loop.cancel()
+    async def stop_job_scheduling(self):
         async with db.DiscordDB("job_schedule") as db_obj:
             try:
-                db_obj.write(await self.dump_job_scheduling_data())
+                data = await self.dump_job_scheduling_data()
+                print(data)
+                db_obj.write(data)
             except Exception as e:
                 print(
                     "Error while dumping job scheduling data:\n"
                     + utils.format_code_exception(e)
                 )
 
-        super().uninitialize_job_scheduling()
+        self.uninitialize_job_scheduling()
+
+    def stop(
+        self,
+        job_operation: Union[
+            Literal[JobVerbs.KILL], Literal[JobVerbs.STOP]
+        ] = JobVerbs.KILL,
+        shutdown_executors: bool = True,
+    ):
+        task = self.job_scheduling_loop.get_task()
+
+        if task is not None and not task.done():
+            quit_method = super().stop
+
+            def call_quit(fut):
+                quit_method(
+                    job_operation,
+                    shutdown_executors=shutdown_executors,
+                )
+
+            task.add_done_callback(call_quit)
+            self.job_scheduling_loop.cancel()
+        else:
+            super().stop(
+                job_operation,
+                shutdown_executors=shutdown_executors,
+            )
 
 
 common.job_manager = BotJobManager()

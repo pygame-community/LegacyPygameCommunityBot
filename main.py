@@ -15,7 +15,6 @@ import pgbot
 
 from typing import Any, Callable, Coroutine, Iterable, Optional, Sequence, Union
 
-job_manager = common.job_manager
 bot = common.bot
 
 
@@ -25,7 +24,8 @@ async def on_ready():
     Startup routines when the bot starts
     """
     await pgbot.init()
-    job_manager.dispatch_event(events.OnReady())
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnReady())
 
 
 @bot.event
@@ -37,12 +37,13 @@ async def on_member_join(member: discord.Member):
         return
 
     await pgbot.member_join(member)
-    job_manager.dispatch_event(
-        events.OnMemberJoin(
-            member,
-            event_created_at=member.joined_at.astimezone(datetime.timezone.utc),
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnMemberJoin(
+                member,
+                event_created_at=member.joined_at.astimezone(datetime.timezone.utc),
+            )
         )
-    )
 
 
 @bot.event
@@ -51,24 +52,28 @@ async def on_member_remove(member: discord.Member):
     Routines to run when people leave the server
     """
     await pgbot.clean_db_member(member)
-    job_manager.dispatch_event(events.OnMemberRemove(member))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnMemberRemove(member))
 
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
-    job_manager.dispatch_event(events.OnMemberUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnMemberUpdate(before, after))
 
 
 @bot.event
 async def on_member_ban(
     guild: discord.Guild, user: Union[discord.Member, discord.User]
 ):
-    job_manager.dispatch_event(events.OnMemberBan(guild, user))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnMemberBan(guild, user))
 
 
 @bot.event
 async def on_member_unban(guild: discord.Guild, user: discord.User):
-    job_manager.dispatch_event(events.OnMemberUnban(guild, user))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnMemberUnban(guild, user))
 
 
 @bot.event
@@ -80,12 +85,13 @@ async def on_message(message: discord.Message):
         return
 
     await pgbot.handle_message(message)
-    job_manager.dispatch_event(
-        events.OnMessage(
-            message,
-            event_created_at=message.created_at.astimezone(datetime.timezone.utc),
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnMessage(
+                message,
+                event_created_at=message.created_at.astimezone(datetime.timezone.utc),
+            )
         )
-    )
 
 
 @bot.event
@@ -94,7 +100,8 @@ async def on_message_delete(message: discord.Message):
     This function is called for every message deleted by user.
     """
     await pgbot.message_delete(message)
-    job_manager.dispatch_event(events.OnMessageDelete(message))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnMessageDelete(message))
 
 
 @bot.event
@@ -106,19 +113,22 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         return
 
     await pgbot.message_edit(before, after)
-    job_manager.dispatch_event(
-        events.OnMessageEdit(
-            before,
-            after,
+
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnMessageEdit(
+                before,
+                after,
+            )
         )
-    )
 
 
 @bot.event
 async def on_reaction_add(
     reaction: discord.Reaction, user: Union[discord.Member, discord.User]
 ):
-    job_manager.dispatch_event(events.OnReactionAdd(reaction, user))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnReactionAdd(reaction, user))
 
 
 @bot.event
@@ -130,14 +140,16 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         return
 
     await pgbot.raw_reaction_add(payload)
-    job_manager.dispatch_event(events.OnRawReactionAdd(payload))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnRawReactionAdd(payload))
 
 
 @bot.event
 async def on_reaction_remove(
     reaction: discord.Reaction, user: Union[discord.Member, discord.User]
 ):
-    job_manager.dispatch_event(events.OnReactionRemove(reaction, user))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnReactionRemove(reaction, user))
 
 
 @bot.event
@@ -149,122 +161,149 @@ async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
         return
 
     await pgbot.raw_reaction_add(payload)
-    job_manager.dispatch_event(events.OnRawReactionRemove(payload))
+
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnRawReactionRemove(payload))
 
 
 @bot.event
 async def on_reaction_clear(
     message: discord.Message, reactions: list[discord.Reaction]
 ):
-    job_manager.dispatch_event(events.OnReactionClear(message, reactions))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnReactionClear(message, reactions))
 
 
 @bot.event
 async def on_raw_reaction_clear(payload: discord.RawReactionClearEvent):
-    job_manager.dispatch_event(events.OnRawReactionClear(payload))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnRawReactionClear(payload))
 
 
 @bot.event
 async def on_reaction_clear_emoji(reaction: discord.Reaction):
-    job_manager.dispatch_event(events.OnReactionClearEmoji(reaction))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnReactionClearEmoji(reaction))
 
 
 @bot.event
 async def on_raw_reaction_clear_emoji(payload: discord.RawReactionClearEmojiEvent):
-    job_manager.dispatch_event(events.OnRawReactionClearEmoji(payload))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnRawReactionClearEmoji(payload))
 
 
 @bot.event
 async def on_private_channel_create(channel: discord.abc.PrivateChannel):
-    job_manager.dispatch_event(events.OnPrivateChannelCreate(channel))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnPrivateChannelCreate(channel))
 
 
 @bot.event
 async def on_private_channel_delete(channel: discord.abc.PrivateChannel):
-    job_manager.dispatch_event(events.OnPrivateChannelDelete(channel))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnPrivateChannelDelete(channel))
 
 
 @bot.event
 async def on_private_channel_update(
     before: discord.GroupChannel, after: discord.GroupChannel
 ):
-    job_manager.dispatch_event(events.OnPrivateChannelUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnPrivateChannelUpdate(before, after))
 
 
 @bot.event
 async def on_private_channel_pins_update(
     channel: discord.abc.PrivateChannel, last_pin: Optional[datetime.datetime]
 ):
-    job_manager.dispatch_event(events.OnPrivateChannelPinsUpdate(channel, last_pin))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnPrivateChannelPinsUpdate(channel, last_pin)
+        )
 
 
 @bot.event
 async def on_guild_channel_create(channel: discord.abc.GuildChannel):
-    job_manager.dispatch_event(events.OnGuildChannelCreate(channel))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildChannelCreate(channel))
 
 
 @bot.event
 async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
-    job_manager.dispatch_event(events.OnGuildChannelDelete(channel))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildChannelDelete(channel))
 
 
 @bot.event
 async def on_guild_channel_update(
     before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
 ):
-    job_manager.dispatch_event(events.OnGuildChannelUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildChannelUpdate(before, after))
 
 
 @bot.event
 async def on_guild_channel_pins_update(
     channel: discord.abc.GuildChannel, last_pin: Optional[datetime.datetime]
 ):
-    job_manager.dispatch_event(events.OnGuildChannelPinsUpdate(channel, last_pin))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnGuildChannelPinsUpdate(channel, last_pin)
+        )
 
 
 @bot.event
 async def on_guild_integrations_update(guild: discord.Guild):
-    job_manager.dispatch_event(events.OnGuildIntegrationsUpdate(guild))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildIntegrationsUpdate(guild))
 
 
 @bot.event
 async def on_webhooks_update(channel: discord.abc.GuildChannel):
-    job_manager.dispatch_event(events.OnWebhooksUpdate(channel))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnWebhooksUpdate(channel))
 
 
 @bot.event
 async def on_user_update(before: discord.User, after: discord.User):
-    job_manager.dispatch_event(events.OnUserUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnUserUpdate(before, after))
 
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    job_manager.dispatch_event(events.OnGuildJoin(guild))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildJoin(guild))
 
 
 @bot.event
 async def on_guild_remove(guild: discord.Guild):
-    job_manager.dispatch_event(events.OnGuildRemove(guild))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildRemove(guild))
 
 
 @bot.event
 async def on_guild_update(before: discord.Guild, after: discord.Guild):
-    job_manager.dispatch_event(events.OnGuildUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildUpdate(before, after))
 
 
 @bot.event
 async def on_guild_role_create(role: discord.Role):
-    job_manager.dispatch_event(events.OnGuildRoleCreate(role))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildRoleCreate(role))
 
 
 @bot.event
 async def on_guild_role_delete(role: discord.Role):
-    job_manager.dispatch_event(events.OnGuildRoleDelete(role))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildRoleDelete(role))
 
 
 @bot.event
 async def on_guild_role_update(before: discord.Role, after: discord.Role):
-    job_manager.dispatch_event(events.OnGuildRoleUpdate(before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildRoleUpdate(before, after))
 
 
 @bot.event
@@ -273,35 +312,44 @@ async def on_guild_emojis_update(
     before: Sequence[discord.Emoji],
     after: Sequence[discord.Emoji],
 ):
-    job_manager.dispatch_event(events.OnGuildEmojisUpdate(guild, before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnGuildEmojisUpdate(guild, before, after)
+        )
 
 
 @bot.event
 async def on_guild_available(guild: discord.Guild):
-
-    job_manager.dispatch_event(events.OnGuildAvailable(guild))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildAvailable(guild))
 
 
 @bot.event
 async def on_guild_unavailable(guild: discord.Guild):
-    job_manager.dispatch_event(events.OnGuildUnavailable(guild))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnGuildUnavailable(guild))
 
 
 @bot.event
 async def on_voice_state_update(
     member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
 ):
-    job_manager.dispatch_event(events.OnVoiceStateUpdate(member, before, after))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(
+            events.OnVoiceStateUpdate(member, before, after)
+        )
 
 
 @bot.event
 async def on_invite_create(invite: discord.Invite):
-    job_manager.dispatch_event(events.OnInviteCreate(invite))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnInviteCreate(invite))
 
 
 @bot.event
 async def on_invite_delete(invite: discord.Invite):
-    job_manager.dispatch_event(events.OnInviteDelete(invite))
+    if common.job_manager is not None and common.job_manager.is_running():
+        common.job_manager.dispatch_event(events.OnInviteDelete(invite))
 
 
 if __name__ == "__main__":

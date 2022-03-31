@@ -57,20 +57,28 @@ def class_getattr_unique(
     name: str,
     filter_func: Callable[[Any], bool] = lambda obj: True,
     check_dicts_only: bool = False,
-):
+    _id_set=None,
+) -> list[Any]:
     values = []
-    obj_value = None
+    value_obj = UNSET
+
+    if _id_set is None:
+        _id_set = set()
 
     if check_dicts_only:
         if name in cls.__dict__:
-            obj_value = cls.__dict__[name]
-            if filter_func(obj_value):
-                values.append(obj_value)
+            value_obj = cls.__dict__[name]
     else:
         if hasattr(cls, name):
-            obj_value = getattr(cls, name)
-            if filter_func(obj_value):
-                values.append(obj_value)
+            value_obj = getattr(cls, name)
+
+    if (
+        value_obj is not UNSET
+        and id(value_obj) not in _id_set
+        and filter_func(value_obj)
+    ):
+        values.append(value_obj)
+        _id_set.add(id(value_obj))
 
     for base_cls in cls.__mro__[1:]:
         values.extend(
@@ -79,6 +87,7 @@ def class_getattr_unique(
                 name,
                 filter_func=filter_func,
                 check_dicts_only=check_dicts_only,
+                _id_set=_id_set,
             )
         )
     return values
@@ -93,24 +102,23 @@ def class_getattr(
     check_dicts_only: bool = False,
     _is_top_lvl=True,
 ):
-    obj_value = None
+    value_obj = UNSET
     if check_dicts_only:
         if name in cls.__dict__:
-            obj_value = cls.__dict__[name]
-            if filter_func(obj_value):
-                return obj_value
+            value_obj = cls.__dict__[name]
     else:
         if hasattr(cls, name):
-            obj_value = getattr(cls, name)
-            if filter_func(obj_value):
-                return obj_value
+            value_obj = getattr(cls, name)
+
+    if value_obj is not UNSET and filter_func(value_obj):
+        return value_obj
 
     for base_cls in cls.__mro__[1:]:
-        obj_value = class_getattr(
+        value_obj = class_getattr(
             base_cls, name, check_dicts_only=check_dicts_only, _is_top_lvl=False
         )
-        if obj_value is not UNSET:
-            return obj_value
+        if value_obj is not UNSET:
+            return value_obj
 
     if default is UNSET:
         if not _is_top_lvl:
