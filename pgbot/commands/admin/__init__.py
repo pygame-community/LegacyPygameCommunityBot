@@ -17,7 +17,6 @@ from typing import Optional, Union
 
 import black
 import discord
-from discord.embeds import EmptyEmbed
 import psutil
 import pygame
 
@@ -430,12 +429,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 )
 
         await destination.trigger_typing()
-        messages = await origin.history(
-            limit=quantity if quantity != 0 else None,
-            before=before,
-            after=after,
-            around=around,
-        ).flatten()
+        messages = [
+                msg async for msg in origin.history(
+                limit=quantity if quantity != 0 else None,
+                before=before,
+                after=after,
+                around=around,
+            )
+        ]
 
         message_id_cache = {}
 
@@ -561,10 +562,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 color=0x36393F,
                                 author_name=f"{author.name}#{author.discriminator}"
                                 if not shorten
-                                else EmptyEmbed,
+                                else None,
                                 author_icon_url=f"{author.avatar_url}"
                                 if not shorten
-                                else EmptyEmbed,
+                                else None,
                             )
 
                         if author_embed or current_divider_str:
@@ -1319,7 +1320,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         kwargs = {
             "title": f"Server information for {guild.name}:",
-            "thumbnail_url": guild.icon_url,
+            "thumbnail_url": guild.icon.url,
             "description": description,
         }
 
@@ -1462,12 +1463,14 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     f" ({common.BROWSE_MESSAGE_LIMIT}).",
                 )
 
-        messages = await channel.history(
-            limit=quantity if quantity != 0 else None,
-            before=before,
-            after=after,
-            around=around,
-        ).flatten()
+        messages = [
+                msg async for msg in channel.history(
+                limit=quantity if quantity != 0 else None,
+                before=before,
+                after=after,
+                around=around,
+            )
+        ]
 
         if not messages:
             raise BotException(

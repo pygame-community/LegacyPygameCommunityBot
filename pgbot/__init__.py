@@ -512,9 +512,10 @@ def cleanup(*_):
     """
     Call cleanup functions
     """
-    common.bot.loop.run_until_complete(db.quit())
-    common.bot.loop.run_until_complete(common.bot.close())
-    common.bot.loop.close()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(db.quit())
+    loop.run_until_complete(common.bot.close())
+    loop.close()
 
 
 def run():
@@ -531,8 +532,10 @@ def run():
     # closes
     signal.signal(signal.SIGTERM, cleanup)
 
+    loop = asyncio.get_event_loop()
+
     try:
-        common.bot.loop.run_until_complete(common.bot.start(common.TOKEN))
+        loop.run_until_complete(common.bot.start(common.TOKEN))
 
     except KeyboardInterrupt:
         # Silence keyboard interrupt traceback (it contains no useful info)

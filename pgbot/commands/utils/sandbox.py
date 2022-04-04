@@ -332,7 +332,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
 
 
 async def exec_sandbox(
-    code: str, tstamp: int, timeout: int = 5, max_memory: int = 2 ** 28
+    code: str, tstamp: int, timeout: int = 5, max_memory: int = 2**28
 ):
     """
     Helper to run pg!exec code in a sandbox, manages the seperate process that

@@ -15,7 +15,6 @@ from ast import literal_eval
 from typing import Optional, Union
 
 import discord
-from discord.embeds import EmptyEmbed
 
 from pgbot import common
 from pgbot.commands.base import (
@@ -228,7 +227,7 @@ class EmsudoCommand(BaseCommand):
                 )
                 await self.invoke_msg.channel.trigger_typing()
 
-            send_embed_args = dict(description=EmptyEmbed)
+            send_embed_args = dict(description=None)
 
             attachment_msg = None
             edit_description_only = False
@@ -735,7 +734,7 @@ class EmsudoCommand(BaseCommand):
             )
 
         replace_embed_args = dict(
-            description=EmptyEmbed,
+            description=None,
         )
 
         if not msg.embeds and not _add:
@@ -990,7 +989,7 @@ class EmsudoCommand(BaseCommand):
             await self.invoke_msg.channel.trigger_typing()
 
             edit_embed_args = dict(
-                description=EmptyEmbed,
+                description=None,
             )
 
             attachment_msg: Optional[discord.Message] = None

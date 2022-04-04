@@ -832,12 +832,14 @@ class SudoCommand(BaseCommand):
                     )
 
             await destination.trigger_typing()
-            messages = await origin.history(
-                limit=quantity if quantity != 0 else None,
-                before=before,
-                after=after,
-                around=around,
-            ).flatten()
+            messages = [
+                    msg async for msg in origin.history(
+                    limit=quantity if quantity != 0 else None,
+                    before=before,
+                    after=after,
+                    around=around,
+                )
+            ]
 
             if not messages:
                 raise BotException(

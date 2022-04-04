@@ -19,11 +19,13 @@ if os.path.isfile(".env"):
     load_dotenv()  # take environment variables from .env
 
 # declare type alias for any channel
-Channel = Union[discord.TextChannel, discord.DMChannel, discord.GroupChannel]
-
+Channel = Union[
+    discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
+]
 # For commonly used variables
 ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
+ints.message_content = True  # needed for message content
 bot = discord.Client(intents=ints)
 window = pygame.Surface((1, 1))  # This will later be redefined
 
