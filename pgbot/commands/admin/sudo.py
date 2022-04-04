@@ -833,7 +833,8 @@ class SudoCommand(BaseCommand):
 
             await destination.trigger_typing()
             messages = [
-                    msg async for msg in origin.history(
+                msg
+                async for msg in origin.history(
                     limit=quantity if quantity != 0 else None,
                     before=before,
                     after=after,

@@ -430,7 +430,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         await destination.trigger_typing()
         messages = [
-                msg async for msg in origin.history(
+            msg
+            async for msg in origin.history(
                 limit=quantity if quantity != 0 else None,
                 before=before,
                 after=after,
@@ -1464,7 +1465,8 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 )
 
         messages = [
-                msg async for msg in channel.history(
+            msg
+            async for msg in channel.history(
                 limit=quantity if quantity != 0 else None,
                 before=before,
                 after=after,
