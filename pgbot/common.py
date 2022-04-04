@@ -50,7 +50,7 @@ rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
 
-STANDARD_JOB_IDENTIFIERS = {"JobManagerJob": "0-0"}
+_SYSTEM_JOB_RUNTIME_IDENTIFIERS = {"JobManagerJob": "0-0"}
 
 __version__ = "1.5.3"
 
@@ -93,7 +93,7 @@ class _UnsetType(metaclass=_SingletonMeta):
         return 0
 
     def __repr__(self):
-        return "UnsetType"
+        return "Unset"
 
 
 UNSET: Any = _UnsetType()

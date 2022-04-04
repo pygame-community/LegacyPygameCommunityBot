@@ -31,7 +31,7 @@ from matplotlib import collections
 
 from pgbot.utils import utils
 from pgbot import common, events
-from pgbot.common import STANDARD_JOB_IDENTIFIERS, UNSET, _UnsetType
+from pgbot.common import _SYSTEM_JOB_RUNTIME_IDENTIFIERS, UNSET, _UnsetType
 
 _JOB_CLASS_MAP = {}
 # A dictionary of all Job subclasses that were created. Do not access outside of this module.
@@ -3338,7 +3338,7 @@ class JobManagerJob(IntervalJobBase):
 
     def __init__(self):
         super().__init__()
-        self._identifier = STANDARD_JOB_IDENTIFIERS["JobManagerJob"]
+        self._identifier = _SYSTEM_JOB_RUNTIME_IDENTIFIERS["JobManagerJob"]
 
     async def on_run(self):
         await self.await_done()
