@@ -564,7 +564,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 author_name=f"{author.name}#{author.discriminator}"
                                 if not shorten
                                 else None,
-                                author_icon_url=f"{author.avatar_url}"
+                                author_icon_url=f"{author.avatar.url}"
                                 if not shorten
                                 else None,
                             )
