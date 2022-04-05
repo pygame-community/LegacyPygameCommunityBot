@@ -1968,7 +1968,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                     "\u2800",
                 )
             ),
-            thumbnail_url=str(member.avatar.url),
+            thumbnail_url=member.avatar.url if member.avatar is not None else None,
             fields=[
                 ("__Message Info__", msg_info, True),
                 ("__Message Author Info__", get_member_info_str(member), True),
@@ -1994,7 +1994,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     return create(
         title="__Message Info__",
         author_name=f"{member.name}#{member.discriminator}",
-        author_icon_url=str(member.avatar.url),
+        author_icon_url=member.avatar.url if member.avatar is not None else None,
         description="\n".join(
             (
                 "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
@@ -2025,5 +2025,5 @@ def get_member_info_embed(member: Union[discord.Member, discord.User]):
         + ("Member" if isinstance(member, discord.Member) else "User")
         + " Info__",
         description=get_member_info_str(member),
-        thumbnail_url=str(member.avatar.url),
+        thumbnail_url=member.avatar.url if member.avatar is not None else None,
     )

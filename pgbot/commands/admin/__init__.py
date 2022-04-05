@@ -564,7 +564,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                 author_name=f"{author.name}#{author.discriminator}"
                                 if not shorten
                                 else None,
-                                author_icon_url=f"{author.avatar.url}"
+                                author_icon_url=(
+                                    author.avatar.url
+                                    if author.avatar is not None
+                                    else None
+                                )
                                 if not shorten
                                 else None,
                             )
@@ -1321,7 +1325,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         kwargs = {
             "title": f"Server information for {guild.name}:",
-            "thumbnail_url": guild.icon.url,
+            "thumbnail_url": guild.icon.url if guild.icon is not None else None,
             "description": description,
         }
 
@@ -1519,7 +1523,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             desc += "\n**━━━━━━━━━━━━**"
 
             embed = embed_utils.create(
-                author_icon_url=message.author.avatar,
+                author_icon_url=message.author.avatar.url
+                if message.author.avatar is not None
+                else None,
                 author_name=message.author.display_name,
                 description=desc,
             )
