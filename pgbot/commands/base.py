@@ -223,12 +223,12 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno in ("discord.TextChannel", "common.Channel", "discord.Thread"):
-                formatted = utils.format_discord_link(arg, self.get_guild().id)
+                guild = self.get_guild()
+                formatted = utils.format_discord_link(arg, guild.id)
 
                 ch_id = utils.filter_id(formatted)
-                guild = self.get_guild()
-
                 chan = guild.get_channel_or_thread(ch_id)
+
                 if chan is None:
                     try:
                         chan = await guild.fetch_channel(ch_id)
@@ -247,14 +247,21 @@ class BaseCommand:
                 return guild
 
             elif anno == "discord.Message":
-                formatted = utils.format_discord_link(arg, self.get_guild().id)
+                guild = self.get_guild()
+                formatted = utils.format_discord_link(arg, guild.id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    chan = self.get_guild().get_channel(utils.filter_id(a))
+                    ch_id = utils.filter_id(a)
+                    chan = guild.get_channel_or_thread(ch_id)
+                    if chan is None:
+                        try:
+                            chan = await guild.fetch_channel(ch_id)
+                        except (discord.errors.NotFound, discord.errors.Forbidden):
+                            raise ValueError()
 
-                    if not isinstance(chan, discord.TextChannel):
+                    if not isinstance(chan, (discord.TextChannel, discord.Thread)):
                         raise ValueError()
                 else:
                     msg = int(a)
@@ -266,14 +273,21 @@ class BaseCommand:
                     raise ValueError()
 
             elif anno == "discord.PartialMessage":
-                formatted = utils.format_discord_link(arg, self.get_guild().id)
+                guild = self.get_guild()
+                formatted = utils.format_discord_link(arg, guild.id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    chan = self.get_guild().get_channel(utils.filter_id(a))
+                    ch_id = utils.filter_id(a)
+                    chan = guild.get_channel_or_thread(ch_id)
+                    if chan is None:
+                        try:
+                            chan = await guild.fetch_channel(ch_id)
+                        except (discord.errors.NotFound, discord.errors.Forbidden):
+                            raise ValueError()
 
-                    if not isinstance(chan, discord.TextChannel):
+                    if not isinstance(chan, (discord.TextChannel, discord.Thread)):
                         raise ValueError()
                 else:
                     msg = int(a)
