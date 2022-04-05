@@ -36,12 +36,13 @@ ANNO_AND_ERROR = {
     "datetime": "a string, that denotes datetime in iso format",
     "range": "a range specifier",
     "pygame.Color": "a color, represented by the color name or the hex RGB value",
-    "common.Channel": "an ID or mention of a Discord server text channel",
+    "common.Channel": "an ID or mention of a Discord server text channel/thread",
     "discord.Object": "a generic Discord Object with an ID",
     "discord.Role": "an ID or mention of a Discord server Role",
     "discord.Member": "an ID or mention of a Discord server member",
     "discord.User": "an ID or mention of a Discord user",
     "discord.TextChannel": "an ID or mention of a Discord server text channel",
+    "discord.Thread": "an ID or mention of a Discord server thread",
     "discord.Guild": "an ID of a discord guild (server)",
     "discord.Message": (
         "a message ID, or a 'channel_id/message_id' combo, or a [link](#) to a message"
