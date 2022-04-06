@@ -1145,8 +1145,7 @@ async def send(
     reference: Optional[Union[discord.Message, discord.MessageReference]] = None,
 ):
     """
-    Sends an embed with a much more tight function. If the channel is
-    None it will return the embed instead of sending it.
+    Sends an embed with a much more tight function.
     """
 
     embed = create(

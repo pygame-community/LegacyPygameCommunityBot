@@ -370,7 +370,7 @@ class UserCommand(FunCommand, HelpCommand):
         """
         ->type Other commands
         ->signature pg!refresh <message>
-        ->description Refresh a message which support pages.
+        ->description Refresh a message which supports pages.
         -----
         Implement pg!refresh, to refresh a message which supports pages
         """
@@ -388,7 +388,7 @@ class UserCommand(FunCommand, HelpCommand):
 
         data = msg.embeds[0].footer.text.splitlines()
 
-        if len(data) != 3 and not data[2].startswith("Command: "):
+        if len(data) != 3 or len(data) == 3 and not data[2].startswith("Command: "):
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
