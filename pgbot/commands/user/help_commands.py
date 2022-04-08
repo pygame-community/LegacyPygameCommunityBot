@@ -16,6 +16,8 @@ from typing import Optional
 
 import discord
 import pygame
+import snakecore
+
 from pgbot import common, db
 from pgbot.commands.base import BaseCommand, BotException, String, no_dm
 from pgbot.commands.utils import clock, docs, help
@@ -211,7 +213,7 @@ class HelpCommand(BaseCommand):
         if isinstance(self.author, discord.User):
             return
 
-        await docs.put_doc(name, self.response_msg, self.author, self.page)
+        await docs.put_doc(name, self.response_msg, self.author, self.page_number)
 
     @no_dm
     async def cmd_help(self, *names: str):
@@ -234,7 +236,7 @@ class HelpCommand(BaseCommand):
             names,
             self.cmds_and_funcs,
             self.groups,
-            self.page,
+            self.page_number,
         )
 
     @no_dm
@@ -389,11 +391,20 @@ class HelpCommand(BaseCommand):
             )
 
         # Creates a paginator for the caller to use
-        page_embed = embed_utils.PagedEmbed(
+
+        msg_embeds = self.response_msg.embeds.copy()
+
+        msg_embeds[7:] = snakecore.utils.embed_utils.create_embed(
+            footer_text=self.cmd_str
+        )
+
+        await self.response_msg.edit(embeds=msg_embeds)
+
+        page_embed = snakecore.utils.pagination.EmbedPaginator(
             self.response_msg,
-            pages,
-            self.author,
-            self.cmd_str,
-            self.page,
+            *pages,
+            caller=self.author,
+            whitelisted_roles=common.ServerConstants.ADMIN_ROLES,
+            start_page_number=self.page_number,
         )
         await page_embed.mainloop()

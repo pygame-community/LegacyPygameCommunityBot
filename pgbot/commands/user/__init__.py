@@ -413,7 +413,7 @@ class UserCommand(FunCommand, HelpCommand):
         # Handle the new command, the one that pg!refresh is trying to refresh
         self.response_msg = msg
         self.cmd_str = cmd_str
-        self.page = int(page) - 1
+        self.page_number = int(page)
         await self.handle_cmd()
 
     @no_dm

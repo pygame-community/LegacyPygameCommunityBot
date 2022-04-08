@@ -12,6 +12,7 @@ import re
 import typing
 
 import discord
+import snakecore
 
 from pgbot import common
 from pgbot.utils import embed_utils
@@ -216,7 +217,16 @@ async def send_help_message(
             description="No such command exists",
             color=0xFF0000,
         )
+    
+    command_embed = snakecore.utils.embed_utils.create_embed(
+        footer_text=f"help {' '.join(commands)}"
+    )
 
-    await embed_utils.PagedEmbed(
-        original_msg, embeds, invoker, f"help {' '.join(commands)}", page
+    msg_embeds = original_msg.embeds.copy()
+    msg_embeds[7:] = [command_embed]
+
+    await original_msg.edit(embeds=msg_embeds)
+
+    await snakecore.utils.pagination.EmbedPaginator(
+        original_msg, *embeds, invoker, whitelisted_roles=common.ServerConstants.ADMIN_ROLES, start_page_number=page, theme_color=common.BOT_HELP_PROMPT["color"]
     ).mainloop()

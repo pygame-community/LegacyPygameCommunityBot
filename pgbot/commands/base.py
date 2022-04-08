@@ -116,9 +116,9 @@ class BaseCommand:
                     else:
                         self.groups[func.groupname] = [func]
 
-        # page number, useful for PagedEmbed commands. 0 by deafult, gets modified
+        # page number, useful for EmbedPaginator commands. 0 by deafult, gets modified
         # in pg!refresh command when invoked
-        self.page: int = 0
+        self.page_number: int = 1
 
     def get_guild(self):
         """
