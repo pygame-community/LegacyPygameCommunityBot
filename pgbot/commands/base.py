@@ -19,6 +19,8 @@ from typing import Any, Optional, Union
 
 import discord
 import pygame
+import snakecore
+
 from pgbot import common, db, emotion
 from pgbot.commands.parser import (
     ArgError,
@@ -31,7 +33,7 @@ from pgbot.commands.parser import (
     split_tuple_anno,
     split_union_anno,
 )
-from pgbot.utils import embed_utils, utils
+from pgbot.utils import utils
 
 
 def fun_command(func):
@@ -202,31 +204,31 @@ class BaseCommand:
 
             elif anno == "discord.Object":
                 # Generic discord API Object that has an ID
-                return discord.Object(utils.filter_id(arg))
+                return discord.Object(snakecore.utils.extract_markdown_mention_id(arg))
 
             elif anno == "discord.Role":
-                role = self.get_guild().get_role(utils.filter_id(arg))
+                role = self.get_guild().get_role(snakecore.utils.extract_markdown_mention_id(arg))
                 if role is None:
                     raise ValueError()
                 return role
 
             elif anno == "discord.Member":
                 try:
-                    return await self.get_guild().fetch_member(utils.filter_id(arg))
+                    return await self.get_guild().fetch_member(snakecore.utils.extract_markdown_mention_id(arg))
                 except discord.errors.NotFound:
                     raise ValueError()
 
             elif anno == "discord.User":
                 try:
-                    return await common.bot.fetch_user(utils.filter_id(arg))
+                    return await common.bot.fetch_user(snakecore.utils.extract_markdown_mention_id(arg))
                 except discord.errors.NotFound:
                     raise ValueError()
 
             elif anno in ("discord.TextChannel", "common.Channel", "discord.Thread"):
                 guild = self.get_guild()
-                formatted = utils.format_discord_link(arg, guild.id)
+                formatted = snakecore.utils.format_discord_link(arg, guild.id)
 
-                ch_id = utils.filter_id(formatted)
+                ch_id = snakecore.utils.extract_markdown_mention_id(formatted)
                 chan = guild.get_channel_or_thread(ch_id)
 
                 if chan is None:
@@ -238,22 +240,22 @@ class BaseCommand:
                 return chan
 
             elif anno == "discord.Guild":
-                guild = common.bot.get_guild(utils.filter_id(arg))
+                guild = common.bot.get_guild(snakecore.utils.extract_markdown_mention_id(arg))
                 if guild is None:
                     try:
-                        guild = await common.bot.fetch_guild(utils.filter_id(arg))
+                        guild = await common.bot.fetch_guild(snakecore.utils.extract_markdown_mention_id(arg))
                     except discord.HTTPException:
                         raise ValueError()
                 return guild
 
             elif anno == "discord.Message":
                 guild = self.get_guild()
-                formatted = utils.format_discord_link(arg, guild.id)
+                formatted = snakecore.utils.format_discord_link(arg, guild.id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    ch_id = utils.filter_id(a)
+                    ch_id = snakecore.utils.extract_markdown_mention_id(a)
                     chan = guild.get_channel_or_thread(ch_id)
                     if chan is None:
                         try:
@@ -274,12 +276,12 @@ class BaseCommand:
 
             elif anno == "discord.PartialMessage":
                 guild = self.get_guild()
-                formatted = utils.format_discord_link(arg, guild.id)
+                formatted = snakecore.utils.format_discord_link(arg, guild.id)
 
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    ch_id = utils.filter_id(a)
+                    ch_id = snakecore.utils.extract_markdown_mention_id(a)
                     chan = guild.get_channel_or_thread(ch_id)
                     if chan is None:
                         try:
@@ -467,14 +469,14 @@ class BaseCommand:
 
             confused = await emotion.get("confused")
             if confused > 60 and random.random() < confused / 400:
-                await embed_utils.replace(
+                await snakecore.utils.embed_utils.replace_embed_at(
                     self.response_msg,
                     title="I am confused...",
                     description="Hang on, give me a sec...",
                 )
 
                 await asyncio.sleep(random.randint(3, 5))
-                await embed_utils.replace(
+                await snakecore.utils.embed_utils.replace_embed_at(
                     self.response_msg,
                     title="Oh, never mind...",
                     description="Sorry, I was confused for a sec there",
@@ -642,7 +644,7 @@ class BaseCommand:
 
         except Exception:
             await emotion.update("confused", random.randint(10, 22))
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title="Unknown Error!",
                 description=(
@@ -656,7 +658,7 @@ class BaseCommand:
 
         # display bot exception to user on discord
         try:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title=title,
                 description=msg,
@@ -665,7 +667,7 @@ class BaseCommand:
             )
         except discord.NotFound:
             # response message was deleted, send a new message
-            await embed_utils.send(
+            await snakecore.utils.embed_utils.send_embed(
                 self.channel,
                 title=title,
                 description=msg,

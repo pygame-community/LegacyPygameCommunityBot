@@ -14,10 +14,11 @@ import sys
 from typing import Union
 
 import discord
+import snakecore
 
 from pgbot import common
 from pgbot.commands import admin, user
-from pgbot.utils import embed_utils, utils
+from pgbot.utils import utils
 
 
 def get_perms(mem: Union[discord.Member, discord.User]):
@@ -61,14 +62,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
 
         except ValueError:
             if response_msg is None:
-                await embed_utils.send(
+                await snakecore.utils.embed_utils.send_embed(
                     invoke_msg.channel,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
                     color=0xFF0000,
                 )
             else:
-                await embed_utils.replace(
+                await snakecore.utils.embed_utils.replace_embed_at(
                     response_msg,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
@@ -77,13 +78,13 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             return
 
         if response_msg is None:
-            await embed_utils.send(
+            await snakecore.utils.embed_utils.send_embed(
                 invoke_msg.channel,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
             )
         else:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 response_msg,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
@@ -98,7 +99,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         return
 
     if response_msg is None:
-        response_msg = await embed_utils.send(
+        response_msg = await snakecore.utils.embed_utils.send_embed(
             invoke_msg.channel,
             title="Your command is being processed:",
             fields=(("\u2800", "`Loading...`", False),),
@@ -112,7 +113,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                 log_txt_file = discord.File(log_buffer, filename="command.txt")
 
         await common.log_channel.send(
-            embed=embed_utils.create(
+            embed=snakecore.utils.embed_utils.create_embed(
                 title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
                 description=escaped_cmd_text
                 if len(escaped_cmd_text) <= 2047

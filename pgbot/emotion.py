@@ -10,8 +10,10 @@ import math
 import discord
 import unidecode
 
+import snakecore
+
 from pgbot import common, db
-from pgbot.utils import embed_utils, utils
+from pgbot.utils import utils
 
 EMOTION_CAPS = {
     "happy": (-100, 100),
@@ -60,7 +62,7 @@ async def check_bonk(msg: discord.Message):
 
     bonks = msg.content.count(common.BONK)
     if await get("anger") + bonks > 30:
-        await embed_utils.send(
+        await snakecore.utils.embed_utils.send_embed(
             msg.channel,
             title="Did you hit the snek?",
             description="You mortal mammal! How you dare to boncc a snake?",
