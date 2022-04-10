@@ -34,9 +34,10 @@ import pygame
 import pygame._sdl2
 import pygame.gfxdraw
 import pygame_gui
+import snakecore
 
 from pgbot import common
-from pgbot.utils import utils, embed_utils
+import pgbot
 
 doc_module_tuple = (
     asyncio,
@@ -91,10 +92,11 @@ async def put_main_doc(name: str, original_msg: discord.Message):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             original_msg,
             title="Unknown module!",
             description="No such module was found.",
+            color=common.DEFAULT_EMBED_COLOR,
         )
         return None, None
 
@@ -113,7 +115,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
                 if i != "__abstractmethods__":
                     module_objs[i] = getattr(obj, i)
         except KeyError:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 original_msg,
                 title="Class/function/sub-module not found!",
                 description=f"There's no such thing here named `{name}`",
@@ -121,7 +123,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
             return None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             original_msg,
             title=f"Documentation for `{name}`",
             description=f"{name} is a constant with a type of "
@@ -167,9 +169,10 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
         if text:
             embeds.append(
-                embed_utils.create(
+                snakecore.utils.embed_utils.create_embed(
                     title=f"Documentation for `{name}`",
-                    description=header + utils.code_block(text),
+                    description=header + snakecore.utils.code_block(text),
+                    color=common.DEFAULT_EMBED_COLOR,
                 )
             )
 
@@ -178,7 +181,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
             break
 
     if not embeds:
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             original_msg,
             title="Class/function/sub-module not found!",
             description=f"There's no such thing here named `{name}`",
@@ -189,7 +192,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
 
 async def put_doc(
-    name: str, original_msg: discord.Message, msg_invoker: discord.Member, page: int = 0
+    name: str, original_msg: discord.Message, msg_invoker: discord.Member, page: int = 1
 ):
     """
     Helper function to get docs
@@ -235,15 +238,29 @@ async def put_doc(
             continue
 
         embeds.append(
-            embed_utils.create(
+            snakecore.utils.embed_utils.create_embed(
                 title=f"{otype} in `{name}`",
-                description=utils.code_block("\n".join(olist)),
+                description=snakecore.utils.code_block("\n".join(olist)),
+                color=common.DEFAULT_EMBED_COLOR,
             )
         )
 
     main_embeds.extend(embeds)
 
-    page_embed = embed_utils.PagedEmbed(
-        original_msg, main_embeds, msg_invoker, f"doc {name}", page
+    msg_embeds = [
+        snakecore.utils.embed_utils.create_embed(
+            color=common.DEFAULT_EMBED_COLOR, footer_text=f"Command: doc {name}"
+        )
+    ]
+
+    original_msg = await original_msg.edit(embeds=msg_embeds)
+
+    paginator = snakecore.utils.pagination.EmbedPaginator(
+        original_msg,
+        *main_embeds,
+        caller=msg_invoker,
+        whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+        start_page_number=page,
+        theme_color=pgbot.utils.embed_utils.DEFAULT_EMBED_COLOR,
     )
-    await page_embed.mainloop()
+    await paginator.mainloop()

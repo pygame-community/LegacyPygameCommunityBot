@@ -18,15 +18,19 @@ from typing import Union
 
 import discord
 import pygame
-
-from pgbot import commands, common, db, emotion, routine
 import snakecore
+
+from pgbot import commands, common, db, emotion, routine, utils
 
 
 async def _init():
     """
     Startup call helper for pygame bot
     """
+
+    await snakecore.init(global_client=common.bot)
+    print(snakecore.jobutils)
+
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
         # in a discord channel
@@ -94,7 +98,9 @@ async def init():
         )
 
 
-def format_entries_message(msg: discord.Message, entry_type: str) -> tuple[str, list[dict[str, Union[str, bool]]]]:
+def format_entries_message(
+    msg: discord.Message, entry_type: str
+) -> tuple[str, list[dict[str, Union[str, bool]]]]:
     """
     Formats an entries message to be reposted in discussion channel
     """
@@ -114,7 +120,11 @@ def format_entries_message(msg: discord.Message, entry_type: str) -> tuple[str, 
 
     fields = [
         {"name": "**Posted by**", "value": msg.author.mention, "inline": True},
-        {"name": "**Original msg.**", "value": f"[View]({msg.jump_url})", "inline": True},
+        {
+            "name": "**Original msg.**",
+            "value": f"[View]({msg.jump_url})",
+            "inline": True,
+        },
         {"name": "**Attachments**", "value": attachments, "inline": True},
         {"name": "**Description**", "value": desc, "inline": True},
     ]
@@ -377,7 +387,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await snakecore.utils.embed_utils.edit_embed_at(message, fields=fields)
+                    await snakecore.utils.embed_utils.edit_embed_at(
+                        message, fields=fields
+                    )
                     embed_repost_edited = True
                     break
 

@@ -22,6 +22,7 @@ import pygame
 import snakecore
 
 from pgbot import common, db, emotion
+import pgbot
 from pgbot.commands.parser import (
     ArgError,
     BotException,
@@ -33,7 +34,6 @@ from pgbot.commands.parser import (
     split_tuple_anno,
     split_union_anno,
 )
-from pgbot.utils import utils
 
 
 def fun_command(func):
@@ -156,8 +156,7 @@ class BaseCommand:
                 return arg
 
             elif anno in ["datetime.datetime", "datetime"]:
-                arg2 = arg.string.strip()
-                arg2 = arg2[:-1] if arg2.endswith("Z") else arg2
+                arg2 = arg.string.removesuffix("Z")
                 return datetime.datetime.fromisoformat(arg2)
 
             raise ValueError()
@@ -173,7 +172,9 @@ class BaseCommand:
                 timestamp = re.search(r"\d+", arg)
                 if timestamp is not None:
                     timestamp = float(arg[timestamp.start() : timestamp.end()])
-                    return datetime.datetime.utcfromtimestamp(timestamp)
+                    return datetime.datetime.utcfromtimestamp(timestamp).astimezone(
+                        datetime.timezone.utc
+                    )
 
                 raise ValueError()
 
@@ -204,31 +205,58 @@ class BaseCommand:
 
             elif anno == "discord.Object":
                 # Generic discord API Object that has an ID
-                return discord.Object(snakecore.utils.extract_markdown_mention_id(arg))
+                obj_id = None
+                if snakecore.utils.is_markdown_mention(arg):
+                    obj_id = snakecore.utils.extract_markdown_mention_id(arg)
+                else:
+                    obj_id = int(arg)
+
+                return discord.Object(obj_id)
 
             elif anno == "discord.Role":
-                role = self.get_guild().get_role(snakecore.utils.extract_markdown_mention_id(arg))
+                role_id = None
+                if snakecore.utils.is_markdown_mention(arg):
+                    role_id = snakecore.utils.extract_markdown_mention_id(arg)
+                else:
+                    role_id = int(arg)
+
+                role = self.get_guild().get_role(role_id)
                 if role is None:
                     raise ValueError()
                 return role
 
             elif anno == "discord.Member":
+                member_id = None
+                if snakecore.utils.is_markdown_mention(arg):
+                    member_id = snakecore.utils.extract_markdown_mention_id(arg)
+                else:
+                    member_id = int(arg)
                 try:
-                    return await self.get_guild().fetch_member(snakecore.utils.extract_markdown_mention_id(arg))
+                    return await self.get_guild().fetch_member(member_id)
                 except discord.errors.NotFound:
                     raise ValueError()
 
             elif anno == "discord.User":
+                user_id = None
+                if snakecore.utils.is_markdown_mention(arg):
+                    user_id = snakecore.utils.extract_markdown_mention_id(arg)
+                else:
+                    user_id = int(arg)
+
                 try:
-                    return await common.bot.fetch_user(snakecore.utils.extract_markdown_mention_id(arg))
+                    return await common.bot.fetch_user(user_id)
                 except discord.errors.NotFound:
                     raise ValueError()
 
             elif anno in ("discord.TextChannel", "common.Channel", "discord.Thread"):
                 guild = self.get_guild()
-                formatted = snakecore.utils.format_discord_link(arg, guild.id)
 
-                ch_id = snakecore.utils.extract_markdown_mention_id(formatted)
+                ch_id = None
+                if snakecore.utils.is_markdown_mention(arg):
+                    ch_id = snakecore.utils.extract_markdown_mention_id(arg)
+                else:
+                    ch_id = int(snakecore.utils.format_discord_link(arg, guild.id))
+
                 chan = guild.get_channel_or_thread(ch_id)
 
                 if chan is None:
@@ -240,10 +268,11 @@ class BaseCommand:
                 return chan
 
             elif anno == "discord.Guild":
-                guild = common.bot.get_guild(snakecore.utils.extract_markdown_mention_id(arg))
+                guild_id = int(arg)
+                guild = common.bot.get_guild(guild_id)
                 if guild is None:
                     try:
-                        guild = await common.bot.fetch_guild(snakecore.utils.extract_markdown_mention_id(arg))
+                        guild = await common.bot.fetch_guild(guild_id)
                     except discord.HTTPException:
                         raise ValueError()
                 return guild
@@ -255,7 +284,7 @@ class BaseCommand:
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    ch_id = snakecore.utils.extract_markdown_mention_id(a)
+                    ch_id = int(a)
                     chan = guild.get_channel_or_thread(ch_id)
                     if chan is None:
                         try:
@@ -281,7 +310,7 @@ class BaseCommand:
                 a, b, c = formatted.partition("/")
                 if b:
                     msg = int(c)
-                    ch_id = snakecore.utils.extract_markdown_mention_id(a)
+                    ch_id = int(a)
                     chan = guild.get_channel_or_thread(ch_id)
                     if chan is None:
                         try:
@@ -451,7 +480,7 @@ class BaseCommand:
             )
 
         if hasattr(func, "fun_cmd"):
-            if await utils.get_channel_feature("nofun", self.channel):
+            if await pgbot.utils.get_channel_feature("nofun", self.channel):
                 raise BotException(
                     "Could not run command!",
                     "This command is a 'fun' command, and is not allowed "
@@ -473,6 +502,7 @@ class BaseCommand:
                     self.response_msg,
                     title="I am confused...",
                     description="Hang on, give me a sec...",
+                    color=common.DEFAULT_EMBED_COLOR,
                 )
 
                 await asyncio.sleep(random.randint(3, 5))
@@ -480,6 +510,7 @@ class BaseCommand:
                     self.response_msg,
                     title="Oh, never mind...",
                     description="Sorry, I was confused for a sec there",
+                    color=common.DEFAULT_EMBED_COLOR,
                 )
                 await asyncio.sleep(0.5)
 

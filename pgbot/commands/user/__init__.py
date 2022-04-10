@@ -18,8 +18,10 @@ from typing import Any, Optional, Union
 
 import discord
 import pygame
+import snakecore
 
 from pgbot import common, db
+import pgbot
 from pgbot.commands.base import (
     BotException,
     CodeBlock,
@@ -28,7 +30,6 @@ from pgbot.commands.base import (
     no_dm,
 )
 from pgbot.commands.utils import sandbox
-from pgbot.utils import embed_utils, utils
 
 from .fun_commands import FunCommand
 from .help_commands import HelpCommand
@@ -106,13 +107,14 @@ class UserCommand(FunCommand, HelpCommand):
             )
             db_obj.write(db_data)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Reminder set!",
             description=(
-                f"Gonna remind {self.author.name} in {utils.format_timedelta(_delta)}\n"
-                f"And that is on {utils.format_datetime(on)}"
+                f"Gonna remind {self.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
+                f"And that is on {snakecore.utils.create_markdown_timestamp(on)}"
             ),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("reminders", "set")
@@ -214,14 +216,15 @@ class UserCommand(FunCommand, HelpCommand):
                 cin = channel.mention if channel is not None else "DM"
                 desc += (
                     f"Reminder ID: `{cnt}`\n"
-                    f"**On {utils.format_datetime(on)} in {cin}:**\n> {reminder}\n\n"
+                    f"**On {snakecore.utils.create_markdown_timestamp(on)} in {cin}:**\n> {reminder}\n\n"
                 )
                 cnt += 1
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title=f"Reminders for {self.author.display_name}:",
             description=desc,
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("reminders", "remove")
@@ -267,10 +270,11 @@ class UserCommand(FunCommand, HelpCommand):
 
             db_obj.write(db_data)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Reminders removed!",
             description=f"Successfully removed {cnt} reminder(s)",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_exec(self, code: CodeBlock):
@@ -301,10 +305,10 @@ class UserCommand(FunCommand, HelpCommand):
             )
             dur = returned.duration  # the execution time of the script alone
             embed_dict = {
-                "color": embed_utils.DEFAULT_EMBED_COLOR,
+                "color": pgbot.ut,
                 "description": "",
                 "author": {
-                    "name": f"Code executed in {utils.format_time(dur)}",
+                    "name": f"Code executed in {snakecore.utils.format_time_by_units(dur)}",
                     "url": self.invoke_msg.jump_url,
                 },
             }
@@ -312,12 +316,16 @@ class UserCommand(FunCommand, HelpCommand):
             file = None
             if returned.exc:
                 embed_dict["description"] += "**Exception output:**\n"
-                embed_dict["description"] += utils.code_block(returned.exc, 500)
+                embed_dict["description"] += snakecore.utils.code_block(
+                    returned.exc, 500
+                )
                 embed_dict["description"] += "\n"
 
             if returned.text:
                 embed_dict["description"] += "**Text output:**\n"
-                embed_dict["description"] += utils.code_block(returned.text, 1500)
+                embed_dict["description"] += snakecore.utils.code_block(
+                    returned.text, 1500
+                )
 
             if returned.img:
                 embed_dict["description"] += "\n**Image output:**"
@@ -347,7 +355,7 @@ class UserCommand(FunCommand, HelpCommand):
             # Message already deleted
             pass
 
-        embed = embed_utils.create_from_dict(embed_dict)
+        embed = snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         if len(returned.text) > 1500:
@@ -377,8 +385,11 @@ class UserCommand(FunCommand, HelpCommand):
 
         if (
             not msg.embeds
+            or len(msg.embeds) < 3
             or not msg.embeds[0].footer
+            or not msg.embeds[-1].footer
             or not isinstance(msg.embeds[0].footer.text, str)
+            or not isinstance(msg.embeds[-1].footer.text, str)
         ):
             raise BotException(
                 "Message does not support pages",
@@ -386,17 +397,18 @@ class UserCommand(FunCommand, HelpCommand):
                 "have replied to the correct message",
             )
 
-        data = msg.embeds[0].footer.text.splitlines()
+        cmd_data = msg.embeds[0].footer.text
+        cmd_str = cmd_data.replace("Command: ", "")
 
-        if len(data) != 3 or len(data) == 3 and not data[2].startswith("Command: "):
+        if not cmd_data.startswith("Command: "):
             raise BotException(
                 "Message does not support pages",
                 "The message specified does not support pages. Make sure "
                 "the id of the message is correct.",
             )
 
-        page = re.search(r"\d+", data[0]).group()
-        cmd_str = data[2].replace("Command: ", "")
+        page_data = msg.embeds[-1].footer.text
+        page = re.search(r"\d+", page_data).group()
 
         if not page.isdigit() or not cmd_str:
             raise BotException(
@@ -491,7 +503,9 @@ class UserCommand(FunCommand, HelpCommand):
 
         for field in base_embed_dict["fields"]:
             try:
-                emoji_id = utils.filter_emoji_id(field["name"].strip())
+                emoji_id = snakecore.utils.extract_markdown_custom_emoji_id(
+                    field["name"].strip()
+                )
                 emoji = common.bot.get_emoji(emoji_id)
                 if emoji is None:
                     raise ValueError()
@@ -531,8 +545,10 @@ class UserCommand(FunCommand, HelpCommand):
         if isinstance(self.author, discord.User):
             return
 
-        if not utils.check_channel_permissions(
-            self.author, msg.channel, permissions=("view_channel",)
+        if not pgbot.snakecore.utils.have_permissions_in_channels(
+            self.author,
+            msg.channel,
+            "view_channel",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -601,15 +617,29 @@ class UserCommand(FunCommand, HelpCommand):
                 continue
 
             try:
-                r_count = reactions[utils.filter_emoji_id(field.name)] - 1
+                r_count = (
+                    reactions[
+                        snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                    ]
+                    - 1
+                )
             except KeyError:
                 # The reactions and the embed fields dont match up.
                 # Someone is abusing their mod powers if this happens probably.
                 continue
 
-            fields.append([field.name, f"{field.value} ({r_count} votes)", True])
+            fields.append(
+                dict(
+                    name=field.name,
+                    value=f"{field.value} ({r_count} votes)",
+                    inline=True,
+                )
+            )
 
-            if utils.filter_emoji_id(field.name) == top[0][1]:
+            if (
+                snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                == top[0][1]
+            ):
                 title += (
                     f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
                 )
@@ -618,10 +648,9 @@ class UserCommand(FunCommand, HelpCommand):
             title = title.split("\n")[0]
             title += "\nIt's a draw!"
 
-        await embed_utils.edit(
+        await snakecore.utils.embed_utils.edit_embed_at(
             msg,
-            embed,
-            color=0xA83232 if not _color else utils.color_to_rgb_int(_color),
+            color=0xA83232 if not _color else pgbot.utils.color_to_rgb_int(_color),
             title=title,
             fields=fields,
             footer_text="Ended",
@@ -644,14 +673,15 @@ class UserCommand(FunCommand, HelpCommand):
             data = db_obj.get([])
 
         if not data:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title="Memento ping list",
                 description="Ping list is empty!",
+                color=common.DEFAULT_EMBED_COLOR,
             )
             return
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Memento ping list",
             description=(
@@ -659,6 +689,7 @@ class UserCommand(FunCommand, HelpCommand):
                 "\nUse 'pg!stream ping' to ping them if you start streaming\n"
                 + "\n".join((f"<@{user}>" for user in data))
             ),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("stream", "add")
@@ -755,13 +786,14 @@ class UserCommand(FunCommand, HelpCommand):
         ->description Command for keeping up with the events of the server
         -----
         """
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Pygame Community Discord Server Events!",
             description=(
                 "Check out Weekly Challenges!\n"
                 "Run `pg!events wc` to check out the scoreboard for this event!"
             ),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("events", "wc")
@@ -810,14 +842,14 @@ class UserCommand(FunCommand, HelpCommand):
             fields.append((rounds_dict["name"], rounds_dict["description"], False))
 
         if score_dict:
-            fields.extend(utils.split_wc_scores(score_dict))
+            fields.extend(pgbot.utils.split_wc_scores(score_dict))
 
         else:
             fields.append(
                 ("There are no scores yet!", "Check back after sometime!", False)
             )
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title=f"Event: Weekly Challenges (WC)",
             description=wc_dict.get(

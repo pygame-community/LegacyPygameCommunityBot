@@ -18,10 +18,10 @@ import discord
 import pygame
 import snakecore
 
+import pgbot
 from pgbot import common, db
 from pgbot.commands.base import BaseCommand, BotException, String, no_dm
 from pgbot.commands.utils import clock, docs, help
-from pgbot.utils import embed_utils, utils
 
 
 class HelpCommand(BaseCommand):
@@ -83,7 +83,7 @@ class HelpCommand(BaseCommand):
             )
 
         if len(rules) == 1:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
@@ -95,7 +95,7 @@ class HelpCommand(BaseCommand):
             for field in fields:
                 field["value"] = field["value"][:1024]
 
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
@@ -151,7 +151,9 @@ class HelpCommand(BaseCommand):
                         if timezone is not None:
                             timezones[member.id][0] = timezone
                         if color is not None:
-                            timezones[member.id][1] = utils.color_to_rgb_int(color)
+                            timezones[member.id][1] = pgbot.utils.color_to_rgb_int(
+                                color
+                            )
                     else:
                         if timezone is None:
                             raise BotException(
@@ -164,7 +166,10 @@ class HelpCommand(BaseCommand):
                                 (random.randint(0, 0xFFFFFF) << 8) | 0xFF
                             )
 
-                        timezones[member.id] = [timezone, utils.color_to_rgb_int(color)]
+                        timezones[member.id] = [
+                            timezone,
+                            pgbot.utils.color_to_rgb_int(color),
+                        ]
 
                     # sort timezones dict after an update operation
                     timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
@@ -392,19 +397,19 @@ class HelpCommand(BaseCommand):
 
         # Creates a paginator for the caller to use
 
-        msg_embeds = self.response_msg.embeds.copy()
+        msg_embeds = [
+            snakecore.utils.embed_utils.create_embed(
+                color=common.DEFAULT_EMBED_COLOR, footer_text=self.cmd_str
+            )
+        ]
 
-        msg_embeds[7:] = snakecore.utils.embed_utils.create_embed(
-            footer_text=self.cmd_str
-        )
-
-        await self.response_msg.edit(embeds=msg_embeds)
+        response_msg = self.response_msg.edit(embeds=msg_embeds)
 
         page_embed = snakecore.utils.pagination.EmbedPaginator(
-            self.response_msg,
+            response_msg,
             *pages,
             caller=self.author,
-            whitelisted_roles=common.ServerConstants.ADMIN_ROLES,
+            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
             start_page_number=self.page_number,
         )
         await page_embed.mainloop()

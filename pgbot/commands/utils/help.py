@@ -15,8 +15,6 @@ import discord
 import snakecore
 
 from pgbot import common
-from pgbot.utils import embed_utils
-
 
 # regex for doc string
 regex = re.compile(
@@ -77,7 +75,7 @@ async def send_help_message(
     commands: tuple[str, ...],
     cmds_and_funcs: dict[str, typing.Callable],
     groups: dict[str, list],
-    page: int = 0,
+    page: int = 1,
 ):
     """
     Edit original_msg to a help message. If command is supplied it will
@@ -135,7 +133,7 @@ async def send_help_message(
         for doc_field in list(doc_fields.values()):
             body = f"{doc_field[0]}\n\n{doc_field[1]}"
             embeds.append(
-                embed_utils.create(
+                snakecore.utils.embed_utils.create_embed(
                     title=common.BOT_HELP_PROMPT["title"],
                     description=body,
                     color=common.BOT_HELP_PROMPT["color"],
@@ -157,7 +155,7 @@ async def send_help_message(
             doc = get_doc_from_func(func)
             if not doc:
                 # function found, but does not have help.
-                return await embed_utils.replace(
+                return await snakecore.utils.embed_utils.replace_embed_at(
                     original_msg,
                     title="Could not get docs",
                     description="Command has no documentation",
@@ -180,11 +178,13 @@ async def send_help_message(
 
             example_cmd = doc.get("example command")
             if example_cmd:
-                embed_fields.append(["Example command(s):", example_cmd, True])
+                embed_fields.append(
+                    dict(name="Example command(s):", value=example_cmd, inline=True)
+                )
 
             if len(desc_list) == 1:
                 embeds.append(
-                    embed_utils.create(
+                    snakecore.utils.embed_utils.create_embed(
                         title=f"Help for `{func_name}`",
                         description=body,
                         color=common.BOT_HELP_PROMPT["color"],
@@ -193,7 +193,7 @@ async def send_help_message(
                 )
             else:
                 embeds.append(
-                    embed_utils.create(
+                    snakecore.utils.embed_utils.create_embed(
                         title=f"Help for `{func_name}`",
                         description=body,
                         color=common.BOT_HELP_PROMPT["color"],
@@ -202,31 +202,36 @@ async def send_help_message(
                 desc_list_len = len(desc_list)
                 for i in range(1, desc_list_len):
                     embeds.append(
-                        embed_utils.create(
+                        snakecore.utils.embed_utils.create_embed(
                             title=f"Help for `{func_name}`",
                             description=desc_list[i],
                             color=common.BOT_HELP_PROMPT["color"],
-                            fields=embed_fields if i == desc_list_len - 1 else (),
+                            fields=embed_fields if i == desc_list_len - 1 else None,
                         )
                     )
 
     if not embeds:
-        return await embed_utils.replace(
+        return await snakecore.utils.embed_utils.replace_embed_at(
             original_msg,
             title="Command not found",
             description="No such command exists",
             color=0xFF0000,
         )
-    
-    command_embed = snakecore.utils.embed_utils.create_embed(
-        footer_text=f"help {' '.join(commands)}"
-    )
 
-    msg_embeds = original_msg.embeds.copy()
-    msg_embeds[7:] = [command_embed]
+    msg_embeds = [
+        snakecore.utils.embed_utils.create_embed(
+            color=common.BOT_HELP_PROMPT["color"],
+            footer_text=f"Command: help {' '.join(commands)}",
+        )
+    ]
 
-    await original_msg.edit(embeds=msg_embeds)
+    original_msg = await original_msg.edit(embeds=msg_embeds)
 
     await snakecore.utils.pagination.EmbedPaginator(
-        original_msg, *embeds, invoker, whitelisted_roles=common.ServerConstants.ADMIN_ROLES, start_page_number=page, theme_color=common.BOT_HELP_PROMPT["color"]
+        original_msg,
+        *embeds,
+        caller=invoker,
+        whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+        start_page_number=page,
+        theme_color=common.BOT_HELP_PROMPT["color"],
     ).mainloop()

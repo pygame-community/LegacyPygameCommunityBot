@@ -18,7 +18,6 @@ import snakecore
 
 from pgbot import common
 from pgbot.commands import admin, user
-from pgbot.utils import utils
 
 
 def get_perms(mem: Union[discord.Member, discord.User]):
@@ -54,7 +53,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         splits.pop(0)
         try:
             if splits:
-                for uid in map(utils.filter_id, splits):
+                for uid in map(snakecore.utils.extract_markdown_mention_id, splits):
                     if uid in common.TEST_USER_IDS:
                         break
                 else:
@@ -82,12 +81,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                 invoke_msg.channel,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
+                color=common.DEFAULT_EMBED_COLOR,
             )
         else:
             await snakecore.utils.embed_utils.replace_embed_at(
                 response_msg,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
+                color=common.DEFAULT_EMBED_COLOR,
             )
         sys.exit(0)
 
@@ -102,7 +103,8 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
         response_msg = await snakecore.utils.embed_utils.send_embed(
             invoke_msg.channel,
             title="Your command is being processed:",
-            fields=(("\u2800", "`Loading...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
         )
 
     if not common.TEST_MODE and not common.GENERIC:
@@ -118,13 +120,14 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                 description=escaped_cmd_text
                 if len(escaped_cmd_text) <= 2047
                 else escaped_cmd_text[:2044] + "...",
-                fields=(
-                    (
-                        "\u200b",
-                        f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
-                        False,
+                color=common.DEFAULT_EMBED_COLOR,
+                fields=[
+                    dict(
+                        name="\u200b",
+                        value=f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
+                        inline=False,
                     ),
-                ),
+                ],
             ),
             file=log_txt_file,
         )

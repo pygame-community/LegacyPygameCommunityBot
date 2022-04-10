@@ -17,9 +17,10 @@ from typing import Optional, Union
 
 import discord
 import psutil
+import snakecore
 
 from pgbot import common
-from pgbot.utils import embed_utils, utils
+import pgbot
 from pgbot.commands.base import BaseCommand, BotException, String, add_group
 
 process = psutil.Process(os.getpid())
@@ -82,8 +83,11 @@ class SudoCommand(BaseCommand):
         if destination is None:
             destination = self.channel
 
-        if not utils.check_channel_permissions(
-            self.author, destination, permissions=("view_channel", "send_messages")
+        if not snakecore.utils.have_permissions_in_channels(
+            self.author,
+            destination,
+            "view_channel",
+            "send_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -92,10 +96,10 @@ class SudoCommand(BaseCommand):
 
         for i, data in enumerate(datas):
             if isinstance(data, discord.Message):
-                if not utils.check_channel_permissions(
+                if not snakecore.utils.have_permissions_in_channels(
                     self.author,
                     data.channel,
-                    permissions=("view_channel",),
+                    "view_channel",
                 ):
                     raise BotException(
                         "Not enough permissions",
@@ -106,27 +110,29 @@ class SudoCommand(BaseCommand):
                 await asyncio.sleep(0)
 
         output_strings = []
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(
-                ("\u2800", "`...`", False),
-                ("\u2800", "`...`", False),
-            ),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[
+                dict(name="\u2800", value="`...`", inline=False),
+                dict(name="\u2800", value="`...`", inline=False),
+            ],
         )
         data_count = len(datas)
         for i, data in enumerate(datas):
             if data_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{data_count}` inputs processed\n"
                         f"{(i/data_count)*100:.01f}% | "
-                        + utils.progress_bar(i / data_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / data_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
             attachment_msg = None
 
             if isinstance(data, String):
@@ -137,10 +143,10 @@ class SudoCommand(BaseCommand):
                     output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
-                if not utils.check_channel_permissions(
+                if not snakecore.utils.have_permissions_in_channels(
                     self.author,
                     data.channel,
-                    permissions=("view_channel",),
+                    "view_channel",
                 ):
                     raise BotException(
                         "Not enough permissions",
@@ -228,16 +234,17 @@ class SudoCommand(BaseCommand):
                 )
 
         if data_count > 2:
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
+            snakecore.utils.embed_utils.edit_embed_field_from_dict(
                 load_embed,
+                0,
                 dict(
                     name="Processing Completed",
                     value=f"`{data_count}/{data_count}` inputs processed\n"
-                    "100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
                 ),
-                0,
             )
+
+            await self.response_msg.edit(embed=load_embed)
 
         allowed_mentions = (
             discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
@@ -245,30 +252,31 @@ class SudoCommand(BaseCommand):
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Creating Messages",
                         value=f"`{j}/{output_count}` messages created\n"
                         f"{(j/output_count)*100:.01f}% | "
-                        + utils.progress_bar(j / output_count, divisions=30),
+                        + snakecore.utils.progress_bar(j / output_count, divisions=30),
                     ),
                     1,
                 )
             await destination.send(content=msg_txt, allowed_mentions=allowed_mentions)
 
         if data_count > 2:
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
+            snakecore.utils.embed_utils.edit_embed_field_from_dict(
                 load_embed,
+                1,
                 dict(
                     name="Creation Completed",
                     value=f"`{output_count}/{output_count}` messages created\n"
-                    "100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
                 ),
-                1,
             )
+
+            await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.invoke_msg.delete()
@@ -315,20 +323,23 @@ class SudoCommand(BaseCommand):
         -----
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             msg.channel,
-            permissions=("view_channel", "send_messages"),
+            "view_channel",
+            "send_messages",
         ):
             raise BotException(
                 "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        elif isinstance(data, discord.Message) and not utils.check_channel_permissions(
+        elif isinstance(
+            data, discord.Message
+        ) and not snakecore.utils.have_permissions_in_channels(
             self.author,
             data.channel,
-            permissions=("view_channel",),
+            "view_channel",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -432,14 +443,16 @@ class SudoCommand(BaseCommand):
         -----
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             msg_a.channel,
-            permissions=("view_channel", "send_messages"),
-        ) or not utils.check_channel_permissions(
+            "view_channel",
+            "send_messages",
+        ) or not snakecore.utils.have_permissions_in_channels(
             self.author,
             msg_b.channel,
-            permissions=("view_channel", "send_messages"),
+            "view_channel",
+            "send_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -550,8 +563,8 @@ class SudoCommand(BaseCommand):
         if not isinstance(destination, discord.TextChannel):
             destination = self.channel
 
-        if not utils.check_channel_permissions(
-            self.author, destination, permissions=("view_channel", "send_messages")
+        if not snakecore.utils.have_permissions_in_channels(
+            self.author, destination, "view_channel", "send_messages"
         ):
             raise BotException(
                 "Not enough permissions",
@@ -561,8 +574,10 @@ class SudoCommand(BaseCommand):
         checked_channels = set()
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
-                if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel",)
+                if not snakecore.utils.have_permissions_in_channels(
+                    self.author,
+                    msg.channel,
+                    "view_channel",
                 ):
                     raise BotException(
                         "Not enough permissions",
@@ -580,25 +595,28 @@ class SudoCommand(BaseCommand):
                 "No messages given as input.",
             )
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
                         f"{(i/msg_count)*100:.01f}% | "
-                        + utils.progress_bar(i / msg_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
+
             await destination.trigger_typing()
 
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
@@ -615,7 +633,9 @@ class SudoCommand(BaseCommand):
                     ]
 
             if info:
-                info_embed = embed_utils.get_msg_info_embed(msg, author_info)
+                info_embed = pgbot.utils.embed_utils.get_msg_info_embed(
+                    msg, author_info
+                )
                 info_embed.set_author(name="Message data & info")
                 info_embed.title = ""
 
@@ -642,8 +662,9 @@ class SudoCommand(BaseCommand):
                 with io.StringIO(msg.content) as fobj:
                     await destination.send(
                         file=discord.File(fobj, "messagedata.txt"),
-                        embed=embed_utils.create(
+                        embed=snakecore.utils.embed_utils.create_embed(
                             author_name="Message data",
+                            color=common.DEFAULT_EMBED_COLOR,
                             description=f"**[View Original Message]({msg.jump_url})**",
                         ),
                     )
@@ -652,23 +673,24 @@ class SudoCommand(BaseCommand):
                     with io.StringIO(msg.content) as fobj:
                         await destination.send(
                             file=discord.File(fobj, "messagedata.txt"),
-                            embed=embed_utils.create(
+                            embed=snakecore.utils.embed_utils.create_embed(
                                 author_name="Message data",
+                                color=common.DEFAULT_EMBED_COLOR,
                                 description=f"**[View Original Message]({msg.jump_url})**",
                             ),
                         )
                 else:
-                    await embed_utils.send(
+                    await snakecore.utils.embed_utils.send_embed(
                         self.channel,
                         author_name="Message data",
                         description="```\n{0}```".format(escaped_msg_content),
-                        fields=(
-                            (
-                                "\u2800",
-                                f"**[View Original Message]({msg.jump_url})**",
-                                False,
+                        fields=[
+                            dict(
+                                name="\u2800",
+                                value=f"**[View Original Message]({msg.jump_url})**",
+                                inline=False,
                             ),
-                        ),
+                        ],
                     )
 
             if attached_files:
@@ -682,7 +704,7 @@ class SudoCommand(BaseCommand):
                 embed_data_fobjs = []
                 for embed in msg.embeds:
                     embed_data_fobj = io.StringIO()
-                    embed_utils.export_embed_data(
+                    snakecore.utils.embed_utils.export_embed_data(
                         embed.to_dict(),
                         fp=embed_data_fobj,
                         indent=4,
@@ -705,16 +727,17 @@ class SudoCommand(BaseCommand):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
+            snakecore.utils.embed_utils.edit_embed_field_from_dict(
                 load_embed,
+                0,
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    "100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
                 ),
-                0,
             )
+
+            await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
@@ -746,10 +769,10 @@ class SudoCommand(BaseCommand):
         -----
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             origin,
-            permissions=("view_channel",),
+            "view_channel",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -997,8 +1020,8 @@ class SudoCommand(BaseCommand):
         if not isinstance(destination, discord.TextChannel):
             destination = self.channel
 
-        if not utils.check_channel_permissions(
-            self.author, destination, permissions=("view_channel", "send_messages")
+        if not snakecore.utils.have_permissions_in_channels(
+            self.author, destination, "view_channel", "send_messages"
         ):
             raise BotException(
                 "Not enough permissions",
@@ -1008,8 +1031,10 @@ class SudoCommand(BaseCommand):
         checked_channels = set()
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
-                if not utils.check_channel_permissions(
-                    self.author, msg.channel, permissions=("view_channel",)
+                if not snakecore.utils.have_permissions_in_channels(
+                    self.author,
+                    msg.channel,
+                    "view_channel",
                 ):
                     raise BotException(
                         "Not enough permissions",
@@ -1027,26 +1052,28 @@ class SudoCommand(BaseCommand):
                 "No messages given as input.",
             )
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
                         f"{(i/msg_count)*100:.01f}% | "
-                        + utils.progress_bar(i / msg_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
 
             await destination.trigger_typing()
             cloned_msg0 = None
@@ -1084,7 +1111,10 @@ class SudoCommand(BaseCommand):
                     with io.StringIO(msg.content) as fobj:
                         await destination.send(
                             content=msg.content[stop_idx:],
-                            embed=embed_utils.create(footer_text="Full message data"),
+                            embed=snakecore.utils.embed_utils.create_embed(
+                                color=common.DEFAULT_EMBED_COLOR,
+                                footer_text="Full message data",
+                            ),
                             file=discord.File(fobj, filename="messagedata.txt"),
                             allowed_mentions=no_mentions,
                         )
@@ -1115,23 +1145,26 @@ class SudoCommand(BaseCommand):
 
             if info:
                 await self.channel.send(
-                    embed=embed_utils.get_msg_info_embed(msg, author=author_info),
+                    embed=pgbot.utils.embed_utils.get_msg_info_embed(
+                        msg, author=author_info
+                    ),
                     reference=cloned_msg0,
                 )
 
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
+            snakecore.utils.embed_utils.edit_embed_field_from_dict(
                 load_embed,
+                0,
                 dict(
                     name="Processing Completed",
                     value=f"`{msg_count}/{msg_count}` messages processed\n"
-                    "100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
                 ),
-                0,
             )
+
+            await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
