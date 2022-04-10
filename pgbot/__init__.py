@@ -29,7 +29,6 @@ async def _init():
     """
 
     await snakecore.init(global_client=common.bot)
-    print(snakecore.jobutils)
 
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
