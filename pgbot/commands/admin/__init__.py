@@ -1577,7 +1577,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
-                color=common.DEFAULT_EMBED_COLOR, footer_text=self.cmd_str
+                color=common.DEFAULT_EMBED_COLOR, footer_text=f"Command: {self.cmd_str}"
             )
         ]
 
