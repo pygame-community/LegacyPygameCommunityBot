@@ -16,9 +16,9 @@ import sys
 
 import discord
 from discord.ext import tasks
+import snakecore
 
 from pgbot import common, db, emotion
-from pgbot.utils import utils
 
 
 async def handle_reminders(reminder_obj: db.DiscordDB):
@@ -99,13 +99,13 @@ async def handle_console():
 
     # the actual message limit is 2000. But since the message is sent with
     # code ticks, we need room for those, so 1980
-    for content in utils.split_long_message(contents, 1980):
+    for content in snakecore.utils.split_long_message(contents, 1980):
         content = content.strip()
         if not content:
             continue
 
         await common.console_channel.send(
-            content=utils.code_block(content, code_type="cmd")
+            content=snakecore.utils.code_block(content, code_type="cmd")
         )
 
 

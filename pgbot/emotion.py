@@ -10,8 +10,10 @@ import math
 import discord
 import unidecode
 
+import snakecore
+
 from pgbot import common, db
-from pgbot.utils import embed_utils, utils
+import pgbot
 
 EMOTION_CAPS = {
     "happy": (-100, 100),
@@ -32,7 +34,7 @@ async def update(emotion_name: str, value: int):
         except KeyError:
             emotions[emotion_name] = value
 
-        emotions[emotion_name] = utils.clamp(
+        emotions[emotion_name] = snakecore.utils.clamp(
             emotions[emotion_name], *EMOTION_CAPS[emotion_name]
         )
         db_obj.write(emotions)
@@ -60,11 +62,12 @@ async def check_bonk(msg: discord.Message):
 
     bonks = msg.content.count(common.BONK)
     if await get("anger") + bonks > 30:
-        await embed_utils.send(
+        await snakecore.utils.embed_utils.send_embed(
             msg.channel,
             title="Did you hit the snek?",
             description="You mortal mammal! How you dare to boncc a snake?",
             thumbnail_url="https://cdn.discordapp.com/emojis/779775305224159232.gif",
+            color=common.DEFAULT_EMBED_COLOR,
         )
     bonks = math.floor(math.log2(msg.content.count(common.BONK) + 1))
 
@@ -80,7 +83,7 @@ async def dad_joke(msg: discord.Message):
     if common.bot.user is None:
         return
 
-    if await utils.get_channel_feature("dadjokes", msg.channel):
+    if await pgbot.utils.get_channel_feature("dadjokes", msg.channel):
         return
 
     lowered = unidecode.unidecode(msg.content.lower().strip())

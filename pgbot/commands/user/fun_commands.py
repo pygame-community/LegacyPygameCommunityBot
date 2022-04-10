@@ -14,9 +14,11 @@ import time
 
 import discord
 import pygame
+import snakecore
 import unidecode
 
 from pgbot import common, db, emotion
+import pgbot
 from pgbot.commands.base import (
     BaseCommand,
     BotException,
@@ -25,7 +27,6 @@ from pgbot.commands.base import (
     fun_command,
 )
 from pgbot.commands.utils import vibecheck
-from pgbot.utils import embed_utils, utils
 
 
 class FunCommand(BaseCommand):
@@ -42,10 +43,11 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!version, to report bot version
         """
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Current bot's version",
             description=f"`{common.__version__}`",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @fun_command
@@ -63,11 +65,12 @@ class FunCommand(BaseCommand):
         if sec < sec2:
             sec2 = sec
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title=random.choice(("Pingy Pongy", "Pong!")),
-            description=f"The bot's ping is `{utils.format_time(sec, 0)}`\n"
-            f"The Discord API latency is `{utils.format_time(sec2, 0)}`",
+            description=f"The bot's ping is `{snakecore.utils.format_time_by_units(sec, decimal_places=0)}`\n"
+            f"The Discord API latency is `{snakecore.utils.format_time_by_units(sec2, decimal_places=0)}`",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @fun_command
@@ -114,7 +117,7 @@ class FunCommand(BaseCommand):
                 "Text cannot be empty",
             )
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             description=self.author.mention,
             color=0x40E32D,
@@ -161,9 +164,9 @@ class FunCommand(BaseCommand):
         Implement pg!pet, to pet the bot
         """
         fname = "die.gif" if await emotion.get("anger") > 60 else "pet.gif"
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
-            color=embed_utils.DEFAULT_EMBED_COLOR,
+            color=common.DEFAULT_EMBED_COLOR,
             image_url="https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
@@ -214,9 +217,9 @@ class FunCommand(BaseCommand):
             "footer_text": "This is currently in beta version, so the end product may look different",
             "footer_icon_url": "https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
             "image_url": f"attachment://temp{t}.png",
-            "color": utils.color_to_rgb_int(color),
+            "color": pgbot.utils.color_to_rgb_int(color),
         }
-        embed = embed_utils.create(**embed_dict)
+        embed = snakecore.utils.embed_utils.create_embed(**embed_dict)
         await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
 
         os.remove(f"temp{t}.png")
@@ -233,27 +236,30 @@ class FunCommand(BaseCommand):
         """
         anger = await emotion.get("anger")
         if not anger:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title="Ask forgiveness from snek?",
                 description="Snek is not angry. Awww, don't be sorry.",
+                color=common.DEFAULT_EMBED_COLOR,
             )
             return
 
         num = random.randint(0, 20)
         if num:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title="Ask forgiveness from snek?",
                 description="Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
+                color=common.DEFAULT_EMBED_COLOR,
             )
             await emotion.update("anger", -num)
         else:
-            await embed_utils.replace(
+            await snakecore.utils.embed_utils.replace_embed_at(
                 self.response_msg,
                 title="Ask forgiveness from snek?",
                 description="How did you dare to boncc a snake?\nBold of you to"
                 + " assume I would apologize to you, two-feet-standing being!\n"
                 + f"The anger level is {anger}",
+                color=common.DEFAULT_EMBED_COLOR,
             )

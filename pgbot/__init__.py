@@ -14,18 +14,22 @@ import re
 import random
 import signal
 import sys
+from typing import Union
 
 import discord
 import pygame
+import snakecore
 
-from pgbot import commands, common, db, emotion, routine
-from pgbot.utils import embed_utils, utils
+from pgbot import commands, common, db, emotion, routine, utils
 
 
 async def _init():
     """
     Startup call helper for pygame bot
     """
+
+    await snakecore.init(global_client=common.bot)
+
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
         # in a discord channel
@@ -93,7 +97,9 @@ async def init():
         )
 
 
-def format_entries_message(msg: discord.Message, entry_type: str):
+def format_entries_message(
+    msg: discord.Message, entry_type: str
+) -> tuple[str, list[dict[str, Union[str, bool]]]]:
     """
     Formats an entries message to be reposted in discussion channel
     """
@@ -112,10 +118,14 @@ def format_entries_message(msg: discord.Message, entry_type: str):
     desc = msg.content if msg.content else "No description provided."
 
     fields = [
-        ["**Posted by**", msg.author.mention, True],
-        ["**Original msg.**", f"[View]({msg.jump_url})", True],
-        ["**Attachments**", attachments, True],
-        ["**Description**", desc, True],
+        {"name": "**Posted by**", "value": msg.author.mention, "inline": True},
+        {
+            "name": "**Original msg.**",
+            "value": f"[View]({msg.jump_url})",
+            "inline": True,
+        },
+        {"name": "**Attachments**", "value": attachments, "inline": True},
+        {"name": "**Description**", "value": desc, "inline": True},
     ]
     return title, fields
 
@@ -313,7 +323,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
                                     f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
                                     f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
                                     " If no changes are made, your entry message will be"
-                                    f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
+                                    f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
                                 )
                             )
                             common.entry_message_deletion_dict[new.id] = [
@@ -337,7 +347,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
                         f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
                         f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
                         " If no changes are made, your entry message will be"
-                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
+                        f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
                     )
 
                     common.entry_message_deletion_dict[new.id] = [
@@ -376,7 +386,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await embed_utils.edit(message, embed=embed, fields=fields)
+                    await snakecore.utils.embed_utils.edit_embed_at(
+                        message, fields=fields
+                    )
                     embed_repost_edited = True
                     break
 
@@ -391,7 +403,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 color = 0xFF8800
 
                 title, fields = format_entries_message(new, entry_type)
-                await embed_utils.send(
+                await snakecore.utils.embed_utils.send_embed(
                     common.entries_discussion_channel,
                     title=title,
                     color=color,
@@ -425,7 +437,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
 
     for reaction in msg.reactions:
         async for user in reaction.users():
-            if user.id == payload.user_id and not utils.is_emoji_equal(
+            if user.id == payload.user_id and not snakecore.utils.is_emoji_equal(
                 payload.emoji, reaction.emoji
             ):
                 await reaction.remove(user)
@@ -478,7 +490,7 @@ async def handle_message(msg: discord.Message):
                         f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
                         f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
                         " If no changes are made, your entry message will be"
-                        f" deleted {utils.format_datetime(deletion_datetime, tformat='R')}."
+                        f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
                     )
                     common.entry_message_deletion_dict[msg.id] = [
                         asyncio.create_task(
@@ -495,7 +507,7 @@ async def handle_message(msg: discord.Message):
                 color = 0x0000AA
 
             title, fields = format_entries_message(msg, entry_type)
-            await embed_utils.send(
+            await snakecore.utils.embed_utils.send_embed(
                 common.entries_discussion_channel,
                 title=title,
                 color=color,

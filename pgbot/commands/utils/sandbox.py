@@ -24,9 +24,9 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 from PIL import Image
+import snakecore
 
 from pgbot import common
-from pgbot.utils import utils
 
 
 class Output:
@@ -105,7 +105,7 @@ class Output:
         }
 
         if loops != 1:
-            kwargs["loop"] = utils.clamp(loops - 1, 0, 100)
+            kwargs["loop"] = snakecore.utils.clamp(loops - 1, 0, 100)
 
         return kwargs
 
@@ -280,7 +280,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         )
 
     except (Exception, BaseException) as err:
-        output.exc = utils.format_code_exception(err)
+        output.exc = snakecore.utils.format_code_exception(err)
     finally:
         output.duration = time.perf_counter() - script_start
 

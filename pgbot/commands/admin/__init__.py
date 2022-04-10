@@ -19,13 +19,14 @@ import black
 import discord
 import psutil
 import pygame
+import snakecore
 
 from pgbot import common, db
+import pgbot
 from pgbot.commands.admin.emsudo import EmsudoCommand
 from pgbot.commands.admin.sudo import SudoCommand
 from pgbot.commands.base import BotException, CodeBlock, String, add_group, no_dm
 from pgbot.commands.user import UserCommand
-from pgbot.utils import embed_utils, utils
 
 process = psutil.Process(os.getpid())
 
@@ -45,7 +46,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         for cnt, arg in enumerate(args):
             if isinstance(arg, CodeBlock):
-                out += f"{cnt} - Codeblock\n" + utils.code_block(
+                out += f"{cnt} - Codeblock\n" + snakecore.utils.code_block(
                     arg.code, code_type=arg.lang
                 )
             elif isinstance(arg, String):
@@ -53,9 +54,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
                 )
             elif isinstance(arg, tuple):
-                out += (
-                    f"{cnt} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
-                )
+                out += f"{cnt} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
             else:
                 out += f"{cnt} - arg\n> {arg}\n"
 
@@ -65,7 +64,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         for name, arg in kwargs.items():
             if isinstance(arg, CodeBlock):
-                out += f"{name} - Codeblock\n" + utils.code_block(
+                out += f"{name} - Codeblock\n" + snakecore.utils.code_block(
                     arg.code, code_type=arg.lang
                 )
             elif isinstance(arg, String):
@@ -73,17 +72,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                     f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
                 )
             elif isinstance(arg, tuple):
-                out += (
-                    f"{name} - tuple\n {utils.code_block(repr(arg), code_type='py')}\n"
-                )
+                out += f"{name} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
             else:
                 out += f"{name} - arg\n> {arg}\n"
 
         out += "\n"
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Here are the args and kwargs you passed",
             description=out,
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("db")
@@ -96,8 +94,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         Implement pg!db, list contents of DB
         """
 
-        await embed_utils.replace(
-            self.response_msg, title="Tables:", description="\n".join(db.db_obj_cache)
+        await snakecore.utils.embed_utils.replace_embed_at(
+            self.response_msg,
+            title="Tables:",
+            description="\n".join(db.db_obj_cache),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("db", "read")
@@ -166,10 +167,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         async with db.DiscordDB(name) as db_obj:
             db_obj.write(eval(obj_str))  # pylint: disable = eval-used
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="DB overwritten!",
             description="DB contents have been overwritten successfully",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("db", "del")
@@ -186,10 +188,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             if not db_obj.delete():
                 raise BotException("Could not delete DB", "No such DB exists")
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="DB has been deleted!",
             description="DB contents have been deleted successfully",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_whitelist_cmd(self, *cmds: str):
@@ -210,10 +213,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(commands)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Whitelisted!",
             description=f"Successfully whitelisted {cnt} command(s)",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_blacklist_cmd(self, *cmds: str):
@@ -235,10 +239,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(commands)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Blacklisted!",
             description=f"Successfully blacklisted {cnt} command(s)",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_clock(
@@ -298,15 +303,16 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         except Exception as ex:
             raise BotException(
                 "An exception occured:",
-                utils.code_block(
+                snakecore.utils.code_block(
                     type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
                 ),
             )
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
-            title=f"Return output (code executed in {utils.format_time(total)}):",
-            description=utils.code_block(repr(eval_output)),
+            title=f"Return output (code executed in {snakecore.utils.format_time_by_units(total)}):",
+            description=snakecore.utils.code_block(repr(eval_output)),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_heap(self):
@@ -318,10 +324,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         Implement pg!heap, for admins to check memory taken up by the bot
         """
         mem = process.memory_info().rss
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Total memory used:",
-            description=f"**{utils.format_byte(mem, 4)}**\n({mem} B)",
+            description=f"**{snakecore.utils.format_byte(mem, 4)}**\n({mem} B)",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     async def cmd_stop(self):
@@ -368,14 +375,15 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if destination is None:
             destination = self.channel
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             origin,
-            permissions=("view_channel",),
-        ) or not utils.check_channel_permissions(
+            "view_channel",
+        ) or not snakecore.utils.have_permissions_in_channels(
             self.author,
             destination,
-            permissions=("view_channel", "send_messages"),
+            "view_channel",
+            "send_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -456,15 +464,27 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             if start_date == end_date:
                 header_fields = (
-                    [f"On: {utils.format_datetime(start_date)}", "\u200b", True],
+                    {
+                        "name": f"On: {snakecore.utils.create_markdown_timestamp(start_date)}",
+                        "value": "\u200b",
+                        "inline": True,
+                    },
                 )
             else:
                 header_fields = (
-                    [f"From: {utils.format_datetime(start_date)}", "\u200b", True],
-                    [f"To: {utils.format_datetime(end_date)}", "\u200b", True],
+                    {
+                        "name": f"From: {snakecore.utils.create_markdown_timestamp(start_date)}",
+                        "value": "\u200b",
+                        "inline": True,
+                    },
+                    {
+                        "name": f"To: {snakecore.utils.create_markdown_timestamp(end_date)}",
+                        "value": "\u200b",
+                        "inline": True,
+                    },
                 )
 
-            archive_header_msg_embed = embed_utils.create(
+            archive_header_msg_embed = snakecore.utils.embed_utils.create_embed(
                 title=f"__Archive of `#{origin.name}`__",
                 description=f"\nAn archive of **{origin.mention}**"
                 f"({len(messages)} message(s))\n\u200b",
@@ -477,9 +497,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         no_mentions = discord.AllowedMentions.none()
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
@@ -488,17 +509,19 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 reversed(messages) if not oldest_first else messages
             ):
                 if msg_count > 2 and not i % 2:
-                    await embed_utils.edit_field_from_dict(
-                        self.response_msg,
+                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
                         load_embed,
+                        0,
                         dict(
                             name="Archiving Messages",
                             value=f"`{i}/{msg_count}` messages archived\n"
                             f"{(i / msg_count) * 100:.01f}% | "
-                            + utils.progress_bar(i / msg_count, divisions=30),
+                            + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                         ),
-                        0,
                     )
+
+                    await self.response_msg.edit(embed=load_embed)
+
                 author = msg.author
                 msg_reference_id = None
                 if msg.reference and not isinstance(
@@ -540,7 +563,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                     else "f"
                                 )
                                 description_str = (
-                                    f"{utils.format_datetime(msg.created_at, tformat=shorten_style)}"
+                                    f"{snakecore.utils.create_markdown_timestamp(msg.created_at, tformat=shorten_style)}"
                                     + (
                                         f" [View]({msg.jump_url})"
                                         if message_links
@@ -550,7 +573,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             else:
                                 description_str = (
                                     f"{author.mention}"
-                                    f" {utils.format_datetime(msg.created_at)}"
+                                    f" {snakecore.utils.create_markdown_timestamp(msg.created_at)}"
                                     + (
                                         f" [View]({msg.jump_url})"
                                         if message_links
@@ -558,17 +581,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                     )
                                 )
 
-                            author_embed = embed_utils.create(
+                            author_embed = snakecore.utils.embed_utils.create_embed(
                                 description=description_str,
                                 color=0x36393F,
                                 author_name=f"{author.name}#{author.discriminator}"
                                 if not shorten
                                 else None,
-                                author_icon_url=(
-                                    author.avatar.url
-                                    if author.avatar is not None
-                                    else None
-                                )
+                                author_icon_url=(author.display_avatar.url)
                                 if not shorten
                                 else None,
                             )
@@ -612,8 +631,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             with io.StringIO(msg.content) as fobj:
                                 await destination.send(
                                     content=msg.content[stop_idx:],
-                                    embed=embed_utils.create(
-                                        footer_text="Full message data"
+                                    embed=snakecore.utils.embed_utils.create_embed(
+                                        color=common.DEFAULT_EMBED_COLOR,
+                                        footer_text="Full message data",
                                     ),
                                     file=discord.File(fobj, filename="messagedata.txt"),
                                     allowed_mentions=no_mentions,
@@ -633,15 +653,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                             )
 
                     elif msg.type == discord.MessageType.pins_add:
-                        await embed_utils.send(
+                        await snakecore.utils.embed_utils.send_embed(
                             channel=destination,
                             description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}",
+                            color=common.DEFAULT_EMBED_COLOR,
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
-                        await embed_utils.send(
+                        await snakecore.utils.embed_utils.send_embed(
                             channel=destination,
                             description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!",
+                            color=common.DEFAULT_EMBED_COLOR,
                         )
 
                     if len(attached_files) > 1:
@@ -673,7 +695,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                                     )
                             else:
                                 message_id_cache[msg.id] = await destination.send(
-                                    embed=embed_utils.create(
+                                    embed=snakecore.utils.embed_utils.create_embed(
                                         color=0x36393F,
                                         description=f"```\n{escaped_msg_content}```",
                                     ),
@@ -708,7 +730,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         embed_data_fobjs = []
                         for embed in msg.embeds:
                             embed_data_fobj = io.StringIO()
-                            embed_utils.export_embed_data(
+                            snakecore.utils.embed_utils.export_embed_data(
                                 embed.to_dict(),
                                 fp=embed_data_fobj,
                                 indent=4,
@@ -736,20 +758,19 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if show_header and not raw:
             archive_header_msg_embed.set_footer(text="Status: Complete")
             if archive_header_msg is not None:
-                await embed_utils.replace_from_dict(
-                    archive_header_msg, archive_header_msg_embed.to_dict()
-                )
+                await archive_header_msg.edit(embed=archive_header_msg_embed)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
+        snakecore.utils.embed_utils.edit_embed_field_from_dict(
             load_embed,
+            0,
             dict(
                 name=f"Successfully archived {msg_count} message(s)",
                 value=f"`{msg_count}/{msg_count}` messages archived\n"
-                "100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
             ),
-            0,
         )
+
+        await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
@@ -771,10 +792,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->example command pg!pin 123412345567891 23456234567834567 3456734523456734567...
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             channel,
-            permissions=("view_channel", "manage_messages"),
+            "view_channel",
+            "manage_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -808,24 +830,26 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 except discord.HTTPException as e:
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
                         f"{(i / msg_count) * 100:.01f}% | "
-                        + utils.progress_bar(i / msg_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
             try:
                 await msg.pin()
             except discord.HTTPException as e:
@@ -841,16 +865,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
+        snakecore.utils.embed_utils.edit_embed_field_from_dict(
             load_embed,
+            0,
             dict(
                 name=f"Sucessfully pinned {msg_count} message(s) ({unpin_count} removed)!",
                 value=f"`{msg_count}/{msg_count}` messages pinned\n"
-                "100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
             ),
-            0,
         )
+
+        await self.response_msg.edit(embed=load_embed)
 
         try:
             if not delete_system_messages:
@@ -872,10 +897,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->example command pg!unpin #general 23456234567834567 3456734523456734567...
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             channel,
-            permissions=("view_channel", "manage_messages"),
+            "view_channel",
+            "manage_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -901,25 +927,28 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
                         f"{(i / msg_count) * 100:.01f}% | "
-                        + utils.progress_bar(i / msg_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
 
             if msg.id in pinned_msg_id_set:
                 try:
@@ -929,16 +958,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
+        snakecore.utils.embed_utils.edit_embed_field_from_dict(
             load_embed,
+            0,
             dict(
                 name=f"Succesfully unpinned {msg_count} message(s)!",
                 value=f"`{msg_count}/{msg_count}` messages processed\n"
-                "100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
             ),
-            0,
         )
+
+        await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
@@ -958,10 +988,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         ->example command pg!pin remove at #general 3.. range(9, 15)..
         """
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             channel,
-            permissions=("view_channel", "manage_messages"),
+            "view_channel",
+            "manage_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -1004,9 +1035,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         indices_list = sorted(set(indices_list))
         indices_list.reverse()
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
 
         idx_count = len(indices_list)
@@ -1015,17 +1047,18 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                 unpin_index = pinned_msg_count + unpin_index
 
             if idx_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{idx_count}` messages processed\n"
                         f"{(i / idx_count) * 100:.01f}% | "
-                        + utils.progress_bar(i / idx_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / idx_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
 
             if 0 <= unpin_index < pinned_msg_count:
                 msg = pinned_msgs[unpin_index]
@@ -1041,16 +1074,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             await asyncio.sleep(0)
 
-        await embed_utils.edit_field_from_dict(
-            self.response_msg,
+        snakecore.utils.embed_utils.edit_embed_field_from_dict(
             load_embed,
+            0,
             dict(
                 name=f"Succesfully unpinned {idx_count} message(s)!",
                 value=f"`{idx_count}/{idx_count}` messages processed\n"
-                "100% | " + utils.progress_bar(1.0, divisions=30),
+                "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
             ),
-            0,
         )
+
+        await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10.0 if idx_count > 2 else 0.0)
@@ -1087,10 +1121,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if not isinstance(destination, discord.TextChannel):
             destination = self.channel
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             destination,
-            permissions=("view_channel", "send_messages"),
+            "view_channel",
+            "send_messages",
         ):
             raise BotException(
                 "Not enough permissions",
@@ -1102,7 +1137,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             embed_dict["author"] = {"name": author.string}
 
         if color:
-            embed_dict["color"] = utils.color_to_rgb_int(color)
+            embed_dict["color"] = pgbot.utils.color_to_rgb_int(color)
 
         if url:
             embed_dict["url"] = url.string
@@ -1200,10 +1235,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         checked_channels = set()
         for i, obj in enumerate(objs):
             if isinstance(obj, discord.Message):
-                if not utils.check_channel_permissions(
+                if not snakecore.utils.have_permissions_in_channels(
                     self.author,
                     obj.channel,
-                    permissions=("view_channel",),
+                    "view_channel",
                 ):
                     raise BotException(
                         "Not enough permissions",
@@ -1217,34 +1252,37 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
         if not objs:
             obj = self.author
-            embed = embed_utils.get_member_info_embed(obj)
+            embed = pgbot.utils.embed_utils.get_member_info_embed(obj)
             await self.channel.send(embed=embed)
 
-        load_embed = embed_utils.create(
+        load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
-            fields=(("\u2800", "`...`", False),),
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`...`", inline=False)],
         )
         obj_count = len(objs)
         for i, obj in enumerate(objs):
             if obj_count > 2 and not i % 3:
-                await embed_utils.edit_field_from_dict(
-                    self.response_msg,
+                await snakecore.utils.embed_utils.edit_embed_field_from_dict(
                     load_embed,
+                    0,
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{obj_count}` inputs processed\n"
                         f"{(i / obj_count) * 100:.01f}% | "
-                        + utils.progress_bar(i / obj_count, divisions=30),
+                        + snakecore.utils.progress_bar(i / obj_count, divisions=30),
                     ),
-                    0,
                 )
+
+                await self.response_msg.edit(embed=load_embed)
+
             await self.channel.trigger_typing()
             embed = None
             if isinstance(obj, discord.Message):
-                embed = embed_utils.get_msg_info_embed(obj, author=author)
+                embed = pgbot.utils.embed_utils.get_msg_info_embed(obj, author=author)
 
             elif isinstance(obj, (discord.Member, discord.User)):
-                embed = embed_utils.get_member_info_embed(obj)
+                embed = pgbot.utils.embed_utils.get_member_info_embed(obj)
 
             if embed is not None:
                 await self.channel.send(embed=embed)
@@ -1252,16 +1290,17 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             await asyncio.sleep(0)
 
         if obj_count > 2:
-            await embed_utils.edit_field_from_dict(
-                self.response_msg,
+            snakecore.utils.embed_utils.edit_embed_field_from_dict(
                 load_embed,
+                0,
                 dict(
                     name="Processing Complete",
                     value=f"`{obj_count}/{obj_count}` inputs processed\n"
-                    "100% | " + utils.progress_bar(1.0, divisions=30),
+                    "100% | " + snakecore.utils.progress_bar(1.0, divisions=30),
                 ),
-                0,
             )
+
+            await self.response_msg.edit(embed=load_embed)
 
         try:
             await self.response_msg.delete(delay=10.0 if obj_count > 1 else 0.0)
@@ -1299,7 +1338,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         description = (
             f"Server Name: `{guild.name}`\n"
             f"Server ID: `{guild.id}`\n"
-            f"Created At: {utils.format_datetime(guild.created_at)}\n"
+            f"Created At: {snakecore.utils.create_markdown_timestamp(guild.created_at)}\n"
         )
 
         description += f"Number of Members: `{guild.member_count}`\n"
@@ -1327,9 +1366,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             "title": f"Server information for {guild.name}:",
             "thumbnail_url": guild.icon.url if guild.icon is not None else None,
             "description": description,
+            "color": common.DEFAULT_EMBED_COLOR,
         }
 
-        await embed_utils.replace(self.response_msg, **kwargs)
+        await snakecore.utils.embed_utils.replace_embed_at(self.response_msg, **kwargs)
 
     async def cmd_react(self, message: discord.PartialMessage, *emojis: str):
         """
@@ -1415,10 +1455,10 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         if isinstance(self.author, discord.User):
             return
 
-        if not utils.check_channel_permissions(
+        if not snakecore.utils.have_permissions_in_channels(
             self.author,
             channel,
-            permissions=("view_channel",),
+            "view_channel",
         ):
             raise BotException(
                 f"Not enough permissions",
@@ -1512,9 +1552,9 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             desc += "\n**━━━━━━━━━━━━**"
 
             if message.edited_at:
-                desc += f"\n Last edited on {utils.format_datetime(message.edited_at)}"
+                desc += f"\n Last edited on {snakecore.utils.create_markdown_timestamp(message.edited_at)}"
             else:
-                desc += f"\n Sent on {utils.format_datetime(message.created_at)}"
+                desc += f"\n Sent on {snakecore.utils.create_markdown_timestamp(message.created_at)}"
 
             if message.reference:
                 desc += f"\nReplying to [this]({message.reference.jump_url}) message"
@@ -1522,12 +1562,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             desc += f"\nLink to [Original message]({message.jump_url})"
             desc += "\n**━━━━━━━━━━━━**"
 
-            embed = embed_utils.create(
-                author_icon_url=message.author.avatar.url
-                if message.author.avatar is not None
-                else None,
+            embed = snakecore.utils.embed_utils.create_embed(
+                author_icon_url=message.author.display_avatar.url,
                 author_name=message.author.display_name,
                 description=desc,
+                color=common.DEFAULT_EMBED_COLOR,
             )
             pages.append(embed)
 
@@ -1536,8 +1575,21 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
         else:
             controllers = self.author
 
-        browse_embed = embed_utils.PagedEmbed(
-            self.response_msg, pages, controllers, self.cmd_str, self.page
+        msg_embeds = [
+            snakecore.utils.embed_utils.create_embed(
+                color=common.DEFAULT_EMBED_COLOR, footer_text=self.cmd_str
+            )
+        ]
+
+        response_msg = await self.response_msg.edit(embeds=msg_embeds)
+
+        browse_embed = snakecore.utils.pagination.EmbedPaginator(
+            response_msg,
+            *pages,
+            caller=controllers,
+            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+            start_page_number=self.page_number,
+            theme_color=common.DEFAULT_EMBED_COLOR,
         )
 
         await browse_embed.mainloop()
@@ -1579,10 +1631,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(db_dict)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Successfully executed command!",
             description=f"Changed settings on {len(channels)} channel(s)",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("events", "wc", "set")
@@ -1605,10 +1658,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(wc_dict)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Successfully updated data!",
             description="Updated Weekly Challenges (WC) Event description and/or url!",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("events", "wc", "add")
@@ -1634,10 +1688,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
             db_obj.write(wc_dict)
             ind = len(wc_dict["rounds"])
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Successfully updated events round!",
             description=f"Weekly Challenges got round {ind} - '{round_name.string}'!",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("events", "wc", "remove")
@@ -1661,12 +1716,13 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(wc_dict)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Successfully updated events round!",
             description=(
                 f"Removed round '{round_name}' from Weekly Challenges (WC) event!"
             ),
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
     @add_group("events", "wc", "update")
@@ -1709,7 +1765,7 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
                         sum(round_dict["scores"].get(mem.id, ()))
                         for round_dict in wc_dict["rounds"]
                     )
-                    await utils.give_wc_roles(mem, total_score)
+                    await pgbot.utils.give_wc_roles(mem, total_score)
 
             except IndexError:
                 raise BotException(
@@ -1719,10 +1775,11 @@ class AdminCommand(UserCommand, SudoCommand, EmsudoCommand):
 
             db_obj.write(wc_dict)
 
-        await embed_utils.replace(
+        await snakecore.utils.embed_utils.replace_embed_at(
             self.response_msg,
             title="Successfully updated data!",
             description="The round related data or the scores have been updated!",
+            color=common.DEFAULT_EMBED_COLOR,
         )
 
 

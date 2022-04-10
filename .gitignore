@@ -148,3 +148,6 @@ cython_debug/
 
 ### JetBrains IDEs
 .idea/
+
+# MacOS
+.DS_Store
