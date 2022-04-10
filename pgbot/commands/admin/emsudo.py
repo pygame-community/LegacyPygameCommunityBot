@@ -9,7 +9,6 @@ This file defines the command handler class for the emsudo commands of the bot
 from __future__ import annotations
 
 import asyncio
-from hashlib import new
 import io
 import json
 from ast import literal_eval
