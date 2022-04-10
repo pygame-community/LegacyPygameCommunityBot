@@ -233,5 +233,6 @@ async def send_help_message(
         caller=invoker,
         whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
         start_page_number=page,
+        inactivity_timeout=60,
         theme_color=common.BOT_HELP_PROMPT["color"],
     ).mainloop()
