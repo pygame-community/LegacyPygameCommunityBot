@@ -261,6 +261,6 @@ async def put_doc(
         caller=msg_invoker,
         whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
         start_page_number=page,
-        theme_color=pgbot.utils.embed_utils.DEFAULT_EMBED_COLOR,
+        theme_color=common.DEFAULT_EMBED_COLOR,
     )
     await paginator.mainloop()
