@@ -6,11 +6,14 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some constants and variables used across the whole codebase
 """
 
+from collections import deque
 import io
 import os
+from sys import prefix
 from typing import Optional, Union
 
 import discord
+from discord.ext import commands 
 import pygame
 
 from dotenv import load_dotenv
@@ -22,14 +25,9 @@ if os.path.isfile(".env"):
 Channel = Union[
     discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
 ]
-# For commonly used variables
-ints = discord.Intents.default()
-ints.members = True  # needed for on_member_join
-ints.message_content = True  # needed for message content
-bot = discord.Client(intents=ints)
-window = pygame.Surface((1, 1))  # This will later be redefined
-
 cmd_logs = {}
+
+recent_response_messages: dict[int, discord.Message] = {}
 
 # pygame community guild, or whichever is the 'primary' guild for the bot
 guild: Optional[discord.Guild] = None
@@ -96,6 +94,14 @@ WC_SCORING = (
     ("Guardian ⚜️", 15),
     ("Apprentice ⚜️", 1),
 )
+
+# For commonly used variables
+ints = discord.Intents.default()
+ints.members = True  # needed for on_member_join
+ints.message_content = True  # needed for message content
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"), intents=ints)
+print(bot.command_prefix)
+window = pygame.Surface((1, 1))  # This will later be redefined
 
 
 class ServerConstants:

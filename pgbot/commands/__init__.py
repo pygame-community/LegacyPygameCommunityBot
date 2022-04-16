@@ -11,45 +11,30 @@ from __future__ import annotations
 
 import io
 import sys
-from typing import Union
+import types
+from typing import Dict, List, Optional, Tuple, Union
+import typing
 
 import discord
+from discord.ext import commands
+from discord.ext.commands import flags
 import snakecore
 
 from pgbot import common
 from pgbot.commands import admin, user
+from pgbot.commands.utils import get_primary_guild_perms
+from snakecore.command_handler.decorators import kwarg_command
 
 
-def get_perms(mem: Union[discord.Member, discord.User]):
-    """
-    Return a tuple (is_admin, is_priv) for a given user
-    """
-    if mem.id in common.TEST_USER_IDS:
-        return True, True
 
-    if not isinstance(mem, discord.Member):
-        return False, False
-
-    is_priv = False
-
-    if not common.GENERIC:
-        for role in mem.roles:
-            if role.id in common.ServerConstants.ADMIN_ROLES:
-                return True, True
-            elif role.id in common.ServerConstants.PRIV_ROLES:
-                is_priv = True
-
-    return False, is_priv
-
-
-async def handle(invoke_msg: discord.Message, response_msg: discord.Message = None):
+async def handle(invoke_message: discord.Message, response_message: Optional[discord.Message] = None):
     """
     Handle a pg! command posted by a user
     """
-    is_admin, is_priv = get_perms(invoke_msg.author)
+    is_admin, is_priv = get_primary_guild_perms(invoke_message.author)
 
-    if is_admin and invoke_msg.content.startswith(f"{common.PREFIX}stop"):
-        splits = invoke_msg.content.strip().split(" ")
+    if is_admin and invoke_message.content.startswith(f"{common.PREFIX}stop"):
+        splits = invoke_message.content.strip().split(" ")
         splits.pop(0)
         try:
             if splits:
@@ -60,32 +45,32 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                     return
 
         except ValueError:
-            if response_msg is None:
+            if response_message is None:
                 await snakecore.utils.embed_utils.send_embed(
-                    invoke_msg.channel,
+                    invoke_message.channel,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
                     color=0xFF0000,
                 )
             else:
                 await snakecore.utils.embed_utils.replace_embed_at(
-                    response_msg,
+                    response_message,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
                     color=0xFF0000,
                 )
             return
 
-        if response_msg is None:
+        if response_message is None:
             await snakecore.utils.embed_utils.send_embed(
-                invoke_msg.channel,
+                invoke_message.channel,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
                 color=common.DEFAULT_EMBED_COLOR,
             )
         else:
             await snakecore.utils.embed_utils.replace_embed_at(
-                response_msg,
+                response_message,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
                 color=common.DEFAULT_EMBED_COLOR,
@@ -95,28 +80,30 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
     if (
         common.TEST_MODE
         and common.TEST_USER_IDS
-        and invoke_msg.author.id not in common.TEST_USER_IDS
+        and invoke_message.author.id not in common.TEST_USER_IDS
     ):
         return
 
-    if response_msg is None:
-        response_msg = await snakecore.utils.embed_utils.send_embed(
-            invoke_msg.channel,
+    if response_message is None:
+        response_message = await snakecore.utils.embed_utils.send_embed(
+            invoke_message.channel,
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
         )
+    
+    common.recent_response_messages[invoke_message.id] = response_message
 
     if not common.TEST_MODE and not common.GENERIC:
         log_txt_file = None
-        escaped_cmd_text = discord.utils.escape_markdown(invoke_msg.content)
+        escaped_cmd_text = discord.utils.escape_markdown(invoke_message.content)
         if len(escaped_cmd_text) > 2047:
-            with io.StringIO(invoke_msg.content) as log_buffer:
+            with io.StringIO(invoke_message.content) as log_buffer:
                 log_txt_file = discord.File(log_buffer, filename="command.txt")
 
         await common.log_channel.send(
             embed=snakecore.utils.embed_utils.create_embed(
-                title=f"Command invoked by {invoke_msg.author} / {invoke_msg.author.id}",
+                title=f"Command invoked by {invoke_message.author} / {invoke_message.author.id}",
                 description=escaped_cmd_text
                 if len(escaped_cmd_text) <= 2047
                 else escaped_cmd_text[:2044] + "...",
@@ -124,7 +111,7 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
                 fields=[
                     dict(
                         name="\u200b",
-                        value=f"by {invoke_msg.author.mention}\n**[View Original]({invoke_msg.jump_url})**",
+                        value=f"by {invoke_message.author.mention}\n**[View Original]({invoke_message.jump_url})**",
                         inline=False,
                     ),
                 ],
@@ -132,11 +119,49 @@ async def handle(invoke_msg: discord.Message, response_msg: discord.Message = No
             file=log_txt_file,
         )
 
-    cmd = (
-        admin.AdminCommand(invoke_msg, response_msg)
-        if is_admin
-        else user.UserCommand(invoke_msg, response_msg)
-    )
-    cmd.is_priv = is_priv
-    await cmd.handle_cmd()
-    return response_msg
+    #cmd = (
+    #    admin.AdminCommandCog(invoke_message, response_message)
+    #    if is_admin
+    #    else user.UserCommandCog(invoke_message, response_message)
+    #)
+    #cmd.is_priv = is_priv
+    #await cmd.handle_cmd()
+    await common.bot.process_commands(invoke_message)
+    return response_message
+
+
+class TestFlags(commands.FlagConverter, delimiter="="):
+    a: int
+    b: int = 2
+    kw: Dict[str, int] = commands.flag(name="kw", default=lambda ctx: {})
+
+@common.bot.command(name="hello")
+async def hello(ctx: commands.Context, arg1: Union[int, float], arg2: float, *, test1: TestFlags):
+
+   a, b, kw = test1.__dict__.values()
+
+   #kw = dict(kw)
+   
+   await ctx.channel.send(f"Hello, {ctx.author.mention}, {(arg1, arg2, a, b, kw)}")
+
+
+
+@common.bot.command()
+@kwarg_command
+async def howdy(ctx: commands.Context, arg1: Union[int, float], arg2: float, *, a: str, b: int = 2):
+    print(howdy.callback.__original_func__, howdy.callback.__original_func__, howdy.callback.__keyword_only_flag_class__, howdy.callback.__keyword_only_flag_class__.__dict__)
+
+    print(ctx, arg1, arg2, a, b)
+
+    await ctx.channel.send(f"Hello, {ctx.author.mention}, {(arg1, arg2, a, b)}")
+
+
+@common.bot.command()
+async def code(ctx: commands.Context, *lol: int, text: str = "6"):
+    await ctx.send(f"your text: {lol!r} {text!r}")
+
+@common.bot.command()
+async def nums(ctx: commands.Context, *num: int):
+    await ctx.send(f"your numbers: {num}")
+    
+

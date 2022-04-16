@@ -20,7 +20,8 @@ import discord
 import pygame
 import snakecore
 
-from pgbot import commands, common, db, emotion, routine, utils
+from pgbot import commands, common, db, emotion, exceptions, routine, utils
+from pgbot.commands.admin import AdminCommandCog
 
 
 async def _init():
@@ -29,6 +30,8 @@ async def _init():
     """
 
     await snakecore.init(global_client=common.bot)
+    common.bot.remove_command("help")
+    await common.bot.add_cog(AdminCommandCog(common.bot))
 
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
@@ -456,23 +459,9 @@ async def handle_message(msg: discord.Message):
             common.cmd_logs[msg.id] = ret
 
         if len(common.cmd_logs) > 100:
-            del common.cmd_logs[list(common.cmd_logs.keys())[0]]
-
-        await emotion.update("bored", -10)
+            del common.cmd_logs[next(iter(common.cmd_logs.keys()))]
 
     elif not common.TEST_MODE:
-        await emotion.check_bonk(msg)
-
-        # Check for these specific messages, do not try to generalise, because we do not
-        # want the bot spamming the bydariogamer quote
-        # no_mentions = discord.AllowedMentions.none()
-        # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
-        #     # ded chat makes snek sad
-        #     await msg.channel.send(
-        #         "good." if await emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
-        #         allowed_mentions=no_mentions,
-        #     )
-        #     await emotion.update("happy", -8)
 
         if common.GENERIC:
             return

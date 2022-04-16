@@ -15,19 +15,24 @@ import time
 from typing import Optional
 
 import discord
+from discord.ext import commands
 import pygame
 import snakecore
+from snakecore.command_handler.decorators import kwarg_command
 
 import pgbot
 from pgbot import common, db
-from pgbot.commands.base import BaseCommand, BotException, String, no_dm
-from pgbot.commands.utils import clock, docs, help
+from pgbot.commands.base import BaseCommandCog
+from pgbot.commands.utils import commands, clock, docs, help
+from pgbot.commands.utils.converters import PygameColor, String
+from pgbot.exceptions import BotException
 
 
-class HelpCommand(BaseCommand):
+class HelpCommandCog(BaseCommandCog):
     """Base class to handle 'help' commands of the bot."""
 
-    async def cmd_rules(self, *rules: int):
+    @commands.command()
+    async def rules(self, ctx: commands.Context, *rules: int):
         """
         ->type Get help
         ->signature pg!rules [*rule_numbers]
@@ -35,6 +40,9 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!rules, to get rules of the server
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not rules:
             raise BotException("Please enter rule number(s)", "")
 
@@ -84,7 +92,7 @@ class HelpCommand(BaseCommand):
 
         if len(rules) == 1:
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
                 title=fields[0]["name"],
@@ -96,7 +104,7 @@ class HelpCommand(BaseCommand):
                 field["value"] = field["value"][:1024]
 
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
                 title="Rules",
@@ -104,13 +112,16 @@ class HelpCommand(BaseCommand):
                 color=0x228B22,
             )
 
-    async def cmd_clock(
+    @commands.command()
+    @kwarg_command
+    async def clock(
         self,
+        ctx: commands.Context,
+        *,
         action: str = "",
         timezone: Optional[float] = None,
-        color: Optional[pygame.Color] = None,
-        *,
-        _member: Optional[discord.Member] = None,
+        color: Optional[discord.Color] = None,
+        **kwargs,
     ):
         """
         ->type Get help
@@ -127,11 +138,16 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        _member: Optional[discord.Member] = kwargs.get("_member")
+
         async with db.DiscordDB("clock") as db_obj:
             timezones = db_obj.get({})
             if action:
                 if _member is None:
-                    member = self.author
+                    member = ctx.author
                     if member.id not in timezones:
                         raise BotException(
                             "Cannot update clock!",
@@ -162,13 +178,13 @@ class HelpCommand(BaseCommand):
                             )
 
                         if color is None:
-                            color = pygame.Color(
-                                (random.randint(0, 0xFFFFFF) << 8) | 0xFF
+                            color = discord.Color(
+                                random.randint(0, 0xFFFFFF)
                             )
 
                         timezones[member.id] = [
                             timezone,
-                            pgbot.utils.color_to_rgb_int(color),
+                            color.value,
                         ]
 
                     # sort timezones dict after an update operation
@@ -193,20 +209,21 @@ class HelpCommand(BaseCommand):
         t = time.time()
 
         pygame.image.save(
-            await clock.user_clock(t, timezones, self.get_guild()), f"temp{t}.png"
+            await clock.user_clock(t, timezones, ctx.guild), f"temp{t}.png"
         )
-        common.cmd_logs[self.invoke_msg.id] = await self.channel.send(
+        common.cmd_logs[ctx.message.id] = await ctx.channel.send(
             file=discord.File(f"temp{t}.png")
         )
         os.remove(f"temp{t}.png")
 
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @no_dm
-    async def cmd_doc(self, name: str):
+    @commands.command()
+    @commands.guild_only()
+    async def doc(self, ctx: commands.Context, *, name: str, **kwargs):
         """
         ->type Get help
         ->signature pg!doc <object name>
@@ -214,14 +231,18 @@ class HelpCommand(BaseCommand):
         -----
         Implement pg!doc, to view documentation
         """
-        # needed for typecheckers to know that self.author is a member
-        if isinstance(self.author, discord.User):
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        # needed for typecheckers to know that ctx.author is a member
+        if isinstance(ctx.author, discord.User):
             return
 
-        await docs.put_doc(name, self.response_msg, self.author, self.page_number)
+        await docs.put_doc(name, response_message, ctx.author, kwargs.get("_page_number", 1))
 
-    @no_dm
-    async def cmd_help(self, *names: str):
+    @commands.command()
+    @commands.guild_only()
+    async def help(self, ctx: commands.Context, *names: str, **kwargs):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -231,26 +252,33 @@ class HelpCommand(BaseCommand):
         Implement pg!help, to display a help message
         """
 
-        # needed for typecheckers to know that self.author is a member
-        if isinstance(self.author, discord.User):
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        # needed for typecheckers to know that ctx.author is a member
+        if isinstance(ctx.author, discord.User):
             return
 
         await help.send_help_message(
-            self.response_msg,
-            self.author,
+            response_message,
+            ctx.author,
             names,
             self.cmds_and_funcs,
             self.groups,
-            self.page_number,
+            page=kwargs.get("_page_number", 1),
         )
 
-    @no_dm
-    async def cmd_resources(
+    @commands.command()
+    @commands.guild_only()
+    @kwarg_command
+    async def resources(
         self,
+        ctx: commands.Context,
+        *,
         limit: Optional[int] = None,
         filter_tag: Optional[String] = None,
         filter_members: Optional[tuple[discord.Object, ...]] = None,
         oldest_first: bool = False,
+        **kwargs,
     ):
         """
         ->type Get help
@@ -265,8 +293,10 @@ class HelpCommand(BaseCommand):
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
 
-        # needed for typecheckers to know that self.author is a member
-        if isinstance(self.author, discord.User):
+        page_number = kwargs.get("_page_number", 1)
+
+        # needed for typecheckers to know that ctx.author is a member
+        if isinstance(ctx.author, discord.User):
             return
 
         if common.GENERIC:
@@ -399,18 +429,18 @@ class HelpCommand(BaseCommand):
 
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
-                color=common.DEFAULT_EMBED_COLOR, footer_text=self.cmd_str
+                color=common.DEFAULT_EMBED_COLOR, footer_text=ctx.invoked_with
             )
         ]
 
-        response_msg = self.response_msg.edit(embeds=msg_embeds)
+        response_message = response_message.edit(embeds=msg_embeds)
 
         page_embed = snakecore.utils.pagination.EmbedPaginator(
-            response_msg,
+            response_message,
             *pages,
-            caller=self.author,
+            caller=ctx.author,
             whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-            start_page_number=self.page_number,
+            start_page_number=page_number,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
