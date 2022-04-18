@@ -6,6 +6,7 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some constants and variables used across the whole codebase
 """
 
+import asyncio
 from collections import deque
 import io
 import os
@@ -26,8 +27,16 @@ Channel = Union[
     discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
 ]
 cmd_logs = {}
-global_task_set = set()  # prevents asyncio.Task objects from disappearing due
+global_task_set: set[
+    asyncio.Task
+] = set()  # prevents asyncio.Task objects from disappearing due
 # to reference loss, not to be modified manually
+def global_task_set_remove_callback(task: asyncio.Task):
+    if task in global_task_set:
+        global_task_set.remove(task)
+
+    task.remove_done_callback(global_task_set_remove_callback)
+
 
 recent_response_messages: dict[int, discord.Message] = {}
 

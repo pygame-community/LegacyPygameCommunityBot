@@ -23,7 +23,7 @@ from snakecore.command_handler.decorators import custom_parsing, kwarg_command
 import pgbot
 from pgbot import common, db
 from pgbot.commands.base import BaseCommandCog
-from pgbot.commands.utils import commands, clock, docs, help
+from pgbot.commands.utils import CustomContext, clock, docs, help
 from pgbot.commands.utils.converters import PygameColor, String
 from pgbot.exceptions import BotException
 
@@ -33,7 +33,7 @@ class HelpCommandCog(BaseCommandCog):
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def rules(self, ctx: commands.Context, *rules: int):
+    async def rules(self, ctx: CustomContext, *rules: int):
         """
         ->type Get help
         ->signature pg!rules [*rule_numbers]
@@ -41,8 +41,6 @@ class HelpCommandCog(BaseCommandCog):
         -----
         Implement pg!rules, to get rules of the server
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if not rules:
             raise BotException("Please enter rule number(s)", "")
@@ -93,7 +91,7 @@ class HelpCommandCog(BaseCommandCog):
 
         if len(rules) == 1:
             await snakecore.utils.embed_utils.replace_embed_at(
-                response_message,
+                ctx.response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
                 title=fields[0]["name"],
@@ -105,7 +103,7 @@ class HelpCommandCog(BaseCommandCog):
                 field["value"] = field["value"][:1024]
 
             await snakecore.utils.embed_utils.replace_embed_at(
-                response_message,
+                ctx.response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.GUILD_ICON,
                 title="Rules",
@@ -115,14 +113,12 @@ class HelpCommandCog(BaseCommandCog):
 
     async def clock_func(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         action: str = "",
         timezone: Optional[float] = None,
         color: Optional[discord.Color] = None,
         _member: Optional[discord.Member] = None,
     ):
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("clock") as db_obj:
             timezones = db_obj.get({})
@@ -196,7 +192,7 @@ class HelpCommandCog(BaseCommandCog):
         os.remove(f"temp{t}.png")
 
         try:
-            await response_message.delete()
+            await ctx.response_message.delete()
         except discord.NotFound:
             pass
 
@@ -204,7 +200,7 @@ class HelpCommandCog(BaseCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def clock(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         action: str = "",
         timezone: Optional[float] = None,
         color: Optional[discord.Color] = None,
@@ -231,10 +227,9 @@ class HelpCommandCog(BaseCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def doc(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         name: str,
-        page_number: int = 1,
-        refresh_message: Optional[discord.Message] = None,
+        page: int = 1,
     ):
         """
         ->type Get help
@@ -244,31 +239,19 @@ class HelpCommandCog(BaseCommandCog):
         Implement pg!doc, to view documentation
         """
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
             return
 
-        if refresh_message is not None:
-            target_message = refresh_message
-            try:
-                await response_message.delete()
-            except discord.HTTPException:
-                pass
-        else:
-            target_message = response_message
-
-        await docs.put_doc(ctx, name, target_message, ctx.author, page=page_number)
+        await docs.put_doc(ctx, name, ctx.response_message, ctx.author, page=page)
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def help(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         *names: str,
-        page_number: int = 1,
-        refresh_message: Optional[discord.Message] = None,
+        page: int = 1,
     ):
         """
         ->type Get help
@@ -279,42 +262,30 @@ class HelpCommandCog(BaseCommandCog):
         Implement pg!help, to display a help message
         """
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
             return
 
-        if refresh_message is not None:
-            target_message = refresh_message
-            try:
-                await response_message.delete()
-            except discord.HTTPException:
-                pass
-        else:
-            target_message = response_message
-
         await help.send_help_message(
             ctx,
-            target_message,
+            ctx.response_message,
             ctx.author,
             names,
             self.cmds_and_funcs,
             self.groups,
-            page=page_number,
+            page=page,
         )
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def resources(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         limit: Optional[int] = None,
         filter_tag: Optional[String] = None,
         filter_members: Optional[tuple[discord.Object, ...]] = None,
         oldest_first: bool = False,
-        page_number: int = 1,
-        refresh_message: Optional[discord.Message] = None,
+        page: int = 1,
     ):
         """
         ->type Get help
@@ -328,8 +299,6 @@ class HelpCommandCog(BaseCommandCog):
         `filter_members=[members]`: Includes only the resources posted by those user(s). Can be a tuple of users
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
@@ -461,13 +430,13 @@ class HelpCommandCog(BaseCommandCog):
                 "Please try again.",
             )
 
-        footer_text = "Command: resources"
+        footer_text = "cmd: resources"
 
         raw_command_input: str = getattr(ctx, "raw_command_input", "")
         # attribute injected by snakecore's custom parser
 
         if raw_command_input:
-            footer_text += f"\nArguments: {raw_command_input}"
+            footer_text += f" | args: {raw_command_input}"
 
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
@@ -475,16 +444,7 @@ class HelpCommandCog(BaseCommandCog):
             )
         ]
 
-        if refresh_message is not None:
-            target_message = refresh_message
-            try:
-                await response_message.delete()
-            except discord.HTTPException:
-                pass
-        else:
-            target_message = response_message
-
-        target_message = await target_message.edit(embeds=msg_embeds)
+        target_message = await ctx.response_message.edit(embeds=msg_embeds)
 
         # Creates a paginator for the caller to use
         paginator = snakecore.utils.pagination.EmbedPaginator(
@@ -492,7 +452,7 @@ class HelpCommandCog(BaseCommandCog):
             *pages,
             caller=ctx.author,
             whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-            start_page_number=page_number,
+            start_page_number=page,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )

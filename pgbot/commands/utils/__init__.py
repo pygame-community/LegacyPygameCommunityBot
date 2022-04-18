@@ -1,3 +1,11 @@
+"""
+This file is a part of the source code for the PygameCommunityBot.
+This project has been licensed under the MIT license.
+Copyright (c) 2020-present PygameCommunityDiscord
+
+This module defines some helpful utilities for bot commands.
+"""
+
 from typing import TYPE_CHECKING, Any, Optional, Union
 import discord
 from discord.ext import commands
@@ -5,6 +13,7 @@ from discord.ext import commands
 from pgbot import common
 
 from . import clock, docs, help, sandbox, vibecheck
+from .types import CustomContext
 
 
 def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):

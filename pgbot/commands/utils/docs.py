@@ -39,6 +39,7 @@ import snakecore
 
 from pgbot import common
 import pgbot
+from .types import CustomContext
 
 doc_module_tuple = (
     asyncio,
@@ -193,7 +194,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
 
 async def put_doc(
-    ctx: commands.Context,
+    ctx: CustomContext,
     name: str,
     original_msg: discord.Message,
     msg_invoker: discord.Member,
@@ -252,13 +253,13 @@ async def put_doc(
 
     main_embeds.extend(embeds)
 
-    footer_text = "Command: doc"
+    footer_text = "cmd: doc"
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser
 
     if raw_command_input:
-        footer_text += f"\nArguments: {raw_command_input}"
+        footer_text += f" | args: {raw_command_input}"
 
     msg_embeds = [
         snakecore.utils.embed_utils.create_embed(

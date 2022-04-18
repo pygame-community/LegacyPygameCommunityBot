@@ -28,7 +28,7 @@ import pgbot
 from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
 from pgbot.commands.user import UserCommandCog
-from pgbot.commands.utils import commands
+from pgbot.commands.utils import CustomContext
 from pgbot.commands.utils.converters import (
     CodeBlock,
     DateTime,
@@ -49,12 +49,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def test_parser(self, ctx: commands.Context, *args, **kwargs):
+    async def test_parser(self, ctx: CustomContext, *args, **kwargs):
         """
         ->skip
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         out = ""
         if args:
@@ -94,7 +92,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         out += "\n"
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.ctx.response_message,
             title="Here are the args and kwargs you passed",
             description=out,
             color=common.DEFAULT_EMBED_COLOR,
@@ -102,7 +100,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def db(self, ctx: commands.Context):
+    async def db(self, ctx: CustomContext):
         """
         ->type Admin commands
         ->signature pg!db
@@ -111,10 +109,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         Implement pg!db, list contents of DB
         """
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Tables:",
             description="\n".join(db.db_obj_cache),
             color=common.DEFAULT_EMBED_COLOR,
@@ -123,7 +119,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @db.command(name="read")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_read(self, ctx: commands.Context, name: str):
+    async def db_read(self, ctx: CustomContext, name: str):
         """
         ->type Admin commands
         ->signature pg!db read <name>
@@ -131,7 +127,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         Implement pg!db_read, to visualise DB messages
         """
-        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB(name) as db_obj:
             str_obj = black.format_str(
@@ -146,7 +141,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             )
 
         try:
-            await response_message.delete()
+            await ctx.response_message.delete()
         except discord.NotFound:
             pass
 
@@ -154,7 +149,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_write(
-        self, ctx: commands.Context, name: str, data: Union[discord.Message, CodeBlock]
+        self, ctx: CustomContext, name: str, data: Union[discord.Message, CodeBlock]
     ):
         """
         ->type Admin commands
@@ -193,9 +188,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         async with db.DiscordDB(name) as db_obj:
             db_obj.write(eval(obj_str))  # pylint: disable = eval-used
 
-        response_message = common.recent_response_messages[ctx.message.id]
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="DB overwritten!",
             description="DB contents have been overwritten successfully",
             color=common.DEFAULT_EMBED_COLOR,
@@ -204,7 +198,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @db.command(name="del")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_del(self, ctx: commands.Context, name: str):
+    async def db_del(self, ctx: CustomContext, name: str):
         """
         ->type Admin commands
         ->signature pg!db del <name>
@@ -217,10 +211,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             if not db_obj.delete():
                 raise BotException("Could not delete DB", "No such DB exists")
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="DB has been deleted!",
             description="DB contents have been deleted successfully",
             color=common.DEFAULT_EMBED_COLOR,
@@ -229,7 +221,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def whitelist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
+    async def whitelist_cmd(self, ctx: CustomContext, *cmds: Union[String, str]):
         """
         ->type Admin commands
         ->signature pg!whitelist_cmd [*cmds]
@@ -265,10 +257,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
             db_obj.write(commands)
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Whitelisted!",
             description=f"Successfully whitelisted {cnt} command(s)",
             color=common.DEFAULT_EMBED_COLOR,
@@ -277,7 +267,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def blacklist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
+    async def blacklist_cmd(self, ctx: CustomContext, *cmds: Union[String, str]):
         """
         ->type Admin commands
         ->signature pg!blacklist_cmd [*cmds]
@@ -313,10 +303,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
             db_obj.write(commands)
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Blacklisted!",
             description=f"Successfully blacklisted {cnt} command(s)",
             color=common.DEFAULT_EMBED_COLOR,
@@ -327,7 +315,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_clock(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         *,
         action: str = "",
         timezone: float = 0,
@@ -351,7 +339,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def eval(self, ctx: commands.Context, code: CodeBlock):
+    async def eval(self, ctx: CustomContext, code: CodeBlock):
         """
         ->type Admin commands
         ->signature pg!eval <command>
@@ -392,10 +380,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 ),
             )
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title=f"Return output (code executed in {snakecore.utils.format_time_by_units(total)}):",
             description=snakecore.utils.code_block(repr(eval_output)),
             color=common.DEFAULT_EMBED_COLOR,
@@ -403,7 +389,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def heap(self, ctx: commands.Context):
+    async def heap(self, ctx: CustomContext):
         """
         ->type Admin commands
         ->signature pg!heap
@@ -412,9 +398,9 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         Implement pg!heap, for admins to check memory taken up by the bot
         """
         mem = process.memory_info().rss
-        response_message = common.recent_response_messages[ctx.message.id]
+
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Total memory used:",
             description=f"**{snakecore.utils.format_byte(mem, 4)}**\n({mem} B)",
             color=common.DEFAULT_EMBED_COLOR,
@@ -422,7 +408,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def stop(self, ctx: commands.Context):
+    async def stop(self, ctx: CustomContext):
         """
         ->type Admin commands
         ->signature pg!stop [*ids]
@@ -440,7 +426,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def archive(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         origin: discord.TextChannel,
         quantity: Optional[int] = None,
         mode: int = 0,
@@ -467,7 +453,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         Implement pg!archive, for admins to archive messages
         """
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if destination is None:
             destination = ctx.channel
@@ -619,7 +604,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                         ),
                     )
 
-                    await response_message.edit(embed=load_embed)
+                    await ctx.response_message.edit(embed=load_embed)
 
                 author = msg.author
                 msg_reference_id = None
@@ -876,10 +861,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             ),
         )
 
-        await response_message.edit(embed=load_embed)
+        await ctx.response_message.edit(embed=load_embed)
 
         try:
-            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -888,7 +873,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         channel: discord.TextChannel,
         *msgs: discord.PartialMessage,
         delete_system_messages: bool = True,
@@ -900,8 +885,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Pin a message in the specified channel.
         ->example command pg!pin 123412345567891 23456234567834567 3456734523456734567...
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -960,7 +943,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     ),
                 )
 
-                await response_message.edit(embed=load_embed)
+                await ctx.response_message.edit(embed=load_embed)
             try:
                 await msg.pin()
             except discord.HTTPException as e:
@@ -986,12 +969,12 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             ),
         )
 
-        await response_message.edit(embed=load_embed)
+        await ctx.response_message.edit(embed=load_embed)
 
         try:
             if not delete_system_messages:
                 await ctx.message.delete()
-            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1000,7 +983,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         channel: discord.TextChannel,
         *msgs: discord.PartialMessage,
     ):
@@ -1010,8 +993,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Unpin a message in the specified channel.
         ->example command pg!unpin #general 23456234567834567 3456734523456734567...
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -1064,7 +1045,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     0,
                 )
 
-                await response_message.edit(embed=load_embed)
+                await ctx.response_message.edit(embed=load_embed)
 
             if msg.id in pinned_msg_id_set:
                 try:
@@ -1084,10 +1065,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             ),
         )
 
-        await response_message.edit(embed=load_embed)
+        await ctx.response_message.edit(embed=load_embed)
 
         try:
-            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1096,7 +1077,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove_at(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         channel: discord.TextChannel,
         *indices: Union[int, range],
     ):
@@ -1106,8 +1087,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Unpin a message in the specified channel.
         ->example command pg!pin remove at #general 3.. range(9, 15)..
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -1179,7 +1158,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     ),
                 )
 
-                await response_message.edit(embed=load_embed)
+                await ctx.response_message.edit(embed=load_embed)
 
             if 0 <= unpin_index < pinned_msg_count:
                 msg = pinned_msgs[unpin_index]
@@ -1205,10 +1184,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             ),
         )
 
-        await response_message.edit(embed=load_embed)
+        await ctx.response_message.edit(embed=load_embed)
 
         try:
-            await response_message.delete(delay=10.0 if idx_count > 2 else 0.0)
+            await ctx.response_message.delete(delay=10.0 if idx_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1217,7 +1196,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         desc: String,
         *emojis: tuple[str, String],
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
@@ -1284,7 +1263,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll_close(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         msg: Optional[discord.Message] = None,
         *,
         color: discord.Color = discord.Color(0xA83232),
@@ -1301,7 +1280,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.group(invoke_without_commmand=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def admin_stream(self, ctx: commands.Context):
+    async def admin_stream(self, ctx: CustomContext):
         """
         ->type Reminders
         ->signature pg!admin_stream
@@ -1314,7 +1293,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @admin_stream.command(name="add")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_stream_add(self, ctx: commands.Context, *members: discord.Member):
+    async def admin_stream_add(self, ctx: CustomContext, *members: discord.Member):
         """
         ->type Reminders
         ->signature pg!admin_stream add [*members]
@@ -1328,7 +1307,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @admin_stream.command(name="del")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_stream_del(self, ctx: commands.Context, *members: discord.Member):
+    async def admin_stream_del(self, ctx: CustomContext, *members: discord.Member):
         """
         ->type Reminders
         ->signature pg!admin_stream del [*members]
@@ -1343,7 +1322,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_ping(
-        self, ctx: commands.Context, message: Optional[String] = None
+        self, ctx: CustomContext, message: Optional[String] = None
     ):
         """
         ->type Reminders
@@ -1362,7 +1341,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def info(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         *objs: Union[discord.Message, discord.Member, discord.User],
         author: bool = True,
     ):
@@ -1394,8 +1373,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         checked_channels = set()
 
@@ -1440,7 +1417,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     ),
                 )
 
-                await response_message.edit(embed=load_embed)
+                await ctx.response_message.edit(embed=load_embed)
 
             await ctx.channel.trigger_typing()
             embed = None
@@ -1466,10 +1443,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 ),
             )
 
-            await response_message.edit(embed=load_embed)
+            await ctx.response_message.edit(embed=load_embed)
 
         try:
-            await response_message.delete(delay=10.0 if obj_count > 1 else 0.0)
+            await ctx.response_message.delete(delay=10.0 if obj_count > 1 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1477,7 +1454,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def info_server(
-        self, ctx: commands.Context, guild: Optional[discord.Guild] = None
+        self, ctx: CustomContext, guild: Optional[discord.Guild] = None
     ):
         """
         ->type More admin commands
@@ -1502,8 +1479,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         if guild is None:
             guild = common.guild
@@ -1542,14 +1517,16 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             "color": common.DEFAULT_EMBED_COLOR,
         }
 
-        await snakecore.utils.embed_utils.replace_embed_at(response_message, **kwargs)
+        await snakecore.utils.embed_utils.replace_embed_at(
+            ctx.response_message, **kwargs
+        )
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def react(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         message: Optional[discord.PartialMessage] = None,
         *emojis: str,
     ):
@@ -1574,8 +1551,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         """
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         for emoji in emojis:
             try:
                 await message.add_reaction(emoji)
@@ -1589,7 +1564,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 raise
         try:
             await ctx.message.delete()
-            await response_message.delete()
+            await ctx.response_message.delete()
         except discord.NotFound:
             pass
 
@@ -1598,15 +1573,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def browse(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         channel: discord.TextChannel,
         quantity: Optional[int] = None,
         before: Optional[Union[discord.Message, datetime.datetime]] = None,
         after: Optional[Union[discord.Message, datetime.datetime]] = None,
         around: Optional[Union[discord.Message, datetime.datetime]] = None,
         controllers: Optional[tuple[discord.Member, ...]] = None,
-        page_number: int = 1,
-        refresh_message: Optional[discord.Message] = None,
+        page: int = 1,
     ):
         """
         ->type More admin commands
@@ -1640,8 +1614,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         controllers = controllers or None
 
@@ -1769,13 +1741,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         else:
             controllers = ctx.author
 
-        footer_text = f"Command: browse"
+        footer_text = f"cmd: browse"
 
         raw_command_input: str = getattr(ctx, "raw_command_input", "")
         # attribute injected by snakecore's custom parser
 
         if raw_command_input:
-            footer_text += f"\nArguments: {raw_command_input}"
+            footer_text += f" | args: {raw_command_input}"
 
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
@@ -1784,23 +1756,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             )
         ]
 
-        if refresh_message is not None:
-            target_message = refresh_message
-            try:
-                await response_message.delete()
-            except discord.HTTPException:
-                pass
-        else:
-            target_message = response_message
-
-        target_message = await target_message.edit(embeds=msg_embeds)
+        target_message = await ctx.response_message.edit(embeds=msg_embeds)
 
         paginator = snakecore.utils.pagination.EmbedPaginator(
             target_message,
             *pages,
             caller=controllers,
             whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-            start_page_number=page_number,
+            start_page_number=page,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
@@ -1815,7 +1778,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def feature(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         name: str,
         *channels: discord.TextChannel,
         enable: bool = False,
@@ -1848,8 +1811,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         """
 
-        response_message = common.recent_response_messages[ctx.message.id]
-
         if not channels:
             channels = (ctx.channel,)
 
@@ -1865,14 +1826,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 db_obj.write(db_dict)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Successfully executed command!",
             description=f"Changed settings on {len(channels)} channel(s)",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
     @commands.group(invoke_without_command=True)
-    async def admin_events(self, ctx: commands.Context):
+    async def admin_events(self, ctx: CustomContext):
         """
         ->type Events
         ->signature pg!admin_events
@@ -1883,9 +1844,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events.group(name="wc", invoke_without_command=True)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_events_wc(
-        self, ctx: commands.Context, round_no: Optional[int] = None
-    ):
+    async def admin_events_wc(self, ctx: CustomContext, round_no: Optional[int] = None):
         """
         ->type Events
         ->signature pg!admin_events wc [round_no]
@@ -1903,7 +1862,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_set(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         desc: Optional[String] = None,
         url: Optional[str] = None,
     ):
@@ -1913,8 +1872,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Set the description for the WC
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("wc") as db_obj:
             wc_dict = db_obj.get({})
@@ -1927,7 +1884,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             db_obj.write(wc_dict)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Successfully updated data!",
             description="Updated Weekly Challenges (WC) Event description and/or url!",
             color=common.DEFAULT_EMBED_COLOR,
@@ -1937,7 +1894,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_add(
-        self, ctx: commands.Context, round_name: String, description: String
+        self, ctx: CustomContext, round_name: String, description: String
     ):
         """
         ->type Events
@@ -1945,8 +1902,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Adds a new WC event round
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("wc") as db_obj:
             wc_dict = db_obj.get({})
@@ -1964,7 +1919,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             ind = len(wc_dict["rounds"])
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Successfully updated events round!",
             description=f"Weekly Challenges got round {ind} - '{round_name.string}'!",
             color=common.DEFAULT_EMBED_COLOR,
@@ -1973,15 +1928,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @admin_events_wc.command(name="remove")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def events_wc_remove(self, ctx: commands.Context, round_no: int = 0):
+    async def events_wc_remove(self, ctx: CustomContext, round_no: int = 0):
         """
         ->type Events
         ->signature pg!admin_events wc remove [round_no]
         ->description Remove an event round
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("wc") as db_obj:
             wc_dict = db_obj.get({})
@@ -1997,7 +1950,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             db_obj.write(wc_dict)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Successfully updated events round!",
             description=(
                 f"Removed round '{round_name}' from Weekly Challenges (WC) event!"
@@ -2010,7 +1963,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_update(
         self,
-        ctx: commands.Context,
+        ctx: CustomContext,
         *name_and_scores: tuple[discord.Member, tuple[int, ...]],
         round_no: int = 0,
         round_name: Optional[String] = None,
@@ -2028,8 +1981,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         Argument `round_desc` is an optional string that can be specified to update the event description.
         -----
         """
-
-        response_message = common.recent_response_messages[ctx.message.id]
 
         round_no -= 1
         async with db.DiscordDB("wc") as db_obj:
@@ -2062,7 +2013,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             db_obj.write(wc_dict)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
+            ctx.response_message,
             title="Successfully updated data!",
             description="The round related data or the scores have been updated!",
             color=common.DEFAULT_EMBED_COLOR,

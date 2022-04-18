@@ -106,7 +106,8 @@ async def handle(
             fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
         )
 
-    common.recent_response_messages[invoke_message.id] = response_message
+    ctx = await common.bot.get_context(invoke_message)
+    setattr(ctx, "response_message", response_message)
 
     if not common.TEST_MODE and not common.GENERIC:
         log_txt_file = None
@@ -144,14 +145,8 @@ async def handle(
     )
 
     common.global_task_set.add(task)
+    task.add_done_callback(common.global_task_set_remove_callback)
 
-    def callback(tsk):
-        if tsk in common.global_task_set:
-            common.global_task_set.remove(tsk)
-
-        tsk.remove_done_callback(callback)
-
-    task.add_done_callback(callback)
-
-    await common.bot.process_commands(invoke_message)  # main command handling
+    await common.bot.invoke(ctx)
+    # main command handling
     return response_message

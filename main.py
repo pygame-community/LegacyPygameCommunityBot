@@ -12,11 +12,12 @@ from black import err
 import discord
 from discord.ext import commands
 import snakecore
+from snakecore.command_handler.parser import ArgError, KwargError
 
 import pgbot
 from pgbot import common
 from pgbot.commands.admin import AdminCommandCog
-from pgbot.commands.utils import commands
+from pgbot.commands.utils import CustomContext
 from pgbot.common import bot
 from pgbot.exceptions import BotException, NoFunAllowed
 from pgbot.utils import message_delete_reaction_listener
@@ -91,7 +92,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
 
 @bot.event
-async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+async def on_command_error(ctx: CustomContext, error: commands.CommandError):
 
     title = error.__class__.__name__
     msg = error.args[0]
@@ -101,6 +102,18 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
     if isinstance(error, BotException):
         title, msg = error.args
+
+    elif isinstance(error, ArgError):
+        title = "Invalid Arguments!"
+        msg = f"{msg}\n\nFor help on bot commands, do `{common.COMMAND_PREFIX}help <command>`"
+
+    elif isinstance(error, KwargError):
+        title = "Invalid Keyword Arguments!"
+        msg = f"{msg}\n\nFor help on bot commands, do `{common.COMMAND_PREFIX}help <command>`"
+
+    elif isinstance(error, commands.CommandNotFound):
+        title = "Unrecognized command!"
+        msg = f"{msg}\n\nFor help on bot commands, do `{common.COMMAND_PREFIX}help`"
     elif isinstance(error, commands.DisabledCommand):
         title = f"Cannot execute command! ({error.args[0]})"
         msg = (
@@ -121,41 +134,26 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             title = "Unknown Error!"
             msg = (
                 "An unhandled exception occured while running the command!\n"
-                "This is most likely a bug in the bot itself, and wizards will "
+                "This is most likely a bug in the bot itself, and `@Wizard 🝑`s will "
                 f"recast magical spells on it soon!\n\n"
                 f"```\n{error.__cause__.args[0]}```"
             )
             footer_text = error.__cause__.__class__.__name__
 
-    footer_text = f"{footer_text}\n(React with 🗑 to delete this error message)"
+    footer_text = (
+        f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
+    )
 
-    response_message = common.recent_response_messages.get(ctx.message.id)
-
-    target_message = response_message
+    target_message = ctx.response_message
 
     try:
-        (
-            (
-                await snakecore.utils.embed_utils.replace_embed_at(
-                    response_message,
-                    title=title,
-                    description=msg,
-                    color=0xFF0000,
-                    footer_text=footer_text,
-                )
-            )
-            if response_message is not None
-            else (
-                target_message := (
-                    await snakecore.utils.embed_utils.send_embed(
-                        ctx.channel,
-                        title=title,
-                        description=msg,
-                        color=0xFF0000,
-                        footer_text=footer_text,
-                    )
-                )
-            )
+
+        await snakecore.utils.embed_utils.replace_embed_at(
+            target_message,
+            title=title,
+            description=msg,
+            color=0xFF0000,
+            footer_text=footer_text,
         )
     except discord.NotFound:
         # response message was deleted, send a new message
@@ -179,11 +177,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     )
 
     common.global_task_set.add(task)
-    task.add_done_callback(
-        lambda task: common.global_task_set.remove(task)
-        if task in common.global_task_set
-        else None
-    )
+    task.add_done_callback(common.global_task_set_remove_callback)
 
     if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]
