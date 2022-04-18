@@ -28,6 +28,8 @@ bot = discord.Client(intents=ints)
 window = pygame.Surface((1, 1))  # This will later be redefined
 
 cmd_logs = {}
+global_task_set = set()  # prevents asyncio.Task objects from disappearing due
+# to reference loss, not to be modified manually
 
 # pygame community guild, or whichever is the 'primary' guild for the bot
 guild: Optional[discord.Guild] = None

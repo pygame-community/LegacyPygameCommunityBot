@@ -13,6 +13,7 @@ import io
 import os
 import random
 import sys
+from typing import Union
 
 import discord
 from discord.ext import tasks
