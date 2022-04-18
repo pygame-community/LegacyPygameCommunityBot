@@ -487,7 +487,7 @@ class HelpCommandCog(BaseCommandCog):
         target_message = await target_message.edit(embeds=msg_embeds)
 
         # Creates a paginator for the caller to use
-        page_embed = snakecore.utils.pagination.EmbedPaginator(
+        paginator = snakecore.utils.pagination.EmbedPaginator(
             target_message,
             *pages,
             caller=ctx.author,
@@ -496,4 +496,8 @@ class HelpCommandCog(BaseCommandCog):
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
-        await page_embed.mainloop()
+
+        try:
+            await paginator.mainloop()
+        except discord.HTTPException:
+            pass

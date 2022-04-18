@@ -8,6 +8,7 @@ This file exports a handle function, to handle commands posted by the users
 
 
 from __future__ import annotations
+import asyncio
 
 import io
 import sys
@@ -16,14 +17,13 @@ from typing import Dict, List, Optional, Tuple, Union
 import typing
 
 import discord
-from discord.ext import commands
-from discord.ext.commands import flags
 import snakecore
 
 from pgbot import common
 from pgbot.commands import admin, user
 from pgbot.commands.utils import get_primary_guild_perms
-from snakecore.command_handler.decorators import kwarg_command
+
+from pgbot.utils import message_delete_reaction_listener
 
 
 async def handle(
@@ -133,5 +133,14 @@ async def handle(
             file=log_txt_file,
         )
 
+    task = asyncio.create_task(
+        message_delete_reaction_listener(
+            response_message,
+            invoke_message.author,
+            emoji="🗑",
+            role_whitelist=common.ServerConstants.ADMIN_ROLES,
+            timeout=30,
+        )
+    )
     await common.bot.process_commands(invoke_message)  # main command handling
     return response_message

@@ -464,9 +464,19 @@ async def handle_message(msg: discord.Message):
     if (
         msg.content.startswith(common.COMMAND_PREFIX)
         or msg.content.startswith(mentions)
-        and msg.content not in mentions
+        and msg.content not in mentions  # ignore normal pings
     ):
-        ret = await commands.handle(msg)
+        if msg.content == common.COMMAND_PREFIX:
+            await msg.channel.send(
+                embed=discord.Embed(
+                    title="Help",
+                    description=f"Type `{common.COMMAND_PREFIX}help` to see what I'm capable of!",
+                    color=common.DEFAULT_EMBED_COLOR,
+                )
+            )
+            return
+        else:
+            ret = await commands.handle(msg)
         if ret is not None:
             common.cmd_logs[msg.id] = ret
 

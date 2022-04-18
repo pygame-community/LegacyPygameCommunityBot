@@ -277,4 +277,8 @@ async def put_doc(
         inactivity_timeout=60,
         theme_color=common.DEFAULT_EMBED_COLOR,
     )
-    await paginator.mainloop()
+
+    try:
+        await paginator.mainloop()
+    except discord.HTTPException:
+        pass

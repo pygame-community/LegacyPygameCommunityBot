@@ -19,7 +19,7 @@ from pgbot.commands.admin import AdminCommandCog
 from pgbot.commands.utils import commands
 from pgbot.common import bot
 from pgbot.exceptions import BotException, NoFunAllowed
-from pgbot.routine import message_delete_reaction_listener
+from pgbot.utils import message_delete_reaction_listener
 
 
 @bot.event
@@ -131,6 +131,8 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
     response_message = common.recent_response_messages.get(ctx.message.id)
 
+    target_message = response_message
+
     try:
         (
             (
@@ -144,18 +146,21 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             )
             if response_message is not None
             else (
-                await snakecore.utils.embed_utils.send_embed(
-                    ctx.channel,
-                    title=title,
-                    description=msg,
-                    color=0xFF0000,
-                    footer_text=footer_text,
+                target_message := (
+                    await snakecore.utils.embed_utils.send_embed(
+                        ctx.channel,
+                        title=title,
+                        description=msg,
+                        color=0xFF0000,
+                        footer_text=footer_text,
+                    )
                 )
             )
         )
     except discord.NotFound:
         # response message was deleted, send a new message
-        await snakecore.utils.embed_utils.send_embed(
+
+        target_message = await snakecore.utils.embed_utils.send_embed(
             ctx.channel,
             title=title,
             description=msg,
@@ -163,19 +168,17 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             footer_text=footer_text,
         )
 
-    if ctx.message.id in common.recent_response_messages:
-        response_message = common.recent_response_messages[ctx.message.id]
-        task = asyncio.create_task(
-            message_delete_reaction_listener(
-                response_message, ctx.author, emoji_str="🗑"
-            )
+    task = asyncio.create_task(
+        message_delete_reaction_listener(
+            target_message,
+            ctx.author,
+            emoji="🗑",
+            role_whitelist=common.ServerConstants.ADMIN_ROLES,
+            timeout=30,
         )
+    )
 
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-
+    if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]
 
     if raise_error:

@@ -1795,7 +1795,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         target_message = await target_message.edit(embeds=msg_embeds)
 
-        browse_embed = snakecore.utils.pagination.EmbedPaginator(
+        paginator = snakecore.utils.pagination.EmbedPaginator(
             target_message,
             *pages,
             caller=controllers,
@@ -1805,7 +1805,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
 
-        await browse_embed.mainloop()
+        try:
+            await paginator.mainloop()
+        except discord.HTTPException:
+            pass
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
