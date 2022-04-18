@@ -19,13 +19,13 @@ import discord
 from discord.ext import commands
 import psutil
 import snakecore
-from snakecore.command_handler.decorators import kwarg_command
+from snakecore.command_handler.decorators import custom_parsing, kwarg_command
 
 from pgbot import common
 import pgbot
 from pgbot.commands.base import BaseCommandCog
 from pgbot.commands.utils import commands
-from pgbot.commands.utils.converters import DateTime, Range, String
+from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
 
 process = psutil.Process(os.getpid())
@@ -38,11 +38,12 @@ class SudoCommandCog(BaseCommandCog):
 
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo(
-        self, ctx: commands.Context,
-        *datas: Union[discord.Message, str],
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        self,
+        ctx: commands.Context,
+        *datas: Union[discord.Message, String],
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         from_attachment: bool = True,
         mention: bool = False,
     ):
@@ -144,8 +145,8 @@ class SudoCommandCog(BaseCommandCog):
                 await response_message.edit(embed=load_embed)
             attachment_msg = None
 
-            if isinstance(data, str):
-                if not data:
+            if isinstance(data, String):
+                if not data.string:
                     attachment_msg = ctx.message
                 else:
                     msg_text = data
@@ -295,12 +296,13 @@ class SudoCommandCog(BaseCommandCog):
 
     @sudo.command(name="edit")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_edit(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         *,
-        data: Union[discord.Message, str],
+        data: Union[discord.Message, String],
         from_attachment: bool = True,
     ):
         """
@@ -424,9 +426,10 @@ class SudoCommandCog(BaseCommandCog):
 
     @sudo.command(name="swap")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_swap(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
         embeds: bool = True,
@@ -514,10 +517,12 @@ class SudoCommandCog(BaseCommandCog):
 
     @sudo.command(name="get")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_get(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         as_attachment: bool = False,
         attachments: bool = True,
         embeds: bool = True,
@@ -644,7 +649,11 @@ class SudoCommandCog(BaseCommandCog):
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
             if attachments:
-                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.BASIC_MAX_FILE_SIZE
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.BASIC_MAX_FILE_SIZE
+                )
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
                     attached_files = [
                         (
@@ -769,23 +778,23 @@ class SudoCommandCog(BaseCommandCog):
 
     @sudo.command(name="fetch")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_fetch(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         origin: discord.TextChannel,
         quantity: int,
-        *,
         channel_ids: bool = False,
         urls: bool = False,
         pinned: bool = False,
         pin_range: Optional[range] = None,
-        before: Optional[Union[discord.PartialMessage, DateTime]] = None,
-        after: Optional[Union[discord.PartialMessage, DateTime]] = None,
-        around: Optional[Union[discord.PartialMessage, DateTime]] = None,
+        before: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        after: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        around: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
         oldest_first: bool = True,
-        prefix: str = "",
-        sep: str = " ",
-        suffix: str = "",
+        prefix: String = String(""),
+        sep: String = String(" "),
+        suffix: String = String(""),
     ):
         """
         ->type More admin commands
@@ -807,7 +816,7 @@ class SudoCommandCog(BaseCommandCog):
                 "You do not have enough permissions to run this command on the specified channel.",
             )
 
-        prefix, sep, suffix = prefix, sep, suffix
+        prefix, sep, suffix = prefix.string, sep.string, suffix.string
         output_str = prefix
         destination = ctx.channel
 
@@ -971,11 +980,12 @@ class SudoCommandCog(BaseCommandCog):
 
     @sudo.command(name="clone")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_clone(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         embeds: bool = True,
         attachments: bool = True,
         as_spoiler: bool = False,
@@ -1108,14 +1118,18 @@ class SudoCommandCog(BaseCommandCog):
                 await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
-            cloned_msg0 = None
+            cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
-                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.BASIC_MAX_FILE_SIZE
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.BASIC_MAX_FILE_SIZE
+                )
                 with io.StringIO("This file was too large to be cloned.") as fobj:
                     attached_files = [
                         (
-                            await a.to_file(spoiler=a.is_spoiler() or as_spoiler)
+                            ((await a.to_file(spoiler=as_spoiler)) if as_spoiler else a)
                             if a.size <= filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
@@ -1131,7 +1145,7 @@ class SudoCommandCog(BaseCommandCog):
                         stop_idx = 2000 + 2000 * i
 
                         if not i:
-                            cloned_msg0 = await destination.send(
+                            cloned_msg = await destination.send(
                                 content=msg.content[start_idx:stop_idx],
                                 allowed_mentions=no_mentions,
                             )
@@ -1153,35 +1167,25 @@ class SudoCommandCog(BaseCommandCog):
                         )
 
                     await destination.send(
-                        embed=msg.embeds[0] if msg.embeds and embeds else None,
-                        file=attached_files[0] if attached_files else None,
+                        embeds=msg.embeds if embeds else None,
+                        files=attached_files if attachments else None,
                     )
                 else:
-                    cloned_msg0 = await destination.send(
+                    cloned_msg = await destination.send(
                         content=msg.content,
-                        embed=msg.embeds[0] if msg.embeds and embeds else None,
-                        file=attached_files[0] if attached_files else None,
+                        embeds=msg.embeds if embeds else None,
+                        files=attached_files if attachments else None,
                         allowed_mentions=no_mentions,
                     )
             elif not skip_empty:
                 raise BotException("Cannot clone an empty message!", "")
-
-            for i in range(1, len(attached_files)):
-                await ctx.channel.send(
-                    file=attached_files[i],
-                )
-
-            for i in range(1, len(msg.embeds)):
-                await ctx.channel.send(
-                    embed=msg.embeds[i],
-                )
 
             if info:
                 await ctx.channel.send(
                     embed=pgbot.utils.embed_utils.get_msg_info_embed(
                         msg, author=author_info
                     ),
-                    reference=cloned_msg0,
+                    reference=cloned_msg,
                 )
 
             await asyncio.sleep(0)

@@ -28,6 +28,7 @@ import timeit
 import types
 
 import discord
+from discord.ext import commands
 import numpy
 import pkg_resources
 import pygame
@@ -192,7 +193,11 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
 
 async def put_doc(
-    name: str, original_msg: discord.Message, msg_invoker: discord.Member, page: int = 1
+    ctx: commands.Context,
+    name: str,
+    original_msg: discord.Message,
+    msg_invoker: discord.Member,
+    page: int = 1,
 ):
     """
     Helper function to get docs
@@ -217,7 +222,7 @@ async def put_doc(
 
     for oname, modmember in module_objs.items():
         if type(modmember).__name__ == "builtin_function_or_method":
-            # Disambiguate into funtion or method
+            # Disambiguate into function or method
             obj_type_name = None
             if isinstance(modmember, types.BuiltinFunctionType):
                 obj_type_name = "Functions"
@@ -247,9 +252,17 @@ async def put_doc(
 
     main_embeds.extend(embeds)
 
+    footer_text = "Command: doc"
+
+    raw_command_input: str = getattr(ctx, "raw_command_input", "")
+    # attribute injected by snakecore's custom parser
+
+    if raw_command_input:
+        footer_text += f"\nArguments: {raw_command_input}"
+
     msg_embeds = [
         snakecore.utils.embed_utils.create_embed(
-            color=common.DEFAULT_EMBED_COLOR, footer_text=f"Command: doc {name}"
+            color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
         )
     ]
 

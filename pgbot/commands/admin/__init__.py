@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from dis import dis
 import io
 import os
 import time
@@ -30,7 +29,13 @@ from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
 from pgbot.commands.user import UserCommandCog
 from pgbot.commands.utils import commands
-from pgbot.commands.utils.converters import CodeBlock, DateTime, PygameColor, Range, String
+from pgbot.commands.utils.converters import (
+    CodeBlock,
+    DateTime,
+    PygameColor,
+    Range,
+    String,
+)
 from pgbot.exceptions import BotException
 
 process = psutil.Process(os.getpid())
@@ -40,6 +45,61 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     """
     Base class for all admin commands
     """
+
+    @commands.command()
+    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def test_parser(self, ctx: commands.Context, *args, **kwargs):
+        """
+        ->skip
+        """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        out = ""
+        if args:
+            out += "__**Args:**__\n"
+
+        for cnt, arg in enumerate(args):
+            if isinstance(arg, CodeBlock):
+                out += f"{cnt} - Codeblock\n" + snakecore.utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += f"{cnt} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
+            else:
+                out += f"{cnt} - arg\n> {arg}\n"
+
+        out += "\n"
+        if kwargs:
+            out += "__**Kwargs:**__\n\n"
+
+        for name, arg in kwargs.items():
+            if isinstance(arg, CodeBlock):
+                out += f"{name} - Codeblock\n" + snakecore.utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
+            elif isinstance(arg, String):
+                out += (
+                    f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
+                )
+            elif isinstance(arg, tuple):
+                out += f"{name} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
+            else:
+                out += f"{name} - arg\n> {arg}\n"
+
+        out += "\n"
+        await snakecore.utils.embed_utils.replace_embed_at(
+            response_message,
+            title="Here are the args and kwargs you passed",
+            description=out,
+            color=common.DEFAULT_EMBED_COLOR,
+        )
+
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     async def db(self, ctx: commands.Context):
@@ -62,6 +122,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @db.command(name="read")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_read(self, ctx: commands.Context, name: str):
         """
         ->type Admin commands
@@ -90,9 +151,11 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @db.command(name="write")
-    @commands.guild_only()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def db_write(self, ctx: commands.Context, name: str, *, data: Union[discord.Message, CodeBlock]):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def db_write(
+        self, ctx: commands.Context, name: str, data: Union[discord.Message, CodeBlock]
+    ):
         """
         ->type Admin commands
         ->signature pg!db write <name> <data>
@@ -140,6 +203,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @db.command(name="del")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_del(self, ctx: commands.Context, name: str):
         """
         ->type Admin commands
@@ -164,7 +228,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def whitelist_cmd(self, ctx: commands.Context, *cmds: str):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def whitelist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
         """
         ->type Admin commands
         ->signature pg!whitelist_cmd [*cmds]
@@ -172,13 +237,31 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         Implement pg!whitelist_cmd, to whitelist commands
         """
+
+        cmds = tuple(
+            cmd_str.string if isinstance(cmd_str, String) else cmd_str
+            for cmd_str in cmds
+        )
+
+        for cmd_qualname in cmds:
+            cmd = common.bot.get_command(cmd_qualname)
+            if cmd is None:
+                raise BotException(
+                    "Unrecognized command!",
+                    f"could not find a command named '{cmd_qualname}'",
+                )
+
         async with db.DiscordDB("blacklist") as db_obj:
             commands = db_obj.get([])
             cnt = 0
-            for cmd in cmds:
-                if cmd in commands:
+            for cmd_qualname in cmds:
+                if cmd_qualname in commands:
+                    cmd = common.bot.get_command(cmd_qualname)
+                    if cmd is not None:
+                        cmd.update(enabled=True)
+
                     cnt += 1
-                    commands.remove(cmd)
+                    commands.remove(cmd_qualname)
 
             db_obj.write(commands)
 
@@ -193,7 +276,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def blacklist_cmd(self, ctx: commands.Context, *cmds: str):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def blacklist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
         """
         ->type Admin commands
         ->signature pg!blacklist_cmd [*cmds]
@@ -201,14 +285,31 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         -----
         Implement pg!blacklist_cmd, to blacklist commands
         """
+
+        cmds = tuple(
+            cmd_str.string if isinstance(cmd_str, String) else cmd_str
+            for cmd_str in cmds
+        )
+
+        for cmd_qualname in cmds:
+            cmd = common.bot.get_command(cmd_qualname)
+            if cmd is None:
+                raise BotException(
+                    "Unrecognized command!",
+                    f"could not find a command named '{cmd_qualname}'",
+                )
+
         async with db.DiscordDB("blacklist") as db_obj:
             commands = db_obj.get([])
-
             cnt = 0
-            for cmd in cmds:
-                if cmd not in commands and cmd != "whitelist_cmd":
+            for cmd_qualname in cmds:
+                if cmd_qualname not in commands and cmd_qualname != "whitelist_cmd":
+                    cmd = common.bot.get_command(cmd_qualname)
+                    if cmd is not None:
+                        cmd.update(enabled=False)
+
                     cnt += 1
-                    commands.append(cmd)
+                    commands.append(cmd_qualname)
 
             db_obj.write(commands)
 
@@ -223,14 +324,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_clock(
         self,
         ctx: commands.Context,
         *,
         action: str = "",
         timezone: float = 0,
-        color: Optional[PygameColor] = None,
+        color: Optional[discord.Color] = None,
         member: Optional[discord.Member] = None,
     ):
         """
@@ -238,18 +339,19 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->signature pg!admin_clock [action=""] [timezone=] [color=] [member=]
         ->description 24 Hour Clock showing <@&778205389942030377> s who are available to help
         ->extended description
-        Admins can run clock with more arguments, to add/update/remove other members.
-        `pg!clock update [timezone in hours] [color as hex string] [mention member]`
-        `pg!clock remove [mention member]`
+        Admins can run this command with more arguments, to add/update/remove other members.
+        `pg!admin_clock update [timezone in hours] [color as hex string] [mention member]`
+        `pg!admin_clock remove [mention member]`
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        return await super().cmd_clock(action, timezone, color, _member=member)
+        return await self.clock_func(
+            ctx, action=action, timezone=timezone, color=color, _member=member
+        )
 
     @commands.command()
-    @commands.guild_only()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def eval(self, ctx: commands.Context, *, code: CodeBlock):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def eval(self, ctx: commands.Context, code: CodeBlock):
         """
         ->type Admin commands
         ->signature pg!eval <command>
@@ -317,7 +419,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             description=f"**{snakecore.utils.format_byte(mem, 4)}**\n({mem} B)",
             color=common.DEFAULT_EMBED_COLOR,
         )
-    
+
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     async def stop(self, ctx: commands.Context):
@@ -335,22 +437,21 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def archive(
         self,
         ctx: commands.Context,
         origin: discord.TextChannel,
-        quantity: int,
-        *,
+        quantity: Optional[int] = None,
         mode: int = 0,
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
-        before: Optional[Union[discord.PartialMessage, DateTime]] = None,
-        after: Optional[Union[discord.PartialMessage, DateTime]] = None,
-        around: Optional[Union[discord.PartialMessage, DateTime]] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        before: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        after: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
+        around: Optional[Union[discord.PartialMessage, datetime.datetime]] = None,
         raw: bool = False,
         show_header: bool = True,
         show_author: bool = True,
-        divider: str = "-" * 56,
+        divider: String = String("-" * 56),
         group_by_author: bool = True,
         message_links: bool = True,
         oldest_first: bool = True,
@@ -394,7 +495,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 "Cannot execute command:", "Origin and destination channels are same"
             )
 
-        divider_str = divider
+        divider_str = divider.string
 
         if (
             isinstance(before, discord.PartialMessage)
@@ -419,6 +520,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 "Invalid `around` argument",
                 "`around` has to be an ID to a message from the origin channel",
             )
+
+        quantity = quantity or 0
 
         if quantity <= 0:
             if quantity == 0 and not after:
@@ -528,9 +631,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 await destination.trigger_typing()
 
                 fobj.seek(0)
-                
-                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.BASIC_MAX_FILE_SIZE
-                
+
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.BASIC_MAX_FILE_SIZE
+                )
+
                 attached_files = [
                     (
                         await a.to_file(spoiler=a.is_spoiler())
@@ -778,7 +885,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin(
         self,
         ctx: commands.Context,
@@ -890,6 +997,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @pin.group(name="remove", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove(
         self,
         ctx: commands.Context,
@@ -985,11 +1093,12 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @pin_remove.command(name="at")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove_at(
         self,
         ctx: commands.Context,
         channel: discord.TextChannel,
-        *indices: Union[int, Range],
+        *indices: Union[int, range],
     ):
         """
         ->type Admin commands
@@ -1103,22 +1212,20 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         except discord.NotFound:
             pass
 
-    
     @commands.group(invoke_without_command=True)
-    @commands.guild_only()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll(
         self,
         ctx: commands.Context,
-        desc: str,
+        desc: String,
         *emojis: tuple[str, String],
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
-        author: Optional[str] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        author: Optional[String] = None,
         color: Optional[discord.Color] = None,
-        url: Optional[str] = None,
-        image_url: Optional[str] = None,
-        thumbnail: Optional[str] = None,
+        url: Optional[String] = None,
+        image_url: Optional[String] = None,
+        thumbnail: Optional[String] = None,
         multi_votes: bool = False,
     ):
         """
@@ -1163,16 +1270,22 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         if thumbnail:
             embed_dict["thumbnail"] = {"url": thumbnail.string}
 
-        return await self.poll_func(ctx, desc, *emojis, multi_votes=multi_votes, _destination=destination, _admin_embed_dict=embed_dict)
+        return await self.poll_func(
+            ctx,
+            desc,
+            *emojis,
+            multi_votes=multi_votes,
+            _destination=destination,
+            _admin_embed_dict=embed_dict,
+        )
 
     @admin_poll.command(name="close")
-    @commands.guild_only()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll_close(
         self,
         ctx: commands.Context,
-        msg: discord.Message,
+        msg: Optional[discord.Message] = None,
         *,
         color: discord.Color = discord.Color(0xA83232),
     ):
@@ -1184,9 +1297,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         The poll can only be closed by the person who started it or by mods.
         The color is the color of the closed poll embed
         """
-        return await self.poll_close(ctx, msg, _color=color)
+        return await self.poll_close_func(ctx, msg, _color=color)
 
-    
     @commands.group(invoke_without_commmand=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
     async def admin_stream(self, ctx: commands.Context):
@@ -1196,11 +1308,12 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
         """
-        
+
         return await self.stream_func(ctx)
 
     @admin_stream.command(name="add")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_add(self, ctx: commands.Context, *members: discord.Member):
         """
         ->type Reminders
@@ -1214,6 +1327,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_stream.command(name="del")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_del(self, ctx: commands.Context, *members: discord.Member):
         """
         ->type Reminders
@@ -1224,10 +1338,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         Without arguments, equivalent to the "user" version of this command
         """
         await self.stream_del_func(_members=members if members else None)
-    
+
     @admin_stream.command(name="ping")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def admin_stream_ping(self, ctx: commands.Context, message: Optional[str] = None):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def admin_stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
         """
         ->type Reminders
         ->signature pg!admin_stream ping [message]
@@ -1240,10 +1357,9 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         """
         return await self.stream_ping(ctx, message=message)
 
-    
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def info(
         self,
         ctx: commands.Context,
@@ -1282,6 +1398,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         checked_channels = set()
+
         for i, obj in enumerate(objs):
             if isinstance(obj, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
@@ -1358,7 +1475,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @info.command(name="server")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def info_server(self, ctx: commands.Context, guild: Optional[discord.Guild] = None):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def info_server(
+        self, ctx: commands.Context, guild: Optional[discord.Guild] = None
+    ):
         """
         ->type More admin commands
         ->signature pg!info server [guild_id=None]
@@ -1426,7 +1546,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def react(self, ctx: commands.Context, message: discord.PartialMessage, *emojis: str):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def react(
+        self,
+        ctx: commands.Context,
+        message: Optional[discord.PartialMessage] = None,
+        *emojis: str,
+    ):
         """
         ->type More admin commands
         ->signature pg!react <message> <emojis>
@@ -1467,22 +1593,20 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         except discord.NotFound:
             pass
 
-    
     @commands.command()
-    @commands.guild_only()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def browse(
         self,
         ctx: commands.Context,
         channel: discord.TextChannel,
-        *,
         quantity: Optional[int] = None,
-        before: Optional[Union[discord.Message, DateTime]] = None,
-        after: Optional[Union[discord.Message, DateTime]] = None,
-        around: Optional[Union[discord.Message, DateTime]] = None,
-        controllers: Tuple[discord.Member, ...] = (),
-        **kwargs,
+        before: Optional[Union[discord.Message, datetime.datetime]] = None,
+        after: Optional[Union[discord.Message, datetime.datetime]] = None,
+        around: Optional[Union[discord.Message, datetime.datetime]] = None,
+        controllers: Optional[tuple[discord.Member, ...]] = None,
+        page_number: int = 1,
+        refresh_message: Optional[discord.Message] = None,
     ):
         """
         ->type More admin commands
@@ -1516,6 +1640,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         controllers = controllers or None
 
@@ -1643,20 +1769,38 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         else:
             controllers = ctx.author
 
+        footer_text = f"Command: browse"
+
+        raw_command_input: str = getattr(ctx, "raw_command_input", "")
+        # attribute injected by snakecore's custom parser
+
+        if raw_command_input:
+            footer_text += f"\nArguments: {raw_command_input}"
+
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
-                color=common.DEFAULT_EMBED_COLOR, footer_text=f"Command: {self.browse.qualified_name}"
+                color=common.DEFAULT_EMBED_COLOR,
+                footer_text=footer_text,
             )
         ]
 
-        response_message = await response_message.edit(embeds=msg_embeds)
+        if refresh_message is not None:
+            target_message = refresh_message
+            try:
+                await response_message.delete()
+            except discord.HTTPException:
+                pass
+        else:
+            target_message = response_message
+
+        target_message = await target_message.edit(embeds=msg_embeds)
 
         browse_embed = snakecore.utils.pagination.EmbedPaginator(
-            response_message,
+            target_message,
             *pages,
             caller=controllers,
             whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-            start_page_number=kwargs.get("_page_number", 1),
+            start_page_number=page_number,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
@@ -1665,14 +1809,19 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.command()
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def feature(
-        self, ctx: commands.Context, name: str, *channels: discord.TextChannel, disable: bool = True
+        self,
+        ctx: commands.Context,
+        name: str,
+        *channels: discord.TextChannel,
+        enable: bool = False,
+        disable: bool = False,
     ):
         """
         ->type More admin commands
-        ->signature pg!feature <name> [*channels] [enable=True]
-        ->description Per channel finer control on bot features
+        ->signature pg!feature <name> [*channels] [enable=False] [disable=False]
+        ->description Finer per-channel control of bot features
 
         ->extended description
 
@@ -1685,9 +1834,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             > settings to. If empty, applies the feature
             > to the current channel
 
-            `disable: bool = True`
+            `enable: bool = False`
+            > Bool that controls whether to enable the
+            > feature or not Overrides `disable` if set to `True`.
+            `False` by default
+
+            `disable: bool = False`
             > Bool that controls whether to disable the
-            > feature or not (enable). `True` by default
+            > feature or not. `False` by default
         -----
         """
 
@@ -1696,15 +1850,16 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         if not channels:
             channels = (ctx.channel,)
 
-        async with db.DiscordDB("feature") as db_obj:
-            db_dict = db_obj.get({})
-            if name not in db_dict:
-                db_dict[name] = {}
+        if enable or disable:
+            async with db.DiscordDB("feature") as db_obj:
+                db_dict = db_obj.get({})
+                if name not in db_dict:
+                    db_dict[name] = {}
 
-            for chan in channels:
-                db_dict[name][chan.id] = disable
+                for chan in channels:
+                    db_dict[name][chan.id] = enable or disable
 
-            db_obj.write(db_dict)
+                db_obj.write(db_dict)
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1724,8 +1879,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return await self.events_func(ctx)
 
     @admin_events.group(name="wc", invoke_without_command=True)
-    @kwarg_command
-    async def admin_events_wc(self, ctx: commands.Context, *, round_no: Optional[int] = None):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def admin_events_wc(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!admin_events wc [round_no]
@@ -1740,9 +1897,12 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events_wc.command(name="set")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_set(
-        self, ctx: commands.Context, *, desc: Optional[str] = None, url: Optional[str] = None
+        self,
+        ctx: commands.Context,
+        desc: Optional[String] = None,
+        url: Optional[str] = None,
     ):
         """
         ->type Events
@@ -1772,8 +1932,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events_wc.command(name="add")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
-    async def events_wc_add(self, ctx: commands.Context, round_name: str, description: str):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def admin_events_wc_add(
+        self, ctx: commands.Context, round_name: String, description: String
+    ):
         """
         ->type Events
         ->signature pg!admin_events wc add <round_name> <description>
@@ -1807,7 +1969,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events_wc.command(name="remove")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def events_wc_remove(self, ctx: commands.Context, round_no: int = 0):
         """
         ->type Events
@@ -1842,14 +2004,14 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events_wc.command(name="update")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_update(
         self,
         ctx: commands.Context,
         *name_and_scores: tuple[discord.Member, tuple[int, ...]],
         round_no: int = 0,
-        round_name: Optional[str] = None,
-        round_desc: Optional[str] = None,
+        round_name: Optional[String] = None,
+        round_desc: Optional[String] = None,
     ):
         """
         ->type Events
@@ -1906,5 +2068,6 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
 # monkey-patch admin command names into tuple
 common.admin_commands = tuple(
-    cmd.callback.__name__ for cmd in AdminCommandCog.get_commands(AdminCommandCog(common.bot))
+    cmd.callback.__name__
+    for cmd in AdminCommandCog.get_commands(AdminCommandCog(common.bot))
 )

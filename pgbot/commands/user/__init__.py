@@ -22,7 +22,7 @@ import pygame
 import snakecore
 
 from snakecore.command_handler.decorators import custom_parsing, kwarg_command
-from snakecore.command_handler.parsing.converters import CodeBlock, String
+from snakecore.command_handler.converters import CodeBlock, String
 
 from pgbot import common, db
 import pgbot
@@ -75,30 +75,15 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @reminders.command(name="add")
-    async def reminders_add(
+    async def reminders_add_func(
         self,
         ctx: commands.Context,
         msg: str,
         on: datetime.datetime,
-        **kwargs,
+        _delta: Optional[datetime.timedelta] = None,
     ):
-        """
-        ->type Reminders
-        ->signature pg!reminders add <message> <datetime in iso format>
-        ->description Set a reminder to yourself
-        ->extended description
-        Allows you to set a reminder to yourself
-        The date-time must be an ISO time formatted string, in UTC time
-        string
-        ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
-        -----
-        Implement pg!reminders_add, for users to set reminders for themselves
-        """
 
         response_message = common.recent_response_messages[ctx.message.id]
-        
-        _delta: Optional[datetime.timedelta] = kwargs.get("_delta")
 
         if _delta is None:
             now = datetime.datetime.utcnow()
@@ -158,13 +143,35 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
+    @reminders.command(name="add")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def reminders_add(
+        self,
+        ctx: commands.Context,
+        msg: str,
+        on: datetime.datetime,
+    ):
+        """
+        ->type Reminders
+        ->signature pg!reminders add <message> <datetime in iso format>
+        ->description Set a reminder to yourself
+        ->extended description
+        Allows you to set a reminder to yourself
+        The date-time must be an ISO time formatted string, in UTC time
+        string
+        ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
+        -----
+        Implement pg!reminders_add, for users to set reminders for themselves
+        """
+
+        return await self.reminders_add_func(ctx, msg, on=on)
+
     @reminders.command(name="set")
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def reminders_set(
         self,
         ctx: commands.Context,
         msg: str,
-        *,
         timestr: Union[String, str] = "",
         weeks: int = 0,
         days: int = 0,
@@ -234,9 +241,12 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                 seconds=seconds,
             )
 
-        await self.reminders_add(ctx, msg, datetime.datetime.utcnow(), _delta=delta)
+        await self.reminders_add_func(
+            ctx, msg, datetime.datetime.utcnow(), _delta=delta
+        )
 
     @reminders.command(name="remove")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def reminders_remove(self, ctx: commands.Context, *reminder_ids: int):
         """
         ->type Reminders
@@ -290,7 +300,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         )
 
     @commands.command()
-    async def exec(self, ctx: commands.Context, *, code: CodeBlock):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def exec(self, ctx: commands.Context, code: CodeBlock):
         """
         ->type Play With Me :snake:
         ->signature pg!exec <python code block>
@@ -374,7 +385,11 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         embed = snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
         await ctx.message.reply(file=file, embed=embed, mention_author=False)
 
-        filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.BASIC_MAX_FILE_SIZE
+        filesize_limit = (
+            ctx.guild.filesize_limit
+            if ctx.guild is not None
+            else common.BASIC_MAX_FILE_SIZE
+        )
 
         if len(returned.text) > 1500:
             with io.StringIO(
@@ -391,99 +406,118 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             if os.path.isfile(f"temp{tstamp}.{extension}"):
                 os.remove(f"temp{tstamp}.{extension}")
 
-    # @commands.command()
-    # async def refresh(self, ctx: commands.Context, msg: discord.Message):
-    #     """
-    #     ->type Other commands
-    #     ->signature pg!refresh <message>
-    #     ->description Refresh a message which supports pages.
-    #     -----
-    #     Implement pg!refresh, to refresh a message which supports pages
-    #     """
+    @commands.command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def refresh(self, ctx: commands.Context, msg: discord.Message):
+        """
+        ->type Other commands
+        ->signature pg!refresh <message>
+        ->description Refresh a message which supports pages.
+        -----
+        Implement pg!refresh, to refresh a message which supports pagination
+        """
 
-    #     response_message = common.recent_response_messages[ctx.message.id]
+        response_message = common.recent_response_messages[ctx.message.id]
 
-    #     if (
-    #         not msg.embeds
-    #         or len(msg.embeds) < 3
-    #         or not msg.embeds[0].footer
-    #         or not msg.embeds[-1].footer
-    #         or not isinstance(msg.embeds[0].footer.text, str)
-    #         or not isinstance(msg.embeds[-1].footer.text, str)
-    #     ):
-    #         raise BotException(
-    #             "Message does not support pages",
-    #             "The message specified does not support pages. Make sure you "
-    #             "have replied to the correct message",
-    #         )
+        if (
+            not msg.embeds
+            or len(msg.embeds) < 3
+            or not msg.embeds[0].footer
+            or not msg.embeds[-1].footer
+            or not isinstance(msg.embeds[0].footer.text, str)
+            or not isinstance(msg.embeds[-1].footer.text, str)
+        ):
+            raise BotException(
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure you "
+                "have replied to the correct message",
+            )
 
-    #     footer_text = msg.embeds[0].footer.text
+        footer_text = msg.embeds[0].footer.text
 
-    #     cmd_data_match = re.match(r"Command\:\s.+\n", footer_text)
+        cmd_data_match = re.match(r"Command\:\s.+\n?", footer_text)
 
-    #     if cmd_data_match is None:
-    #         raise BotException(
-    #             "Message does not support pages",
-    #             "The message specified does not support pages. Make sure "
-    #             "the id of the message is correct.",
-    #         )
+        if cmd_data_match is None:
+            raise BotException(
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure "
+                "the id of the message is correct.",
+            )
 
-    #     cmd_data_str = footer_text[slice(*cmd_data_match.span())].removesuffix("\n")
-        
-    #     cmd_str = cmd_data_str.replace("Command: ", "")
+        cmd_data_str = footer_text[slice(*cmd_data_match.span())].removesuffix("\n")
 
+        cmd_str = cmd_data_str.replace("Command: ", "")
 
-    #     arg_data_match = re.match(r"Arguments\:\s.+", footer_text)
-    #     arg_data_str = None
-    #     arg_str = ()
+        arg_data_match = re.search(r"Arguments\:\s.+", footer_text)
+        arg_str = ""
 
-    #     if cmd_data_match is not None:
-    #         raise BotException(
-    #             "Message does not support pages",
-    #             "The message specified does not support pages. Make sure "
-    #             "the id of the message is correct.",
-    #         )
+        if arg_data_match is not None:
+            arg_str = arg_data_match.group().replace("Arguments: ", "")
 
-        
+        page_data = msg.embeds[-1].footer.text
+        page_num_str_match = re.search(r"\d+", page_data)
+        page_num_str = ""
+        if page_num_str_match is not None:
+            page_num_str = page_num_str_match.group()
 
-    #     page_data = msg.embeds[-1].footer.text
-    #     page = re.search(r"\d+", page_data).group()
+        if page_num_str_match is None or not page_num_str.isdigit() or not cmd_str:
+            raise BotException(
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure "
+                "the id of the message is correct.",
+            )
 
-    #     if not page.isdigit() or not cmd_str:
-    #         raise BotException(
-    #             "Message does not support pages",
-    #             "The message specified does not support pages. Make sure "
-    #             "the id of the message is correct.",
-    #         )
+        if "page_number=" not in arg_str:
+            arg_str += f" page_number={page_num_str}"
+        else:
+            old_page_kwarg_match = re.search(r"page_number\=\d+", arg_str)
 
-    #     try:
-    #         await response_message.delete()
-    #     except discord.errors.NotFound:
-    #         pass
+            if old_page_kwarg_match is not None:
+                page_kwarg = old_page_kwarg_match.group()
+                arg_str = arg_str.replace(page_kwarg, f"page_number={page_num_str}")
 
-    #     # Handle the new command, the one that pg!refresh is trying to refresh
-        
-    #     response_message = msg
+        if "refresh_message=" not in arg_str:
+            arg_str += f" refresh_message={msg.jump_url}"
+        else:
+            old_refresh_kwarg_match = re.search(r"refresh_message\=.+", arg_str)
 
-    #     cmd = self.bot.get_command(cmd_str)
+            if old_refresh_kwarg_match is not None:
+                old_refresh_kwarg = old_refresh_kwarg_match.group()
+                arg_str = arg_str.replace(
+                    old_refresh_kwarg, f"refresh_message={msg.jump_url}"
+                )
 
-    #     if cmd is not None and cmd.can_run(ctx):
-    #         await cmd(ctx, _page_number=int(page))
+        try:
+            await response_message.delete()
+        except discord.errors.NotFound:
+            pass
 
+        # Handle the new command, the one that pg!refresh is trying to refresh
+
+        cmd = self.bot.get_command(cmd_str)
+        # only supports commands using snakecore's
+        # custom parser
+
+        if cmd is not None:
+            return await cmd(ctx, raw_input=arg_str)
+
+        raise commands.CommandNotFound(
+            "Could not find the original command of the specified message to restart "
+            "pagination."
+        )
 
     async def poll_func(
         self,
         ctx: commands.Context,
-        desc: str,
+        desc: String,
         *emojis: tuple[str, String],
         multi_votes: bool = False,
-        _destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        _destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         _admin_embed_dict: Optional[dict] = None,
     ):
 
-
         response_message = common.recent_response_messages[ctx.message.id]
-        
+
         _admin_embed_dict = _admin_embed_dict or {}
 
         destination = ctx.channel if _destination is None else _destination
@@ -562,15 +596,13 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                 )
 
     @commands.group(invoke_without_command=True)
-    @commands.guild_only()
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def poll(
         self,
         ctx: commands.Context,
-        desc: String,
+        description: String,
         *emojis: tuple[str, String],
         multi_votes: bool = False,
-        **kwargs,
     ):
         """
         ->type Other commands
@@ -584,15 +616,18 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         A `multi_votes` arg can also be passed indicating if the user can cast multiple votes in a poll or not
         ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
         """
-        return await self.poll_func(ctx, desc, *emojis, multi_votes=multi_votes, _destination=kwargs.get("_destination"), _admin_embed_dict=kwargs.get("_admin_embed_dict", {}))
+        return await self.poll_func(
+            ctx,
+            description,
+            *emojis,
+            multi_votes=multi_votes,
+        )
 
-    poll.command(name="close")
-    @commands.guild_only()
-    async def poll_close(
+    async def poll_close_func(
         self,
         ctx: commands.Context,
         msg: discord.Message,
-        **kwargs,
+        _color: Optional[discord.Color] = None,
     ):
         """
         ->type Other commands
@@ -604,7 +639,6 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        _color: Optional[discord.Color] = kwargs.get("_color")
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
             return
@@ -680,10 +714,16 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             if not isinstance(field.name, str):
                 continue
 
+            is_custom_emoji = snakecore.utils.is_markdown_custom_emoji(field.name)
+
             try:
                 r_count = (
                     reactions[
-                        snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                        (
+                            snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                            if is_custom_emoji
+                            else field.name
+                        )
                     ]
                     - 1
                 )
@@ -702,8 +742,9 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
             if (
                 snakecore.utils.extract_markdown_custom_emoji_id(field.name)
-                == top[0][1]
-            ):
+                if is_custom_emoji
+                else field.name
+            ) == top[0][1]:
                 title += (
                     f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
                 )
@@ -725,7 +766,23 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         except discord.errors.NotFound:
             pass
 
-    
+    @poll.command(name="close")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def poll_close(
+        self,
+        ctx: commands.Context,
+        msg: discord.Message,
+    ):
+        """
+        ->type Other commands
+        ->signature pg!poll close <message>
+        ->description Close an ongoing poll.
+        ->extended description
+        The poll can only be closed by the person who started it or by mods.
+        """
+
+        return await self.poll_close_func(ctx, msg)
+
     async def stream_func(self, ctx: commands.Context):
 
         response_message = common.recent_response_messages[ctx.message.id]
@@ -753,7 +810,6 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-
     @commands.group(invoke_without_command=True)
     async def stream(self, ctx: commands.Context):
         """
@@ -762,11 +818,14 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
         """
-        
+
         return await self.stream_func(ctx)
 
-    
-    async def stream_add_func(self, ctx: commands.Context, *, _members: Optional[tuple[discord.Member, ...]] = None):
+    async def stream_add_func(
+        self,
+        ctx: commands.Context,
+        _members: Optional[tuple[discord.Member, ...]] = None,
+    ):
         async with db.DiscordDB("stream") as ping_db:
             data: list = ping_db.get([])
 
@@ -780,11 +839,12 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             ping_db.write(data)
 
         await self.stream_func(ctx)
-        
 
     @stream.command(name="add")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def stream_add(
-        self, ctx: commands.Context, **kwargs,
+        self,
+        ctx: commands.Context,
     ):
         """
         ->type Reminders
@@ -794,11 +854,14 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         Add yourself to the stream-ping-list. You can always delete yourself later
         with `pg!stream del`
         """
-        
-        return await self.stream_add_func(ctx, _members=kwargs.get("_members"))
 
-    
-    async def stream_del_func(self, ctx: commands.Context, *, _members: Optional[tuple[discord.Member, ...]] = None):
+        return await self.stream_add_func(ctx)
+
+    async def stream_del_func(
+        self,
+        ctx: commands.Context,
+        _members: Optional[tuple[discord.Member, ...]] = None,
+    ):
         async with db.DiscordDB("stream") as ping_db:
             data: list = ping_db.get([])
 
@@ -820,7 +883,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     @stream.command(name="del", aliases=("delete",))
     async def stream_del(
-        self, ctx: commands.Context, **kwargs,
+        self,
+        ctx: commands.Context,
     ):
         """
         ->type Reminders
@@ -830,21 +894,12 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         Remove yourself from the stream-ping-list. You can always add you later
         with `pg!stream add`
         """
-        
-        return await self.stream_del_func(ctx, _members=kwargs.get("_members"))
 
-    @stream.command(name="ping")
-    async def stream_ping(self, ctx: commands.Context, message: Optional[String] = None):
-        """
-        ->type Reminders
-        ->signature pg!stream ping [message]
-        ->description Ping users in stream-list with an optional message.
-        ->extended description
-        Ping all users in the ping list to announce a stream.
-        You can pass an optional stream message (like the stream topic).
-        The streamer name will be included and many people will be pinged so \
-        don't make pranks with this command.
-        """
+        return await self.stream_del_func(ctx)
+
+    async def stream_ping_func(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
@@ -864,6 +919,24 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         except discord.errors.NotFound:
             pass
         await ctx.channel.send(f"<@!{ctx.author.id}> is gonna stream!\n{msg}\n{ping}")
+
+    @stream.command(name="ping")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
+        """
+        ->type Reminders
+        ->signature pg!stream ping [message]
+        ->description Ping users in stream-list with an optional message.
+        ->extended description
+        Ping all users in the ping list to announce a stream.
+        You can pass an optional stream message (like the stream topic).
+        The streamer name will be included and many people will be pinged so \
+        don't make pranks with this command.
+        """
+
+        return await self.stream_ping_func(ctx, message=message)
 
     async def events_func(self, ctx: commands.Context):
         """
@@ -895,8 +968,9 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         """
         return await self.events_func(ctx)
 
-    
-    async def events_wc_func(self, ctx: commands.Context, *, round_no: Optional[int] = None):
+    async def events_wc_func(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!events wc [round_no]
@@ -962,10 +1036,9 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             color=0xFF8C00,
         )
 
-
     @events.command(name="wc")
-    @kwarg_command
-    async def events_wc(self, ctx: commands.Context, *, round_no: Optional[int] = None):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def events_wc(self, ctx: commands.Context, round_no: Optional[int] = None):
         """
         ->type Events
         ->signature pg!events wc [round_no]

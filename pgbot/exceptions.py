@@ -9,8 +9,14 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines some exceptions used across the whole codebase
 """
 
+
 class BotException(commands.BadArgument):
-    """
-    Base class for all bot related exceptions, that need to be displayed on
+    """Base class for all bot related exceptions, that need to be displayed on
     discord
+    """
+
+
+class NoFunAllowed(commands.CheckFailure):
+    """A command check exception for blocking 'fun' related commands in select
+    channels.
     """

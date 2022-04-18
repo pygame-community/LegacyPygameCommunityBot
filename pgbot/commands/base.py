@@ -26,23 +26,6 @@ from pgbot import common, db, emotion
 import pgbot
 
 
-def fun_command(func):
-    """
-    A decorator to indicate a "fun command", one that the bot skips when it is
-    'exhausted'
-    """
-    func.fun_cmd = True
-    return func
-
-
-def no_dm(func):
-    """
-    A decorator to indicate a command that cannot be run on DM
-    """
-    func.no_dm = True
-    return func
-
-
 def add_group(groupname: str, *subcmds: str):
     """
     Utility to add a function name to a group command
@@ -70,7 +53,7 @@ class BaseCommandCog(commands.Cog):
         self.bot: commands.Bot = bot
         # Create a dictionary of command names and respective handler functions
         # build self.groups and self.cmds_and_functions from class functions
-        self.cmds_and_funcs = {}  # this is a mapping from funtion name to funtion
+        self.cmds_and_funcs = {}  # this is a mapping from function name to function
         self.groups = {}  # This is a mapping from group name to list of sub functions
         for attr in dir(self):
             cmd: commands.Command = self.__getattribute__(attr)
@@ -82,7 +65,9 @@ class BaseCommandCog(commands.Cog):
                 if isinstance(cmd, commands.Group) and not cmd.parents:
                     for subcmd in cmd.walk_commands():
                         subcmd.callback.groupname = cmd.name
-                        subcmd.callback.subcmds = tuple(subcmd.qualified_name.split()[1:])
+                        subcmd.callback.subcmds = tuple(
+                            subcmd.qualified_name.split()[1:]
+                        )
 
                 if hasattr(func, "groupname"):
                     if func.groupname in self.groups:

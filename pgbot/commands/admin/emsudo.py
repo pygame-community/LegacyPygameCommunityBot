@@ -9,7 +9,6 @@ This file defines the command handler class for the emsudo commands of the bot
 from __future__ import annotations
 
 import asyncio
-import inspect
 import io
 import json
 from ast import literal_eval
@@ -19,7 +18,7 @@ import discord
 from discord.ext import commands
 import snakecore
 from snakecore.command_handler.decorators import custom_parsing, kwarg_command
-from snakecore.command_handler.parsing.converters import QuotedString
+from snakecore.command_handler.converters import String
 
 from pgbot import common
 from pgbot.commands.base import (
@@ -38,12 +37,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @commands.group(invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *datas: Union[discord.Message, CodeBlock, String, bool],
         content: String = String(""),
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -467,9 +467,10 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo.group(name="add", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
         overwrite: bool = False,
@@ -522,7 +523,7 @@ class EmsudoCommandCog(BaseCommandCog):
         """
 
         if not msg.embeds or overwrite:
-            await self.emsudo_replace(msg=msg, data=data, _add=True)
+            await self.emsudo_replace_func(ctx, msg, data, _add=True)
         else:
             raise BotException(
                 "Cannot overwrite embed!",
@@ -532,12 +533,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo.group(name="remove", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        a: str = "",
-        attributes: str = "",
+        a: String = String(""),
+        attributes: String = String(""),
     ):
         """
         ->type emsudo commands
@@ -615,7 +617,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
 
         attribs = (
-            a if a else attributes if attributes else ""
+            a.string if a.string else attributes.string if attributes.string else ""
         )
 
         try:
@@ -726,14 +728,11 @@ class EmsudoCommandCog(BaseCommandCog):
         except discord.NotFound:
             pass
 
-    @emsudo.group(name="replace", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
-    async def emsudo_replace(
-        self, ctx: commands.Context,
+    async def emsudo_replace_func(
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
-        *,
         _add: bool = False,
     ):
         """
@@ -922,11 +921,65 @@ class EmsudoCommandCog(BaseCommandCog):
         except discord.NotFound:
             pass
 
+    @emsudo.group(name="replace", invoke_without_command=True)
+    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_replace(
+        self,
+        ctx: commands.Context,
+        msg: discord.Message,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo replace <message> [data]
+        ->description Replace an embed through the bot
+        ->extended description
+        Replace the embed of a message with a new one using the given arguments.
+
+        __Args__:
+            `data: (Message|CodeBlock|String|bool) =`
+            > Data to replace the target embed from.
+            > Can be a discord message whose first attachment contains
+            > JSON or Python embed data, a string
+            > (will only affect a embed description field),
+            > a code block containing JSON embed data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed data as a
+            > dictionary, or a condensed embed data list.
+            > If omitted or the only input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command
+        pg!emsudo replace 987654321987654321 "Whoops the embed is boring now"
+        pg!emsudo replace 987654321987654321 123456789012345678
+        pg!emsudo replace 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "title": "An Embed Replacement",
+            "description": "Lolz",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "another footer text"
+                }
+        }
+        \\`\\`\\`
+        -----
+        """
+
+        return await self.emsudo_replace_func(ctx, msg, data)
+
     @emsudo.group(name="edit", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: tuple[discord.Message, ...],
         *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
@@ -1308,11 +1361,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo.command(name="sum")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_sum(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         edit_inner_fields: bool = False,
         in_place: bool = False,
         remove_inputs: bool = False,
@@ -1507,8 +1561,10 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo.group(name="swap", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
     ):
@@ -1582,9 +1638,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo.group(name="clone", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone(
-        self, ctx: commands.Context, *msgs: discord.Message, destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None
+        self,
+        ctx: commands.Context,
+        *msgs: discord.Message,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -1743,17 +1802,15 @@ class EmsudoCommandCog(BaseCommandCog):
         except discord.NotFound:
             pass
 
-    @emsudo.command(name="get")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
-    async def emsudo_get(
-        self, ctx: commands.Context,
+    async def emsudo_get_func(
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        a: QuotedString = "",
-        attributes: str = "",
+        a: String = String(""),
+        attributes: String = String(""),
         mode: int = 0,
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
-        output_name: str = "(add a title by editing this embed)",
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        output_name: String = String("(add a title by editing this embed)"),
         pop: bool = False,
         copy_color_with_pop: bool = False,
         system_attributes: bool = False,
@@ -1878,7 +1935,7 @@ class EmsudoCommandCog(BaseCommandCog):
             )
 
         attribs = (
-            a if a else attributes if attributes else ""
+            a.string if a.string else attributes.string if attributes.string else ""
         )
 
         try:
@@ -2043,7 +2100,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         await destination.send(
                             embed=snakecore.utils.embed_utils.create_embed(
                                 author_name="Embed Data",
-                                title=output_name
+                                title=output_name.string
                                 if len(msgs) < 2
                                 else "(add a title by editing this embed)",
                                 color=common.DEFAULT_EMBED_COLOR,
@@ -2131,15 +2188,110 @@ class EmsudoCommandCog(BaseCommandCog):
         except discord.NotFound:
             pass
 
+    @emsudo.command(name="get")
+    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_get(
+        self,
+        ctx: commands.Context,
+        *msgs: discord.Message,
+        a: String = String(""),
+        attributes: String = String(""),
+        mode: int = 0,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        output_name: String = String("(add a title by editing this embed)"),
+        system_attributes: bool = False,
+        as_json: bool = True,
+        as_python: bool = False,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=]
+        [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
+
+        ->description Get the embed data of a message
+        ->extended description
+        Get the contents of the embed of a message from the given arguments and send it as another message
+        to a given destination channel in a serialized form.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose embeds should
+            > be serialized into a JSON or Python format.
+
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
+            `a|attributes: (String) =`
+            > A string containing the attributes to extract
+            > from the target embeds. If those attributes
+            > have attributes themselves
+            > (e.g. `author`, `fields`, `footer`),
+            > then those can be specified using the dot `.`
+            > operator inside this string.
+            > If omitted or empty, the attributes of
+            > all target message embeds will be serialized.
+            > Embed attributes that become invalid
+            > upon their extraction (missing required sub-attributes, etc.)
+            > will still be included in the serialized output,
+            > but that output might not be enough
+            > to successfully generate embeds anymore.
+
+            `mode: (bool) = 0`
+            > `0`: Embed serialization only.
+            > `1`: Embed creation from the selected
+            > attributes (when possible).
+            > `2`: `0` and `1` together.
+
+            +===+
+
+            `output_name (String) =`
+            > A name for the first output data.
+
+            `system_attributes: (bool) = True`
+            > Whether to include Discord generated embed
+            > attributes in the serialized output.
+
+            `as_python (bool) = False`
+            `as_json (bool) = True`
+            > If `as_python=` is `True` send `.py` output,
+            > else if `as_json=` is `True` send `.json` output,
+            > otherwise send `.txt` output.
+
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        ->example command
+        pg!emsudo get 98765432198765444321
+        pg!emsudo get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
+        -----
+        """
+
+        return await self.emsudo_get_func(
+            ctx,
+            *msgs,
+            a=a,
+            attributes=attributes,
+            mode=mode,
+            destination=destination,
+            output_name=output_name,
+            system_attributes=system_attributes,
+            as_json=as_json,
+            as_python=as_python,
+        )
+
     @emsudo.command(name="pop")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_pop(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        a: str = "",
-        attributes: str = "",
-        destination: Optional[Union[discord.abc.GuildChannel, discord.Thread]] = None,
+        a: String = String(""),
+        attributes: String = String(""),
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -2184,14 +2336,16 @@ class EmsudoCommandCog(BaseCommandCog):
         -----
         """
 
-        if not (a or attributes):
+        if not (a.string or attributes.string):
             raise BotException(
                 "Invalid embed attribute string!", "No embed attributes specified."
             )
 
-        await self.emsudo_get(
+        await self.emsudo_get_func(
+            ctx,
             *msgs,
-            a=(a if a else attributes),
+            a=a,
+            attributes=attributes,
             mode=1,
             destination=destination,
             pop=True,
@@ -2200,11 +2354,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_add.group(name="field", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *,
-        data: Union[CodeBlock, str],
+        data: Union[CodeBlock, String],
     ):
         """
         ->type More emsudo commands
@@ -2268,8 +2423,8 @@ class EmsudoCommandCog(BaseCommandCog):
 
         msg_embed = msg.embeds[0]
 
-        if isinstance(data, str):
-            field_str = data
+        if isinstance(data, String):
+            field_str = data.string
 
             try:
                 field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
@@ -2368,11 +2523,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_add.group(name="fields", invoke_without_command=True)
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *,
-        data: Optional[Union[discord.Message, CodeBlock, str, bool]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
@@ -2454,7 +2610,7 @@ class EmsudoCommandCog(BaseCommandCog):
             attachment_msg = ctx.message
 
         elif isinstance(data, String):
-            if not data:
+            if not data.string:
                 attachment_msg = ctx.message
             else:
                 raise BotException(
@@ -2632,12 +2788,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_add_field.command(name="at")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field_at(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
-        *,
-        data: Union[CodeBlock, str],
+        data: Union[CodeBlock, String],
     ):
         """
         ->type More emsudo commands
@@ -2704,8 +2861,8 @@ class EmsudoCommandCog(BaseCommandCog):
 
         msg_embed = msg.embeds[0]
 
-        if isinstance(data, str):
-            field_str = data
+        if isinstance(data, String):
+            field_str = data.string
 
             try:
                 field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
@@ -2804,12 +2961,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_add_fields.command(name="at")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields_at(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
-        *,
-        data: Optional[Union[discord.Message, CodeBlock, str, bool]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
@@ -2893,8 +3051,8 @@ class EmsudoCommandCog(BaseCommandCog):
         if data is None or data is False:
             attachment_msg = ctx.message
 
-        elif isinstance(data, str):
-            if not data:
+        elif isinstance(data, String):
+            if not data.string:
                 attachment_msg = ctx.message
             else:
                 raise BotException(
@@ -3072,12 +3230,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_edit.command(name="field")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_field(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
-        *,
-        data: Union[CodeBlock, str],
+        data: Union[CodeBlock, String],
     ):
         """
         ->type More emsudo commands
@@ -3148,7 +3307,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_embed = msg.embeds[0]
 
         if isinstance(data, String):
-            field_str = data
+            field_str = data.string
 
             try:
                 field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
@@ -3246,11 +3405,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_edit.command(name="fields")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_fields(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *,
-        data: Optional[Union[discord.Message, CodeBlock, str, bool]] = None,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
         """
         ->type More emsudo commands
@@ -3333,7 +3493,7 @@ class EmsudoCommandCog(BaseCommandCog):
             attachment_msg = ctx.message
 
         elif isinstance(data, String):
-            if not data:
+            if not data.string:
                 attachment_msg = ctx.message
             else:
                 raise BotException(
@@ -3511,12 +3671,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_replace.command(name="field")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_replace_field(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
-        *,
-        data: Union[CodeBlock, str],
+        data: Union[CodeBlock, String],
     ):
         """
         ->type More emsudo commands
@@ -3585,7 +3746,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_embed = msg.embeds[0]
 
         if isinstance(data, String):
-            field_str = data
+            field_str = data.string
 
             try:
                 field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
@@ -3683,6 +3844,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_swap.command(name="fields")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap_fields(
         self, ctx: commands.Context, msg: discord.Message, index_a: int, index_b: int
     ):
@@ -3748,11 +3910,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_clone.command(name="fields")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone_fields(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *indices: Union[int, Range],
+        *indices: Union[int, range],
         multi_indices: bool = False,
         clone_to: Optional[int] = None,
     ):
@@ -3848,11 +4011,12 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_remove.command(name="fields")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove_fields(
-        self, ctx: commands.Context,
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *indices: Union[int, Range],
+        *indices: Union[int, range],
         multi_indices: bool = False,
     ):
         """
@@ -3943,8 +4107,10 @@ class EmsudoCommandCog(BaseCommandCog):
 
     @emsudo_remove.command(name="allfields")
     @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    async def emsudo_remove_fields_all(
-        self, ctx: commands.Context,
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_remove_all_fields(
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
     ):
         """

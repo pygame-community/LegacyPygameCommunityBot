@@ -15,9 +15,9 @@ import time
 import discord
 from discord.ext import commands
 import pygame
-from scipy import rand
 import snakecore
-from snakecore.command_handler.parsing.converters import String
+from snakecore.command_handler.converters import String
+from snakecore.command_handler.decorators import custom_parsing
 import unidecode
 
 from pgbot import common
@@ -26,6 +26,7 @@ from pgbot.commands.base import (
     BaseCommandCog,
 )
 from pgbot.commands.utils import commands, vibecheck
+from pgbot.commands.utils.checks import fun_command
 from pgbot.exceptions import BotException
 
 
@@ -35,6 +36,7 @@ class FunCommand(BaseCommandCog):
     """
 
     @commands.command()
+    @fun_command()
     async def version(self, ctx: commands.Context):
         """
         ->type Other commands
@@ -53,6 +55,7 @@ class FunCommand(BaseCommandCog):
         )
 
     @commands.command()
+    @fun_command()
     async def ping(self, ctx: commands.Context):
         """
         ->type Other commands
@@ -79,6 +82,8 @@ class FunCommand(BaseCommandCog):
         )
 
     @commands.group(invoke_without_command=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @fun_command()
     async def fontify(self, ctx: commands.Context, msg: str):
         """
         ->type Play With Me :snake:
@@ -133,6 +138,9 @@ class FunCommand(BaseCommandCog):
         await response_message.edit(content=fontified)
 
     fontify.command(name="remove")
+
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @fun_command()
     async def fontify_remove(self, ctx: commands.Context, reply: discord.Message):
         """
         ->type Play With Me :snake:
@@ -163,6 +171,7 @@ class FunCommand(BaseCommandCog):
             pass
 
     @commands.command()
+    @fun_command()
     async def pet(self, ctx: commands.Context):
         """
         ->type Play With Me :snake:
@@ -173,7 +182,7 @@ class FunCommand(BaseCommandCog):
         """
 
         response_message = common.recent_response_messages[ctx.message.id]
-        
+
         fname = "pet.gif"
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -181,7 +190,6 @@ class FunCommand(BaseCommandCog):
             image_url="https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
-    
 
     # @commands.command()
     # async def vibecheck(self, ctx: commands.Context):

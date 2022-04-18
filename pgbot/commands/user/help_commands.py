@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 import pygame
 import snakecore
-from snakecore.command_handler.decorators import kwarg_command
+from snakecore.command_handler.decorators import custom_parsing, kwarg_command
 
 import pgbot
 from pgbot import common, db
@@ -32,6 +32,7 @@ class HelpCommandCog(BaseCommandCog):
     """Base class to handle 'help' commands of the bot."""
 
     @commands.command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def rules(self, ctx: commands.Context, *rules: int):
         """
         ->type Get help
@@ -112,36 +113,16 @@ class HelpCommandCog(BaseCommandCog):
                 color=0x228B22,
             )
 
-    @commands.command()
-    @kwarg_command
-    async def clock(
+    async def clock_func(
         self,
         ctx: commands.Context,
-        *,
         action: str = "",
         timezone: Optional[float] = None,
         color: Optional[discord.Color] = None,
-        **kwargs,
+        _member: Optional[discord.Member] = None,
     ):
-        """
-        ->type Get help
-        ->signature pg!clock
-        ->description 24 Hour Clock showing <@&778205389942030377> s who are available to help
-        -> Extended description
-        People on the clock can run the clock with more arguments, to update their data.
-        `pg!clock update [timezone in hours] [color as hex string]`
-        `timezone` is float offset from GMT in hours.
-        `color` optional color argument, that shows up on the clock.
-        Note that you might not always display with that colour.
-        This happens if more than one person are on the same timezone
-        Use `pg!clock remove` to remove yourself from the clock
-        -----
-        Implement pg!clock, to display a clock of helpfulies/mods/wizards
-        """
 
         response_message = common.recent_response_messages[ctx.message.id]
-
-        _member: Optional[discord.Member] = kwargs.get("_member")
 
         async with db.DiscordDB("clock") as db_obj:
             timezones = db_obj.get({})
@@ -178,9 +159,7 @@ class HelpCommandCog(BaseCommandCog):
                             )
 
                         if color is None:
-                            color = discord.Color(
-                                random.randint(0, 0xFFFFFF)
-                            )
+                            color = discord.Color(random.randint(0, 0xFFFFFF))
 
                         timezones[member.id] = [
                             timezone,
@@ -222,8 +201,41 @@ class HelpCommandCog(BaseCommandCog):
             pass
 
     @commands.command()
-    @commands.guild_only()
-    async def doc(self, ctx: commands.Context, *, name: str, **kwargs):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def clock(
+        self,
+        ctx: commands.Context,
+        action: str = "",
+        timezone: Optional[float] = None,
+        color: Optional[discord.Color] = None,
+    ):
+        """
+        ->type Get help
+        ->signature pg!clock
+        ->description 24 Hour Clock showing <@&778205389942030377> s who are available to help
+        -> Extended description
+        People on the clock can run the clock with more arguments, to update their data.
+        `pg!clock update [timezone in hours] [color as hex string]`
+        `timezone` is float offset from GMT in hours.
+        `color` optional color argument, that shows up on the clock.
+        Note that you might not always display with that colour.
+        This happens if more than one person are on the same timezone
+        Use `pg!clock remove` to remove yourself from the clock
+        -----
+        Implement pg!clock, to display a clock of helpfulies/mods/wizards
+        """
+
+        return await self.clock_func(ctx, action=action, timezone=timezone, color=color)
+
+    @commands.command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def doc(
+        self,
+        ctx: commands.Context,
+        name: str,
+        page_number: int = 1,
+        refresh_message: Optional[discord.Message] = None,
+    ):
         """
         ->type Get help
         ->signature pg!doc <object name>
@@ -238,11 +250,26 @@ class HelpCommandCog(BaseCommandCog):
         if isinstance(ctx.author, discord.User):
             return
 
-        await docs.put_doc(name, response_message, ctx.author, kwargs.get("_page_number", 1))
+        if refresh_message is not None:
+            target_message = refresh_message
+            try:
+                await response_message.delete()
+            except discord.HTTPException:
+                pass
+        else:
+            target_message = response_message
+
+        await docs.put_doc(ctx, name, target_message, ctx.author, page=page_number)
 
     @commands.command()
-    @commands.guild_only()
-    async def help(self, ctx: commands.Context, *names: str, **kwargs):
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def help(
+        self,
+        ctx: commands.Context,
+        *names: str,
+        page_number: int = 1,
+        refresh_message: Optional[discord.Message] = None,
+    ):
         """
         ->type Get help
         ->signature pg!help [command]
@@ -258,27 +285,36 @@ class HelpCommandCog(BaseCommandCog):
         if isinstance(ctx.author, discord.User):
             return
 
+        if refresh_message is not None:
+            target_message = refresh_message
+            try:
+                await response_message.delete()
+            except discord.HTTPException:
+                pass
+        else:
+            target_message = response_message
+
         await help.send_help_message(
-            response_message,
+            ctx,
+            target_message,
             ctx.author,
             names,
             self.cmds_and_funcs,
             self.groups,
-            page=kwargs.get("_page_number", 1),
+            page=page_number,
         )
 
     @commands.command()
-    @commands.guild_only()
-    @kwarg_command
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def resources(
         self,
         ctx: commands.Context,
-        *,
         limit: Optional[int] = None,
         filter_tag: Optional[String] = None,
         filter_members: Optional[tuple[discord.Object, ...]] = None,
         oldest_first: bool = False,
-        **kwargs,
+        page_number: int = 1,
+        refresh_message: Optional[discord.Message] = None,
     ):
         """
         ->type Get help
@@ -293,7 +329,7 @@ class HelpCommandCog(BaseCommandCog):
         ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
         """
 
-        page_number = kwargs.get("_page_number", 1)
+        response_message = common.recent_response_messages[ctx.message.id]
 
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
@@ -425,18 +461,34 @@ class HelpCommandCog(BaseCommandCog):
                 "Please try again.",
             )
 
-        # Creates a paginator for the caller to use
+        footer_text = "Command: resources"
+
+        raw_command_input: str = getattr(ctx, "raw_command_input", "")
+        # attribute injected by snakecore's custom parser
+
+        if raw_command_input:
+            footer_text += f"\nArguments: {raw_command_input}"
 
         msg_embeds = [
             snakecore.utils.embed_utils.create_embed(
-                color=common.DEFAULT_EMBED_COLOR, footer_text=ctx.invoked_with
+                color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
             )
         ]
 
-        response_message = response_message.edit(embeds=msg_embeds)
+        if refresh_message is not None:
+            target_message = refresh_message
+            try:
+                await response_message.delete()
+            except discord.HTTPException:
+                pass
+        else:
+            target_message = response_message
 
+        target_message = await target_message.edit(embeds=msg_embeds)
+
+        # Creates a paginator for the caller to use
         page_embed = snakecore.utils.pagination.EmbedPaginator(
-            response_message,
+            target_message,
             *pages,
             caller=ctx.author,
             whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,

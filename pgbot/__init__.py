@@ -30,7 +30,6 @@ async def _init():
     """
 
     await snakecore.init(global_client=common.bot)
-    common.bot.remove_command("help")
     await common.bot.add_cog(AdminCommandCog(common.bot))
 
     if not common.TEST_MODE:
@@ -75,6 +74,12 @@ async def _init():
             for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
+
+    async with db.DiscordDB("blacklist") as db_obj:  # disable blacklisted commands
+        for cmd_qualname in db_obj.get([]):
+            cmd = common.bot.get_command(cmd_qualname)
+            if cmd is not None:
+                cmd.update(enabled=False)
 
 
 async def init():
@@ -290,7 +295,8 @@ async def message_edit(old: discord.Message, new: discord.Message):
     """
     This function is called for every message edited by user.
     """
-    if new.content.startswith(common.PREFIX):
+    bot_id = common.bot.user.id
+    if new.content.startswith((common.COMMAND_PREFIX, f"<@{bot_id}>", f"<@!{bot_id}>")):
         try:
             if new.id in common.cmd_logs.keys():
                 await commands.handle(new, common.cmd_logs[new.id])
@@ -453,7 +459,13 @@ async def handle_message(msg: discord.Message):
     if msg.type == discord.MessageType.premium_guild_subscription:
         await emotion.server_boost(msg)
 
-    if msg.content.startswith(common.PREFIX):
+    mentions = f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>"
+
+    if (
+        msg.content.startswith(common.COMMAND_PREFIX)
+        or msg.content.startswith(mentions)
+        and msg.content not in mentions
+    ):
         ret = await commands.handle(msg)
         if ret is not None:
             common.cmd_logs[msg.id] = ret

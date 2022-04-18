@@ -13,7 +13,7 @@ from sys import prefix
 from typing import Optional, Union
 
 import discord
-from discord.ext import commands 
+from discord.ext import commands
 import pygame
 
 from dotenv import load_dotenv
@@ -70,7 +70,8 @@ if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)
 
 
-PREFIX = "pd!" if TEST_MODE else "pg!"
+COMMAND_PREFIX = "pd!" if TEST_MODE else "pg!"
+
 CMD_FUNC_PREFIX = "cmd_"
 
 BASIC_MAX_FILE_SIZE = 8_000_000  # bytes
@@ -99,8 +100,11 @@ WC_SCORING = (
 ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
 ints.message_content = True  # needed for message content
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"), intents=ints)
-print(bot.command_prefix)
+bot = commands.Bot(
+    command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"),
+    intents=ints,
+    help_command=None,
+)
 window = pygame.Surface((1, 1))  # This will later be redefined
 
 
@@ -284,10 +288,10 @@ BOT_HELP_PROMPT = {
     "color": 0xFFFF00,
     "description": f"""
 Hey there, do you want to use {BOT_MENTION} ?
-My command prefix is `{PREFIX}`.
+My command prefix is `{COMMAND_PREFIX}`.
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting **[HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
-If you want to know about a specifc command run {PREFIX}help [command], for example {PREFIX}help exec.
+If you want to know about a specifc command run {COMMAND_PREFIX}help [command], for example {COMMAND_PREFIX}help exec.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 }
 

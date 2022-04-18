@@ -26,19 +26,33 @@ from pgbot.commands.utils import get_primary_guild_perms
 from snakecore.command_handler.decorators import kwarg_command
 
 
-
-async def handle(invoke_message: discord.Message, response_message: Optional[discord.Message] = None):
+async def handle(
+    invoke_message: discord.Message, response_message: Optional[discord.Message] = None
+):
     """
     Handle a pg! command posted by a user
     """
     is_admin, is_priv = get_primary_guild_perms(invoke_message.author)
-
-    if is_admin and invoke_message.content.startswith(f"{common.PREFIX}stop"):
+    bot_id = common.bot.user.id
+    if is_admin and invoke_message.content.startswith(
+        (
+            f"{common.COMMAND_PREFIX}stop",
+            f"<@{bot_id}> stop",
+            f"<@{bot_id}>stop",
+            f"<@!{bot_id}> stop",
+            f"<@!{bot_id}>stop",
+        )
+    ):
         splits = invoke_message.content.strip().split(" ")
         splits.pop(0)
         try:
             if splits:
-                for uid in map(snakecore.utils.extract_markdown_mention_id, splits):
+                for uid in map(
+                    lambda arg: snakecore.utils.extract_markdown_mention_id(arg)
+                    if snakecore.utils.is_markdown_mention(arg)
+                    else arg,
+                    splits,
+                ):
                     if uid in common.TEST_USER_IDS:
                         break
                 else:
@@ -91,7 +105,7 @@ async def handle(invoke_message: discord.Message, response_message: Optional[dis
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
         )
-    
+
     common.recent_response_messages[invoke_message.id] = response_message
 
     if not common.TEST_MODE and not common.GENERIC:
@@ -119,49 +133,5 @@ async def handle(invoke_message: discord.Message, response_message: Optional[dis
             file=log_txt_file,
         )
 
-    #cmd = (
-    #    admin.AdminCommandCog(invoke_message, response_message)
-    #    if is_admin
-    #    else user.UserCommandCog(invoke_message, response_message)
-    #)
-    #cmd.is_priv = is_priv
-    #await cmd.handle_cmd()
-    await common.bot.process_commands(invoke_message)
+    await common.bot.process_commands(invoke_message)  # main command handling
     return response_message
-
-
-class TestFlags(commands.FlagConverter, delimiter="="):
-    a: int
-    b: int = 2
-    kw: Dict[str, int] = commands.flag(name="kw", default=lambda ctx: {})
-
-@common.bot.command(name="hello")
-async def hello(ctx: commands.Context, arg1: Union[int, float], arg2: float, *, test1: TestFlags):
-
-   a, b, kw = test1.__dict__.values()
-
-   #kw = dict(kw)
-   
-   await ctx.channel.send(f"Hello, {ctx.author.mention}, {(arg1, arg2, a, b, kw)}")
-
-
-
-@common.bot.command()
-@kwarg_command
-async def howdy(ctx: commands.Context, arg1: Union[int, float], arg2: float, *, a: str, b: int = 2):
-    print(howdy.callback.__original_func__, howdy.callback.__original_func__, howdy.callback.__keyword_only_flag_class__, howdy.callback.__keyword_only_flag_class__.__dict__)
-
-    print(ctx, arg1, arg2, a, b)
-
-    await ctx.channel.send(f"Hello, {ctx.author.mention}, {(arg1, arg2, a, b)}")
-
-
-@common.bot.command()
-async def code(ctx: commands.Context, *lol: int, text: str = "6"):
-    await ctx.send(f"your text: {lol!r} {text!r}")
-
-@common.bot.command()
-async def nums(ctx: commands.Context, *num: int):
-    await ctx.send(f"your numbers: {num}")
-    
-
