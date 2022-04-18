@@ -110,64 +110,6 @@ async def handle_console():
         )
 
 
-async def message_delete_reaction_listener(
-    msg: discord.Message,
-    cmd_invoker: Union[discord.Member, discord.User],
-    emoji_str: str,
-):
-    try:
-        try:
-            await msg.add_reaction(emoji_str)
-        except discord.HTTPException:
-            return
-
-        check = None
-        if isinstance(cmd_invoker, discord.Member):
-            check = (
-                lambda event: event.message_id == msg.id
-                and (event.guild_id == getattr(msg.guild, "id", None))
-                and (
-                    event.user_id == cmd_invoker.id
-                    or any(
-                        role.id in common.ServerConstants.ADMIN_ROLES
-                        for role in cmd_invoker.roles[1:]
-                    )
-                )
-                and event.emoji.is_unicode_emoji()
-                and event.emoji.name == emoji_str
-            )
-        elif isinstance(cmd_invoker, discord.User):
-            check = (
-                lambda event: event.message_id == msg.id
-                and (event.guild_id == getattr(msg.guild, "id", None))
-                and (event.user_id == cmd_invoker.id)
-                and event.emoji.is_unicode_emoji()
-                and event.emoji.name == emoji_str
-            )
-        else:
-            raise TypeError(
-                f"argument 'invoker' expected discord.Member/.User, not {cmd_invoker.__class__.__name__}"
-            )
-
-        event: discord.RawReactionActionEvent = await common.bot.wait_for(
-            "raw_reaction_add", check=check, timeout=20
-        )
-
-        try:
-            await msg.delete()
-        except discord.HTTPException:
-            pass
-
-    except (asyncio.TimeoutError, asyncio.CancelledError) as a:
-        try:
-            await msg.clear_reaction(emoji_str)
-        except discord.HTTPException:
-            pass
-
-        if isinstance(a, asyncio.CancelledError):
-            raise a
-
-
 @tasks.loop(seconds=3)
 async def routine():
     """

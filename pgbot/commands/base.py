@@ -31,7 +31,7 @@ from pgbot.commands.parser import (
     split_tuple_anno,
     split_union_anno,
 )
-from pgbot.routine import message_delete_reaction_listener
+from pgbot.utils.utils import message_delete_reaction_listener
 from pgbot.utils import embed_utils, utils
 
 
@@ -586,6 +586,15 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
+            task = asyncio.create_task(
+                message_delete_reaction_listener(
+                    self.response_msg,
+                    self.author,
+                    "🗑",
+                    role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                    timeout=30,
+                )
+            )
             await self.call_cmd()
             await emotion.update("confused", -random.randint(4, 8))
             return
@@ -635,9 +644,9 @@ class BaseCommand:
             )
             raise
 
-        target_message = self.response_msg
-
-        excname = f"{excname}\n(React with 🗑 to delete this error message)"
+        excname = (
+            f"{excname}\n(React with 🗑 to delete this error message in the next 30s)"
+        )
 
         # display bot exception to user on discord
         try:
@@ -658,11 +667,12 @@ class BaseCommand:
                 footer_text=excname,
             )
 
-        task = asyncio.create_task(
-            message_delete_reaction_listener(target_message, self.author, emoji_str="🗑")
-        )
-
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+            task = asyncio.create_task(
+                message_delete_reaction_listener(
+                    target_message,
+                    self.author,
+                    "🗑",
+                    role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                    timeout=30,
+                )
+            )
