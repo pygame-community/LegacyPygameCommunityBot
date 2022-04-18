@@ -142,5 +142,16 @@ async def handle(
             timeout=30,
         )
     )
+
+    common.global_task_set.add(task)
+
+    def callback(tsk):
+        if tsk in common.global_task_set:
+            common.global_task_set.remove(tsk)
+
+        tsk.remove_done_callback(callback)
+
+    task.add_done_callback(callback)
+
     await common.bot.process_commands(invoke_message)  # main command handling
     return response_message

@@ -178,6 +178,13 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
     )
 
+    common.global_task_set.add(task)
+    task.add_done_callback(
+        lambda task: common.global_task_set.remove(task)
+        if task in common.global_task_set
+        else None
+    )
+
     if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]
 

@@ -26,6 +26,8 @@ Channel = Union[
     discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
 ]
 cmd_logs = {}
+global_task_set = set()  # prevents asyncio.Task objects from disappearing due
+# to reference loss, not to be modified manually
 
 recent_response_messages: dict[int, discord.Message] = {}
 
