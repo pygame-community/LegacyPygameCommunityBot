@@ -31,6 +31,7 @@ from pgbot.commands.parser import (
     split_tuple_anno,
     split_union_anno,
 )
+from pgbot.routine import message_delete_reaction_listener
 from pgbot.utils import embed_utils, utils
 
 
@@ -634,6 +635,10 @@ class BaseCommand:
             )
             raise
 
+        target_message = self.response_msg
+
+        excname = f"{excname}\n(React with 🗑 to delete this error message)"
+
         # display bot exception to user on discord
         try:
             await embed_utils.replace(
@@ -645,10 +650,19 @@ class BaseCommand:
             )
         except discord.NotFound:
             # response message was deleted, send a new message
-            await embed_utils.send(
+            target_message = await embed_utils.send(
                 self.channel,
                 title=title,
                 description=msg,
                 color=0xFF0000,
                 footer_text=excname,
             )
+
+        task = asyncio.create_task(
+            message_delete_reaction_listener(target_message, self.author, emoji_str="🗑")
+        )
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
