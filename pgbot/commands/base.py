@@ -595,6 +595,14 @@ class BaseCommand:
                     timeout=30,
                 )
             )
+
+            common.global_task_set.add(task)
+            task.add_done_callback(
+                lambda task: common.global_task_set.remove(task)
+                if task in common.global_task_set
+                else None
+            )
+
             await self.call_cmd()
             await emotion.update("confused", -random.randint(4, 8))
             return
@@ -675,4 +683,10 @@ class BaseCommand:
                     role_whitelist=common.ServerConstants.ADMIN_ROLES,
                     timeout=30,
                 )
+            )
+            common.global_task_set.add(task)
+            task.add_done_callback(
+                lambda task: common.global_task_set.remove(task)
+                if task in common.global_task_set
+                else None
             )
