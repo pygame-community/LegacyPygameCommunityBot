@@ -24,7 +24,7 @@ import pgbot
 from pgbot import common, db
 from pgbot.commands.base import BaseCommandCog
 from pgbot.commands.utils import CustomContext, clock, docs, help
-from pgbot.commands.utils.converters import PygameColor, String
+from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
 
 
