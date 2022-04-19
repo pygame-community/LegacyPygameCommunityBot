@@ -20,12 +20,12 @@ from snakecore.command_handler.converters import String
 from snakecore.command_handler.decorators import custom_parsing
 import unidecode
 
-from pgbot import common
+from pgbot import common, db, emotion
 import pgbot
 from pgbot.commands.base import (
     BaseCommandCog,
 )
-from pgbot.commands.utils import CustomContext
+from pgbot.commands.utils import CustomContext, vibecheck
 from pgbot.commands.utils.checks import fun_command
 from pgbot.exceptions import BotException
 
@@ -79,8 +79,8 @@ class FunCommand(BaseCommandCog):
         )
 
     @commands.group(invoke_without_command=True)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
     @fun_command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def fontify(self, ctx: CustomContext, msg: str):
         """
         ->type Play With Me :snake:
@@ -134,8 +134,8 @@ class FunCommand(BaseCommandCog):
 
     fontify.command(name="remove")
 
-    @custom_parsing(inside_class=True, inject_message_reference=True)
     @fun_command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def fontify_remove(self, ctx: CustomContext, reply: discord.Message):
         """
         ->type Play With Me :snake:
@@ -182,94 +182,96 @@ class FunCommand(BaseCommandCog):
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
-    # @commands.command()
-    # async def vibecheck(self, ctx: CustomContext):
-    #     """
-    #     ->type Play With Me :snake:
-    #     ->signature pg!vibecheck
-    #     ->description Check my mood.
-    #     -----
-    #     Implement pg!vibecheck, to check the snek's emotion
-    #     """
-    #     async with db.DiscordDB("emotions") as db_obj:
-    #         all_emotions = db_obj.get({})
+    @commands.command()
+    @fun_command()
+    async def vibecheck(self, ctx: CustomContext):
+        """
+        ->type Play With Me :snake:
+        ->signature pg!vibecheck
+        ->description Check my mood.
+        -----
+        Implement pg!vibecheck, to check the snek's emotion
+        """
+        async with db.DiscordDB("emotions") as db_obj:
+            all_emotions = db_obj.get({})
 
-    #     emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
-    #     all_emotion_response = vibecheck.get_emotion_desc_dict(all_emotions)
+        emotion_percentage = vibecheck.get_emotion_percentage(all_emotions, round_by=-1)
+        all_emotion_response = vibecheck.get_emotion_desc_dict(all_emotions)
 
-    #     bot_emotion = max(
-    #         emotion_percentage.keys(), key=lambda key: emotion_percentage[key]
-    #     )
-    #     msg = all_emotion_response[bot_emotion]["msg"]
-    #     emoji_link = all_emotion_response[bot_emotion]["emoji_link"]
+        bot_emotion = max(
+            emotion_percentage.keys(), key=lambda key: emotion_percentage[key]
+        )
+        msg = all_emotion_response[bot_emotion]["msg"]
+        emoji_link = all_emotion_response[bot_emotion]["emoji_link"]
 
-    #     if all_emotion_response[bot_emotion].get("override_emotion", None):
-    #         bot_emotion = all_emotion_response[bot_emotion]["override_emotion"]
+        if all_emotion_response[bot_emotion].get("override_emotion", None):
+            bot_emotion = all_emotion_response[bot_emotion]["override_emotion"]
 
-    #     color = pygame.Color(vibecheck.EMOTION_COLORS[bot_emotion])
+        color = pygame.Color(vibecheck.EMOTION_COLORS[bot_emotion])
 
-    #     t = time.time()
-    #     pygame.image.save(
-    #         vibecheck.emotion_pie_chart(all_emotions, 400), f"temp{t}.png"
-    #     )
-    #     file = discord.File(f"temp{t}.png")
+        t = time.time()
+        pygame.image.save(
+            vibecheck.emotion_pie_chart(all_emotions, 400), f"temp{t}.png"
+        )
+        file = discord.File(f"temp{t}.png")
 
-    #     try:
-    #         await ctx.response_message.delete()
-    #     except discord.errors.NotFound:
-    #         # Message already deleted
-    #         pass
+        try:
+            await ctx.response_message.delete()
+        except discord.errors.NotFound:
+            # Message already deleted
+            pass
 
-    #     embed_dict = {
-    #         "title": f"The snek is {bot_emotion} right now!",
-    #         "description": msg,
-    #         "thumbnail_url": emoji_link,
-    #         "footer_text": "This is currently in beta version, so the end product may look different",
-    #         "footer_icon_url": "https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
-    #         "image_url": f"attachment://temp{t}.png",
-    #         "color": pgbot.utils.color_to_rgb_int(color),
-    #     }
-    #     embed = snakecore.utils.embed_utils.create_embed(**embed_dict)
-    #     await ctx.message.reply(file=file, embed=embed, mention_author=False)
+        embed_dict = {
+            "title": f"The snek is {bot_emotion} right now!",
+            "description": msg,
+            "thumbnail_url": emoji_link,
+            "footer_text": "This is currently in beta version, so the end product may look different",
+            "footer_icon_url": "https://cdn.discordapp.com/emojis/844513909158969374.png?v=1",
+            "image_url": f"attachment://temp{t}.png",
+            "color": pgbot.utils.color_to_rgb_int(color),
+        }
+        embed = snakecore.utils.embed_utils.create_embed(**embed_dict)
+        await ctx.message.reply(file=file, embed=embed, mention_author=False)
 
-    #     os.remove(f"temp{t}.png")
+        os.remove(f"temp{t}.png")
 
-    # @commands.command()
-    # async def sorry(self, ctx: CustomContext):
-    #     """
-    #     ->type Play With Me :snake:
-    #     ->signature pg!sorry
-    #     ->description You were hitting me <:pg_bonk:780423317718302781> and you're now trying to apologize?
-    #     Let's see what I'll say :unamused:
-    #     -----
-    #     Implement pg!sorry, to ask forgiveness from the bot after bonccing it
-    #     """
-    #     anger = await emotion.get("anger")
-    #     if not anger:
-    #         await snakecore.utils.embed_utils.replace_embed_at(
-    #             ctx.response_message,
-    #             title="Ask forgiveness from snek?",
-    #             description="Snek is not angry. Awww, don't be sorry.",
-    #             color=common.DEFAULT_EMBED_COLOR,
-    #         )
-    #         return
+    @commands.command()
+    @fun_command()
+    async def sorry(self, ctx: CustomContext):
+        """
+        ->type Play With Me :snake:
+        ->signature pg!sorry
+        ->description You were hitting me <:pg_bonk:780423317718302781> and you're now trying to apologize?
+        Let's see what I'll say :unamused:
+        -----
+        Implement pg!sorry, to ask forgiveness from the bot after bonccing it
+        """
+        anger = await emotion.get("anger")
+        if not anger:
+            await snakecore.utils.embed_utils.replace_embed_at(
+                ctx.response_message,
+                title="Ask forgiveness from snek?",
+                description="Snek is not angry. Awww, don't be sorry.",
+                color=common.DEFAULT_EMBED_COLOR,
+            )
+            return
 
-    #     num = random.randint(0, 20)
-    #     if num:
-    #         await snakecore.utils.embed_utils.replace_embed_at(
-    #             ctx.response_message,
-    #             title="Ask forgiveness from snek?",
-    #             description="Your pythonic lord accepts your apology.\n"
-    #             + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
-    #             color=common.DEFAULT_EMBED_COLOR,
-    #         )
-    #         await emotion.update("anger", -num)
-    #     else:
-    #         await snakecore.utils.embed_utils.replace_embed_at(
-    #             ctx.response_message,
-    #             title="Ask forgiveness from snek?",
-    #             description="How did you dare to boncc a snake?\nBold of you to"
-    #             + " assume I would apologize to you, two-feet-standing being!\n"
-    #             + f"The anger level is {anger}",
-    #             color=common.DEFAULT_EMBED_COLOR,
-    #         )
+        num = random.randint(0, 20)
+        if num:
+            await snakecore.utils.embed_utils.replace_embed_at(
+                ctx.response_message,
+                title="Ask forgiveness from snek?",
+                description="Your pythonic lord accepts your apology.\n"
+                + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
+                color=common.DEFAULT_EMBED_COLOR,
+            )
+            await emotion.update("anger", -num)
+        else:
+            await snakecore.utils.embed_utils.replace_embed_at(
+                ctx.response_message,
+                title="Ask forgiveness from snek?",
+                description="How did you dare to boncc a snake?\nBold of you to"
+                + " assume I would apologize to you, two-feet-standing being!\n"
+                + f"The anger level is {anger}",
+                color=common.DEFAULT_EMBED_COLOR,
+            )

@@ -8,8 +8,10 @@ This file defines decorators to perform checks on a command.
 
 import discord
 from discord.ext import commands
+from snakecore.command_handler.decorators import custom_parsing
 
 import pgbot
+from pgbot import common
 from pgbot.exceptions import NoFunAllowed
 
 
@@ -28,3 +30,16 @@ def fun_command():
     of channels."""
 
     return commands.check(_fun_command_predicate)
+
+
+def admin_only_and_custom_parsing(
+    inside_class: bool = False, inject_message_reference: bool = False
+):
+    """A decorator combining admin-only role checks and
+    `snakecore.command_handler.decorators.custom_parsing(...)`.
+    """
+    return commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)(
+        custom_parsing(
+            inside_class=inside_class, inject_message_reference=inject_message_reference
+        )
+    )

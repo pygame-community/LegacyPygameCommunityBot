@@ -17,14 +17,13 @@ from typing import Optional, Union
 import discord
 from discord.ext import commands
 import snakecore
-from snakecore.command_handler.decorators import custom_parsing, kwarg_command
-from snakecore.command_handler.converters import String
 
 from pgbot import common
 from pgbot.commands.base import (
     BaseCommandCog,
 )
 from pgbot.commands.utils import CustomContext, commands
+from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 
 from pgbot.commands.utils.converters import CodeBlock, Range, String
 from pgbot.exceptions import BotException
@@ -36,8 +35,7 @@ class EmsudoCommandCog(BaseCommandCog):
     """
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo(
         self,
         ctx: CustomContext,
@@ -464,8 +462,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.group(name="add", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add(
         self,
         ctx: CustomContext,
@@ -530,8 +527,7 @@ class EmsudoCommandCog(BaseCommandCog):
             )
 
     @emsudo.group(name="remove", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove(
         self,
         ctx: CustomContext,
@@ -916,8 +912,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.group(name="replace", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_replace(
         self,
         ctx: CustomContext,
@@ -969,8 +964,7 @@ class EmsudoCommandCog(BaseCommandCog):
         return await self.emsudo_replace_func(ctx, msg, data)
 
     @emsudo.group(name="edit", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit(
         self,
         ctx: CustomContext,
@@ -1352,8 +1346,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.command(name="sum")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_sum(
         self,
         ctx: CustomContext,
@@ -1550,8 +1543,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.group(name="swap", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap(
         self,
         ctx: CustomContext,
@@ -1625,8 +1617,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.group(name="clone", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone(
         self,
         ctx: CustomContext,
@@ -2173,8 +2164,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo.command(name="get")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_get(
         self,
         ctx: CustomContext,
@@ -2267,8 +2257,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
 
     @emsudo.command(name="pop")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_pop(
         self,
         ctx: CustomContext,
@@ -2337,8 +2326,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
 
     @emsudo_add.group(name="field", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field(
         self,
         ctx: CustomContext,
@@ -2504,8 +2492,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_add.group(name="fields", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields(
         self,
         ctx: CustomContext,
@@ -2767,8 +2754,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_add_field.command(name="at")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field_at(
         self,
         ctx: CustomContext,
@@ -2938,8 +2924,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_add_fields.command(name="at")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields_at(
         self,
         ctx: CustomContext,
@@ -3205,8 +3190,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_edit.command(name="field")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_field(
         self,
         ctx: CustomContext,
@@ -3378,8 +3362,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_edit.command(name="fields")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_fields(
         self,
         ctx: CustomContext,
@@ -3642,8 +3625,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_replace.command(name="field")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_replace_field(
         self,
         ctx: CustomContext,
@@ -3813,8 +3795,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_swap.command(name="fields")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap_fields(
         self, ctx: CustomContext, msg: discord.Message, index_a: int, index_b: int
     ):
@@ -3877,8 +3858,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_clone.command(name="fields")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone_fields(
         self,
         ctx: CustomContext,
@@ -3976,8 +3956,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_remove.command(name="fields")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove_fields(
         self,
         ctx: CustomContext,
@@ -4070,8 +4049,7 @@ class EmsudoCommandCog(BaseCommandCog):
             pass
 
     @emsudo_remove.command(name="allfields")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove_all_fields(
         self,
         ctx: CustomContext,

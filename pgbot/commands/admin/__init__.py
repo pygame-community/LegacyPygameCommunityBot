@@ -29,6 +29,7 @@ from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
 from pgbot.commands.user import UserCommandCog
 from pgbot.commands.utils import CustomContext
+from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 from pgbot.commands.utils.converters import (
     CodeBlock,
     DateTime,
@@ -47,8 +48,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     """
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def test_parser(self, ctx: CustomContext, *args, **kwargs):
         """
         ->skip
@@ -92,7 +92,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         out += "\n"
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.ctx.response_message,
+            ctx.response_message,
             title="Here are the args and kwargs you passed",
             description=out,
             color=common.DEFAULT_EMBED_COLOR,
@@ -117,8 +117,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @db.command(name="read")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_read(self, ctx: CustomContext, name: str):
         """
         ->type Admin commands
@@ -146,8 +145,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @db.command(name="write")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_write(
         self, ctx: CustomContext, name: str, data: Union[discord.Message, CodeBlock]
     ):
@@ -196,8 +194,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @db.command(name="del")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def db_del(self, ctx: CustomContext, name: str):
         """
         ->type Admin commands
@@ -219,8 +216,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def whitelist_cmd(self, ctx: CustomContext, *cmds: Union[String, str]):
         """
         ->type Admin commands
@@ -265,8 +261,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def blacklist_cmd(self, ctx: CustomContext, *cmds: Union[String, str]):
         """
         ->type Admin commands
@@ -311,8 +306,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_clock(
         self,
         ctx: CustomContext,
@@ -338,7 +332,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def eval(self, ctx: CustomContext, code: CodeBlock):
         """
         ->type Admin commands
@@ -422,8 +416,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         """
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def archive(
         self,
         ctx: CustomContext,
@@ -869,8 +862,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin(
         self,
         ctx: CustomContext,
@@ -979,8 +971,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @pin.group(name="remove", invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove(
         self,
         ctx: CustomContext,
@@ -1073,8 +1064,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @pin_remove.command(name="at")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def pin_remove_at(
         self,
         ctx: CustomContext,
@@ -1192,8 +1182,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll(
         self,
         ctx: CustomContext,
@@ -1259,8 +1248,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @admin_poll.command(name="close")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_poll_close(
         self,
         ctx: CustomContext,
@@ -1291,8 +1279,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return await self.stream_func(ctx)
 
     @admin_stream.command(name="add")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_add(self, ctx: CustomContext, *members: discord.Member):
         """
         ->type Reminders
@@ -1305,8 +1292,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         await self.stream_add_func(_members=members if members else None)
 
     @admin_stream.command(name="del")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_del(self, ctx: CustomContext, *members: discord.Member):
         """
         ->type Reminders
@@ -1319,8 +1305,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         await self.stream_del_func(_members=members if members else None)
 
     @admin_stream.command(name="ping")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_ping(
         self, ctx: CustomContext, message: Optional[String] = None
     ):
@@ -1337,8 +1322,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return await self.stream_ping(ctx, message=message)
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def info(
         self,
         ctx: CustomContext,
@@ -1451,8 +1435,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @info.command(name="server")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def info_server(
         self, ctx: CustomContext, guild: Optional[discord.Guild] = None
     ):
@@ -1522,8 +1505,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def react(
         self,
         ctx: CustomContext,
@@ -1569,8 +1551,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def browse(
         self,
         ctx: CustomContext,
@@ -1774,8 +1755,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             pass
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def feature(
         self,
         ctx: CustomContext,
@@ -1843,7 +1823,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return await self.events_func(ctx)
 
     @admin_events.group(name="wc", invoke_without_command=True)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc(self, ctx: CustomContext, round_no: Optional[int] = None):
         """
         ->type Events
@@ -1858,8 +1838,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return self.events_wc_func(ctx, round_no=round_no)
 
     @admin_events_wc.command(name="set")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_set(
         self,
         ctx: CustomContext,
@@ -1891,8 +1870,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @admin_events_wc.command(name="add")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_add(
         self, ctx: CustomContext, round_name: String, description: String
     ):
@@ -1926,8 +1904,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @admin_events_wc.command(name="remove")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def events_wc_remove(self, ctx: CustomContext, round_no: int = 0):
         """
         ->type Events
@@ -1959,8 +1936,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @admin_events_wc.command(name="update")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_events_wc_update(
         self,
         ctx: CustomContext,

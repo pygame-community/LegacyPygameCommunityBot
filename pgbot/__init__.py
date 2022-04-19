@@ -461,11 +461,9 @@ async def handle_message(msg: discord.Message):
 
     mentions = f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>"
 
-    if (
-        msg.content.startswith(common.COMMAND_PREFIX)
-        or msg.content.startswith(mentions)
-        and msg.content not in mentions  # ignore normal pings
-    ):
+    if msg.content.startswith(common.COMMAND_PREFIX) or (
+        msg.content.startswith(mentions) and msg.content not in mentions
+    ):  # ignore normal pings
         if msg.content == common.COMMAND_PREFIX:
             await msg.channel.send(
                 embed=discord.Embed(

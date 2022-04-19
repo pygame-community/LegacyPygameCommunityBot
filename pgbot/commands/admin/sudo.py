@@ -19,12 +19,12 @@ import discord
 from discord.ext import commands
 import psutil
 import snakecore
-from snakecore.command_handler.decorators import custom_parsing, kwarg_command
 
 from pgbot import common
 import pgbot
 from pgbot.commands.base import BaseCommandCog
 from pgbot.commands.utils import CustomContext
+from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
 
@@ -37,8 +37,7 @@ class SudoCommandCog(BaseCommandCog):
     """
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo(
         self,
         ctx: CustomContext,
@@ -293,8 +292,7 @@ class SudoCommandCog(BaseCommandCog):
             pass
 
     @sudo.command(name="edit")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_edit(
         self,
         ctx: CustomContext,
@@ -421,8 +419,7 @@ class SudoCommandCog(BaseCommandCog):
             pass
 
     @sudo.command(name="swap")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_swap(
         self,
         ctx: CustomContext,
@@ -510,8 +507,7 @@ class SudoCommandCog(BaseCommandCog):
             pass
 
     @sudo.command(name="get")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_get(
         self,
         ctx: CustomContext,
@@ -769,8 +765,7 @@ class SudoCommandCog(BaseCommandCog):
             pass
 
     @sudo.command(name="fetch")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_fetch(
         self,
         ctx: CustomContext,
@@ -969,8 +964,7 @@ class SudoCommandCog(BaseCommandCog):
             pass
 
     @sudo.command(name="clone")
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
-    @custom_parsing(inside_class=True, inject_message_reference=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_clone(
         self,
         ctx: CustomContext,
