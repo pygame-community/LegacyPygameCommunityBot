@@ -39,7 +39,6 @@ import snakecore
 
 from pgbot import common
 import pgbot
-from .types import CustomContext
 
 doc_module_tuple = (
     asyncio,
@@ -194,7 +193,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
 
 async def put_doc(
-    ctx: CustomContext,
+    ctx: commands.Context,
     name: str,
     original_msg: discord.Message,
     msg_invoker: discord.Member,
@@ -253,7 +252,9 @@ async def put_doc(
 
     main_embeds.extend(embeds)
 
-    footer_text = "cmd: doc"
+    footer_text = (
+        "Refresh this by replying with " f"`{common.COMMAND_PREFIX}refresh`.\ncmd: doc"
+    )
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser

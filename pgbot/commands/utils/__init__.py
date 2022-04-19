@@ -13,7 +13,6 @@ from discord.ext import commands
 from pgbot import common
 
 from . import clock, docs, help, sandbox, vibecheck
-from .types import CustomContext
 
 
 def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):

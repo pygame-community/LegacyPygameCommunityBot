@@ -6,7 +6,6 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines decorators to perform checks on a command.
 """
 
-import discord
 from discord.ext import commands
 from snakecore.command_handler.decorators import custom_parsing
 

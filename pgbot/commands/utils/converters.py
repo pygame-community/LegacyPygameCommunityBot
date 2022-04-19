@@ -6,17 +6,9 @@ Copyright (c) 2020-present PygameCommunityDiscord
 This file defines converters for parsing command arguments.
 """
 
-import datetime
-from functools import partial
-import functools
-import inspect
-import types
 from typing import TYPE_CHECKING
 
-import discord
 from discord.ext import commands
-
-from discord.ext.commands.converter import CONVERTER_MAPPING
 import pygame
 from snakecore.command_handler.converters import (
     CodeBlock,

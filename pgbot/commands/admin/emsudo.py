@@ -22,7 +22,6 @@ from pgbot import common
 from pgbot.commands.base import (
     BaseCommandCog,
 )
-from pgbot.commands.utils import CustomContext, commands
 from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 
 from pgbot.commands.utils.converters import CodeBlock, String
@@ -38,7 +37,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *datas: Union[discord.Message, CodeBlock, String, bool],
         content: String = String(""),
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
@@ -197,6 +196,8 @@ class EmsudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         content = content.string
 
         if destination is None:
@@ -233,7 +234,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         + snakecore.utils.progress_bar(i / data_count, divisions=30),
                     ),
                 )
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
                 await ctx.message.channel.trigger_typing()
 
@@ -422,7 +423,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         output_embed_count = len(output_embeds)
         for j, embed in enumerate(output_embeds):
@@ -439,7 +440,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         ),
                     ),
                 )
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.send(content=content, embed=embed)
 
@@ -454,10 +455,10 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete(delay=10.0 if data_count > 2 else 0)
+            await response_message.delete(delay=10.0 if data_count > 2 else 0)
         except discord.NotFound:
             pass
 
@@ -465,7 +466,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
         overwrite: bool = False,
@@ -530,7 +531,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
@@ -571,6 +572,8 @@ class EmsudoCommandCog(BaseCommandCog):
         pg!emsudo remove 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         checked_channels = set()
         for i, msg in enumerate(msgs):
@@ -636,7 +639,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         ),
                     )
 
-                    await ctx.response_message.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                 await ctx.channel.trigger_typing()
                 msg_embed = msg.embeds[0]
@@ -690,7 +693,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         ),
                     )
 
-                    await ctx.response_message.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                     await ctx.channel.trigger_typing()
                 if not msg.embeds:
@@ -712,17 +715,17 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
     async def emsudo_replace_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
         _add: bool = False,
@@ -768,6 +771,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -907,7 +912,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -915,7 +920,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_replace(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
@@ -967,7 +972,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: tuple[discord.Message, ...],
         *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
@@ -1036,6 +1041,8 @@ class EmsudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         target_msgs = msg
 
         if not isinstance(msg, tuple):
@@ -1100,7 +1107,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     0,
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await ctx.message.channel.trigger_typing()
 
@@ -1337,11 +1344,11 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete(delay=10.0 if data_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if data_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1349,7 +1356,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_sum(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         edit_inner_fields: bool = False,
@@ -1408,6 +1415,8 @@ class EmsudoCommandCog(BaseCommandCog):
         pg!emsudo sum 987654321987654321 123456789012345678 251613726327333621
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not isinstance(destination, discord.TextChannel):
             destination = ctx.channel
@@ -1474,7 +1483,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
 
@@ -1534,11 +1543,11 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -1546,7 +1555,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
     ):
@@ -1573,6 +1582,8 @@ class EmsudoCommandCog(BaseCommandCog):
         ->example command pg!emsudo swap 123456789123456789 69696969969669420
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -1612,7 +1623,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -1620,7 +1631,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
@@ -1655,6 +1666,8 @@ class EmsudoCommandCog(BaseCommandCog):
         https://discord.com/channels/772505616680878080/841726972841558056/846870368672546837
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if destination is None:
             destination = ctx.channel
@@ -1722,7 +1735,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
             embed_count = len(msg.embeds)
@@ -1741,7 +1754,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         ),
                     )
 
-                    await ctx.response_message.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                     await destination.trigger_typing()
 
@@ -1757,7 +1770,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
             await asyncio.sleep(0)
 
@@ -1772,16 +1785,16 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
     async def emsudo_get_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
@@ -1858,6 +1871,8 @@ class EmsudoCommandCog(BaseCommandCog):
         pg!emsudo get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if destination is None:
             destination = ctx.channel
@@ -1945,7 +1960,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
             embed_count = len(msg.embeds)
@@ -1964,7 +1979,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         ),
                     )
 
-                    await ctx.response_message.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                 embed_dict = embed.to_dict()
                 pop_target_embed_dict = snakecore.utils.embed_utils.copy_embed_dict(
@@ -2141,7 +2156,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await asyncio.sleep(0)
 
@@ -2156,10 +2171,10 @@ class EmsudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await ctx.response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -2167,7 +2182,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_get(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
@@ -2260,7 +2275,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_pop(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
@@ -2329,7 +2344,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Union[CodeBlock, String],
     ):
@@ -2370,6 +2385,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -2487,7 +2504,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -2495,7 +2512,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
@@ -2551,6 +2568,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -2749,7 +2768,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -2757,7 +2776,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_field_at(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -2802,6 +2821,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -2919,7 +2940,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -2927,7 +2948,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_add_fields_at(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
@@ -2987,6 +3008,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -3185,7 +3208,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -3193,7 +3216,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_field(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -3241,6 +3264,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -3357,7 +3382,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -3365,7 +3390,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_edit_fields(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
@@ -3422,6 +3447,8 @@ class EmsudoCommandCog(BaseCommandCog):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -3620,7 +3647,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -3628,7 +3655,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_replace_field(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -3674,6 +3701,8 @@ class EmsudoCommandCog(BaseCommandCog):
         Replace an embed field at the given index in the embed of a message in the channel where this command was invoked using the given arguments.
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -3790,14 +3819,14 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
     @emsudo_swap.command(name="fields")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_swap_fields(
-        self, ctx: CustomContext, msg: discord.Message, index_a: int, index_b: int
+        self, ctx: commands.Context, msg: discord.Message, index_a: int, index_b: int
     ):
         """
         ->type More emsudo commands
@@ -3826,6 +3855,8 @@ class EmsudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
             msg.channel,
@@ -3853,7 +3884,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -3861,7 +3892,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_clone_fields(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         *indices: Union[int, range],
         multi_indices: bool = False,
@@ -3905,6 +3936,8 @@ class EmsudoCommandCog(BaseCommandCog):
         pg!emsudo clone fields 123456674923481222/987654321987654321 range(6)
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -3951,7 +3984,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -3959,7 +3992,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove_fields(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         *indices: Union[int, range],
         multi_indices: bool = False,
@@ -3996,6 +4029,8 @@ class EmsudoCommandCog(BaseCommandCog):
         pg!emsudo remove fields 987654321987654321 5
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -4044,7 +4079,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -4052,7 +4087,7 @@ class EmsudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo_remove_all_fields(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
     ):
         """
@@ -4072,6 +4107,8 @@ class EmsudoCommandCog(BaseCommandCog):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -4098,6 +4135,6 @@ class EmsudoCommandCog(BaseCommandCog):
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass

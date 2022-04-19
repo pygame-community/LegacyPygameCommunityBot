@@ -12,10 +12,10 @@ import re
 import typing
 
 import discord
+from discord.ext import commands
 import snakecore
 
 from pgbot import common
-from .types import CustomContext
 
 # regex for doc string
 regex = re.compile(
@@ -71,7 +71,7 @@ def get_doc_from_func(func: typing.Callable):
 
 
 async def send_help_message(
-    ctx: CustomContext,
+    ctx: commands.Context,
     original_msg: discord.Message,
     invoker: discord.Member,
     commands: tuple[str, ...],
@@ -220,7 +220,9 @@ async def send_help_message(
             color=0xFF0000,
         )
 
-    footer_text = "cmd: help"
+    footer_text = (
+        f"Refresh this by replying with `{common.COMMAND_PREFIX}refresh`.\ncmd: help"
+    )
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser

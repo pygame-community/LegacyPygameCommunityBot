@@ -20,7 +20,6 @@ import discord
 import snakecore
 
 from pgbot import common
-from pgbot.commands import admin, user
 from pgbot.commands.utils import get_primary_guild_perms
 
 from pgbot.utils import message_delete_reaction_listener
@@ -106,8 +105,7 @@ async def handle(
             fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
         )
 
-    ctx = await common.bot.get_context(invoke_message)
-    setattr(ctx, "response_message", response_message)
+    common.recent_response_messages[invoke_message.id] = response_message
 
     if not common.TEST_MODE and not common.GENERIC:
         log_txt_file = None
@@ -147,6 +145,5 @@ async def handle(
     common.global_task_set.add(task)
     task.add_done_callback(common.global_task_set_remove_callback)
 
-    await common.bot.invoke(ctx)
-    # main command handling
+    await common.bot.process_commands(invoke_message)  # main command handling
     return response_message

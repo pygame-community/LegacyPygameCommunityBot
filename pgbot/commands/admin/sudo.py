@@ -23,7 +23,6 @@ import snakecore
 from pgbot import common
 import pgbot
 from pgbot.commands.base import BaseCommandCog
-from pgbot.commands.utils import CustomContext
 from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
@@ -40,7 +39,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *datas: Union[discord.Message, String],
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         from_attachment: bool = True,
@@ -86,6 +85,8 @@ class SudoCommandCog(BaseCommandCog):
         -----
         Implement pg!sudo, for admins to send messages via the bot
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if destination is None:
             destination = ctx.channel
@@ -139,7 +140,7 @@ class SudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
             attachment_msg = None
 
             if isinstance(data, String):
@@ -251,7 +252,7 @@ class SudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         allowed_mentions = (
             discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
@@ -283,11 +284,11 @@ class SudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete(delay=10.0 if data_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if data_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
@@ -295,7 +296,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_edit(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         *,
         data: Union[discord.Message, String],
@@ -332,6 +333,8 @@ class SudoCommandCog(BaseCommandCog):
         pg!sudo edit 1234567890876543345/9876543211234676789 2345678427483744843
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -414,7 +417,7 @@ class SudoCommandCog(BaseCommandCog):
             )
         try:
             await ctx.message.delete()
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -422,7 +425,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_swap(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
         embeds: bool = True,
@@ -455,14 +458,11 @@ class SudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
-            msg_a.channel,
-            "view_channel",
-            "send_messages",
-        ) or not snakecore.utils.have_permissions_in_channels(
-            ctx.author,
-            msg_b.channel,
+            (msg_a.channel, msg_b.channel),
             "view_channel",
             "send_messages",
         ):
@@ -502,7 +502,7 @@ class SudoCommandCog(BaseCommandCog):
             await msg_b.edit(content=msg_content_a)
 
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -510,7 +510,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_get(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         as_attachment: bool = False,
@@ -575,6 +575,8 @@ class SudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not isinstance(destination, discord.TextChannel):
             destination = ctx.channel
 
@@ -630,7 +632,7 @@ class SudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
 
@@ -757,10 +759,10 @@ class SudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await ctx.response_message.delete(delay=10 if msg_count > 2 else 0)
+            await response_message.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass
 
@@ -768,7 +770,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_fetch(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         origin: discord.TextChannel,
         quantity: int,
         channel_ids: bool = False,
@@ -790,6 +792,8 @@ class SudoCommandCog(BaseCommandCog):
         ->description Fetch message IDs or URLs
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -959,7 +963,7 @@ class SudoCommandCog(BaseCommandCog):
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
@@ -967,7 +971,7 @@ class SudoCommandCog(BaseCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def sudo_clone(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         *msgs: discord.Message,
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         embeds: bool = True,
@@ -1041,6 +1045,8 @@ class SudoCommandCog(BaseCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not isinstance(destination, discord.TextChannel):
             destination = ctx.channel
 
@@ -1097,7 +1103,7 @@ class SudoCommandCog(BaseCommandCog):
                     ),
                 )
 
-                await ctx.response_message.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.trigger_typing()
             cloned_msg = None
@@ -1183,9 +1189,9 @@ class SudoCommandCog(BaseCommandCog):
                 ),
             )
 
-            await ctx.response_message.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await ctx.response_message.delete(delay=10 if msg_count > 2 else 0)
+            await response_message.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass

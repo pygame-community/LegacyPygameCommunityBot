@@ -7,8 +7,6 @@ This file is the main file of the PygameCommunityBot source. Running this
 starts the bot
 """
 import asyncio
-from urllib import response
-from black import err
 import discord
 from discord.ext import commands
 import snakecore
@@ -16,8 +14,6 @@ from snakecore.command_handler.parser import ArgError, KwargError
 
 import pgbot
 from pgbot import common
-from pgbot.commands.admin import AdminCommandCog
-from pgbot.commands.utils import CustomContext
 from pgbot.common import bot
 from pgbot.exceptions import AdminOnly, BotException, NoFunAllowed
 from pgbot.utils import message_delete_reaction_listener
@@ -92,7 +88,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
 
 @bot.event
-async def on_command_error(ctx: CustomContext, error: commands.CommandError):
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 
     title = error.__class__.__name__
     msg = error.args[0]
@@ -150,15 +146,31 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
         f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
     )
 
-    target_message = ctx.response_message
+    response_message = common.recent_response_messages.get(ctx.message.id)
+
+    target_message = response_message
 
     try:
-        await snakecore.utils.embed_utils.replace_embed_at(
-            target_message,
-            title=title,
-            description=msg,
-            color=0xFF0000,
-            footer_text=footer_text,
+        (
+            (
+                await snakecore.utils.embed_utils.replace_embed_at(
+                    target_message,
+                    title=title,
+                    description=msg,
+                    color=0xFF0000,
+                    footer_text=footer_text,
+                )
+            )
+            if target_message is not None
+            else (
+                target_message := await snakecore.utils.embed_utils.send_embed(
+                    ctx.channel,
+                    title=title,
+                    description=msg,
+                    color=0xFF0000,
+                    footer_text=footer_text,
+                )
+            )
         )
     except discord.NotFound:
         # response message was deleted, send a new message

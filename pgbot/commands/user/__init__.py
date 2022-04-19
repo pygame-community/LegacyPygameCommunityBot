@@ -28,7 +28,7 @@ from snakecore.command_handler.converters import CodeBlock, String
 from pgbot import common, db
 import pgbot
 
-from pgbot.commands.utils import CustomContext, get_primary_guild_perms, sandbox
+from pgbot.commands.utils import get_primary_guild_perms, sandbox
 from pgbot.exceptions import BotException
 from pgbot.utils import message_delete_reaction_listener
 
@@ -40,7 +40,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     """Base class to handle user commands."""
 
     @commands.group(invoke_without_command=True)
-    async def reminders(self, ctx: CustomContext):
+    async def reminders(self, ctx: commands.Context):
         """
         ->type Reminders
         ->signature pg!reminders
@@ -48,6 +48,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         -----
         Implement pg!reminders, for users to view their reminders
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("reminders") as db_obj:
             db_data = db_obj.get({})
@@ -69,7 +71,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                 cnt += 1
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title=f"Reminders for {ctx.author.display_name}:",
             description=desc,
             color=common.DEFAULT_EMBED_COLOR,
@@ -77,11 +79,13 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     async def reminders_add_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: str,
         on: datetime.datetime,
         _delta: Optional[datetime.timedelta] = None,
     ):
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if _delta is None:
             now = datetime.datetime.utcnow()
@@ -132,7 +136,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             db_obj.write(db_data)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title="Reminder set!",
             description=(
                 f"Gonna remind {ctx.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
@@ -145,7 +149,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def reminders_add(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: str,
         on: datetime.datetime,
     ):
@@ -168,7 +172,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def reminders_set(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: str,
         timestr: Union[String, str] = "",
         weeks: int = 0,
@@ -245,7 +249,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     @reminders.command(name="remove")
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def reminders_remove(self, ctx: CustomContext, *reminder_ids: int):
+    async def reminders_remove(self, ctx: commands.Context, *reminder_ids: int):
         """
         ->type Reminders
         ->signature pg!reminders remove [*ids]
@@ -258,6 +262,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("reminders") as db_obj:
             db_data = db_obj.get({})
@@ -289,7 +295,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             db_obj.write(db_data)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title="Reminders removed!",
             description=f"Successfully removed {cnt} reminder(s)",
             color=common.DEFAULT_EMBED_COLOR,
@@ -297,7 +303,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def exec(self, ctx: CustomContext, code: CodeBlock):
+    async def exec(self, ctx: commands.Context, code: CodeBlock):
         """
         ->type Play With Me :snake:
         ->signature pg!exec <python code block>
@@ -317,6 +323,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         -----
         Implement pg!exec, for execution of python code
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with ctx.channel.typing():
             tstamp = time.perf_counter_ns()
@@ -371,7 +379,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                     )
 
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             # Message already deleted
             pass
@@ -402,7 +410,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def refresh(self, ctx: CustomContext, msg: discord.Message):
+    async def refresh(self, ctx: commands.Context, msg: discord.Message):
         """
         ->type Other commands
         ->signature pg!refresh <message>
@@ -427,7 +435,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
         footer_text = msg.embeds[0].footer.text
 
-        cmd_data_match = re.match(r"cmd\:\s.+\|?", footer_text)
+        cmd_data_match = re.search(r"cmd\:\s.+\|?", footer_text)
 
         if cmd_data_match is None:
             raise BotException(
@@ -468,14 +476,16 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                 page_kwarg = old_page_kwarg_match.group()
                 arg_str = arg_str.replace(page_kwarg, f"page={page_num_str}")
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
         # Handle the new command, the one that pg!refresh is trying to refresh
 
-        ctx.response_message = msg
+        response_message = common.recent_response_messages[ctx.message.id] = msg
 
         cmd = self.bot.get_command(cmd_str)
         # only supports commands using snakecore's
@@ -485,7 +495,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             await cmd(ctx, raw_input=arg_str)
             task = asyncio.create_task(
                 message_delete_reaction_listener(
-                    ctx.response_message,
+                    response_message,
                     ctx.author,
                     emoji="🗑",
                     role_whitelist=common.ServerConstants.ADMIN_ROLES,
@@ -503,13 +513,15 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     async def poll_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         desc: String,
         *emojis: tuple[str, String],
         multi_votes: bool = False,
         _destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         _admin_embed_dict: Optional[dict] = None,
     ):
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         _admin_embed_dict = _admin_embed_dict or {}
 
@@ -537,7 +549,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
                 "text": f"By {ctx.author.display_name}\n({ctx.author.id})\n"
                 f"{'' if multi_votes else common.UNIQUE_POLL_MSG}Started"
             },
-            "timestamp": ctx.response_message.created_at.isoformat(),
+            "timestamp": response_message.created_at.isoformat(),
             "description": desc.string,
         }
         base_embed_dict.update(_admin_embed_dict)
@@ -559,7 +571,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
@@ -592,7 +604,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def poll(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         description: String,
         *emojis: tuple[str, String],
         multi_votes: bool = False,
@@ -618,7 +630,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     async def poll_close_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
         _color: Optional[discord.Color] = None,
     ):
@@ -633,6 +645,8 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         # needed for typecheckers to know that ctx.author is a member
         if isinstance(ctx.author, discord.User):
             return
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if not pgbot.snakecore.utils.have_permissions_in_channels(
             ctx.author,
@@ -750,10 +764,10 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             title=title,
             fields=fields,
             footer_text="Ended",
-            timestamp=ctx.response_message.created_at,
+            timestamp=response_message.created_at,
         )
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
@@ -761,7 +775,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def poll_close(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         msg: discord.Message,
     ):
         """
@@ -774,14 +788,16 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
         return await self.poll_close_func(ctx, msg)
 
-    async def stream_func(self, ctx: CustomContext):
+    async def stream_func(self, ctx: commands.Context):
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("stream") as db_obj:
             data = db_obj.get([])
 
         if not data:
             await snakecore.utils.embed_utils.replace_embed_at(
-                ctx.response_message,
+                response_message,
                 title="Memento ping list",
                 description="Ping list is empty!",
                 color=common.DEFAULT_EMBED_COLOR,
@@ -789,7 +805,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             return
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title="Memento ping list",
             description=(
                 "Here is a list of people who want to be pinged when stream starts"
@@ -800,7 +816,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         )
 
     @commands.group(invoke_without_command=True)
-    async def stream(self, ctx: CustomContext):
+    async def stream(self, ctx: commands.Context):
         """
         ->type Reminders
         ->signature pg!stream
@@ -812,7 +828,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     async def stream_add_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         _members: Optional[tuple[discord.Member, ...]] = None,
     ):
         async with db.DiscordDB("stream") as ping_db:
@@ -833,7 +849,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def stream_add(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
     ):
         """
         ->type Reminders
@@ -848,7 +864,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     async def stream_del_func(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
         _members: Optional[tuple[discord.Member, ...]] = None,
     ):
         async with db.DiscordDB("stream") as ping_db:
@@ -873,7 +889,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
     @stream.command(name="del", aliases=("delete",))
     async def stream_del(
         self,
-        ctx: CustomContext,
+        ctx: commands.Context,
     ):
         """
         ->type Reminders
@@ -887,8 +903,10 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         return await self.stream_del_func(ctx)
 
     async def stream_ping_func(
-        self, ctx: CustomContext, message: Optional[String] = None
+        self, ctx: commands.Context, message: Optional[String] = None
     ):
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("stream") as ping_db:
             data: list = ping_db.get([])
@@ -902,14 +920,16 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         )
 
         try:
-            await ctx.response_message.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
         await ctx.channel.send(f"<@!{ctx.author.id}> is gonna stream!\n{msg}\n{ping}")
 
     @stream.command(name="ping")
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def stream_ping(self, ctx: CustomContext, message: Optional[String] = None):
+    async def stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
         """
         ->type Reminders
         ->signature pg!stream ping [message]
@@ -923,7 +943,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
         return await self.stream_ping_func(ctx, message=message)
 
-    async def events_func(self, ctx: CustomContext):
+    async def events_func(self, ctx: commands.Context):
         """
         ->type Events
         ->signature pg!events
@@ -931,8 +951,10 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title="Pygame Community Discord Server Events!",
             description=(
                 "Check out Weekly Challenges!\n"
@@ -942,7 +964,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         )
 
     @commands.group(invoke_without_command=True)
-    async def events(self, ctx: CustomContext):
+    async def events(self, ctx: commands.Context):
         """
         ->type Events
         ->signature pg!events
@@ -951,7 +973,9 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         """
         return await self.events_func(ctx)
 
-    async def events_wc_func(self, ctx: CustomContext, round_no: Optional[int] = None):
+    async def events_wc_func(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!events wc [round_no]
@@ -962,6 +986,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
         the final scoreboard of all rounds combined.
         -----
         """
+        response_message = common.recent_response_messages[ctx.message.id]
 
         async with db.DiscordDB("wc") as db_obj:
             wc_dict: dict[str, Any] = db_obj.get({})
@@ -1005,7 +1030,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
             )
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            ctx.response_message,
+            response_message,
             title=f"Event: Weekly Challenges (WC)",
             description=wc_dict.get(
                 "description", "Upcoming Event! Prepare your peepers!"
@@ -1017,7 +1042,7 @@ class UserCommandCog(FunCommand, HelpCommandCog):
 
     @events.command(name="wc")
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def events_wc(self, ctx: CustomContext, round_no: Optional[int] = None):
+    async def events_wc(self, ctx: commands.Context, round_no: Optional[int] = None):
         """
         ->type Events
         ->signature pg!events wc [round_no]
