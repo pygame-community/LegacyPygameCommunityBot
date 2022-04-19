@@ -19,7 +19,7 @@ from pgbot import common
 from pgbot.commands.admin import AdminCommandCog
 from pgbot.commands.utils import CustomContext
 from pgbot.common import bot
-from pgbot.exceptions import BotException, NoFunAllowed
+from pgbot.exceptions import AdminOnly, BotException, NoFunAllowed
 from pgbot.utils import message_delete_reaction_listener
 
 
@@ -99,11 +99,12 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
     footer_text = error.__class__.__name__
 
     raise_error = False
+    has_cause = False
 
-    if isinstance(error, BotException):
+    if isinstance(error, BotException):  # general bot command exception
         title, msg = error.args
 
-    elif isinstance(error, ArgError):
+    elif isinstance(error, ArgError):  # snakecore parsing error
         title = "Invalid Arguments!"
         msg = f"{msg}\n\nFor help on bot commands, do `{common.COMMAND_PREFIX}help <command>`"
 
@@ -125,12 +126,17 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
     elif isinstance(error, NoFunAllowed):
         title = "No fun allowed!"  # ;P
 
+    elif isinstance(error, AdminOnly):
+        title = "Insufficient Permissions!"
+
     elif error.__cause__ is not None:
+        has_cause = True
         if isinstance(error.__cause__, discord.HTTPException):
             title = footer_text = error.__cause__.__class__.__name__
             msg = error.__cause__.args[0]
         else:
             raise_error = True
+            has_cause = True
             title = "Unknown Error!"
             msg = (
                 "An unhandled exception occured while running the command!\n"
@@ -147,7 +153,6 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
     target_message = ctx.response_message
 
     try:
-
         await snakecore.utils.embed_utils.replace_embed_at(
             target_message,
             title=title,
@@ -157,7 +162,6 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
         )
     except discord.NotFound:
         # response message was deleted, send a new message
-
         target_message = await snakecore.utils.embed_utils.send_embed(
             ctx.channel,
             title=title,
@@ -183,6 +187,8 @@ async def on_command_error(ctx: CustomContext, error: commands.CommandError):
         del common.recent_response_messages[ctx.message.id]
 
     if raise_error:
+        if has_cause:
+            raise error.__cause__
         raise error
 
 

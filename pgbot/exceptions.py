@@ -10,7 +10,7 @@ This file defines some exceptions used across the whole codebase
 """
 
 
-class BotException(commands.BadArgument):
+class BotException(commands.CommandError):
     """Base class for all bot related exceptions, that need to be displayed on
     discord
     """
@@ -19,4 +19,10 @@ class BotException(commands.BadArgument):
 class NoFunAllowed(commands.CheckFailure):
     """A command check exception for blocking 'fun' related commands in select
     channels.
+    """
+
+
+class AdminOnly(commands.CheckFailure):
+    """A command check exception for blocking members from running admin-only
+    commands.
     """

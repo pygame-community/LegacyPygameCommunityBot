@@ -12,7 +12,7 @@ from snakecore.command_handler.decorators import custom_parsing
 
 import pgbot
 from pgbot import common
-from pgbot.exceptions import NoFunAllowed
+from pgbot.exceptions import AdminOnly, NoFunAllowed
 
 
 async def _fun_command_predicate(ctx: commands.Context):
@@ -32,13 +32,36 @@ def fun_command():
     return commands.check(_fun_command_predicate)
 
 
+def _admin_only_predicate(ctx: commands.Context):
+    if ctx.guild is None:
+        raise commands.NoPrivateMessage()
+
+    if any(
+        role.id in common.ServerConstants.ADMIN_ROLES
+        for role in getattr(ctx.author, "roles", ())
+    ):
+        return True
+    raise AdminOnly(
+        f"The command '{ctx.command.qualified_name}' is an admin command, and you do "
+        "not have access to that"
+    )
+
+
+def admin_only():
+    r"""Checks if the member invoking the
+    command has an admin role. Raises `AdminOnly`
+    if that is not the case.
+    """
+    return commands.check(_admin_only_predicate)
+
+
 def admin_only_and_custom_parsing(
     inside_class: bool = False, inject_message_reference: bool = False
 ):
     """A decorator combining admin-only role checks and
     `snakecore.command_handler.decorators.custom_parsing(...)`.
     """
-    return commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)(
+    return commands.check(_admin_only_predicate)(
         custom_parsing(
             inside_class=inside_class, inject_message_reference=inject_message_reference
         )

@@ -170,7 +170,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         if not evalable:
             raise BotException(
-                "Insufficient permissions",
+                "Insufficient Permissions!",
                 "You do not have enough permissions to run this command.",
             )
 
@@ -355,7 +355,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         if not evalable:
             raise BotException(
-                "Insufficient permissions",
+                "Insufficient Permissions!",
                 "You do not have enough permissions to run this command.",
             )
 
