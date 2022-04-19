@@ -21,7 +21,7 @@ import pygame
 from snakecore.command_handler.converters import (
     CodeBlock,
     DateTime,
-    Range,
+    RangeObject,
     String,
 )
 

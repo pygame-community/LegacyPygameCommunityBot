@@ -25,7 +25,7 @@ from pgbot.commands.base import (
 from pgbot.commands.utils import CustomContext, commands
 from pgbot.commands.utils.checks import admin_only_and_custom_parsing
 
-from pgbot.commands.utils.converters import CodeBlock, Range, String
+from pgbot.commands.utils.converters import CodeBlock, String
 from pgbot.exceptions import BotException
 
 

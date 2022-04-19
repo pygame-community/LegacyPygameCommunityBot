@@ -29,12 +29,9 @@ from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
 from pgbot.commands.user import UserCommandCog
 from pgbot.commands.utils import CustomContext
-from pgbot.commands.utils.checks import admin_only_and_custom_parsing
+from pgbot.commands.utils.checks import admin_only, admin_only_and_custom_parsing
 from pgbot.commands.utils.converters import (
     CodeBlock,
-    DateTime,
-    PygameColor,
-    Range,
     String,
 )
 from pgbot.exceptions import BotException
@@ -99,7 +96,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.group(invoke_without_command=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @admin_only()
     async def db(self, ctx: CustomContext):
         """
         ->type Admin commands
@@ -382,7 +379,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @admin_only()
     async def heap(self, ctx: CustomContext):
         """
         ->type Admin commands
@@ -401,7 +398,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @admin_only()
     async def stop(self, ctx: CustomContext):
         """
         ->type Admin commands
@@ -1197,7 +1194,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         multi_votes: bool = False,
     ):
         """
-        ->type Other commands
+        ->type Admin commands
         ->signature pg!admin_poll <description> [*emojis] [author] [color] [url] [image_url] [thumbnail] [multi_votes=True]
         ->description Start a poll.
         ->extended description
@@ -1257,7 +1254,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         color: discord.Color = discord.Color(0xA83232),
     ):
         """
-        ->type Other commands
+        ->type Admin commands
         ->signature pg!admin_poll close <msg> [color]
         ->description Close an ongoing poll.
         ->extended description
@@ -1267,10 +1264,10 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         return await self.poll_close_func(ctx, msg, _color=color)
 
     @commands.group(invoke_without_commmand=True)
-    @commands.has_any_role(*common.ServerConstants.ADMIN_ROLES)
+    @admin_only()
     async def admin_stream(self, ctx: CustomContext):
         """
-        ->type Reminders
+        ->type Admin commands
         ->signature pg!admin_stream
         ->description Show the ping-stream-list
         Send an embed with all the users currently in the ping-stream-list
@@ -1282,7 +1279,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_add(self, ctx: CustomContext, *members: discord.Member):
         """
-        ->type Reminders
+        ->type Admin commands
         ->signature pg!admin_stream add [*members]
         ->description Add user(s) to the ping list for stream
         ->extended description
@@ -1295,7 +1292,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def admin_stream_del(self, ctx: CustomContext, *members: discord.Member):
         """
-        ->type Reminders
+        ->type Admin commands
         ->signature pg!admin_stream del [*members]
         ->description Remove user(s) to the ping list for stream
         ->extended description
@@ -1310,7 +1307,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         self, ctx: CustomContext, message: Optional[String] = None
     ):
         """
-        ->type Reminders
+        ->type Admin commands
         ->signature pg!admin_stream ping [message]
         ->description Ping users in stream-list with an optional message.
         ->extended description
