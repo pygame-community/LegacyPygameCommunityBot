@@ -579,7 +579,7 @@ class UserCommandCog(FunCommandCog, HelpCommandCog):
                 emoji_id = snakecore.utils.extract_markdown_custom_emoji_id(
                     field["name"].strip()
                 )
-                emoji = common.bot.get_emoji(emoji_id)
+                emoji = self.bot.get_emoji(emoji_id)
                 if emoji is None:
                     raise ValueError()
             except ValueError:

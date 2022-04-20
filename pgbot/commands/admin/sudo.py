@@ -482,10 +482,10 @@ class SudoCommandCog(BaseCommandCog):
                 "Not enough data found in one or more of the given messages.",
             )
 
-        elif common.bot.user.id not in (msg_a.author.id, msg_b.author.id):
+        elif self.bot.user.id not in (msg_a.author.id, msg_b.author.id):
             raise BotException(
                 "Cannot execute command:",
-                f"Both messages must have been authored by me, {common.bot.user.mention}.",
+                f"Both messages must have been authored by me, {self.bot.user.mention}.",
             )
 
         msg_embed_a = msg_a.embeds[0] if msg_a.embeds else None

@@ -69,7 +69,7 @@ class FunCommandCog(BaseCommandCog):
 
         timedelta = response_message.created_at - ctx.message.created_at
         sec = timedelta.total_seconds()
-        sec2 = common.bot.latency  # This does not refresh that often
+        sec2 = self.bot.latency  # This does not refresh that often
         if sec < sec2:
             sec2 = sec
 
@@ -151,7 +151,7 @@ class FunCommandCog(BaseCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         if (
-            reply.author.id != common.bot.user.id
+            reply.author.id != self.bot.user.id
             or not reply.embeds
             or reply.embeds[0].description != ctx.author.mention
         ):

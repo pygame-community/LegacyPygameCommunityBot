@@ -238,7 +238,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
         for cmd_qualname in cmds:
-            cmd = common.bot.get_command(cmd_qualname)
+            cmd = self.bot.get_command(cmd_qualname)
             if cmd is None:
                 raise BotException(
                     "Unrecognized command!",
@@ -250,7 +250,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname in commands:
-                    cmd = common.bot.get_command(cmd_qualname)
+                    cmd = self.bot.get_command(cmd_qualname)
                     if cmd is not None:
                         cmd.update(enabled=True)
 
@@ -285,7 +285,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
         for cmd_qualname in cmds:
-            cmd = common.bot.get_command(cmd_qualname)
+            cmd = self.bot.get_command(cmd_qualname)
             if cmd is None:
                 raise BotException(
                     "Unrecognized command!",
@@ -297,7 +297,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname not in commands and cmd_qualname != "whitelist_cmd":
-                    cmd = common.bot.get_command(cmd_qualname)
+                    cmd = self.bot.get_command(cmd_qualname)
                     if cmd is not None:
                         cmd.update(enabled=False)
 
