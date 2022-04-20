@@ -12,9 +12,7 @@ import asyncio
 
 import io
 import sys
-import types
-from typing import Dict, List, Optional, Tuple, Union
-import typing
+from typing import Optional
 
 import discord
 import snakecore

@@ -7,10 +7,8 @@ This file defines some constants and variables used across the whole codebase
 """
 
 import asyncio
-from collections import deque
 import io
 import os
-from sys import prefix
 from typing import Optional, Union
 
 import discord

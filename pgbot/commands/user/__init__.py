@@ -19,7 +19,6 @@ from typing import Any, Optional, Union
 
 import discord
 from discord.ext import commands
-import pygame
 import snakecore
 
 from snakecore.command_handler.decorators import custom_parsing

@@ -9,36 +9,7 @@ defines argument casting utilities
 
 
 from __future__ import annotations
-
-import asyncio
-import datetime
-import inspect
-import random
-import re
-from typing import Any, Optional, Union
-
-import discord
 from discord.ext import commands
-import pygame
-import snakecore
-
-from pgbot import common, db, emotion
-import pgbot
-
-
-def add_group(groupname: str, *subcmds: str):
-    """
-    Utility to add a function name to a group command
-    """
-
-    def inner(func):
-        # patch in group name data and sub command data into the function itself
-        if subcmds:
-            func.groupname = groupname
-            func.subcmds = subcmds
-        return func
-
-    return inner
 
 
 class BaseCommandCog(commands.Cog):
@@ -48,7 +19,7 @@ class BaseCommandCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         """
-        Initialise UserCommandCog class
+        Initialise BaseCommandCog class
         """
         self.bot: commands.Bot = bot
         # Create a dictionary of command names and respective handler functions

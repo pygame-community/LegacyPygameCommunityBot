@@ -16,7 +16,6 @@ import discord
 from discord.ext import commands
 import pygame
 import snakecore
-from snakecore.command_handler.converters import String
 from snakecore.command_handler.decorators import custom_parsing
 import unidecode
 
@@ -30,9 +29,9 @@ from pgbot.commands.utils.checks import fun_command
 from pgbot.exceptions import BotException
 
 
-class FunCommand(BaseCommandCog):
+class FunCommandCog(BaseCommandCog):
     """
-    Command class to handle "fun" commands.
+    Command cog defining "fun" commands.
     """
 
     @commands.command()

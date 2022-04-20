@@ -13,15 +13,13 @@ import datetime
 import io
 import os
 import time
-from typing import Any, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import black
 import discord
 from discord.ext import commands
 import psutil
-import pygame
 import snakecore
-from snakecore.command_handler.decorators import custom_parsing, kwarg_command
 
 from pgbot import common, db
 import pgbot

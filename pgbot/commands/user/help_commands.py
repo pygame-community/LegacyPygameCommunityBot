@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 import pygame
 import snakecore
-from snakecore.command_handler.decorators import custom_parsing, kwarg_command
+from snakecore.command_handler.decorators import custom_parsing
 
 import pgbot
 from pgbot import common, db
@@ -29,7 +29,7 @@ from pgbot.exceptions import BotException
 
 
 class HelpCommandCog(BaseCommandCog):
-    """Base class to handle 'help' commands of the bot."""
+    """Base commang cog to handle 'help' commands of the bot."""
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
