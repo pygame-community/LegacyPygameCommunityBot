@@ -190,15 +190,10 @@ class HelpCommandCog(BaseCommandCog):
         pygame.image.save(
             await clock.user_clock(t, timezones, ctx.guild), f"temp{t}.png"
         )
-        common.cmd_logs[ctx.message.id] = await ctx.channel.send(
-            file=discord.File(f"temp{t}.png")
+        await response_message.edit(
+            embeds=[], attachments=[discord.File(f"temp{t}.png")]
         )
         os.remove(f"temp{t}.png")
-
-        try:
-            await response_message.delete()
-        except discord.NotFound:
-            pass
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
