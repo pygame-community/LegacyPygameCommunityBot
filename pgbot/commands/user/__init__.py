@@ -31,11 +31,11 @@ from pgbot.commands.utils import get_primary_guild_perms, sandbox
 from pgbot.exceptions import BotException
 from pgbot.utils import message_delete_reaction_listener
 
-from .fun_commands import FunCommand
+from .fun_commands import FunCommandCog
 from .help_commands import HelpCommandCog
 
 
-class UserCommandCog(FunCommand, HelpCommandCog):
+class UserCommandCog(FunCommandCog, HelpCommandCog):
     """Base class to handle user commands."""
 
     @commands.group(invoke_without_command=True)
