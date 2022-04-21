@@ -491,7 +491,7 @@ class UserCommandCog(FunCommandCog, HelpCommandCog):
         # custom parser
 
         if cmd is not None:
-            await cmd(ctx, raw_input=arg_str)
+            await cmd(ctx, raw_command_input=arg_str)
             common.hold_task(
                 asyncio.create_task(
                     message_delete_reaction_listener(
