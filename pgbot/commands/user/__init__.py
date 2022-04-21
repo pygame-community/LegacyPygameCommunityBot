@@ -492,17 +492,17 @@ class UserCommandCog(FunCommandCog, HelpCommandCog):
 
         if cmd is not None:
             await cmd(ctx, raw_input=arg_str)
-            task = asyncio.create_task(
-                message_delete_reaction_listener(
-                    response_message,
-                    ctx.author,
-                    emoji="🗑",
-                    role_whitelist=common.ServerConstants.ADMIN_ROLES,
-                    timeout=30,
+            common.hold_task(
+                asyncio.create_task(
+                    message_delete_reaction_listener(
+                        response_message,
+                        ctx.author,
+                        emoji="🗑",
+                        role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                        timeout=30,
+                    )
                 )
             )
-            common.global_task_set.add(task)
-            task.add_done_callback(common.global_task_set_remove_callback)
             return
 
         raise commands.CommandNotFound(

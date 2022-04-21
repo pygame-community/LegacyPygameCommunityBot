@@ -182,18 +182,17 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             footer_text=footer_text,
         )
 
-    task = asyncio.create_task(
-        message_delete_reaction_listener(
-            target_message,
-            ctx.author,
-            emoji="🗑",
-            role_whitelist=common.ServerConstants.ADMIN_ROLES,
-            timeout=30,
+    common.hold_task(
+        asyncio.create_task(
+            message_delete_reaction_listener(
+                target_message,
+                ctx.author,
+                emoji="🗑",
+                role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                timeout=30,
+            )
         )
     )
-
-    common.global_task_set.add(task)
-    task.add_done_callback(common.global_task_set_remove_callback)
 
     if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]

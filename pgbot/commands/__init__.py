@@ -130,18 +130,17 @@ async def handle(
             file=log_txt_file,
         )
 
-    task = asyncio.create_task(
-        message_delete_reaction_listener(
-            response_message,
-            invoke_message.author,
-            emoji="🗑",
-            role_whitelist=common.ServerConstants.ADMIN_ROLES,
-            timeout=30,
+    common.hold_task(
+        asyncio.create_task(
+            message_delete_reaction_listener(
+                response_message,
+                invoke_message.author,
+                emoji="🗑",
+                role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                timeout=30,
+            )
         )
     )
-
-    common.global_task_set.add(task)
-    task.add_done_callback(common.global_task_set_remove_callback)
 
     await common.bot.process_commands(invoke_message)  # main command handling
     return response_message

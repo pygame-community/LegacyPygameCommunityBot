@@ -3,7 +3,8 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file defines some constants and variables used across the whole codebase
+This file defines some constants and variables used across the whole codebase,
+as well as other small helpful constructs.
 """
 
 import asyncio
@@ -29,11 +30,27 @@ global_task_set: set[
     asyncio.Task
 ] = set()  # prevents asyncio.Task objects from disappearing due
 # to reference loss, not to be modified manually
-def global_task_set_remove_callback(task: asyncio.Task):
+
+
+def hold_task(task: asyncio.Task):
+    """Store an `asyncio.Task` object in a container to place a protective reference
+    on it in order to prevent its loss.
+
+    Args:
+        task (asyncio.Task): The task.
+    """
+    if task in global_task_set:
+        return
+
+    global_task_set.add(task)
+    task.add_done_callback(_global_task_set_remove_callback)
+
+
+def _global_task_set_remove_callback(task: asyncio.Task):
     if task in global_task_set:
         global_task_set.remove(task)
 
-    task.remove_done_callback(global_task_set_remove_callback)
+    task.remove_done_callback(_global_task_set_remove_callback)
 
 
 recent_response_messages: dict[int, discord.Message] = {}
