@@ -166,15 +166,13 @@ async def delete_bad_entry_and_warning(
     except asyncio.CancelledError:
         return
 
-    try:
-        await warn_msg.edit("Sorry, but your showcase entry will now be deleted.")
-        await asyncio.sleep(0)
-    except asyncio.CancelledError:
-        pass
-
     finally:
-        await entry_msg.delete()
-        await warn_msg.delete()
+        for msg in (entry_msg, warn_msg):
+            # don't error here if messages were already deleted
+            try:
+                await msg.delete()
+            except discord.NotFound:
+                pass
 
 
 async def member_join(member: discord.Member):
