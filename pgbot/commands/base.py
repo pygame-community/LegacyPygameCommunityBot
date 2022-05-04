@@ -34,6 +34,7 @@ from pgbot.commands.parser import (
     split_tuple_anno,
     split_union_anno,
 )
+from pgbot.utils.utils import message_delete_reaction_listener
 
 
 def fun_command(func):
@@ -638,6 +639,23 @@ class BaseCommand:
         Command handler, calls the appropriate sub function to handle commands.
         """
         try:
+            task = asyncio.create_task(
+                message_delete_reaction_listener(
+                    self.response_msg,
+                    self.author,
+                    "🗑",
+                    role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                    timeout=30,
+                )
+            )
+
+            common.global_task_set.add(task)
+            task.add_done_callback(
+                lambda task: common.global_task_set.remove(task)
+                if task in common.global_task_set
+                else None
+            )
+
             await self.call_cmd()
             await emotion.update("confused", -random.randint(4, 8))
             return
@@ -687,6 +705,10 @@ class BaseCommand:
             )
             raise
 
+        excname = (
+            f"{excname}\n(React with 🗑 to delete this error message in the next 30s)"
+        )
+
         # display bot exception to user on discord
         try:
             await snakecore.utils.embed_utils.replace_embed_at(
@@ -698,10 +720,26 @@ class BaseCommand:
             )
         except discord.NotFound:
             # response message was deleted, send a new message
-            await snakecore.utils.embed_utils.send_embed(
+            target_message = await snakecore.utils.embed_utils.send_embed(
                 self.channel,
                 title=title,
                 description=msg,
                 color=0xFF0000,
                 footer_text=excname,
+            )
+
+            task = asyncio.create_task(
+                message_delete_reaction_listener(
+                    target_message,
+                    self.author,
+                    "🗑",
+                    role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                    timeout=30,
+                )
+            )
+            common.global_task_set.add(task)
+            task.add_done_callback(
+                lambda task: common.global_task_set.remove(task)
+                if task in common.global_task_set
+                else None
             )
