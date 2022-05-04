@@ -527,7 +527,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     "Quantity has to be a positive integer (or `0` when `after=` is specified).",
                 )
 
-        await destination.trigger_typing()
+        await destination.typing()
         messages = [
             msg
             async for msg in origin.history(
@@ -620,7 +620,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 ):
                     msg_reference_id = message_id_cache.get(msg.reference.message_id)
 
-                await destination.trigger_typing()
+                await destination.typing()
 
                 fobj.seek(0)
 
@@ -773,7 +773,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
                     for i in range(1, len(msg.embeds)):
                         if not i % 3:
-                            await destination.trigger_typing()
+                            await destination.typing()
                         await destination.send(embed=msg.embeds[i])
 
                 elif mode == 1 or mode == 2:
@@ -1425,7 +1425,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await ctx.channel.trigger_typing()
+            await ctx.channel.typing()
             embed = None
             if isinstance(obj, discord.Message):
                 embed = pgbot.utils.embed_utils.get_msg_info_embed(obj, author=author)

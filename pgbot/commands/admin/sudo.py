@@ -634,7 +634,7 @@ class SudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
 
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
@@ -880,7 +880,7 @@ class SudoCommandCog(BaseCommandCog):
                         "Quantity has to be a positive integer (or `0` when `after=` is specified).",
                     )
 
-            await destination.trigger_typing()
+            await destination.typing()
             messages = [
                 msg
                 async for msg in origin.history(
@@ -1105,7 +1105,7 @@ class SudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:

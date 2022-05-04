@@ -236,7 +236,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 )
                 await response_message.edit(embed=load_embed)
 
-                await ctx.message.channel.trigger_typing()
+                await ctx.message.channel.typing()
 
             send_embed_args = dict(description=None)
 
@@ -641,7 +641,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                     await response_message.edit(embed=load_embed)
 
-                await ctx.channel.trigger_typing()
+                await ctx.channel.typing()
                 msg_embed = msg.embeds[0]
                 embed_dict = msg_embed.to_dict()
 
@@ -695,7 +695,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                     await response_message.edit(embed=load_embed)
 
-                    await ctx.channel.trigger_typing()
+                    await ctx.channel.typing()
                 if not msg.embeds:
                     raise BotException(
                         f"Input {i}: Cannot execute command:",
@@ -1109,7 +1109,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await ctx.message.channel.trigger_typing()
+            await ctx.message.channel.typing()
 
             edit_embed_args = dict(
                 description=None,
@@ -1485,7 +1485,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
 
             embed = msg.embeds[0]
             embed_dict = embed.to_dict()
@@ -1737,7 +1737,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if msg_count > 2 and not j % 3:
@@ -1756,7 +1756,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                     await response_message.edit(embed=load_embed)
 
-                    await destination.trigger_typing()
+                    await destination.typing()
 
                 await destination.send(embed=embed)
 
@@ -1962,7 +1962,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 await response_message.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if msg_count > 2 and embed_count > 2 and not j % 3:
