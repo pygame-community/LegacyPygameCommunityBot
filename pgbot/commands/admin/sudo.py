@@ -617,7 +617,7 @@ class SudoCommand(BaseCommand):
 
                 await self.response_msg.edit(embed=load_embed)
 
-            await destination.trigger_typing()
+            await destination.typing()
 
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
@@ -854,7 +854,7 @@ class SudoCommand(BaseCommand):
                         "Quantity has to be a positive integer (or `0` when `after=` is specified).",
                     )
 
-            await destination.trigger_typing()
+            await destination.typing()
             messages = [
                 msg
                 async for msg in origin.history(
@@ -1075,8 +1075,8 @@ class SudoCommand(BaseCommand):
 
                 await self.response_msg.edit(embed=load_embed)
 
-            await destination.trigger_typing()
-            cloned_msg0 = None
+            await destination.typing()
+            cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
                 with io.StringIO("This file was too large to be cloned.") as fobj:
@@ -1098,7 +1098,7 @@ class SudoCommand(BaseCommand):
                         stop_idx = 2000 + 2000 * i
 
                         if not i:
-                            cloned_msg0 = await destination.send(
+                            cloned_msg = await destination.send(
                                 content=msg.content[start_idx:stop_idx],
                                 allowed_mentions=no_mentions,
                             )
@@ -1124,7 +1124,7 @@ class SudoCommand(BaseCommand):
                         file=attached_files[0] if attached_files else None,
                     )
                 else:
-                    cloned_msg0 = await destination.send(
+                    cloned_msg = await destination.send(
                         content=msg.content,
                         embed=msg.embeds[0] if msg.embeds and embeds else None,
                         file=attached_files[0] if attached_files else None,
@@ -1148,7 +1148,7 @@ class SudoCommand(BaseCommand):
                     embed=pgbot.utils.embed_utils.get_msg_info_embed(
                         msg, author=author_info
                     ),
-                    reference=cloned_msg0,
+                    reference=cloned_msg,
                 )
 
             await asyncio.sleep(0)
