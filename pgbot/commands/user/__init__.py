@@ -7,6 +7,7 @@ This file defines the command handler class for the user commands of the bot
 """
 
 from __future__ import annotations
+import asyncio
 
 import copy
 import datetime
@@ -17,47 +18,73 @@ import time
 from typing import Any, Optional, Union
 
 import discord
-import pygame
+from discord.ext import commands
 import snakecore
+
+from snakecore.command_handler.decorators import custom_parsing
+from snakecore.command_handler.converters import CodeBlock, String
 
 from pgbot import common, db
 import pgbot
-from pgbot.commands.base import (
-    BotException,
-    CodeBlock,
-    String,
-    add_group,
-    no_dm,
-)
-from pgbot.commands.utils import sandbox
 
-from .fun_commands import FunCommand
-from .help_commands import HelpCommand
+from pgbot.commands.utils import get_primary_guild_perms, sandbox
+from pgbot.exceptions import BotException
+from pgbot.utils import message_delete_reaction_listener
+
+from .fun_commands import FunCommandCog
+from .help_commands import HelpCommandCog
 
 
-class UserCommand(FunCommand, HelpCommand):
+class UserCommandCog(FunCommandCog, HelpCommandCog):
     """Base class to handle user commands."""
 
-    @add_group("reminders", "add")
-    async def cmd_reminders_add(
-        self,
-        msg: String,
-        on: datetime.datetime,
-        *,
-        _delta: Optional[datetime.timedelta] = None,
-    ):
+    @commands.group(invoke_without_command=True)
+    async def reminders(self, ctx: commands.Context):
         """
         ->type Reminders
-        ->signature pg!reminders add <message> <datetime in iso format>
-        ->description Set a reminder to yourself
-        ->extended description
-        Allows you to set a reminder to yourself
-        The date-time must be an ISO time formatted string, in UTC time
-        string
-        ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
+        ->signature pg!reminders
+        ->description View all the reminders you have set
         -----
-        Implement pg!reminders_add, for users to set reminders for themselves
+        Implement pg!reminders, for users to view their reminders
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        async with db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.get({})
+
+        desc = "You have no reminders set"
+        if ctx.author.id in db_data:
+            desc = ""
+            cnt = 0
+            for on, (reminder, chan_id, _) in db_data[ctx.author.id].items():
+                channel = None
+                if common.guild is not None:
+                    channel = common.guild.get_channel(chan_id)
+
+                cin = channel.mention if channel is not None else "DM"
+                desc += (
+                    f"Reminder ID: `{cnt}`\n"
+                    f"**On {snakecore.utils.create_markdown_timestamp(on)} in {cin}:**\n> {reminder}\n\n"
+                )
+                cnt += 1
+
+        await snakecore.utils.embed_utils.replace_embed_at(
+            response_message,
+            title=f"Reminders for {ctx.author.display_name}:",
+            description=desc,
+            color=common.DEFAULT_EMBED_COLOR,
+        )
+
+    async def reminders_add_func(
+        self,
+        ctx: commands.Context,
+        msg: str,
+        on: datetime.datetime,
+        _delta: Optional[datetime.timedelta] = None,
+    ):
+
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if _delta is None:
             now = datetime.datetime.utcnow()
@@ -85,42 +112,67 @@ class UserCommand(FunCommand, HelpCommand):
 
         async with db.DiscordDB("reminders") as db_obj:
             db_data = db_obj.get({})
-            if self.author.id not in db_data:
-                db_data[self.author.id] = {}
+            if ctx.author.id not in db_data:
+                db_data[ctx.author.id] = {}
 
             # user is editing old reminder message, discard the old reminder
-            for key, (_, chan_id, msg_id) in tuple(db_data[self.author.id].items()):
-                if chan_id == self.channel.id and msg_id == self.invoke_msg.id:
-                    db_data[self.author.id].pop(key)
+            for key, (_, chan_id, msg_id) in tuple(db_data[ctx.author.id].items()):
+                if chan_id == ctx.channel.id and msg_id == ctx.message.id:
+                    db_data[ctx.author.id].pop(key)
 
-            limit = 25 if self.is_priv else 10
-            if len(db_data[self.author.id]) >= limit:
+            limit = 25 if get_primary_guild_perms(ctx.author)[1] else 10
+            if len(db_data[ctx.author.id]) >= limit:
                 raise BotException(
                     "Failed to set reminder!",
                     f"I cannot set more than {limit} reminders for you",
                 )
 
-            db_data[self.author.id][on] = (
+            db_data[ctx.author.id][on] = (
                 msg.string.strip(),
-                self.channel.id,
-                self.invoke_msg.id,
+                ctx.channel.id,
+                ctx.message.id,
             )
             db_obj.write(db_data)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title="Reminder set!",
             description=(
-                f"Gonna remind {self.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
+                f"Gonna remind {ctx.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
                 f"And that is on {snakecore.utils.create_markdown_timestamp(on)}"
             ),
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @add_group("reminders", "set")
-    async def cmd_reminders_set(
+    @reminders.command(name="add")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def reminders_add(
         self,
-        msg: String,
+        ctx: commands.Context,
+        msg: str,
+        on: datetime.datetime,
+    ):
+        """
+        ->type Reminders
+        ->signature pg!reminders add <message> <datetime in iso format>
+        ->description Set a reminder to yourself
+        ->extended description
+        Allows you to set a reminder to yourself
+        The date-time must be an ISO time formatted string, in UTC time
+        string
+        ->example command pg!reminders add "do the thing" "2034-10-26 11:19:36"
+        -----
+        Implement pg!reminders_add, for users to set reminders for themselves
+        """
+
+        return await self.reminders_add_func(ctx, msg, on=on)
+
+    @reminders.command(name="set")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def reminders_set(
+        self,
+        ctx: commands.Context,
+        msg: str,
         timestr: Union[String, str] = "",
         weeks: int = 0,
         days: int = 0,
@@ -167,10 +219,10 @@ class UserCommand(FunCommand, HelpCommand):
                 month_results = re.search(r"\d+mo", timestr).group()
                 parsed_month_time = int(month_results.replace("mo", ""))
                 sec += (
-                    self.invoke_msg.created_at.replace(
-                        month=self.invoke_msg.created_at.month + parsed_month_time
+                    ctx.message.created_at.replace(
+                        month=ctx.message.created_at.month + parsed_month_time
                     )
-                    - self.invoke_msg.created_at
+                    - ctx.message.created_at
                 ).total_seconds()
 
             if sec == 0:
@@ -190,45 +242,13 @@ class UserCommand(FunCommand, HelpCommand):
                 seconds=seconds,
             )
 
-        await self.cmd_reminders_add(msg, datetime.datetime.utcnow(), _delta=delta)
-
-    @add_group("reminders")
-    async def cmd_reminders(self):
-        """
-        ->type Reminders
-        ->signature pg!reminders
-        ->description View all the reminders you have set
-        -----
-        Implement pg!reminders, for users to view their reminders
-        """
-        async with db.DiscordDB("reminders") as db_obj:
-            db_data = db_obj.get({})
-
-        desc = "You have no reminders set"
-        if self.author.id in db_data:
-            desc = ""
-            cnt = 0
-            for on, (reminder, chan_id, _) in db_data[self.author.id].items():
-                channel = None
-                if common.guild is not None:
-                    channel = common.guild.get_channel(chan_id)
-
-                cin = channel.mention if channel is not None else "DM"
-                desc += (
-                    f"Reminder ID: `{cnt}`\n"
-                    f"**On {snakecore.utils.create_markdown_timestamp(on)} in {cin}:**\n> {reminder}\n\n"
-                )
-                cnt += 1
-
-        await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
-            title=f"Reminders for {self.author.display_name}:",
-            description=desc,
-            color=common.DEFAULT_EMBED_COLOR,
+        await self.reminders_add_func(
+            ctx, msg, datetime.datetime.utcnow(), _delta=delta
         )
 
-    @add_group("reminders", "remove")
-    async def cmd_reminders_remove(self, *reminder_ids: int):
+    @reminders.command(name="remove")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def reminders_remove(self, ctx: commands.Context, *reminder_ids: int):
         """
         ->type Reminders
         ->signature pg!reminders remove [*ids]
@@ -241,20 +261,23 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!reminders_remove, for users to remove their reminders
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         async with db.DiscordDB("reminders") as db_obj:
             db_data = db_obj.get({})
             db_data_copy = copy.deepcopy(db_data)
             cnt = 0
             if reminder_ids:
                 for reminder_id in sorted(set(reminder_ids), reverse=True):
-                    if self.author.id in db_data:
-                        for i, dt in enumerate(db_data_copy[self.author.id]):
+                    if ctx.author.id in db_data:
+                        for i, dt in enumerate(db_data_copy[ctx.author.id]):
                             if i == reminder_id:
-                                db_data[self.author.id].pop(dt)
+                                db_data[ctx.author.id].pop(dt)
                                 cnt += 1
                                 break
                     if (
-                        reminder_id >= len(db_data_copy[self.author.id])
+                        reminder_id >= len(db_data_copy[ctx.author.id])
                         or reminder_id < 0
                     ):
                         raise BotException(
@@ -262,22 +285,24 @@ class UserCommand(FunCommand, HelpCommand):
                             "Reminder ID was not an existing reminder ID",
                         )
 
-                if self.author.id in db_data and not db_data[self.author.id]:
-                    db_data.pop(self.author.id)
+                if ctx.author.id in db_data and not db_data[ctx.author.id]:
+                    db_data.pop(ctx.author.id)
 
-            elif self.author.id in db_data:
-                cnt = len(db_data.pop(self.author.id))
+            elif ctx.author.id in db_data:
+                cnt = len(db_data.pop(ctx.author.id))
 
             db_obj.write(db_data)
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title="Reminders removed!",
             description=f"Successfully removed {cnt} reminder(s)",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    async def cmd_exec(self, code: CodeBlock):
+    @commands.command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def exec(self, ctx: commands.Context, code: CodeBlock):
         """
         ->type Play With Me :snake:
         ->signature pg!exec <python code block>
@@ -297,11 +322,14 @@ class UserCommand(FunCommand, HelpCommand):
         -----
         Implement pg!exec, for execution of python code
         """
-        async with self.channel.typing():
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        async with ctx.channel.typing():
             tstamp = time.perf_counter_ns()
 
             returned = await sandbox.exec_sandbox(
-                code.code, tstamp, 10 if self.is_priv else 5
+                code.code, tstamp, 10 if get_primary_guild_perms(ctx.author)[1] else 5
             )
             dur = returned.duration  # the execution time of the script alone
             embed_dict = {
@@ -309,7 +337,7 @@ class UserCommand(FunCommand, HelpCommand):
                 "description": "",
                 "author": {
                     "name": f"Code executed in {snakecore.utils.format_time_by_units(dur)}",
-                    "url": self.invoke_msg.jump_url,
+                    "url": ctx.message.jump_url,
                 },
             }
 
@@ -350,21 +378,27 @@ class UserCommand(FunCommand, HelpCommand):
                     )
 
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             # Message already deleted
             pass
 
         embed = snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
-        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+        await ctx.message.reply(file=file, embed=embed, mention_author=False)
+
+        filesize_limit = (
+            ctx.guild.filesize_limit
+            if ctx.guild is not None
+            else common.BASIC_MAX_FILE_SIZE
+        )
 
         if len(returned.text) > 1500:
             with io.StringIO(
                 returned.text
-                if len(returned.text) - 40 < self.filesize_limit
-                else returned.text[: self.filesize_limit - 40]
+                if len(returned.text) - 40 < filesize_limit
+                else returned.text[: filesize_limit - 40]
             ) as fobj:
-                await self.channel.send(file=discord.File(fobj, filename="output.txt"))
+                await ctx.channel.send(file=discord.File(fobj, filename="output.txt"))
 
         if file:
             file.close()
@@ -373,14 +407,15 @@ class UserCommand(FunCommand, HelpCommand):
             if os.path.isfile(f"temp{tstamp}.{extension}"):
                 os.remove(f"temp{tstamp}.{extension}")
 
-    @no_dm
-    async def cmd_refresh(self, msg: discord.Message):
+    @commands.command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def refresh(self, ctx: commands.Context, msg: discord.Message):
         """
         ->type Other commands
         ->signature pg!refresh <message>
         ->description Refresh a message which supports pages.
         -----
-        Implement pg!refresh, to refresh a message which supports pages
+        Implement pg!refresh, to refresh a message which supports pagination
         """
 
         if (
@@ -392,66 +427,104 @@ class UserCommand(FunCommand, HelpCommand):
             or not isinstance(msg.embeds[-1].footer.text, str)
         ):
             raise BotException(
-                "Message does not support pages",
-                "The message specified does not support pages. Make sure you "
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure you "
                 "have replied to the correct message",
             )
 
-        cmd_data = msg.embeds[0].footer.text
-        cmd_str = cmd_data.replace("Command: ", "")
+        footer_text = msg.embeds[0].footer.text
 
-        if not cmd_data.startswith("Command: "):
+        cmd_data_match = re.search(r"cmd\:\s.+\|?", footer_text)
+
+        if cmd_data_match is None:
             raise BotException(
-                "Message does not support pages",
-                "The message specified does not support pages. Make sure "
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure "
                 "the id of the message is correct.",
             )
+
+        cmd_data_str = footer_text[slice(*cmd_data_match.span())].removesuffix("\n")
+
+        cmd_str = cmd_data_str.replace("cmd: ", "")
+
+        arg_data_match = re.search(r"args\:\s.+", footer_text)
+        arg_str = ""
+
+        if arg_data_match is not None:
+            arg_str = arg_data_match.group().replace("args: ", "")
 
         page_data = msg.embeds[-1].footer.text
-        page = re.search(r"\d+", page_data).group()
+        page_num_str_match = re.search(r"\d+", page_data)
+        page_num_str = ""
+        if page_num_str_match is not None:
+            page_num_str = page_num_str_match.group()
 
-        if not page.isdigit() or not cmd_str:
+        if page_num_str_match is None or not page_num_str.isdigit() or not cmd_str:
             raise BotException(
-                "Message does not support pages",
-                "The message specified does not support pages. Make sure "
+                "Message does not support pagination",
+                "The message specified does not support pagination. Make sure "
                 "the id of the message is correct.",
             )
 
+        if "page=" not in arg_str:
+            arg_str += f" page={page_num_str}"
+        else:
+            old_page_kwarg_match = re.search(r"page\=\d+", arg_str)
+
+            if old_page_kwarg_match is not None:
+                page_kwarg = old_page_kwarg_match.group()
+                arg_str = arg_str.replace(page_kwarg, f"page={page_num_str}")
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
         # Handle the new command, the one that pg!refresh is trying to refresh
-        self.response_msg = msg
-        self.cmd_str = cmd_str
-        self.page_number = int(page)
-        await self.handle_cmd()
 
-    @no_dm
-    @add_group("poll")
-    async def cmd_poll(
+        response_message = common.recent_response_messages[ctx.message.id] = msg
+
+        cmd = self.bot.get_command(cmd_str)
+        # only supports commands using snakecore's
+        # custom parser
+
+        if cmd is not None:
+            await cmd(ctx, raw_command_input=arg_str)
+            common.hold_task(
+                asyncio.create_task(
+                    message_delete_reaction_listener(
+                        response_message,
+                        ctx.author,
+                        emoji="🗑",
+                        role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                        timeout=30,
+                    )
+                )
+            )
+            return
+
+        raise commands.CommandNotFound(
+            "Could not find the original command of the specified message to restart "
+            "pagination."
+        )
+
+    async def poll_func(
         self,
+        ctx: commands.Context,
         desc: String,
         *emojis: tuple[str, String],
         multi_votes: bool = False,
-        _destination: Optional[common.Channel] = None,
-        _admin_embed_dict: dict = {},
+        _destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        _admin_embed_dict: Optional[dict] = None,
     ):
-        """
-        ->type Other commands
-        ->signature pg!poll <description> [*emojis] [multi_votes=True]
-        ->description Start a poll.
-        ->extended description
-        `pg!poll description *args`
-        The args must series of two element tuples, first element being emoji,
-        and second being the description (see example command).
-        The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
-        A `multi_votes` arg can also be passed indicating if the user can cast multiple votes in a poll or not
-        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
-        """
 
-        destination = self.channel if _destination is None else _destination
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        _admin_embed_dict = _admin_embed_dict or {}
+
+        destination = ctx.channel if _destination is None else _destination
 
         base_embed_dict = {
             "title": "Voting in progress",
@@ -468,14 +541,14 @@ class UserCommand(FunCommand, HelpCommand):
                 },
             ],
             "author": {
-                "name": self.author.name,
+                "name": ctx.author.name,
             },
             "color": 0x34A832,
             "footer": {
-                "text": f"By {self.author.display_name}\n({self.author.id})\n"
+                "text": f"By {ctx.author.display_name}\n({ctx.author.id})\n"
                 f"{'' if multi_votes else common.UNIQUE_POLL_MSG}Started"
             },
-            "timestamp": self.response_msg.created_at.isoformat(),
+            "timestamp": response_message.created_at.isoformat(),
             "description": desc.string,
         }
         base_embed_dict.update(_admin_embed_dict)
@@ -497,7 +570,7 @@ class UserCommand(FunCommand, HelpCommand):
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
@@ -506,7 +579,7 @@ class UserCommand(FunCommand, HelpCommand):
                 emoji_id = snakecore.utils.extract_markdown_custom_emoji_id(
                     field["name"].strip()
                 )
-                emoji = common.bot.get_emoji(emoji_id)
+                emoji = self.bot.get_emoji(emoji_id)
                 if emoji is None:
                     raise ValueError()
             except ValueError:
@@ -526,13 +599,39 @@ class UserCommand(FunCommand, HelpCommand):
                     " the correct emoji and that it is not from another server",
                 )
 
-    @no_dm
-    @add_group("poll", "close")
-    async def cmd_poll_close(
+    @commands.group(invoke_without_command=True)
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def poll(
         self,
+        ctx: commands.Context,
+        description: String,
+        *emojis: tuple[str, String],
+        multi_votes: bool = False,
+    ):
+        """
+        ->type Other commands
+        ->signature pg!poll <description> [*emojis] [multi_votes=True]
+        ->description Start a poll.
+        ->extended description
+        `pg!poll description *args`
+        The args must series of two element tuples, first element being emoji,
+        and second being the description (see example command).
+        The emoji must be a default emoji or one from this server. To close the poll see 'pg!poll close'.
+        A `multi_votes` arg can also be passed indicating if the user can cast multiple votes in a poll or not
+        ->example command pg!poll "Which apple is better?" ( 🍎 "Red apple") ( 🍏 "Green apple")
+        """
+        return await self.poll_func(
+            ctx,
+            description,
+            *emojis,
+            multi_votes=multi_votes,
+        )
+
+    async def poll_close_func(
+        self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *,
-        _color: Optional[pygame.Color] = None,
+        _color: Optional[discord.Color] = None,
     ):
         """
         ->type Other commands
@@ -541,12 +640,15 @@ class UserCommand(FunCommand, HelpCommand):
         ->extended description
         The poll can only be closed by the person who started it or by mods.
         """
-        # needed for typecheckers to know that self.author is a member
-        if isinstance(self.author, discord.User):
+
+        # needed for typecheckers to know that ctx.author is a member
+        if isinstance(ctx.author, discord.User):
             return
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not pgbot.snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
         ):
@@ -582,7 +684,7 @@ class UserCommand(FunCommand, HelpCommand):
                 " Please double-check the id.",
             )
 
-        if _color is None and self.author.id != poll_owner:
+        if _color is None and ctx.author.id != poll_owner:
             raise BotException(
                 "You can't stop this vote",
                 "The vote was not started by you."
@@ -616,10 +718,16 @@ class UserCommand(FunCommand, HelpCommand):
             if not isinstance(field.name, str):
                 continue
 
+            is_custom_emoji = snakecore.utils.is_markdown_custom_emoji(field.name)
+
             try:
                 r_count = (
                     reactions[
-                        snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                        (
+                            snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                            if is_custom_emoji
+                            else field.name
+                        )
                     ]
                     - 1
                 )
@@ -638,8 +746,9 @@ class UserCommand(FunCommand, HelpCommand):
 
             if (
                 snakecore.utils.extract_markdown_custom_emoji_id(field.name)
-                == top[0][1]
-            ):
+                if is_custom_emoji
+                else field.name
+            ) == top[0][1]:
                 title += (
                     f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
                 )
@@ -650,31 +759,44 @@ class UserCommand(FunCommand, HelpCommand):
 
         await snakecore.utils.embed_utils.edit_embed_at(
             msg,
-            color=0xA83232 if not _color else pgbot.utils.color_to_rgb_int(_color),
+            color=0xA83232 if not _color else _color.value,
             title=title,
             fields=fields,
             footer_text="Ended",
-            timestamp=self.response_msg.created_at,
+            timestamp=response_message.created_at,
         )
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
 
-    @add_group("stream")
-    async def cmd_stream(self):
+    @poll.command(name="close")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def poll_close(
+        self,
+        ctx: commands.Context,
+        msg: discord.Message,
+    ):
         """
-        ->type Reminders
-        ->signature pg!stream
-        ->description Show the ping-stream-list
-        Send an embed with all the users currently in the ping-stream-list
+        ->type Other commands
+        ->signature pg!poll close <message>
+        ->description Close an ongoing poll.
+        ->extended description
+        The poll can only be closed by the person who started it or by mods.
         """
+
+        return await self.poll_close_func(ctx, msg)
+
+    async def stream_func(self, ctx: commands.Context):
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         async with db.DiscordDB("stream") as db_obj:
             data = db_obj.get([])
 
         if not data:
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 title="Memento ping list",
                 description="Ping list is empty!",
                 color=common.DEFAULT_EMBED_COLOR,
@@ -682,7 +804,7 @@ class UserCommand(FunCommand, HelpCommand):
             return
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title="Memento ping list",
             description=(
                 "Here is a list of people who want to be pinged when stream starts"
@@ -692,18 +814,22 @@ class UserCommand(FunCommand, HelpCommand):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @add_group("stream", "add")
-    async def cmd_stream_add(
-        self, *, _members: Optional[tuple[discord.Member, ...]] = None
-    ):
+    @commands.group(invoke_without_command=True)
+    async def stream(self, ctx: commands.Context):
         """
         ->type Reminders
-        ->signature pg!stream add
-        ->description Add yourself to the stream-ping-list
-        ->extended description
-        Add yourself to the stream-ping-list. You can always delete you later
-        with `pg!stream del`
+        ->signature pg!stream
+        ->description Show the ping-stream-list
+        Send an embed with all the users currently in the ping-stream-list
         """
+
+        return await self.stream_func(ctx)
+
+    async def stream_add_func(
+        self,
+        ctx: commands.Context,
+        _members: Optional[tuple[discord.Member, ...]] = None,
+    ):
         async with db.DiscordDB("stream") as ping_db:
             data: list = ping_db.get([])
 
@@ -711,16 +837,58 @@ class UserCommand(FunCommand, HelpCommand):
                 for mem in _members:
                     if mem.id not in data:
                         data.append(mem.id)
-            elif self.author.id not in data:
-                data.append(self.author.id)
+            elif ctx.author.id not in data:
+                data.append(ctx.author.id)
 
             ping_db.write(data)
 
-        await self.cmd_stream()
+        await self.stream_func(ctx)
 
-    @add_group("stream", "del")
-    async def cmd_stream_del(
-        self, *, _members: Optional[tuple[discord.Member, ...]] = None
+    @stream.command(name="add")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def stream_add(
+        self,
+        ctx: commands.Context,
+    ):
+        """
+        ->type Reminders
+        ->signature pg!stream add
+        ->description Add yourself to the stream-ping-list
+        ->extended description
+        Add yourself to the stream-ping-list. You can always delete yourself later
+        with `pg!stream del`
+        """
+
+        return await self.stream_add_func(ctx)
+
+    async def stream_del_func(
+        self,
+        ctx: commands.Context,
+        _members: Optional[tuple[discord.Member, ...]] = None,
+    ):
+        async with db.DiscordDB("stream") as ping_db:
+            data: list = ping_db.get([])
+
+            try:
+                if _members:
+                    for mem in _members:
+                        data.remove(mem.id)
+                else:
+                    data.remove(ctx.author.id)
+            except ValueError:
+                raise BotException(
+                    "Could not remove member",
+                    "Member was not previously added to the ping list",
+                )
+
+            ping_db.write(data)
+
+        await self.stream_func(ctx)
+
+    @stream.command(name="del", aliases=("delete",))
+    async def stream_del(
+        self,
+        ctx: commands.Context,
     ):
         """
         ->type Reminders
@@ -730,37 +898,15 @@ class UserCommand(FunCommand, HelpCommand):
         Remove yourself from the stream-ping-list. You can always add you later
         with `pg!stream add`
         """
-        async with db.DiscordDB("stream") as ping_db:
-            data: list = ping_db.get([])
 
-            try:
-                if _members:
-                    for mem in _members:
-                        data.remove(mem.id)
-                else:
-                    data.remove(self.author.id)
-            except ValueError:
-                raise BotException(
-                    "Could not remove member",
-                    "Member was not previously added to the ping list",
-                )
+        return await self.stream_del_func(ctx)
 
-            ping_db.write(data)
+    async def stream_ping_func(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
 
-        await self.cmd_stream()
+        response_message = common.recent_response_messages[ctx.message.id]
 
-    @add_group("stream", "ping")
-    async def cmd_stream_ping(self, message: Optional[String] = None):
-        """
-        ->type Reminders
-        ->signature pg!stream ping [message]
-        ->description Ping users in stream-list with an optional message.
-        ->extended description
-        Ping all users in the ping list to announce a stream.
-        You can pass an optional stream message (like the stream topic).
-        The streamer name will be included and many people will be pinged so \
-        don't make pranks with this command.
-        """
         async with db.DiscordDB("stream") as ping_db:
             data: list = ping_db.get([])
 
@@ -773,21 +919,41 @@ class UserCommand(FunCommand, HelpCommand):
         )
 
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             pass
-        await self.channel.send(f"<@!{self.author.id}> is gonna stream!\n{msg}\n{ping}")
+        await ctx.channel.send(f"<@!{ctx.author.id}> is gonna stream!\n{msg}\n{ping}")
 
-    @add_group("events")
-    async def cmd_events(self):
+    @stream.command(name="ping")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
+        """
+        ->type Reminders
+        ->signature pg!stream ping [message]
+        ->description Ping users in stream-list with an optional message.
+        ->extended description
+        Ping all users in the ping list to announce a stream.
+        You can pass an optional stream message (like the stream topic).
+        The streamer name will be included and many people will be pinged so \
+        don't make pranks with this command.
+        """
+
+        return await self.stream_ping_func(ctx, message=message)
+
+    async def events_func(self, ctx: commands.Context):
         """
         ->type Events
         ->signature pg!events
         ->description Command for keeping up with the events of the server
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title="Pygame Community Discord Server Events!",
             description=(
                 "Check out Weekly Challenges!\n"
@@ -796,8 +962,19 @@ class UserCommand(FunCommand, HelpCommand):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @add_group("events", "wc")
-    async def cmd_events_wc(self, round_no: Optional[int] = None):
+    @commands.group(invoke_without_command=True)
+    async def events(self, ctx: commands.Context):
+        """
+        ->type Events
+        ->signature pg!events
+        ->description Command for keeping up with the events of the server
+        -----
+        """
+        return await self.events_func(ctx)
+
+    async def events_wc_func(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!events wc [round_no]
@@ -808,6 +985,8 @@ class UserCommand(FunCommand, HelpCommand):
         the final scoreboard of all rounds combined.
         -----
         """
+        response_message = common.recent_response_messages[ctx.message.id]
+
         async with db.DiscordDB("wc") as db_obj:
             wc_dict: dict[str, Any] = db_obj.get({})
 
@@ -850,7 +1029,7 @@ class UserCommand(FunCommand, HelpCommand):
             )
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title=f"Event: Weekly Challenges (WC)",
             description=wc_dict.get(
                 "description", "Upcoming Event! Prepare your peepers!"
@@ -859,3 +1038,18 @@ class UserCommand(FunCommand, HelpCommand):
             fields=fields,
             color=0xFF8C00,
         )
+
+    @events.command(name="wc")
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def events_wc(self, ctx: commands.Context, round_no: Optional[int] = None):
+        """
+        ->type Events
+        ->signature pg!events wc [round_no]
+        ->description Show scoreboard of WC along with some info about the event
+        ->extended description
+        Argument `round_no` is an optional integer, that specifies which round
+        of the event, the scoreboard should be displayed. If unspecified, shows
+        the final scoreboard of all rounds combined.
+        -----
+        """
+        return await self.events_wc_func(ctx, round_no=round_no)

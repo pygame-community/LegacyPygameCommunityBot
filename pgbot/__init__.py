@@ -20,7 +20,8 @@ import discord
 import pygame
 import snakecore
 
-from pgbot import commands, common, db, emotion, routine, utils
+from pgbot import commands, common, db, emotion, exceptions, routine, utils
+from pgbot.commands.admin import AdminCommandCog
 
 
 async def _init():
@@ -29,6 +30,7 @@ async def _init():
     """
 
     await snakecore.init(global_client=common.bot)
+    await common.bot.add_cog(AdminCommandCog(common.bot))
 
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
@@ -72,6 +74,12 @@ async def _init():
             for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
+
+    async with db.DiscordDB("blacklist") as db_obj:  # disable blacklisted commands
+        for cmd_qualname in db_obj.get([]):
+            cmd = common.bot.get_command(cmd_qualname)
+            if cmd is not None:
+                cmd.update(enabled=False)
 
 
 async def init():
@@ -285,7 +293,8 @@ async def message_edit(old: discord.Message, new: discord.Message):
     """
     This function is called for every message edited by user.
     """
-    if new.content.startswith(common.PREFIX):
+    bot_id = common.bot.user.id
+    if new.content.startswith((common.COMMAND_PREFIX, f"<@{bot_id}>", f"<@!{bot_id}>")):
         try:
             if new.id in common.cmd_logs.keys():
                 await commands.handle(new, common.cmd_logs[new.id])
@@ -448,29 +457,29 @@ async def handle_message(msg: discord.Message):
     if msg.type == discord.MessageType.premium_guild_subscription:
         await emotion.server_boost(msg)
 
-    if msg.content.startswith(common.PREFIX):
-        ret = await commands.handle(msg)
+    mentions = f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>"
+
+    if msg.content.startswith(common.COMMAND_PREFIX) or (
+        msg.content.startswith(mentions) and msg.content not in mentions
+    ):  # ignore normal pings
+        if msg.content == common.COMMAND_PREFIX:
+            await msg.channel.send(
+                embed=discord.Embed(
+                    title="Help",
+                    description=f"Type `{common.COMMAND_PREFIX}help` to see what I'm capable of!",
+                    color=common.DEFAULT_EMBED_COLOR,
+                )
+            )
+            return
+        else:
+            ret = await commands.handle(msg)
         if ret is not None:
             common.cmd_logs[msg.id] = ret
 
         if len(common.cmd_logs) > 100:
-            del common.cmd_logs[list(common.cmd_logs.keys())[0]]
-
-        await emotion.update("bored", -10)
+            del common.cmd_logs[next(iter(common.cmd_logs.keys()))]
 
     elif not common.TEST_MODE:
-        await emotion.check_bonk(msg)
-
-        # Check for these specific messages, do not try to generalise, because we do not
-        # want the bot spamming the bydariogamer quote
-        # no_mentions = discord.AllowedMentions.none()
-        # if unidecode.unidecode(msg.content.lower()) in common.DEAD_CHAT_TRIGGERS:
-        #     # ded chat makes snek sad
-        #     await msg.channel.send(
-        #         "good." if await emotion.get("anger") >= 60 else common.BYDARIO_QUOTE,
-        #         allowed_mentions=no_mentions,
-        #     )
-        #     await emotion.update("happy", -8)
 
         if common.GENERIC:
             return

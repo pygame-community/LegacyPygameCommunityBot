@@ -15,29 +15,32 @@ from ast import literal_eval
 from typing import Optional, Union
 
 import discord
+from discord.ext import commands
 import snakecore
 
 from pgbot import common
 from pgbot.commands.base import (
-    BaseCommand,
-    BotException,
-    CodeBlock,
-    String,
-    add_group,
+    BaseCommandCog,
 )
+from pgbot.commands.utils.checks import admin_only_and_custom_parsing
+
+from pgbot.commands.utils.converters import CodeBlock, String
+from pgbot.exceptions import BotException
 
 
-class EmsudoCommand(BaseCommand):
+class EmsudoCommandCog(BaseCommandCog):
     """
     Base class to handle emsudo commands.
     """
 
-    @add_group("emsudo", "data")
-    async def cmd_emsudo(
+    @commands.group(invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo(
         self,
+        ctx: commands.Context,
         *datas: Union[discord.Message, CodeBlock, String, bool],
         content: String = String(""),
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -192,13 +195,16 @@ class EmsudoCommand(BaseCommand):
         \\`\\`\\`
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         content = content.string
 
         if destination is None:
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author, destination, "view_channel", "send_messages"
+            ctx.author, destination, "view_channel", "send_messages"
         ):
             raise BotException(
                 "Not enough permissions",
@@ -228,9 +234,9 @@ class EmsudoCommand(BaseCommand):
                         + snakecore.utils.progress_bar(i / data_count, divisions=30),
                     ),
                 )
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
-                await self.invoke_msg.channel.typing()
+                await ctx.message.channel.typing()
 
             send_embed_args = dict(description=None)
 
@@ -238,18 +244,18 @@ class EmsudoCommand(BaseCommand):
             edit_description_only = False
 
             if data is False:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
 
             elif isinstance(data, String):
                 if not data.string:
-                    attachment_msg = self.invoke_msg
+                    attachment_msg = ctx.message
                 else:
                     edit_description_only = True
                     send_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     data.channel,
                     "view_channel",
                 ):
@@ -336,13 +342,13 @@ class EmsudoCommand(BaseCommand):
                             raise BotException(
                                 f"Condensed Embed Syntax Error at Input {i}:", v.args[0]
                             )
-                        except TypeError:
+                        except TypeError as t:
                             raise BotException(
                                 f"Input {i}:",
                                 "Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
                                 f"```py\n{snakecore.utils.embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
-                            )
+                            ) from t
 
                         output_embeds.append(
                             snakecore.utils.embed_utils.create_embed(**send_embed_args)
@@ -368,7 +374,7 @@ class EmsudoCommand(BaseCommand):
 
         if not datas:
             data_count = 1
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
@@ -417,7 +423,7 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         output_embed_count = len(output_embeds)
         for j, embed in enumerate(output_embeds):
@@ -434,7 +440,7 @@ class EmsudoCommand(BaseCommand):
                         ),
                     ),
                 )
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.send(content=content, embed=embed)
 
@@ -449,16 +455,18 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0)
+            await ctx.message.delete()
+            await response_message.delete(delay=10.0 if data_count > 2 else 0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add")
-    async def cmd_emsudo_add(
+    @emsudo.group(name="add", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_add(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
         overwrite: bool = False,
@@ -511,7 +519,7 @@ class EmsudoCommand(BaseCommand):
         """
 
         if not msg.embeds or overwrite:
-            await self.cmd_emsudo_replace(msg=msg, data=data, _add=True)
+            await self.emsudo_replace_func(ctx, msg, data, _add=True)
         else:
             raise BotException(
                 "Cannot overwrite embed!",
@@ -519,9 +527,11 @@ class EmsudoCommand(BaseCommand):
                 " `overwrite=` is set to `False`",
             )
 
-    @add_group("emsudo", "remove")
-    async def cmd_emsudo_remove(
+    @emsudo.group(name="remove", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_remove(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
@@ -563,11 +573,13 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         checked_channels = set()
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     "view_channel",
                     "send_messages",
@@ -627,9 +639,9 @@ class EmsudoCommand(BaseCommand):
                         ),
                     )
 
-                    await self.response_msg.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
-                await self.channel.typing()
+                await ctx.channel.typing()
                 msg_embed = msg.embeds[0]
                 embed_dict = msg_embed.to_dict()
 
@@ -681,9 +693,9 @@ class EmsudoCommand(BaseCommand):
                         ),
                     )
 
-                    await self.response_msg.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
-                    await self.channel.typing()
+                    await ctx.channel.typing()
                 if not msg.embeds:
                     raise BotException(
                         f"Input {i}: Cannot execute command:",
@@ -703,20 +715,19 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await ctx.message.delete()
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "replace")
-    async def cmd_emsudo_replace(
+    async def emsudo_replace_func(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
-        *,
         _add: bool = False,
     ):
         """
@@ -761,8 +772,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -785,18 +798,18 @@ class EmsudoCommand(BaseCommand):
         edit_description_only = False
 
         if data is None or data is False:
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
 
         elif isinstance(data, String):
             if not data.string:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
             else:
                 edit_description_only = True
                 replace_embed_args.update(description=data.string)
 
         elif isinstance(data, discord.Message):
             if not snakecore.utils.have_permissions_in_channels(
-                self.author,
+                ctx.author,
                 data.channel,
                 "view_channel",
             ):
@@ -898,14 +911,68 @@ class EmsudoCommand(BaseCommand):
                     )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit")
-    async def cmd_emsudo_edit(
+    @emsudo.group(name="replace", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_replace(
         self,
+        ctx: commands.Context,
+        msg: discord.Message,
+        data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo replace <message> [data]
+        ->description Replace an embed through the bot
+        ->extended description
+        Replace the embed of a message with a new one using the given arguments.
+
+        __Args__:
+            `data: (Message|CodeBlock|String|bool) =`
+            > Data to replace the target embed from.
+            > Can be a discord message whose first attachment contains
+            > JSON or Python embed data, a string
+            > (will only affect a embed description field),
+            > a code block containing JSON embed data
+            > (use the \\`\\`\\`json prefix), or a Python
+            > code block containing embed data as a
+            > dictionary, or a condensed embed data list.
+            > If omitted or the only input is `False`,
+            > assume that embed data (Python or JSON embed data)
+            > is contained in the invocation message.
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+
+        ->example command
+        pg!emsudo replace 987654321987654321 "Whoops the embed is boring now"
+        pg!emsudo replace 987654321987654321 123456789012345678
+        pg!emsudo replace 987654321987654321/123456789123456789
+        \\`\\`\\`json
+        {
+            "title": "An Embed Replacement",
+            "description": "Lolz",
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "another footer text"
+                }
+        }
+        \\`\\`\\`
+        -----
+        """
+
+        return await self.emsudo_replace_func(ctx, msg, data)
+
+    @emsudo.group(name="edit", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_edit(
+        self,
+        ctx: commands.Context,
         msg: tuple[discord.Message, ...],
         *datas: Union[discord.Message, CodeBlock, String, bool],
         add_attributes: bool = True,
@@ -974,6 +1041,8 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         target_msgs = msg
 
         if not isinstance(msg, tuple):
@@ -981,7 +1050,7 @@ class EmsudoCommand(BaseCommand):
 
         for i, msg in enumerate(target_msgs):
             if not snakecore.utils.have_permissions_in_channels(
-                self.author,
+                ctx.author,
                 msg.channel,
                 "view_channel",
                 "send_messages",
@@ -1003,7 +1072,7 @@ class EmsudoCommand(BaseCommand):
         for i, data in enumerate(datas):
             if isinstance(data, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     data.channel,
                     "view_channel",
                 ):
@@ -1038,9 +1107,9 @@ class EmsudoCommand(BaseCommand):
                     0,
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
-            await self.invoke_msg.channel.typing()
+            await ctx.message.channel.typing()
 
             edit_embed_args = dict(
                 description=None,
@@ -1050,18 +1119,18 @@ class EmsudoCommand(BaseCommand):
             edit_description_only = False
 
             if not data:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
 
             elif isinstance(data, String):
                 if not data.string:
-                    attachment_msg = self.invoke_msg
+                    attachment_msg = ctx.message
                 else:
                     edit_description_only = True
                     edit_embed_args.update(description=data.string)
 
             elif isinstance(data, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     data.channel,
                     "view_channel",
                 ):
@@ -1203,7 +1272,7 @@ class EmsudoCommand(BaseCommand):
 
         if not datas:
             data_count = 1
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
@@ -1275,19 +1344,21 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
+            await ctx.message.delete()
+            await response_message.delete(delay=10.0 if data_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "sum")
-    async def cmd_emsudo_sum(
+    @emsudo.command(name="sum")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_sum(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         edit_inner_fields: bool = False,
         in_place: bool = False,
         remove_inputs: bool = False,
@@ -1345,11 +1416,13 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not isinstance(destination, discord.TextChannel):
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             destination,
             "view_channel",
             "send_messages",
@@ -1370,7 +1443,7 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     *msgs_perms,
                 ):
@@ -1410,7 +1483,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.typing()
 
@@ -1450,7 +1523,7 @@ class EmsudoCommand(BaseCommand):
 
         if remove_inputs:
             for j, msg in enumerate(msgs[1:] if in_place else msgs):
-                if msg.author.id == self.author.id:
+                if msg.author.id == ctx.author.id:
                     if msg.content:
                         await msg.edit(embed=None)
                     else:
@@ -1470,17 +1543,19 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await ctx.message.delete()
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "swap")
-    async def cmd_emsudo_swap(
+    @emsudo.group(name="swap", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_swap(
         self,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
     ):
@@ -1508,13 +1583,15 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg_a.channel,
             "view_channel",
             "send_messages",
         ) or not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg_b.channel,
             "view_channel",
             "send_messages",
@@ -1524,7 +1601,7 @@ class EmsudoCommand(BaseCommand):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        bot_id = common.bot.user.id
+        bot_id = self.bot.user.id
 
         if not msg_a.embeds or not msg_b.embeds:
             raise BotException(
@@ -1535,7 +1612,7 @@ class EmsudoCommand(BaseCommand):
         elif bot_id not in (msg_a.author.id, msg_b.author.id):
             raise BotException(
                 "Cannot execute command:",
-                f"Both messages must have been authored by me, {common.bot.user.mention}.",
+                f"Both messages must have been authored by me, {self.bot.user.mention}.",
             )
 
         msg_embed_a = msg_a.embeds[0]
@@ -1545,14 +1622,18 @@ class EmsudoCommand(BaseCommand):
         await msg_b.edit(embed=msg_embed_a)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "clone")
-    async def cmd_emsudo_clone(
-        self, *msgs: discord.Message, destination: Optional[common.Channel] = None
+    @emsudo.group(name="clone", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_clone(
+        self,
+        ctx: commands.Context,
+        *msgs: discord.Message,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -1586,11 +1667,13 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if destination is None:
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             destination,
             "view_channel",
             "send_messages",
@@ -1604,7 +1687,7 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     "view_channel",
                 ):
@@ -1652,7 +1735,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.typing()
             embed_count = len(msg.embeds)
@@ -1671,7 +1754,7 @@ class EmsudoCommand(BaseCommand):
                         ),
                     )
 
-                    await self.response_msg.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                     await destination.typing()
 
@@ -1687,7 +1770,7 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
             await asyncio.sleep(0)
 
@@ -1702,21 +1785,21 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "get")
-    async def cmd_emsudo_get(
+    async def emsudo_get_func(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
         mode: int = 0,
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         output_name: String = String("(add a title by editing this embed)"),
         pop: bool = False,
         copy_color_with_pop: bool = False,
@@ -1789,11 +1872,13 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if destination is None:
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             destination,
             "view_channel",
             "send_messages",
@@ -1808,7 +1893,7 @@ class EmsudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     *msgs_perms,
                 ):
@@ -1875,7 +1960,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.typing()
             embed_count = len(msg.embeds)
@@ -1894,7 +1979,7 @@ class EmsudoCommand(BaseCommand):
                         ),
                     )
 
-                    await self.response_msg.edit(embed=load_embed)
+                    await response_message.edit(embed=load_embed)
 
                 embed_dict = embed.to_dict()
                 pop_target_embed_dict = snakecore.utils.embed_utils.copy_embed_dict(
@@ -2071,7 +2156,7 @@ class EmsudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await asyncio.sleep(0)
 
@@ -2086,20 +2171,115 @@ class EmsudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.response_msg.delete(delay=10.0 if msg_count > 2 else 0.0)
+            await response_message.delete(delay=10.0 if msg_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "pop")
-    async def cmd_emsudo_pop(
+    @emsudo.command(name="get")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_get(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
         a: String = String(""),
         attributes: String = String(""),
-        destination: Optional[common.Channel] = None,
+        mode: int = 0,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
+        output_name: String = String("(add a title by editing this embed)"),
+        system_attributes: bool = False,
+        as_json: bool = True,
+        as_python: bool = False,
+    ):
+        """
+        ->type emsudo commands
+        ->signature pg!emsudo get <*messages> [a|attributes=""] [mode=0] [destination=]
+        [output_name=""] [system_attributes=False] [as_json=True] [as_python=False]
+
+        ->description Get the embed data of a message
+        ->extended description
+        Get the contents of the embed of a message from the given arguments and send it as another message
+        to a given destination channel in a serialized form.
+
+        __Args__:
+            `*messages: (Message)`
+            > A sequence of discord messages whose embeds should
+            > be serialized into a JSON or Python format.
+
+            `destination (TextChannel) = `
+            > A destination channel to send the output to.
+
+            `a|attributes: (String) =`
+            > A string containing the attributes to extract
+            > from the target embeds. If those attributes
+            > have attributes themselves
+            > (e.g. `author`, `fields`, `footer`),
+            > then those can be specified using the dot `.`
+            > operator inside this string.
+            > If omitted or empty, the attributes of
+            > all target message embeds will be serialized.
+            > Embed attributes that become invalid
+            > upon their extraction (missing required sub-attributes, etc.)
+            > will still be included in the serialized output,
+            > but that output might not be enough
+            > to successfully generate embeds anymore.
+
+            `mode: (bool) = 0`
+            > `0`: Embed serialization only.
+            > `1`: Embed creation from the selected
+            > attributes (when possible).
+            > `2`: `0` and `1` together.
+
+            +===+
+
+            `output_name (String) =`
+            > A name for the first output data.
+
+            `system_attributes: (bool) = True`
+            > Whether to include Discord generated embed
+            > attributes in the serialized output.
+
+            `as_python (bool) = False`
+            `as_json (bool) = True`
+            > If `as_python=` is `True` send `.py` output,
+            > else if `as_json=` is `True` send `.json` output,
+            > otherwise send `.txt` output.
+
+
+        __Raises__:
+            > `BotException`: One or more given arguments are invalid.
+            > `HTTPException`: An invalid operation was blocked by Discord.
+        ->example command
+        pg!emsudo get 98765432198765444321
+        pg!emsudo get 123456789123456789/98765432198765444321 a="description fields.0 fields.1.name author.url"
+        pg!emsudo get 123456789123456789/98765432198765444321 attributes="fields author footer.icon_url"
+        -----
+        """
+
+        return await self.emsudo_get_func(
+            ctx,
+            *msgs,
+            a=a,
+            attributes=attributes,
+            mode=mode,
+            destination=destination,
+            output_name=output_name,
+            system_attributes=system_attributes,
+            as_json=as_json,
+            as_python=as_python,
+        )
+
+    @emsudo.command(name="pop")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_pop(
+        self,
+        ctx: commands.Context,
+        *msgs: discord.Message,
+        a: String = String(""),
+        attributes: String = String(""),
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
     ):
         """
         ->type emsudo commands
@@ -2149,18 +2329,22 @@ class EmsudoCommand(BaseCommand):
                 "Invalid embed attribute string!", "No embed attributes specified."
             )
 
-        await self.cmd_emsudo_get(
+        await self.emsudo_get_func(
+            ctx,
             *msgs,
-            a=(a if a.string else attributes),
+            a=a,
+            attributes=attributes,
             mode=1,
             destination=destination,
             pop=True,
             copy_color_with_pop=True,
         )
 
-    @add_group("emsudo", "add", "field")
-    async def cmd_emsudo_add_field(
+    @emsudo_add.group(name="field", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_add_field(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Union[CodeBlock, String],
     ):
@@ -2202,8 +2386,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -2317,14 +2503,16 @@ class EmsudoCommand(BaseCommand):
             )
         )
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "fields")
-    async def cmd_emsudo_add_fields(
+    @emsudo_add.group(name="fields", invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_add_fields(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
@@ -2381,8 +2569,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -2403,11 +2593,11 @@ class EmsudoCommand(BaseCommand):
         msg_embed = msg.embeds[0]
 
         if data is None or data is False:
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
 
         elif isinstance(data, String):
             if not data.string:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
             else:
                 raise BotException(
                     "Invalid arguments!",
@@ -2419,7 +2609,7 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not snakecore.utils.have_permissions_in_channels(
-                self.author,
+                ctx.author,
                 data.channel,
                 "view_channel",
             ):
@@ -2577,14 +2767,16 @@ class EmsudoCommand(BaseCommand):
                 )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "field", "at")
-    async def cmd_emsudo_add_field_at(
+    @emsudo_add_field.command(name="at")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_add_field_at(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -2630,8 +2822,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -2745,14 +2939,16 @@ class EmsudoCommand(BaseCommand):
             )
         )
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "add", "fields", "at")
-    async def cmd_emsudo_add_fields_at(
+    @emsudo_add_fields.command(name="at")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_add_fields_at(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
@@ -2813,8 +3009,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -2835,11 +3033,11 @@ class EmsudoCommand(BaseCommand):
         msg_embed = msg.embeds[0]
 
         if data is None or data is False:
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
 
         elif isinstance(data, String):
             if not data.string:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
             else:
                 raise BotException(
                     "Invalid arguments!",
@@ -2851,7 +3049,7 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not snakecore.utils.have_permissions_in_channels(
-                self.author,
+                ctx.author,
                 data.channel,
                 "view_channel",
             ):
@@ -3009,14 +3207,16 @@ class EmsudoCommand(BaseCommand):
                 )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit", "field")
-    async def cmd_emsudo_edit_field(
+    @emsudo_edit.command(name="field")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_edit_field(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -3065,8 +3265,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3179,14 +3381,16 @@ class EmsudoCommand(BaseCommand):
         )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "edit", "fields")
-    async def cmd_emsudo_edit_fields(
+    @emsudo_edit.command(name="fields")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_edit_fields(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         data: Optional[Union[discord.Message, CodeBlock, String, bool]] = None,
     ):
@@ -3244,8 +3448,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3266,11 +3472,11 @@ class EmsudoCommand(BaseCommand):
         msg_embed = msg.embeds[0]
 
         if data is None or data is False:
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
 
         elif isinstance(data, String):
             if not data.string:
-                attachment_msg = self.invoke_msg
+                attachment_msg = ctx.message
             else:
                 raise BotException(
                     "Invalid arguments!",
@@ -3282,7 +3488,7 @@ class EmsudoCommand(BaseCommand):
 
         elif isinstance(data, discord.Message):
             if not snakecore.utils.have_permissions_in_channels(
-                self.author,
+                ctx.author,
                 data.channel,
                 "view_channel",
             ):
@@ -3440,14 +3646,16 @@ class EmsudoCommand(BaseCommand):
                 )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "replace", "field")
-    async def cmd_emsudo_replace_field(
+    @emsudo_replace.command(name="field")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_replace_field(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
         index: int,
         data: Union[CodeBlock, String],
@@ -3494,8 +3702,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3608,14 +3818,15 @@ class EmsudoCommand(BaseCommand):
         )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "swap", "fields")
-    async def cmd_emsudo_swap_fields(
-        self, msg: discord.Message, index_a: int, index_b: int
+    @emsudo_swap.command(name="fields")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_swap_fields(
+        self, ctx: commands.Context, msg: discord.Message, index_a: int, index_b: int
     ):
         """
         ->type More emsudo commands
@@ -3644,8 +3855,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3670,16 +3883,18 @@ class EmsudoCommand(BaseCommand):
         )
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "clone", "fields")
-    async def cmd_emsudo_clone_fields(
+    @emsudo_clone.command(name="fields")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_clone_fields(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *indices: Union[range, int],
+        *indices: Union[int, range],
         multi_indices: bool = False,
         clone_to: Optional[int] = None,
     ):
@@ -3722,8 +3937,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3766,16 +3983,18 @@ class EmsudoCommand(BaseCommand):
             raise BotException("Invalid field index/indices!", "")
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "remove", "fields")
-    async def cmd_emsudo_remove_fields(
+    @emsudo_remove.command(name="fields")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_remove_fields(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
-        *indices: Union[range, int],
+        *indices: Union[int, range],
         multi_indices: bool = False,
     ):
         """
@@ -3811,8 +4030,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3857,19 +4078,21 @@ class EmsudoCommand(BaseCommand):
             raise BotException("Invalid field index/indices!", "")
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("emsudo", "remove", "fields", "all")
-    async def cmd_emsudo_remove_fields_all(
+    @emsudo_remove.command(name="allfields")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def emsudo_remove_all_fields(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
     ):
         """
         ->type More emsudo commands
-        ->signature pg!emsudo remove fields all <message>
+        ->signature pg!emsudo remove allfields <message>
         ->description Remove all embed fields through the bot
         ->extended description
         Remove all embed fields of the embed of a message.
@@ -3885,8 +4108,10 @@ class EmsudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -3909,7 +4134,7 @@ class EmsudoCommand(BaseCommand):
         await msg.edit(embed=msg_embed)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass

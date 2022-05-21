@@ -3,14 +3,17 @@ This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
 Copyright (c) 2020-present PygameCommunityDiscord
 
-This file defines some constants and variables used across the whole codebase
+This file defines some constants and variables used across the whole codebase,
+as well as other small helpful constructs.
 """
 
+import asyncio
 import io
 import os
 from typing import Optional, Union
 
 import discord
+from discord.ext import commands
 import pygame
 
 from dotenv import load_dotenv
@@ -22,16 +25,35 @@ if os.path.isfile(".env"):
 Channel = Union[
     discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
 ]
-# For commonly used variables
-ints = discord.Intents.default()
-ints.members = True  # needed for on_member_join
-ints.message_content = True  # needed for message content
-bot = discord.Client(intents=ints)
-window = pygame.Surface((1, 1))  # This will later be redefined
-
 cmd_logs = {}
-global_task_set = set()  # prevents asyncio.Task objects from disappearing due
+global_task_set: set[
+    asyncio.Task
+] = set()  # prevents asyncio.Task objects from disappearing due
 # to reference loss, not to be modified manually
+
+
+def hold_task(task: asyncio.Task):
+    """Store an `asyncio.Task` object in a container to place a protective reference
+    on it in order to prevent its loss.
+
+    Args:
+        task (asyncio.Task): The task.
+    """
+    if task in global_task_set:
+        return
+
+    global_task_set.add(task)
+    task.add_done_callback(_global_task_set_remove_callback)
+
+
+def _global_task_set_remove_callback(task: asyncio.Task):
+    if task in global_task_set:
+        global_task_set.remove(task)
+
+    task.remove_done_callback(_global_task_set_remove_callback)
+
+
+recent_response_messages: dict[int, discord.Message] = {}
 
 # pygame community guild, or whichever is the 'primary' guild for the bot
 guild: Optional[discord.Guild] = None
@@ -74,7 +96,8 @@ if TEST_USER_ID is not None:
     TEST_USER_IDS.add(TEST_USER_ID)
 
 
-PREFIX = "pd!" if TEST_MODE else "pg!"
+COMMAND_PREFIX = "pd!" if TEST_MODE else "pg!"
+
 CMD_FUNC_PREFIX = "cmd_"
 
 BASIC_MAX_FILE_SIZE = 8_000_000  # bytes
@@ -98,6 +121,17 @@ WC_SCORING = (
     ("Guardian ⚜️", 15),
     ("Apprentice ⚜️", 1),
 )
+
+# For commonly used variables
+ints = discord.Intents.default()
+ints.members = True  # needed for on_member_join
+ints.message_content = True  # needed for message content
+bot = commands.Bot(
+    command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"),
+    intents=ints,
+    help_command=None,
+)
+window = pygame.Surface((1, 1))  # This will later be redefined
 
 
 class ServerConstants:
@@ -280,10 +314,10 @@ BOT_HELP_PROMPT = {
     "color": 0xFFFF00,
     "description": f"""
 Hey there, do you want to use {BOT_MENTION} ?
-My command prefix is `{PREFIX}`.
+My command prefix is `{COMMAND_PREFIX}`.
 If you want me to run your code, use Discord's code block syntax.
 Learn more about Discord code formatting **[HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
-If you want to know about a specifc command run {PREFIX}help [command], for example {PREFIX}help exec.
+If you want to know about a specifc command run {COMMAND_PREFIX}help [command], for example {COMMAND_PREFIX}help exec.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 }
 

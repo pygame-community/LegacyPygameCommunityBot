@@ -13,29 +13,30 @@ import random
 import time
 
 import discord
+from discord.ext import commands
 import pygame
 import snakecore
+from snakecore.command_handler.decorators import custom_parsing
 import unidecode
 
 from pgbot import common, db, emotion
 import pgbot
 from pgbot.commands.base import (
-    BaseCommand,
-    BotException,
-    String,
-    add_group,
-    fun_command,
+    BaseCommandCog,
 )
 from pgbot.commands.utils import vibecheck
+from pgbot.commands.utils.checks import fun_command
+from pgbot.exceptions import BotException
 
 
-class FunCommand(BaseCommand):
+class FunCommandCog(BaseCommandCog):
     """
-    Command class to handle "fun" commands.
+    Command cog defining "fun" commands.
     """
 
-    @fun_command
-    async def cmd_version(self):
+    @commands.command()
+    @fun_command()
+    async def version(self, ctx: commands.Context):
         """
         ->type Other commands
         ->signature pg!version
@@ -43,15 +44,19 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!version, to report bot version
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title="Current bot's version",
             description=f"`{common.__version__}`",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @fun_command
-    async def cmd_ping(self):
+    @commands.command()
+    @fun_command()
+    async def ping(self, ctx: commands.Context):
         """
         ->type Other commands
         ->signature pg!ping
@@ -59,28 +64,35 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!ping, to get ping
         """
-        timedelta = self.response_msg.created_at - self.invoke_msg.created_at
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        timedelta = response_message.created_at - ctx.message.created_at
         sec = timedelta.total_seconds()
-        sec2 = common.bot.latency  # This does not refresh that often
+        sec2 = self.bot.latency  # This does not refresh that often
         if sec < sec2:
             sec2 = sec
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             title=random.choice(("Pingy Pongy", "Pong!")),
             description=f"The bot's ping is `{snakecore.utils.format_time_by_units(sec, decimal_places=0)}`\n"
             f"The Discord API latency is `{snakecore.utils.format_time_by_units(sec2, decimal_places=0)}`",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @fun_command
-    @add_group("fontify")
-    async def cmd_fontify(self, msg: String):
+    @commands.group(invoke_without_command=True)
+    @fun_command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def fontify(self, ctx: commands.Context, msg: str):
         """
         ->type Play With Me :snake:
         ->signature pg!fontify <msg>
         ->description Display message in pygame font
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         fontified = ""
 
         emojis = ()
@@ -118,30 +130,30 @@ class FunCommand(BaseCommand):
             )
 
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
-            description=self.author.mention,
+            response_message,
+            description=ctx.author.mention,
             color=0x40E32D,
         )
 
-        await self.response_msg.edit(content=fontified)
+        await response_message.edit(content=fontified)
 
-    @fun_command
-    @add_group("fontify", "remove")
-    async def cmd_fontify_remove(self, reply: discord.Message):
+    fontify.command(name="remove")
+
+    @fun_command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
+    async def fontify_remove(self, ctx: commands.Context, reply: discord.Message):
         """
         ->type Play With Me :snake:
         ->signature pg!fontify remove
         ->description Delete your fontified message by replying to it
         """
 
-        # make typecheckers happy
-        if common.bot.user is None:
-            return
+        response_message = common.recent_response_messages[ctx.message.id]
 
         if (
-            reply.author.id != common.bot.user.id
+            reply.author.id != self.bot.user.id
             or not reply.embeds
-            or reply.embeds[0].description != self.author.mention
+            or reply.embeds[0].description != ctx.author.mention
         ):
             raise BotException(
                 "Could not execute comamnd", "Please reply to a fontified message"
@@ -149,13 +161,14 @@ class FunCommand(BaseCommand):
 
         await reply.delete()
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @fun_command
-    async def cmd_pet(self):
+    @commands.command()
+    @fun_command()
+    async def pet(self, ctx: commands.Context):
         """
         ->type Play With Me :snake:
         ->signature pg!pet
@@ -163,17 +176,20 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!pet, to pet the bot
         """
-        fname = "die.gif" if await emotion.get("anger") > 60 else "pet.gif"
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        fname = "pet.gif"
         await snakecore.utils.embed_utils.replace_embed_at(
-            self.response_msg,
+            response_message,
             color=common.DEFAULT_EMBED_COLOR,
             image_url="https://raw.githubusercontent.com/PygameCommunityDiscord/"
             + f"PygameCommunityBot/main/assets/images/{fname}",
         )
 
-        await emotion.update("happy", random.randint(10, 15))
-
-    async def cmd_vibecheck(self):
+    @commands.command()
+    @fun_command()
+    async def vibecheck(self, ctx: commands.Context):
         """
         ->type Play With Me :snake:
         ->signature pg!vibecheck
@@ -181,6 +197,9 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!vibecheck, to check the snek's emotion
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         async with db.DiscordDB("emotions") as db_obj:
             all_emotions = db_obj.get({})
 
@@ -205,7 +224,7 @@ class FunCommand(BaseCommand):
         file = discord.File(f"temp{t}.png")
 
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.errors.NotFound:
             # Message already deleted
             pass
@@ -220,12 +239,13 @@ class FunCommand(BaseCommand):
             "color": pgbot.utils.color_to_rgb_int(color),
         }
         embed = snakecore.utils.embed_utils.create_embed(**embed_dict)
-        await self.invoke_msg.reply(file=file, embed=embed, mention_author=False)
+        await ctx.message.reply(file=file, embed=embed, mention_author=False)
 
         os.remove(f"temp{t}.png")
 
-    @fun_command
-    async def cmd_sorry(self):
+    @commands.command()
+    @fun_command()
+    async def sorry(self, ctx: commands.Context):
         """
         ->type Play With Me :snake:
         ->signature pg!sorry
@@ -234,10 +254,13 @@ class FunCommand(BaseCommand):
         -----
         Implement pg!sorry, to ask forgiveness from the bot after bonccing it
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         anger = await emotion.get("anger")
         if not anger:
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 title="Ask forgiveness from snek?",
                 description="Snek is not angry. Awww, don't be sorry.",
                 color=common.DEFAULT_EMBED_COLOR,
@@ -247,7 +270,7 @@ class FunCommand(BaseCommand):
         num = random.randint(0, 20)
         if num:
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 title="Ask forgiveness from snek?",
                 description="Your pythonic lord accepts your apology.\n"
                 + f"Now go to code again.\nAnger level is {max(anger - num, 0)}",
@@ -256,7 +279,7 @@ class FunCommand(BaseCommand):
             await emotion.update("anger", -num)
         else:
             await snakecore.utils.embed_utils.replace_embed_at(
-                self.response_msg,
+                response_message,
                 title="Ask forgiveness from snek?",
                 description="How did you dare to boncc a snake?\nBold of you to"
                 + " assume I would apologize to you, two-feet-standing being!\n"

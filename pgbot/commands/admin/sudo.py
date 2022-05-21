@@ -16,26 +16,32 @@ import os
 from typing import Optional, Union
 
 import discord
+from discord.ext import commands
 import psutil
 import snakecore
 
 from pgbot import common
 import pgbot
-from pgbot.commands.base import BaseCommand, BotException, String, add_group
+from pgbot.commands.base import BaseCommandCog
+from pgbot.commands.utils.checks import admin_only_and_custom_parsing
+from pgbot.commands.utils.converters import String
+from pgbot.exceptions import BotException
 
 process = psutil.Process(os.getpid())
 
 
-class SudoCommand(BaseCommand):
+class SudoCommandCog(BaseCommandCog):
     """
     Base class for all sudo commands
     """
 
-    @add_group("sudo")
-    async def cmd_sudo(
+    @commands.group(invoke_without_command=True)
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo(
         self,
+        ctx: commands.Context,
         *datas: Union[discord.Message, String],
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         from_attachment: bool = True,
         mention: bool = False,
     ):
@@ -80,11 +86,13 @@ class SudoCommand(BaseCommand):
         Implement pg!sudo, for admins to send messages via the bot
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if destination is None:
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             destination,
             "view_channel",
             "send_messages",
@@ -97,7 +105,7 @@ class SudoCommand(BaseCommand):
         for i, data in enumerate(datas):
             if isinstance(data, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     data.channel,
                     "view_channel",
                 ):
@@ -132,19 +140,19 @@ class SudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
             attachment_msg = None
 
             if isinstance(data, String):
                 if not data.string:
-                    attachment_msg = self.invoke_msg
+                    attachment_msg = ctx.message
                 else:
-                    msg_text = data.string
+                    msg_text = data
                     output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     data.channel,
                     "view_channel",
                 ):
@@ -202,7 +210,7 @@ class SudoCommand(BaseCommand):
 
         if not datas:
             data_count = 1
-            attachment_msg = self.invoke_msg
+            attachment_msg = ctx.message
             if not attachment_msg.attachments:
                 raise BotException(
                     "No valid attachment found in message.",
@@ -244,7 +252,7 @@ class SudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         allowed_mentions = (
             discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
@@ -276,24 +284,27 @@ class SudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete(delay=10.0 if data_count > 2 else 0.0)
+            await ctx.message.delete()
+            await response_message.delete(delay=10.0 if data_count > 2 else 0.0)
         except discord.NotFound:
             pass
 
-    @add_group("sudo", "edit")
-    async def cmd_sudo_edit(
+    @sudo.command(name="edit")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo_edit(
         self,
+        ctx: commands.Context,
         msg: discord.Message,
+        *,
         data: Union[discord.Message, String],
         from_attachment: bool = True,
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_edit <msg> <data> [from_attachment=True]
+        ->signature pg!sudo edit <msg> <data> [from_attachment=True]
         ->description Replace a message that the bot sent
         ->extended description
         Replace the text content of a message using the given attributes.
@@ -323,8 +334,10 @@ class SudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             msg.channel,
             "view_channel",
             "send_messages",
@@ -337,7 +350,7 @@ class SudoCommand(BaseCommand):
         elif isinstance(
             data, discord.Message
         ) and not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             data.channel,
             "view_channel",
         ):
@@ -349,11 +362,11 @@ class SudoCommand(BaseCommand):
         attachment_msg: Optional[discord.Message] = None
         msg_text = ""
 
-        if isinstance(data, String):
-            if not data.string:
-                attachment_msg = self.invoke_msg
+        if isinstance(data, str):
+            if not data:
+                attachment_msg = ctx.message
             else:
-                msg_text = data.string
+                msg_text = data
 
         elif isinstance(data, discord.Message):
             if from_attachment:
@@ -403,14 +416,16 @@ class SudoCommand(BaseCommand):
                 "An exception occured while handling the command!", e.args[0]
             )
         try:
-            await self.invoke_msg.delete()
-            await self.response_msg.delete()
+            await ctx.message.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("sudo", "swap")
-    async def cmd_sudo_swap(
+    @sudo.command(name="swap")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo_swap(
         self,
+        ctx: commands.Context,
         msg_a: discord.Message,
         msg_b: discord.Message,
         embeds: bool = True,
@@ -424,11 +439,11 @@ class SudoCommand(BaseCommand):
 
         __Args__:
             `message_a: (Message)`
-            > A discord message whose embed
+            > A discord message whose contents
             > should be swapped with that of `message_b`.
 
             `message_b: (Message)`
-            > Another discord message whose embed
+            > Another discord message whose contents
             > should be swapped with that of `message_a`.
 
             `embeds: (bool) = True`
@@ -443,14 +458,11 @@ class SudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
-            msg_a.channel,
-            "view_channel",
-            "send_messages",
-        ) or not snakecore.utils.have_permissions_in_channels(
-            self.author,
-            msg_b.channel,
+            ctx.author,
+            (msg_a.channel, msg_b.channel),
             "view_channel",
             "send_messages",
         ):
@@ -470,10 +482,10 @@ class SudoCommand(BaseCommand):
                 "Not enough data found in one or more of the given messages.",
             )
 
-        elif common.bot.user.id not in (msg_a.author.id, msg_b.author.id):
+        elif self.bot.user.id not in (msg_a.author.id, msg_b.author.id):
             raise BotException(
                 "Cannot execute command:",
-                f"Both messages must have been authored by me, {common.bot.user.mention}.",
+                f"Both messages must have been authored by me, {self.bot.user.mention}.",
             )
 
         msg_embed_a = msg_a.embeds[0] if msg_a.embeds else None
@@ -490,15 +502,17 @@ class SudoCommand(BaseCommand):
             await msg_b.edit(content=msg_content_a)
 
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("sudo", "get")
-    async def cmd_sudo_get(
+    @sudo.command(name="get")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo_get(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         as_attachment: bool = False,
         attachments: bool = True,
         embeds: bool = True,
@@ -507,7 +521,7 @@ class SudoCommand(BaseCommand):
     ):
         """
         ->type More admin commands
-        ->signature pg!sudo_get <*messages> [destination=] [as_attachment=False] [attachments=True]
+        ->signature pg!sudo get <*messages> [destination=] [as_attachment=False] [attachments=True]
         [embeds=True] [info=False] [author_info=False]
         ->description Get the text of messages through the bot
         ->extended description
@@ -560,11 +574,14 @@ class SudoCommand(BaseCommand):
             > `HTTPException`: An invalid operation was blocked by Discord.
         -----
         """
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not isinstance(destination, discord.TextChannel):
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author, destination, "view_channel", "send_messages"
+            ctx.author, destination, "view_channel", "send_messages"
         ):
             raise BotException(
                 "Not enough permissions",
@@ -575,7 +592,7 @@ class SudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     "view_channel",
                 ):
@@ -615,18 +632,23 @@ class SudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.typing()
 
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
             if attachments:
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.BASIC_MAX_FILE_SIZE
+                )
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
                     attached_files = [
                         (
                             await a.to_file(spoiler=a.is_spoiler())
-                            if a.size <= self.filesize_limit
+                            if a.size <= filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
                         for a in msg.attachments
@@ -681,7 +703,7 @@ class SudoCommand(BaseCommand):
                         )
                 else:
                     await snakecore.utils.embed_utils.send_embed(
-                        self.channel,
+                        ctx.channel,
                         author_name="Message data",
                         description="```\n{0}```".format(escaped_msg_content),
                         fields=[
@@ -695,7 +717,7 @@ class SudoCommand(BaseCommand):
 
             if attached_files:
                 for i in range(len(attached_files)):
-                    await self.channel.send(
+                    await ctx.channel.send(
                         content=f"**Message attachment** ({i+1}):",
                         file=attached_files[i],
                     )
@@ -714,7 +736,7 @@ class SudoCommand(BaseCommand):
                     embed_data_fobjs.append(embed_data_fobj)
 
                 for i in range(len(embed_data_fobjs)):
-                    await self.channel.send(
+                    await ctx.channel.send(
                         content=f"**Message embed** ({i+1}):",
                         file=discord.File(
                             embed_data_fobjs[i], filename="embeddata.json"
@@ -737,16 +759,18 @@ class SudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+            await response_message.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass
 
-    @add_group("sudo", "fetch")
-    async def cmd_sudo_fetch(
+    @sudo.command(name="fetch")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo_fetch(
         self,
+        ctx: commands.Context,
         origin: discord.TextChannel,
         quantity: int,
         channel_ids: bool = False,
@@ -769,8 +793,10 @@ class SudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not snakecore.utils.have_permissions_in_channels(
-            self.author,
+            ctx.author,
             origin,
             "view_channel",
         ):
@@ -781,7 +807,7 @@ class SudoCommand(BaseCommand):
 
         prefix, sep, suffix = prefix.string, sep.string, suffix.string
         output_str = prefix
-        destination = self.channel
+        destination = ctx.channel
 
         if pinned:
             messages = await origin.pins()
@@ -937,15 +963,17 @@ class SudoCommand(BaseCommand):
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
         try:
-            await self.response_msg.delete()
+            await response_message.delete()
         except discord.NotFound:
             pass
 
-    @add_group("sudo", "clone")
-    async def cmd_sudo_clone(
+    @sudo.command(name="clone")
+    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
+    async def sudo_clone(
         self,
+        ctx: commands.Context,
         *msgs: discord.Message,
-        destination: Optional[common.Channel] = None,
+        destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         embeds: bool = True,
         attachments: bool = True,
         as_spoiler: bool = False,
@@ -1017,11 +1045,13 @@ class SudoCommand(BaseCommand):
         -----
         """
 
+        response_message = common.recent_response_messages[ctx.message.id]
+
         if not isinstance(destination, discord.TextChannel):
-            destination = self.channel
+            destination = ctx.channel
 
         if not snakecore.utils.have_permissions_in_channels(
-            self.author, destination, "view_channel", "send_messages"
+            ctx.author, destination, "view_channel", "send_messages"
         ):
             raise BotException(
                 "Not enough permissions",
@@ -1032,7 +1062,7 @@ class SudoCommand(BaseCommand):
         for i, msg in enumerate(msgs):
             if msg.channel not in checked_channels:
                 if not snakecore.utils.have_permissions_in_channels(
-                    self.author,
+                    ctx.author,
                     msg.channel,
                     "view_channel",
                 ):
@@ -1073,17 +1103,22 @@ class SudoCommand(BaseCommand):
                     ),
                 )
 
-                await self.response_msg.edit(embed=load_embed)
+                await response_message.edit(embed=load_embed)
 
             await destination.typing()
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.BASIC_MAX_FILE_SIZE
+                )
                 with io.StringIO("This file was too large to be cloned.") as fobj:
                     attached_files = [
                         (
-                            await a.to_file(spoiler=a.is_spoiler() or as_spoiler)
-                            if a.size <= self.filesize_limit
+                            ((await a.to_file(spoiler=as_spoiler)) if as_spoiler else a)
+                            if a.size <= filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
                         for a in msg.attachments
@@ -1120,31 +1155,21 @@ class SudoCommand(BaseCommand):
                         )
 
                     await destination.send(
-                        embed=msg.embeds[0] if msg.embeds and embeds else None,
-                        file=attached_files[0] if attached_files else None,
+                        embeds=msg.embeds if embeds else None,
+                        files=attached_files if attachments else None,
                     )
                 else:
                     cloned_msg = await destination.send(
                         content=msg.content,
-                        embed=msg.embeds[0] if msg.embeds and embeds else None,
-                        file=attached_files[0] if attached_files else None,
+                        embeds=msg.embeds if embeds else None,
+                        files=attached_files if attachments else None,
                         allowed_mentions=no_mentions,
                     )
             elif not skip_empty:
                 raise BotException("Cannot clone an empty message!", "")
 
-            for i in range(1, len(attached_files)):
-                await self.channel.send(
-                    file=attached_files[i],
-                )
-
-            for i in range(1, len(msg.embeds)):
-                await self.channel.send(
-                    embed=msg.embeds[i],
-                )
-
             if info:
-                await self.channel.send(
+                await ctx.channel.send(
                     embed=pgbot.utils.embed_utils.get_msg_info_embed(
                         msg, author=author_info
                     ),
@@ -1164,9 +1189,9 @@ class SudoCommand(BaseCommand):
                 ),
             )
 
-            await self.response_msg.edit(embed=load_embed)
+            await response_message.edit(embed=load_embed)
 
         try:
-            await self.response_msg.delete(delay=10 if msg_count > 2 else 0)
+            await response_message.delete(delay=10 if msg_count > 2 else 0)
         except discord.NotFound:
             pass

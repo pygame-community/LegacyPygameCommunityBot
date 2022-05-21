@@ -7,9 +7,9 @@ This file defines some important utility functions.
 """
 
 from __future__ import annotations
-
 import asyncio
-from typing import Callable, Iterable, Sequence, Union, Optional
+from typing import Optional, Sequence, Union
+
 
 import discord
 import pygame

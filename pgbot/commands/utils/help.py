@@ -12,6 +12,7 @@ import re
 import typing
 
 import discord
+from discord.ext import commands
 import snakecore
 
 from pgbot import common
@@ -70,6 +71,7 @@ def get_doc_from_func(func: typing.Callable):
 
 
 async def send_help_message(
+    ctx: commands.Context,
     original_msg: discord.Message,
     invoker: discord.Member,
     commands: tuple[str, ...],
@@ -218,21 +220,34 @@ async def send_help_message(
             color=0xFF0000,
         )
 
+    footer_text = (
+        f"Refresh this by replying with `{common.COMMAND_PREFIX}refresh`.\ncmd: help"
+    )
+
+    raw_command_input: str = getattr(ctx, "raw_command_input", "")
+    # attribute injected by snakecore's custom parser
+
+    if raw_command_input:
+        footer_text += f" | args: {raw_command_input}"
+
     msg_embeds = [
         snakecore.utils.embed_utils.create_embed(
             color=common.BOT_HELP_PROMPT["color"],
-            footer_text=f"Command: help {' '.join(commands)}",
+            footer_text=footer_text,
         )
     ]
 
     original_msg = await original_msg.edit(embeds=msg_embeds)
 
-    await snakecore.utils.pagination.EmbedPaginator(
-        original_msg,
-        *embeds,
-        caller=invoker,
-        whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-        start_page_number=page,
-        inactivity_timeout=60,
-        theme_color=common.BOT_HELP_PROMPT["color"],
-    ).mainloop()
+    try:
+        await snakecore.utils.pagination.EmbedPaginator(
+            original_msg,
+            *embeds,
+            caller=invoker,
+            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+            start_page_number=page,
+            inactivity_timeout=60,
+            theme_color=common.BOT_HELP_PROMPT["color"],
+        ).mainloop()
+    except discord.HTTPException:
+        pass
