@@ -188,7 +188,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
                 target_message,
                 ctx.author,
                 emoji="🗑",
-                role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                role_whitelist=common.GuildConstants.ADMIN_ROLES,
                 timeout=30,
             )
         )

@@ -28,4 +28,4 @@ TEST_USER_ID = 1234567890 # your discord ID
 
 ## Running the bot on your server
 
-- In addition to the above steps, if you want to get the bot started on your own server, you'd need to make some code changes, in the `common.py` file, you would either need to set the bot on "generic" mode, where the server specific features are disabled, or alternatively, rewrite `ServerConstants` class, but with the constants from your server. Don't forget to revert these changes when you send us a PR!
+- In addition to the above steps, if you want to get the bot started on your own server, you'd need to make some code changes, in the `common.py` file, you would either need to set the bot on "generic" mode, where the server specific features are disabled, or alternatively, rewrite `GuildConstants` class, but with the constants from your server. Don't forget to revert these changes when you send us a PR!

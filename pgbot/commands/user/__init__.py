@@ -431,7 +431,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                         response_message,
                         ctx.author,
                         emoji="🗑",
-                        role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                        role_whitelist=common.GuildConstants.ADMIN_ROLES,
                         timeout=30,
                     )
                 )

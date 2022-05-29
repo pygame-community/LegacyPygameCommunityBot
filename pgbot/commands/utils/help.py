@@ -93,7 +93,7 @@ async def send_help_message(
     embeds = []
 
     is_admin = any(
-        role.id in common.ServerConstants.ADMIN_ROLES
+        role.id in common.GuildConstants.ADMIN_ROLES
         for role in getattr(invoker, "roles", ())
     )
 
@@ -249,7 +249,7 @@ async def send_help_message(
             original_msg,
             *embeds,
             caller=invoker,
-            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+            whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
             start_page_number=page,
             inactivity_timeout=60,
             theme_color=common.BOT_HELP_PROMPT["color"],

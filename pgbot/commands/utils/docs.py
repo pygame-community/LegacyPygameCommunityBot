@@ -38,7 +38,6 @@ import pygame_gui
 import snakecore
 
 from pgbot import common
-import pgbot
 
 doc_module_tuple = (
     asyncio,
@@ -274,7 +273,7 @@ async def put_doc(
         original_msg,
         *main_embeds,
         caller=msg_invoker,
-        whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+        whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
         start_page_number=page,
         inactivity_timeout=60,
         theme_color=common.DEFAULT_EMBED_COLOR,

@@ -56,6 +56,7 @@ async def _init():
     Startup call helper for pygame bot
     """
 
+    common.BOT_MENTION = common.bot.user.mention
     await snakecore.init(global_client=common.bot)
     await load_startup_extensions(common.bootstrap.get("extensions", []))
 
@@ -67,39 +68,39 @@ async def _init():
     print("The PygameCommunityBot is now online!")
     print("Server(s):")
 
-    for server in common.bot.guilds:
+    for guild in common.bot.guilds:
         prim = ""
 
         if common.guild is None and (
-            common.GENERIC or server.id == common.ServerConstants.SERVER_ID
+            common.GENERIC or guild.id == common.GuildConstants.PRIMARY_GUILD_ID
         ):
             prim = "| Primary Guild"
-            common.guild = server
+            common.guild = guild
 
-        print(" -", server.name, "| Number of channels:", len(server.channels), prim)
+        print(" -", guild.name, "| Number of channels:", len(guild.channels), prim)
         if common.GENERIC:
             continue
 
-        for channel in server.channels:
-            if channel.id == common.ServerConstants.DB_CHANNEL_ID:
+        for channel in guild.channels:
+            if channel.id == common.GuildConstants.DB_CHANNEL_ID:
                 if not common.TEST_MODE:
                     snakecore.config.conf.db_channel = common.db_channel = channel
                 await snakecore.db.init_discord_db()
-            elif channel.id == common.ServerConstants.LOG_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.LOG_CHANNEL_ID:
                 common.log_channel = channel
-            elif channel.id == common.ServerConstants.ARRIVALS_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.ARRIVALS_CHANNEL_ID:
                 common.arrivals_channel = channel
-            elif channel.id == common.ServerConstants.GUIDE_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.GUIDE_CHANNEL_ID:
                 common.guide_channel = channel
-            elif channel.id == common.ServerConstants.ROLES_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.ROLES_CHANNEL_ID:
                 common.roles_channel = channel
-            elif channel.id == common.ServerConstants.ENTRIES_DISCUSSION_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["discussion"]:
                 common.entries_discussion_channel = channel
-            elif channel.id == common.ServerConstants.CONSOLE_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.CONSOLE_CHANNEL_ID:
                 common.console_channel = channel
-            elif channel.id == common.ServerConstants.RULES_CHANNEL_ID:
+            elif channel.id == common.GuildConstants.RULES_CHANNEL_ID:
                 common.rules_channel = channel
-            for key, value in common.ServerConstants.ENTRY_CHANNEL_IDS.items():
+            for key, value in common.GuildConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
@@ -284,7 +285,7 @@ async def message_delete(msg: discord.Message):
 
     if msg.channel in common.entry_channels.values():
         if (
-            msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]
+            msg.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]
             and msg.id in common.entry_message_deletion_dict
         ):  # for case where user deletes their bad entry by themselves
             deletion_data_list = common.entry_message_deletion_dict[msg.id]
@@ -334,7 +335,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
     if new.channel in common.entry_channels.values():
         embed_repost_edited = False
-        if new.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
+        if new.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
             if not entry_message_validity_check(new):
                 if new.id in common.entry_message_deletion_dict:
                     deletion_data_list = common.entry_message_deletion_dict[new.id]
@@ -467,7 +468,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     except discord.HTTPException:
         return
 
-    if not msg.embeds or common.UNIQUE_POLL_MSG not in str(msg.embeds[0].footer.text):
+    if not msg.embeds or common.UNIQUE_POLL_MSG not in msg.embeds[0].footer.text:
         return
 
     for reaction in msg.reactions:
@@ -516,7 +517,7 @@ async def handle_message(msg: discord.Message):
             return
 
         if msg.channel in common.entry_channels.values():
-            if msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
+            if msg.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
                 if not entry_message_validity_check(msg):
                     deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=2
@@ -539,17 +540,13 @@ async def handle_message(msg: discord.Message):
 
                 entry_type = "showcase"
                 color = 0xFF8800
-            else:
-                entry_type = "resource"
-                color = 0x0000AA
-
-            title, fields = format_entries_message(msg, entry_type)
-            await snakecore.utils.embed_utils.send_embed(
-                common.entries_discussion_channel,
-                title=title,
-                color=color,
-                fields=fields,
-            )
+                title, fields = format_entries_message(msg, entry_type)
+                await snakecore.utils.embed_utils.send_embed(
+                    common.entries_discussion_channel,
+                    title=title,
+                    color=color,
+                    fields=fields,
+                )
 
 
 def cleanup(*_):

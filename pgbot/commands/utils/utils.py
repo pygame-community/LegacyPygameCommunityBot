@@ -26,9 +26,9 @@ def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):
 
     if not common.GENERIC:
         for role in mem.roles:
-            if role.id in common.ServerConstants.ADMIN_ROLES:
+            if role.id in common.GuildConstants.ADMIN_ROLES:
                 return True, True
-            elif role.id in common.ServerConstants.PRIV_ROLES:
+            elif role.id in common.GuildConstants.PRIV_ROLES:
                 is_priv = True
 
     return False, is_priv

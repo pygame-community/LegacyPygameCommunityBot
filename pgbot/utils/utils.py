@@ -75,7 +75,7 @@ async def give_wc_roles(member: discord.Member, score: int):
     Updates the WC roles of a member based on their latest total score
     """
     got_role: bool = False
-    for min_score, role_id in common.ServerConstants.WC_ROLES:
+    for min_score, role_id in common.GuildConstants.WC_ROLES:
         if score >= min_score and not got_role:
             # This is the role to give
             got_role = True

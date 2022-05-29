@@ -42,7 +42,7 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     else:
         member_joined_at_info = "*Joined On*: \n> `...`\n\n"
 
-    divider_roles = {} if common.GENERIC else common.ServerConstants.DIVIDER_ROLES
+    divider_roles = {} if common.GENERIC else common.GuildConstants.DIVIDER_ROLES
 
     member_func_role_count = (
         max(

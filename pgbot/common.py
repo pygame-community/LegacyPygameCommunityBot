@@ -137,16 +137,16 @@ bot = snakecore.command_handler.Bot(
 window = pygame.Surface((1, 1))  # This will later be redefined
 
 
-class ServerConstants:
+class GuildConstants:
     """
-    Class of all server constants. If you ever want to make a copy of the bot
+    Namespace class of all primary guild constants. If you ever want to make a copy of the bot
     run on your own server on non-generic mode, replicate this class, but
     with the constants from your server
     """
 
-    BOT_ID = 772788653326860288
+    PYGAME_COMMUNITY_BOT_ID = 772788653326860288
 
-    SERVER_ID = 772505616680878080
+    PRIMARY_GUILD_ID = 772505616680878080
 
     RULES_CHANNEL_ID = 772509621747187712
     ROLES_CHANNEL_ID = 772535163195228200
@@ -156,10 +156,8 @@ class ServerConstants:
     CONSOLE_CHANNEL_ID = 851123656880816138
     ENTRY_CHANNEL_IDS = {
         "showcase": 772507247540437032,
-        "resource": 810516093273768016,
+        "discussion": 780351772514058291,
     }
-    ENTRIES_DISCUSSION_CHANNEL_ID = 780351772514058291
-
     # eval is a pretty dangerous command, so grant it only for Admins and Senior Mages
     EVAL_ROLES = {772521884373614603, 772849669591400501}
 
@@ -193,14 +191,6 @@ class ServerConstants:
         819537779847200809,
     )
 
-    # NOTE: It is hardcoded in the bot to remove some messages in resource-entries,
-    #       if you want to remove more, add the ID to the set below
-    MSGS_TO_FILTER = {
-        817137523905527889,
-        810942002114986045,
-        810942043488256060,
-    }
-
     # Database channel
     DB_CHANNEL_ID = 838090567682490458
 
@@ -212,9 +202,6 @@ class ServerConstants:
         (1, 889168765479178240),  # Apprentice
     )
 
-
-# Link to pygame snake logo
-GUILD_ICON = "https://media.discordapp.net/attachments/793272780987826197/836600713672523826/Discord_Server_Animated_Logo_V5_512x512.gif"
 
 BOT_WELCOME_MSG = {
     "greet": (
@@ -293,24 +280,7 @@ ILLEGAL_ATTRIBUTES = (
     "__dict__",
 )
 
-DEAD_CHAT_TRIGGERS = {
-    "the chat is dead",
-    "the chat is ded",
-    "this chat is dead",
-    "this is a ded chat",
-    "this is a dead chat",
-    "chat dead",
-    "chat ded",
-    "chatded",
-    "chatdead",
-    "dead chat",
-    "ded chat",
-    "dedchat",
-    "this chat ded",
-    "this chat dead",
-}
-
-BOT_MENTION = "the bot" if GENERIC else f"<@!{ServerConstants.BOT_ID}>"
+BOT_MENTION = "the bot" if GENERIC else f"<@!{GuildConstants.PYGAME_COMMUNITY_BOT_ID}>"
 
 BOT_HELP_PROMPT = {
     "title": "Help",
@@ -323,52 +293,3 @@ Learn more about Discord code formatting **[HERE](https://discord.com/channels/7
 If you want to know about a specifc command run {COMMAND_PREFIX}help [command], for example {COMMAND_PREFIX}help exec.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
 }
-
-BYDARIO_QUOTE = """
-> Yea, if is dead bring it back to life or let it rest in peace
-> When you are death ppl dont go to your tomb and say: dead person
-> I know because I am dead and noone comes to visit me
-<@!691691416799150152>
-"""
-
-SHAKESPEARE_QUOTES = (
-    """
-To be, or not to be, that is the question
-— SHAKESPEARE, _Hamlet_, Act 3 Scene 1, lines 56-83; Hamlet
-""",
-    """
-All the world's a stage,
-And all the men and women merely players
-— SHAKESPEARE, _As You Like It_, Act 2 Scene 7, lines 139-40; Jacques to Duke Senior and his companions
-""",
-    """
-We are such stuff
-As dreams are made on;
-and our little life
-Is rounded with a sleep
-— SHAKESPEARE, _The Tempest_, Act 4 Scene 1, lines 156-58; Prospero to Miranda and Ferdinand
-""",
-    """
-Out, out brief candle!
-Life's but a walking shadow, a poor player,
-That struts and frets his hour upon the stage.
-— SHAKESPEARE, _Macbeth_, Act 5 Scene 5, Lines 23-25; Macbeth to Seyton
-""",
-    """
-Be not afraid of greatness. Some are born great, some achieve greatness, and some have greatness thrust upon 'em.
-— SHAKESPEARE, _Twelfth Night_, Act 2 Scene 5, Lines 139-41; Malvolio
-""",
-    """
-When we are born we cry that we are come
-To this great stage of fools
-— SHAKESPEARE, _King Lear_, Act 4 Scene 6, lines 178-79; King Lear to Gloucester
-""",
-    """
-The web of our life is of a mingled yarn, good and ill together
-— SHAKESPEARE, _All's Well That Ends Well_, Act 4 Scene 3, lines 68-69; One lord to another
-""",
-    """
-You cannot, sir, take from me anything that I will not more willingly part withal - except my life, except my life, except my life
-— SHAKESPEARE, _Hamlet_, Act 2 Scene 2, lines 213-17; Hamlet
-""",
-)

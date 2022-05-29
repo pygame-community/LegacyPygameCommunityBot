@@ -56,9 +56,9 @@ class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
 
         fields = []
         for rule in sorted(set(rules)):
-            if 0 < rule <= len(common.ServerConstants.RULES):
+            if 0 < rule <= len(common.GuildConstants.RULES):
                 msg = await common.rules_channel.fetch_message(
-                    common.ServerConstants.RULES[rule - 1]
+                    common.GuildConstants.RULES[rule - 1]
                 )
                 value = msg.content
 
@@ -96,7 +96,7 @@ class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
             await snakecore.utils.embed_utils.replace_embed_at(
                 response_message,
                 author_name="Pygame Community",
-                author_icon_url=common.GUILD_ICON,
+                author_icon_url=common.guild.icon.url,
                 title=fields[0]["name"],
                 description=fields[0]["value"][:2048],
                 color=0x228B22,
@@ -108,7 +108,7 @@ class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
             await snakecore.utils.embed_utils.replace_embed_at(
                 response_message,
                 author_name="Pygame Community",
-                author_icon_url=common.GUILD_ICON,
+                author_icon_url=common.guild.icon.url,
                 title="Rules",
                 fields=fields,
                 color=0x228B22,
@@ -164,194 +164,3 @@ class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         await docs.put_doc(ctx, name, response_message, ctx.author, page=page)
-
-    @commands.command()
-    @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def resources(
-        self,
-        ctx: commands.Context,
-        limit: Optional[int] = None,
-        filter_tag: Optional[String] = None,
-        filter_members: Optional[tuple[discord.Object, ...]] = None,
-        oldest_first: bool = False,
-        page: int = 1,
-    ):
-        """
-        ->type Get help
-        ->signature pg!resources [limit] [filter_tag] [filter_members] [oldest_first]
-        ->description Browse through resources.
-        ->extended description
-        pg!resources takes in additional arguments, though they are optional.
-        `oldest_first`: Set oldest_first to True to browse through the oldest resources
-        `limit=[num]`: Limits the number of resources to the number
-        `filter_tag=[tag]`: Includes only the resources with that tag(s)
-        `filter_members=[members]`: Includes only the resources posted by those user(s). Can be a tuple of users
-        ->example command pg!resources limit=5 oldest_first=True filter_tag="python, gamedev" filter_member=444116866944991236
-        """
-
-        # needed for typecheckers to know that ctx.author is a member
-        if isinstance(ctx.author, discord.User):
-            return
-
-        response_message = common.recent_response_messages[ctx.message.id]
-
-        if common.GENERIC:
-            raise BotException(
-                "Cannot execute command!",
-                "This command cannot be exected when the bot is on generic mode",
-            )
-
-        def process_tag(tag: str):
-            for to_replace in ("tag_", "tag-", "<", ">", "`"):
-                tag = tag.replace(to_replace, "")
-            return tag.title()
-
-        resource_entries_channel = common.entry_channels["resource"]
-
-        # Retrieves all messages inside resource entries channel
-        msgs: list[discord.Message] = []
-        async for msg in resource_entries_channel.history(oldest_first=oldest_first):
-            if msg.id not in common.ServerConstants.MSGS_TO_FILTER:
-                msgs.append(msg)
-
-        if filter_tag:
-            # Filter messages based on tag
-            for tag in map(str.strip, filter_tag.string.split(",")):
-                tag = tag.lower()
-                msgs = list(
-                    filter(
-                        lambda x: f"tag_{tag}" in x.content.lower()
-                        or f"tag-<{tag}>" in x.content.lower(),
-                        msgs,
-                    )
-                )
-
-        if filter_members:
-            filter_member_ids = [obj.id for obj in filter_members]
-            msgs = list(filter(lambda x: x.author.id in filter_member_ids, msgs))
-
-        if limit is not None:
-            # Uses list slicing instead of TextChannel.history's limit param
-            # to include all param specified messages
-            msgs = msgs[:limit]
-
-        tags = {}
-        old_tags = {}
-        links = {}
-        for msg in msgs:
-            # Stores the tags (tag_{Your tag here}), old tags (tag-<{your tag here}>),
-            # And links inside separate dicts with regex
-            links[msg.id] = [
-                match.group()
-                for match in re.finditer("http[s]?://(www.)?[^ \n]+", msg.content)
-            ]
-            tags[msg.id] = [
-                f"`{process_tag(match.group())}` "
-                for match in re.finditer("tag_.+", msg.content.lower())
-            ]
-            old_tags[msg.id] = [
-                f"`{process_tag(match.group())}` "
-                for match in re.finditer("tag-<.+>", msg.content.lower())
-            ]
-
-        pages = []
-        copy_msgs = msgs[:]
-        i = 1
-        while msgs:
-            # Constructs embeds based on messages, and store them in pages to
-            # be used in the paginator
-            top_msg = msgs[:6]
-            if len(copy_msgs) > 1:
-                title = (
-                    f"Retrieved {len(copy_msgs)} entries in "
-                    f"#{resource_entries_channel.name}"
-                )
-            else:
-                title = (
-                    f"Retrieved {len(copy_msgs)} entry in "
-                    f"#{resource_entries_channel.name}"
-                )
-            current_embed = discord.Embed(title=title)
-
-            # Cycles through the top 6 messages
-            for msg in top_msg:
-                try:
-                    name = msg.content.split("\n")[1].strip().replace("**", "")
-                    if not name:
-                        continue
-
-                    field_name = f"{i}. {name}, posted by {msg.author.display_name}"
-                    # If the field name is > 256 (discord limit), shorten it
-                    # with list slicing
-                    field_name = f"{field_name[:253]}..."
-
-                    value = msg.content.split(name)[1].removeprefix("**").strip()
-                    # If the preview of the resources > 80, shorten it with list slicing
-                    value = f"{value[:80]}..."
-                    value += f"\n\nLinks: **[Message]({msg.jump_url})**"
-
-                    for j, link in enumerate(links[msg.id], 1):
-                        value += f", [Link {j}]({link})"
-
-                    value += "\nTags: "
-                    if tags[msg.id]:
-                        value += "".join(tags[msg.id]).removesuffix(",")
-                    elif old_tags[msg.id]:
-                        value += "".join(old_tags[msg.id]).removesuffix(",")
-                    else:
-                        value += "None"
-
-                    current_embed.add_field(
-                        name=field_name,
-                        value=f"{value}\n{common.ZERO_SPACE}",
-                        inline=True,
-                    )
-                    i += 1
-                except IndexError:
-                    # Suppresses IndexError because of rare bug
-                    pass
-
-            pages.append(current_embed)
-            msgs = msgs[6:]
-
-        if not pages:
-            raise BotException(
-                f"Retrieved 0 entries in #{resource_entries_channel.name}",
-                "There are no results of resources with those parameters. "
-                "Please try again.",
-            )
-
-        footer_text = (
-            "Refresh this by replying with "
-            f"`{common.COMMAND_PREFIX}refresh`.\ncmd: resources"
-        )
-
-        raw_command_input: str = getattr(ctx, "raw_command_input", "")
-        # attribute injected by snakecore's custom parser
-
-        if raw_command_input:
-            footer_text += f" | args: {raw_command_input}"
-
-        msg_embeds = [
-            snakecore.utils.embed_utils.create_embed(
-                color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
-            )
-        ]
-
-        target_message = await response_message.edit(embeds=msg_embeds)
-
-        # Creates a paginator for the caller to use
-        paginator = snakecore.utils.pagination.EmbedPaginator(
-            target_message,
-            *pages,
-            caller=ctx.author,
-            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
-            start_page_number=page,
-            inactivity_timeout=60,
-            theme_color=common.DEFAULT_EMBED_COLOR,
-        )
-
-        try:
-            await paginator.mainloop()
-        except discord.HTTPException:
-            pass

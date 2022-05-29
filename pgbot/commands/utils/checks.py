@@ -36,7 +36,7 @@ def _admin_only_predicate(ctx: commands.Context):
         raise commands.NoPrivateMessage()
 
     if any(
-        role.id in common.ServerConstants.ADMIN_ROLES
+        role.id in common.GuildConstants.ADMIN_ROLES
         for role in getattr(ctx.author, "roles", ())
     ):
         return True

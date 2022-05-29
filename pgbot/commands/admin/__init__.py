@@ -21,11 +21,10 @@ from discord.ext import commands
 import psutil
 import snakecore
 
-from pgbot import common, db
+from pgbot import common
 import pgbot
 from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
-from pgbot.commands.user import UserCommandCog
 from pgbot.commands.utils.checks import admin_only, admin_only_and_custom_parsing
 from pgbot.commands.utils.cogs import CommandUtilsCog
 from pgbot.commands.utils.converters import (
@@ -111,7 +110,7 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
             title="Tables:",
-            description="\n".join(db.db_obj_cache),
+            description="\n".join(snakecore.db.DiscordDB._db_records.keys()),
             color=common.DEFAULT_EMBED_COLOR,
         )
 
@@ -165,7 +164,7 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
 
         evalable = False
         for role in ctx.author.roles:
-            if role.id in common.ServerConstants.EVAL_ROLES:
+            if role.id in common.GuildConstants.EVAL_ROLES:
                 evalable = True
 
         if common.TEST_MODE and ctx.author.id in common.TEST_USER_IDS:
@@ -362,7 +361,7 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
 
         evalable = False
         for role in ctx.author.roles:
-            if role.id in common.ServerConstants.EVAL_ROLES:
+            if role.id in common.GuildConstants.EVAL_ROLES:
                 evalable = True
 
         if common.TEST_MODE and ctx.author.id in common.TEST_USER_IDS:
@@ -1776,7 +1775,7 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
             target_message,
             *pages,
             caller=controllers,
-            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+            whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
             start_page_number=page,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,

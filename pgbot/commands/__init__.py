@@ -136,7 +136,7 @@ async def handle(
                 response_message,
                 invoke_message.author,
                 emoji="🗑",
-                role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                role_whitelist=common.GuildConstants.ADMIN_ROLES,
                 timeout=30,
             )
         )
