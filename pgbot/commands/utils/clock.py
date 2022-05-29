@@ -98,7 +98,7 @@ async def user_clock(t: float, clock_timezones: dict, guild: discord.Guild):
     names_per_column = math.ceil(len(clock_timezones) / 2)
     image_height = 1280 + font_size * names_per_column
     image = pygame.Surface((1280, image_height)).convert_alpha()
-    font = pygame.font.Font(os.path.join("assets", "tahoma.ttf"), font_size - 10)
+    font = pygame.font.Font(os.path.join("assets", "fonts", "tahoma.ttf"), font_size - 10)
     font.bold = True
 
     image.fill((0, 0, 0, 0))
