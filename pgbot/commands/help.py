@@ -19,6 +19,7 @@ from snakecore.command_handler.decorators import custom_parsing
 from pgbot import common
 from pgbot.commands.utils.help import send_help_message
 
+
 @commands.command()
 @custom_parsing(inject_message_reference=True)
 async def help(
@@ -49,6 +50,7 @@ async def help(
         " ".join(names),
         page=page,
     )
+
 
 async def setup(bot: snakecore.command_handler.Bot):
     bot.add_command(help)
