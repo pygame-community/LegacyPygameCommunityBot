@@ -21,14 +21,15 @@ import snakecore
 from snakecore.command_handler.decorators import custom_parsing
 
 import pgbot
-from pgbot import common, db
+from pgbot import common
 from pgbot.commands.base import BaseCommandCog
 from pgbot.commands.utils import clock, docs, help
+from pgbot.commands.utils.cogs import CommandUtilsCog
 from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
 
 
-class HelpCommandCog(BaseCommandCog):
+class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
     """Base commang cog to handle 'help' commands of the bot."""
 
     @commands.command()
@@ -113,88 +114,6 @@ class HelpCommandCog(BaseCommandCog):
                 color=0x228B22,
             )
 
-    async def clock_func(
-        self,
-        ctx: commands.Context,
-        action: str = "",
-        timezone: Optional[float] = None,
-        color: Optional[discord.Color] = None,
-        _member: Optional[discord.Member] = None,
-    ):
-
-        response_message = common.recent_response_messages[ctx.message.id]
-
-        async with db.DiscordDB("clock") as db_obj:
-            timezones = db_obj.get({})
-            if action:
-                if _member is None:
-                    member = ctx.author
-                    if member.id not in timezones:
-                        raise BotException(
-                            "Cannot update clock!",
-                            "You cannot run clock update commands because you are "
-                            + "not on the clock",
-                        )
-                else:
-                    member = _member
-
-                if action == "update":
-                    if timezone is not None and abs(timezone) > 12:
-                        raise BotException(
-                            "Failed to update clock!", "Timezone offset out of range"
-                        )
-
-                    if member.id in timezones:
-                        if timezone is not None:
-                            timezones[member.id][0] = timezone
-                        if color is not None:
-                            timezones[member.id][1] = pgbot.utils.color_to_rgb_int(
-                                color
-                            )
-                    else:
-                        if timezone is None:
-                            raise BotException(
-                                "Failed to update clock!",
-                                "Timezone is required when adding new people",
-                            )
-
-                        if color is None:
-                            color = discord.Color(random.randint(0, 0xFFFFFF))
-
-                        timezones[member.id] = [
-                            timezone,
-                            color.value,
-                        ]
-
-                    # sort timezones dict after an update operation
-                    timezones = dict(sorted(timezones.items(), key=lambda x: x[1][0]))
-
-                elif action == "remove":
-                    try:
-                        timezones.pop(member.id)
-                    except KeyError:
-                        raise BotException(
-                            "Failed to update clock!",
-                            "Cannot remove non-existing person from clock",
-                        )
-
-                else:
-                    raise BotException(
-                        "Failed to update clock!", f"Invalid action specifier {action}"
-                    )
-
-                db_obj.write(timezones)
-
-        t = time.time()
-
-        pygame.image.save(
-            await clock.user_clock(t, timezones, ctx.guild), f"temp{t}.png"
-        )
-        await response_message.edit(
-            embeds=[], attachments=[discord.File(f"temp{t}.png")]
-        )
-        os.remove(f"temp{t}.png")
-
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def clock(
@@ -245,39 +164,6 @@ class HelpCommandCog(BaseCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         await docs.put_doc(ctx, name, response_message, ctx.author, page=page)
-
-    @commands.command()
-    @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def help(
-        self,
-        ctx: commands.Context,
-        *names: str,
-        page: int = 1,
-    ):
-        """
-        ->type Get help
-        ->signature pg!help [command]
-        ->description Ask me for help
-        ->example command pg!help help
-        -----
-        Implement pg!help, to display a help message
-        """
-
-        # needed for typecheckers to know that ctx.author is a member
-        if isinstance(ctx.author, discord.User):
-            return
-
-        response_message = common.recent_response_messages[ctx.message.id]
-
-        await help.send_help_message(
-            ctx,
-            response_message,
-            ctx.author,
-            names,
-            self.cmds_and_funcs,
-            self.groups,
-            page=page,
-        )
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)

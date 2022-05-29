@@ -17,11 +17,38 @@ import sys
 from typing import Union
 
 import discord
+from discord.ext import commands
 import pygame
 import snakecore
 
-from pgbot import commands, common, db, emotion, exceptions, routine, utils
+import pgbot
+from pgbot import common, exceptions, routine, utils
 from pgbot.commands.admin import AdminCommandCog
+from pgbot.commands.user import UserCommandCog
+
+
+async def load_startup_extensions(extension_list: list[dict]):
+    """Load startup bot extensions required for proper bot
+    functioning.
+
+    Args:
+        extension_list (list[dict]): The list of extension data
+          retrieved from 'bootstrap.json'
+    """
+    for extension_data in extension_list:
+        try:
+            name = extension_data["name"]
+        except KeyError as k:
+            k.args = (
+                "'name' is required for objects within 'extensions' array in 'bootstrap.json'",
+            )
+            raise
+
+        await common.bot.load_extension(
+            name,
+            package=extension_data.get("name"),
+            options=extension_data.get("setup_options"),
+        )
 
 
 async def _init():
@@ -30,7 +57,7 @@ async def _init():
     """
 
     await snakecore.init(global_client=common.bot)
-    await common.bot.add_cog(AdminCommandCog(common.bot))
+    await load_startup_extensions(common.bootstrap.get("extensions", []))
 
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
@@ -55,8 +82,9 @@ async def _init():
 
         for channel in server.channels:
             if channel.id == common.ServerConstants.DB_CHANNEL_ID:
-                common.db_channel = channel
-                await db.init()
+                if not common.TEST_MODE:
+                    snakecore.config.conf.db_channel = common.db_channel = channel
+                await snakecore.db.init_discord_db()
             elif channel.id == common.ServerConstants.LOG_CHANNEL_ID:
                 common.log_channel = channel
             elif channel.id == common.ServerConstants.ARRIVALS_CHANNEL_ID:
@@ -75,8 +103,10 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    async with db.DiscordDB("blacklist") as db_obj:  # disable blacklisted commands
-        for cmd_qualname in db_obj.get([]):
+    async with snakecore.db.DiscordDB(
+        "blacklist", list
+    ) as db_obj:  # disable blacklisted commands
+        for cmd_qualname in db_obj.obj:
             cmd = common.bot.get_command(cmd_qualname)
             if cmd is not None:
                 cmd.update(enabled=False)
@@ -220,8 +250,6 @@ async def member_join(member: discord.Member):
                 + f"{common.guide_channel.mention}{grab} "
                 + f"{common.roles_channel.mention}{end}"
             )
-            # new member joined, yaayyy, snek is happi
-            await emotion.update("happy", 20)
             return
 
 
@@ -230,11 +258,11 @@ async def clean_db_member(member: discord.Member):
     This function silently removes users from database messages
     """
     for table_name in ("stream", "reminders", "clock"):
-        async with db.DiscordDB(table_name) as db_obj:
-            data = db_obj.get({})
+        async with snakecore.db.DiscordDB(table_name) as db_obj:
+            data = db_obj.obj
             if member.id in data:
                 data.pop(member)
-                db_obj.write(data)
+                db_obj.obj = data
 
 
 async def message_delete(msg: discord.Message):
@@ -297,7 +325,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
     if new.content.startswith((common.COMMAND_PREFIX, f"<@{bot_id}>", f"<@!{bot_id}>")):
         try:
             if new.id in common.cmd_logs.keys():
-                await commands.handle(new, common.cmd_logs[new.id])
+                await pgbot.commands.handle(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
 
@@ -455,7 +483,10 @@ async def handle_message(msg: discord.Message):
     Handle a message posted by user
     """
     if msg.type == discord.MessageType.premium_guild_subscription:
-        await emotion.server_boost(msg)
+        if not common.TEST_MODE:
+            await msg.channel.send(
+                "A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>"
+            )
 
     mentions = f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>"
 
@@ -485,7 +516,6 @@ async def handle_message(msg: discord.Message):
             return
 
         if msg.channel in common.entry_channels.values():
-
             if msg.channel.id == common.ServerConstants.ENTRY_CHANNEL_IDS["showcase"]:
                 if not entry_message_validity_check(msg):
                     deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
@@ -520,11 +550,6 @@ async def handle_message(msg: discord.Message):
                 color=color,
                 fields=fields,
             )
-        elif (
-            random.random() < await emotion.get("happy") / 200
-            or msg.author.id == 683852333293109269
-        ):
-            await emotion.dad_joke(msg)
 
 
 def cleanup(*_):
@@ -532,7 +557,7 @@ def cleanup(*_):
     Call cleanup functions
     """
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(db.quit())
+    loop.run_until_complete(snakecore.db.quit_discord_db())
     loop.run_until_complete(common.bot.close())
     loop.close()
 
@@ -555,7 +580,6 @@ def run():
 
     try:
         loop.run_until_complete(common.bot.start(common.TOKEN))
-
     except KeyboardInterrupt:
         # Silence keyboard interrupt traceback (it contains no useful info)
         pass

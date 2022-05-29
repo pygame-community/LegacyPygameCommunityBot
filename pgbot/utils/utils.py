@@ -15,7 +15,7 @@ import discord
 import pygame
 import snakecore
 
-from pgbot import common, db
+from pgbot import common
 
 
 async def get_channel_feature(
@@ -25,8 +25,8 @@ async def get_channel_feature(
     Get the channel feature. Returns True if the feature name is disabled on
     that channel, False otherwise. Also handles category channel
     """
-    async with db.DiscordDB("feature") as db_obj:
-        db_dict: dict[int, bool] = db_obj.get({}).get(name, {})
+    async with snakecore.db.DiscordDB("feature") as db_obj:
+        db_dict: dict[int, bool] = db_obj.obj
 
     if channel.id in db_dict:
         return db_dict[channel.id]

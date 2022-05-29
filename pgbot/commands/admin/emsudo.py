@@ -33,6 +33,11 @@ class EmsudoCommandCog(BaseCommandCog):
     Base class to handle emsudo commands.
     """
 
+    def __init__(self, bot: commands.Bot):
+        super().__init__(bot)
+        for cmd in self.walk_commands():
+            cmd.extras["admin_only"] = True
+
     @commands.group(invoke_without_command=True)
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def emsudo(

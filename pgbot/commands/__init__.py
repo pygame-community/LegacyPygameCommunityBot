@@ -29,7 +29,7 @@ async def handle(
     """
     Handle a pg! command posted by a user
     """
-    is_admin, is_priv = get_primary_guild_perms(invoke_message.author)
+    is_admin = get_primary_guild_perms(invoke_message.author)
     bot_id = common.bot.user.id
     if is_admin and invoke_message.content.startswith(
         (
@@ -144,3 +144,9 @@ async def handle(
 
     await common.bot.process_commands(invoke_message)  # main command handling
     return response_message
+
+
+async def setup(bot: snakecore.command_handler.Bot):
+    await bot.load_extension("pgbot.commands.help")
+    await bot.load_extension("pgbot.commands.admin")
+    await bot.load_extension("pgbot.commands.user")

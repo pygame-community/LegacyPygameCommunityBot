@@ -9,12 +9,14 @@ as well as other small helpful constructs.
 
 import asyncio
 import io
+import json
 import os
 from typing import Optional, Union
 
 import discord
 from discord.ext import commands
 import pygame
+import snakecore
 
 from dotenv import load_dotenv
 
@@ -26,7 +28,7 @@ Channel = Union[
     discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
 ]
 cmd_logs = {}
-global_task_set: set[
+_global_task_set: set[
     asyncio.Task
 ] = set()  # prevents asyncio.Task objects from disappearing due
 # to reference loss, not to be modified manually
@@ -34,21 +36,22 @@ global_task_set: set[
 
 def hold_task(task: asyncio.Task):
     """Store an `asyncio.Task` object in a container to place a protective reference
-    on it in order to prevent its loss.
+    on it in order to prevent its loss. The given task will be given a callback
+    that automatically removes it from the container when it is done.
 
     Args:
         task (asyncio.Task): The task.
     """
-    if task in global_task_set:
+    if task in _global_task_set:
         return
 
-    global_task_set.add(task)
+    _global_task_set.add(task)
     task.add_done_callback(_global_task_set_remove_callback)
 
 
 def _global_task_set_remove_callback(task: asyncio.Task):
-    if task in global_task_set:
-        global_task_set.remove(task)
+    if task in _global_task_set:
+        _global_task_set.remove(task)
 
     task.remove_done_callback(_global_task_set_remove_callback)
 
@@ -61,8 +64,8 @@ guild: Optional[discord.Guild] = None
 # IO object to redirect output to discord, gets patched later
 stdout: Optional[io.StringIO] = None
 
-# Tuple containing all admin commands, gets monkey-patched later
-admin_commands = ()
+with open("bootstrap.json", "rb") as fp:
+    bootstrap: dict = json.load(fp)
 
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
@@ -126,7 +129,7 @@ WC_SCORING = (
 ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
 ints.message_content = True  # needed for message content
-bot = commands.Bot(
+bot = snakecore.command_handler.Bot(
     command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"),
     intents=ints,
     help_command=None,

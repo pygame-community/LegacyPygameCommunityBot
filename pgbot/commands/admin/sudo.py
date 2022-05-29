@@ -24,6 +24,7 @@ from pgbot import common
 import pgbot
 from pgbot.commands.base import BaseCommandCog
 from pgbot.commands.utils.checks import admin_only_and_custom_parsing
+from pgbot.commands.utils.cogs import CommandUtilsCog
 from pgbot.commands.utils.converters import String
 from pgbot.exceptions import BotException
 
@@ -34,6 +35,11 @@ class SudoCommandCog(BaseCommandCog):
     """
     Base class for all sudo commands
     """
+
+    def __init__(self, bot: commands.Bot):
+        super().__init__(bot)
+        for cmd in self.walk_commands():
+            cmd.extras["admin_only"] = True
 
     @commands.group(invoke_without_command=True)
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)

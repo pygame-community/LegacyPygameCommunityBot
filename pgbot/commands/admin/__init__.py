@@ -27,6 +27,7 @@ from pgbot.commands.admin.emsudo import EmsudoCommandCog
 from pgbot.commands.admin.sudo import SudoCommandCog
 from pgbot.commands.user import UserCommandCog
 from pgbot.commands.utils.checks import admin_only, admin_only_and_custom_parsing
+from pgbot.commands.utils.cogs import CommandUtilsCog
 from pgbot.commands.utils.converters import (
     CodeBlock,
     String,
@@ -36,12 +37,12 @@ from pgbot.exceptions import BotException
 process = psutil.Process(os.getpid())
 
 
-class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
+class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
     """
     Base class for all admin commands
     """
 
-    @commands.command()
+    @commands.command(hidden=True)
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
     async def test_parser(self, ctx: commands.Context, *args, **kwargs):
         """
@@ -127,9 +128,9 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with db.DiscordDB(name) as db_obj:
+        async with snakecore.db.DiscordDB(name) as db_obj:
             str_obj = black.format_str(
-                repr(db_obj.get()),
+                repr(db_obj.obj or None),
                 mode=black.FileMode(),
             )
 
@@ -185,8 +186,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                 "Failed to overwrite DB", "File attachment was not found"
             )
 
-        async with db.DiscordDB(name) as db_obj:
-            db_obj.write(eval(obj_str))  # pylint: disable = eval-used
+        async with snakecore.db.DiscordDB(name) as db_obj:
+            db_obj.obj = eval(obj_str)  # pylint: disable = eval-used
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -208,9 +209,13 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with db.DiscordDB(name) as db_obj:
-            if not db_obj.delete():
-                raise BotException("Could not delete DB", "No such DB exists")
+        async with snakecore.db.DiscordDB(name) as db_obj:
+            try:
+                del db_obj.obj
+            except AttributeError:
+                raise BotException(
+                    "Could not delete DB", "Deletion has already occured"
+                )
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -245,8 +250,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     f"could not find a command named '{cmd_qualname}'",
                 )
 
-        async with db.DiscordDB("blacklist") as db_obj:
-            commands = db_obj.get([])
+        async with snakecore.db.DiscordDB("blacklist", list) as db_obj:
+            commands = db_obj.obj
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname in commands:
@@ -257,7 +262,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     cnt += 1
                     commands.remove(cmd_qualname)
 
-            db_obj.write(commands)
+            db_obj.obj = commands
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -292,8 +297,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     f"could not find a command named '{cmd_qualname}'",
                 )
 
-        async with db.DiscordDB("blacklist") as db_obj:
-            commands = db_obj.get([])
+        async with snakecore.db.DiscordDB("blacklist", list) as db_obj:
+            commands = db_obj.obj
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname not in commands and cmd_qualname != "whitelist_cmd":
@@ -304,7 +309,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     cnt += 1
                     commands.append(cmd_qualname)
 
-            db_obj.write(commands)
+            db_obj.obj = commands
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1825,15 +1830,15 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
             channels = (ctx.channel,)
 
         if enable or disable:
-            async with db.DiscordDB("feature") as db_obj:
-                db_dict = db_obj.get({})
+            async with snakecore.db.DiscordDB("feature") as db_obj:
+                db_dict = db_obj.obj
                 if name not in db_dict:
                     db_dict[name] = {}
 
                 for chan in channels:
                     db_dict[name][chan.id] = enable or disable
 
-                db_obj.write(db_dict)
+                db_obj.obj = db_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1886,15 +1891,15 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.get({})
+        async with snakecore.db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.obj
             if desc is not None:
                 wc_dict["description"] = desc.string if desc.string else None
 
             if url is not None:
                 wc_dict["url"] = url if url else None
 
-            db_obj.write(wc_dict)
+            db_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1917,8 +1922,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.get({})
+        async with snakecore.db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.obj
             if "rounds" not in wc_dict:
                 wc_dict["rounds"] = []
 
@@ -1929,7 +1934,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     "scores": {},
                 }
             )
-            db_obj.write(wc_dict)
+            db_obj.obj = wc_dict
             ind = len(wc_dict["rounds"])
 
         await snakecore.utils.embed_utils.replace_embed_at(
@@ -1951,8 +1956,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.get({})
+        async with snakecore.db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.obj
             try:
                 round_name = wc_dict["rounds"].pop(round_no - 1)["name"]
 
@@ -1962,7 +1967,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     "The specified event round does not exist",
                 )
 
-            db_obj.write(wc_dict)
+            db_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1999,8 +2004,8 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         round_no -= 1
-        async with db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.get({})
+        async with snakecore.db.DiscordDB("wc") as db_obj:
+            wc_dict = db_obj.obj
             try:
                 if round_name is not None:
                     wc_dict["rounds"][round_no]["name"] = round_name
@@ -2026,7 +2031,7 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
                     "The specified event round does not exist",
                 ) from None
 
-            db_obj.write(wc_dict)
+            db_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -2036,8 +2041,5 @@ class AdminCommandCog(UserCommandCog, SudoCommandCog, EmsudoCommandCog):
         )
 
 
-# monkey-patch admin command names into tuple
-common.admin_commands = tuple(
-    cmd.callback.__name__
-    for cmd in AdminCommandCog.get_commands(AdminCommandCog(common.bot))
-)
+async def setup(bot: commands.Bot):
+    await bot.add_cog(AdminCommandCog(bot))
