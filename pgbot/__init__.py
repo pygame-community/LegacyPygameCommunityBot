@@ -58,7 +58,6 @@ async def _init():
 
     common.BOT_MENTION = common.bot.user.mention
     await snakecore.init(global_client=common.bot)
-    await load_startup_extensions(common.bootstrap.get("extensions", []))
 
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
@@ -103,6 +102,11 @@ async def _init():
             for key, value in common.GuildConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
+    
+    async with snakecore.db.DiscordDB("bootstrap") as db_obj:
+        common.bootstrap.update(db_obj.obj)
+
+    await load_startup_extensions(common.bootstrap.get("extensions", []))
 
     async with snakecore.db.DiscordDB(
         "blacklist", list
