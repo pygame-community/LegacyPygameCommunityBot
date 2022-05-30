@@ -139,7 +139,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-### Visual Studio Code template
+### Visual Studio (Code) IDEs
+.vs/*
+*.sln
 .vscode/*
 *.code-workspace
 
@@ -151,3 +153,6 @@ cython_debug/
 
 # MacOS
 .DS_Store
+
+# Windows
+desktop.ini

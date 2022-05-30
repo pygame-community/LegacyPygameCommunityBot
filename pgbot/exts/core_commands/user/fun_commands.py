@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines the command handler class for the "fun" commands of the bot
 """
@@ -20,11 +20,10 @@ from snakecore.command_handler.decorators import custom_parsing
 import unidecode
 
 from pgbot import common
-import pgbot
-from pgbot.commands.base import (
+from ..base import (
     BaseCommandCog,
 )
-from pgbot.commands.utils.checks import fun_command
+from ..utils.checks import fun_command
 from pgbot.exceptions import BotException
 
 

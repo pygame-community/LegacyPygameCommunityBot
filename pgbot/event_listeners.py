@@ -1,10 +1,9 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
-This file is the main file of the PygameCommunityBot source. Running this
-starts the bot
+This file defines Discord gateway event listeners
 """
 import asyncio
 import discord
@@ -208,7 +207,3 @@ async def on_command_completion(ctx: commands.Context):
 
     if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]
-
-
-if __name__ == "__main__":
-    pgbot.run()

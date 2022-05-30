@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines the command handler class for the user commands of the bot
 """
@@ -27,8 +27,8 @@ from snakecore.command_handler.converters import CodeBlock, String
 from pgbot import common
 import pgbot
 
-from pgbot.commands.utils import get_primary_guild_perms, sandbox
-from pgbot.commands.utils.cogs import CommandUtilsCog
+from pgbot.utils import get_primary_guild_perms
+from ..utils import sandbox
 from pgbot.exceptions import BotException
 from pgbot.utils import message_delete_reaction_listener
 
@@ -74,6 +74,74 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             response_message,
             title=f"Reminders for {ctx.author.display_name}:",
             description=desc,
+            color=common.DEFAULT_EMBED_COLOR,
+        )
+
+    async def reminders_add_func(
+        self,
+        ctx: commands.Context,
+        msg: str,
+        on: datetime.datetime,
+        _delta: Optional[datetime.timedelta] = None,
+    ):
+
+        response_message = common.recent_response_messages[ctx.message.id]
+
+        if _delta is None:
+            now = datetime.datetime.utcnow()
+            _delta = on - now
+        else:
+            now = on
+            on = now + _delta
+
+        if on < now:
+            raise BotException(
+                "Failed to set reminder!",
+                "Time cannot go backwards, negative time does not make sense..."
+                "\n Or does it? \\*vsauce music plays in the background\\*",
+            )
+
+        elif _delta <= datetime.timedelta(seconds=10):
+            raise BotException(
+                "Failed to set reminder!",
+                "Why do you want me to set a reminder for such a small duration?\n"
+                "Pretty sure you can remember that one yourself :wink:",
+            )
+
+        # remove microsecond precision of the 'on' variable
+        on -= datetime.timedelta(microseconds=on.microsecond)
+
+        async with snakecore.db.DiscordDB("reminders") as db_obj:
+            db_data = db_obj.obj
+            if ctx.author.id not in db_data:
+                db_data[ctx.author.id] = {}
+
+            # user is editing old reminder message, discard the old reminder
+            for key, (_, chan_id, msg_id) in tuple(db_data[ctx.author.id].items()):
+                if chan_id == ctx.channel.id and msg_id == ctx.message.id:
+                    db_data[ctx.author.id].pop(key)
+
+            limit = 25 if get_primary_guild_perms(ctx.author)[1] else 10
+            if len(db_data[ctx.author.id]) >= limit:
+                raise BotException(
+                    "Failed to set reminder!",
+                    f"I cannot set more than {limit} reminders for you",
+                )
+
+            db_data[ctx.author.id][on] = (
+                msg.string.strip(),
+                ctx.channel.id,
+                ctx.message.id,
+            )
+            db_obj.obj = db_data
+
+        await snakecore.utils.embed_utils.replace_embed_at(
+            response_message,
+            title="Reminder set!",
+            description=(
+                f"Gonna remind {ctx.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
+                f"And that is on {snakecore.utils.create_markdown_timestamp(on)}"
+            ),
             color=common.DEFAULT_EMBED_COLOR,
         )
 
@@ -322,7 +390,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         filesize_limit = (
             ctx.guild.filesize_limit
             if ctx.guild is not None
-            else common.BASIC_MAX_FILE_SIZE
+            else common.DEFAULT_FILESIZE_LIMIT
         )
 
         if len(returned.text) > 1500:

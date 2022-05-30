@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file exports the main AdminCommandCog class
 """
@@ -23,11 +23,11 @@ import snakecore
 
 from pgbot import common
 import pgbot
-from pgbot.commands.admin.emsudo import EmsudoCommandCog
-from pgbot.commands.admin.sudo import SudoCommandCog
-from pgbot.commands.utils.checks import admin_only, admin_only_and_custom_parsing
-from pgbot.commands.utils.cogs import CommandUtilsCog
-from pgbot.commands.utils.converters import (
+from .emsudo import EmsudoCommandCog
+from .sudo import SudoCommandCog
+from ..utils.checks import admin_only, admin_only_and_custom_parsing
+from ..base import CommandMixinCog
+from ..utils.converters import (
     CodeBlock,
     String,
 )
@@ -36,7 +36,7 @@ from pgbot.exceptions import BotException
 process = psutil.Process(os.getpid())
 
 
-class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
+class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
     """
     Base class for all admin commands
     """
@@ -631,7 +631,7 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
                 filesize_limit = (
                     ctx.guild.filesize_limit
                     if ctx.guild is not None
-                    else common.BASIC_MAX_FILE_SIZE
+                    else common.DEFAULT_FILESIZE_LIMIT
                 )
 
                 attached_files = [
@@ -1720,12 +1720,12 @@ class AdminCommandCog(CommandUtilsCog, SudoCommandCog, EmsudoCommandCog):
 
             if message.embeds:
                 if desc:
-                    desc += f"\n{common.ZERO_SPACE}\n"
+                    desc += f"\n\u200b\n"
                 desc += "*Message contains an embed*"
 
             if message.attachments:
                 if desc:
-                    desc += f"\n{common.ZERO_SPACE}\n"
+                    desc += f"\n\u200b\n"
                 desc += "*Message has one or more attachments*"
 
             desc += "\n**━━━━━━━━━━━━**"

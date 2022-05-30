@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines the base class for the command handler classes and also
 defines argument casting utilities
@@ -17,7 +17,7 @@ from snakecore.command_handler.converters import String
 from snakecore.command_handler.decorators import custom_parsing
 
 from pgbot import common
-from pgbot.commands.utils.help import send_help_message
+from .utils.help import send_help_message
 
 
 @commands.command()

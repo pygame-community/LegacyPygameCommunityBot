@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines exec sandbox utitites, for sandboxing and running user code.
 """
@@ -261,7 +261,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     for func_name in sandbox_funcs.public_functions:
         allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
 
-    for ill_attr in common.ILLEGAL_ATTRIBUTES:
+    for ill_attr in common.ILLEGAL_EXEC_ATTRIBUTES:
         if ill_attr in code:
             output.exc = "Suspicious Pattern"
             q.put(output)

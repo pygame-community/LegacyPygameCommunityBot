@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file is the main file of pgbot subdir
 """
@@ -14,17 +14,15 @@ import re
 import random
 import signal
 import sys
-from typing import Union
+from typing import Optional, Union
 
 import discord
-from discord.ext import commands
 import pygame
 import snakecore
 
 import pgbot
-from pgbot import common, exceptions, routine, utils
-from pgbot.commands.admin import AdminCommandCog
-from pgbot.commands.user import UserCommandCog
+from pgbot import common, exceptions, event_listeners, routine, utils
+from pgbot.utils import get_primary_guild_perms, message_delete_reaction_listener
 
 
 async def load_startup_extensions(extension_list: list[dict]):
@@ -46,7 +44,7 @@ async def load_startup_extensions(extension_list: list[dict]):
 
         await common.bot.load_extension(
             name,
-            package=extension_data.get("name"),
+            package=extension_data.get("package"),
             options=extension_data.get("setup_options"),
         )
 
@@ -56,7 +54,6 @@ async def _init():
     Startup call helper for pygame bot
     """
 
-    common.BOT_MENTION = common.bot.user.mention
     await snakecore.init(global_client=common.bot)
 
     if not common.TEST_MODE:
@@ -71,7 +68,7 @@ async def _init():
         prim = ""
 
         if common.guild is None and (
-            common.GENERIC or guild.id == common.GuildConstants.PRIMARY_GUILD_ID
+            common.GENERIC or guild.id == common.GuildConstants.GUILD_ID
         ):
             prim = "| Primary Guild"
             common.guild = guild
@@ -102,9 +99,6 @@ async def _init():
             for key, value in common.GuildConstants.ENTRY_CHANNEL_IDS.items():
                 if channel.id == value:
                     common.entry_channels[key] = channel
-    
-    async with snakecore.db.DiscordDB("bootstrap") as db_obj:
-        common.bootstrap.update(db_obj.obj)
 
     await load_startup_extensions(common.bootstrap.get("extensions", []))
 
@@ -147,7 +141,7 @@ def format_entries_message(
     Formats an entries message to be reposted in discussion channel
     """
     if entry_type != "":
-        title = f"New {entry_type.lower()} in #{common.ZERO_SPACE}{common.entry_channels[entry_type].name}"
+        title = f"New {entry_type.lower()} in #\u200b{common.entry_channels[entry_type].name}"
     else:
         title = ""
 
@@ -236,12 +230,6 @@ async def member_join(member: discord.Member):
         # Do not greet people in test mode, or if a bot joins
         return
 
-    greet = random.choice(common.BOT_WELCOME_MSG["greet"])
-    check = random.choice(common.BOT_WELCOME_MSG["check"])
-
-    grab = random.choice(common.BOT_WELCOME_MSG["grab"])
-    end = random.choice(common.BOT_WELCOME_MSG["end"])
-
     # This function is called right when a member joins, even before the member
     # finishes the join screening. So we wait for that to happen and then send
     # the message. Wait for a maximum of six hours.
@@ -250,11 +238,18 @@ async def member_join(member: discord.Member):
 
         if not member.pending:
             # Don't use embed here, because pings would not work
-            await common.arrivals_channel.send(
-                f"{greet} {member.mention}! {check} "
-                + f"{common.guide_channel.mention}{grab} "
-                + f"{common.roles_channel.mention}{end}"
-            )
+            greet = random.choice(common.GuildConstants.BOT_WELCOME_MSG["greet"])
+            if member.guild.id == common.GuildConstants.GUILD_ID:
+                check = random.choice(common.GuildConstants.BOT_WELCOME_MSG["check"])
+                grab = random.choice(common.GuildConstants.BOT_WELCOME_MSG["grab"])
+                end = random.choice(common.GuildConstants.BOT_WELCOME_MSG["end"])
+                await common.arrivals_channel.send(
+                    f"{greet} {member.mention}! {check} "
+                    + f"{common.guide_channel.mention}{grab} "
+                    + f"{common.roles_channel.mention}{end}"
+                )
+            else:
+                await member.guild.system_channel.send(f"{greet} {member.mention}!")
             return
 
 
@@ -330,7 +325,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
     if new.content.startswith((common.COMMAND_PREFIX, f"<@{bot_id}>", f"<@!{bot_id}>")):
         try:
             if new.id in common.cmd_logs.keys():
-                await pgbot.commands.handle(new, common.cmd_logs[new.id])
+                await handle_command(new, common.cmd_logs[new.id])
         except discord.HTTPException:
             pass
 
@@ -508,7 +503,7 @@ async def handle_message(msg: discord.Message):
             )
             return
         else:
-            ret = await commands.handle(msg)
+            ret = await handle_command(msg)
         if ret is not None:
             common.cmd_logs[msg.id] = ret
 
@@ -551,6 +546,129 @@ async def handle_message(msg: discord.Message):
                     color=color,
                     fields=fields,
                 )
+
+
+async def handle_command(
+    invoke_message: discord.Message, response_message: Optional[discord.Message] = None
+):
+    """
+    Handle a command invocation
+    """
+    is_admin = get_primary_guild_perms(invoke_message.author)
+    bot_id = common.bot.user.id
+    if is_admin and invoke_message.content.startswith(
+        (
+            f"{common.COMMAND_PREFIX}stop",
+            f"<@{bot_id}> stop",
+            f"<@{bot_id}>stop",
+            f"<@!{bot_id}> stop",
+            f"<@!{bot_id}>stop",
+        )
+    ):
+        splits = invoke_message.content.strip().split(" ")
+        splits.pop(0)
+        try:
+            if splits:
+                for uid in map(
+                    lambda arg: snakecore.utils.extract_markdown_mention_id(arg)
+                    if snakecore.utils.is_markdown_mention(arg)
+                    else arg,
+                    splits,
+                ):
+                    if uid in common.TEST_USER_IDS:
+                        break
+                else:
+                    return
+
+        except ValueError:
+            if response_message is None:
+                await snakecore.utils.embed_utils.send_embed(
+                    invoke_message.channel,
+                    title="Invalid arguments!",
+                    description="All arguments must be integer IDs or member mentions",
+                    color=0xFF0000,
+                )
+            else:
+                await snakecore.utils.embed_utils.replace_embed_at(
+                    response_message,
+                    title="Invalid arguments!",
+                    description="All arguments must be integer IDs or member mentions",
+                    color=0xFF0000,
+                )
+            return
+
+        if response_message is None:
+            await snakecore.utils.embed_utils.send_embed(
+                invoke_message.channel,
+                title="Stopping bot...",
+                description="Change da world,\nMy final message,\nGoodbye.",
+                color=common.DEFAULT_EMBED_COLOR,
+            )
+        else:
+            await snakecore.utils.embed_utils.replace_embed_at(
+                response_message,
+                title="Stopping bot...",
+                description="Change da world,\nMy final message,\nGoodbye.",
+                color=common.DEFAULT_EMBED_COLOR,
+            )
+        sys.exit(0)
+
+    if (
+        common.TEST_MODE
+        and common.TEST_USER_IDS
+        and invoke_message.author.id not in common.TEST_USER_IDS
+    ):
+        return
+
+    if response_message is None:
+        response_message = await snakecore.utils.embed_utils.send_embed(
+            invoke_message.channel,
+            title="Your command is being processed:",
+            color=common.DEFAULT_EMBED_COLOR,
+            fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
+        )
+
+    common.recent_response_messages[invoke_message.id] = response_message
+
+    if not common.TEST_MODE and not common.GENERIC:
+        log_txt_file = None
+        escaped_cmd_text = discord.utils.escape_markdown(invoke_message.content)
+        if len(escaped_cmd_text) > 2047:
+            with io.StringIO(invoke_message.content) as log_buffer:
+                log_txt_file = discord.File(log_buffer, filename="command.txt")
+
+        await common.log_channel.send(
+            embed=snakecore.utils.embed_utils.create_embed(
+                title=f"Command invoked by {invoke_message.author} / {invoke_message.author.id}",
+                description=escaped_cmd_text
+                if len(escaped_cmd_text) <= 2047
+                else escaped_cmd_text[:2044] + "...",
+                color=common.DEFAULT_EMBED_COLOR,
+                fields=[
+                    dict(
+                        name="\u200b",
+                        value=f"by {invoke_message.author.mention}\n**[View Original]({invoke_message.jump_url})**",
+                        inline=False,
+                    ),
+                ],
+            ),
+            file=log_txt_file,
+        )
+
+    common.hold_task(
+        asyncio.create_task(
+            message_delete_reaction_listener(
+                response_message,
+                invoke_message.author,
+                emoji="🗑",
+                role_whitelist=common.GuildConstants.ADMIN_ROLES,
+                timeout=30,
+            )
+        )
+    )
+
+    await common.bot.process_commands(invoke_message)  # main command handling
+    return response_message
 
 
 def cleanup(*_):

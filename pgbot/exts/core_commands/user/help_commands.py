@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines the command handler class for the "help" commands of the bot
 """
@@ -20,17 +20,15 @@ import pygame
 import snakecore
 from snakecore.command_handler.decorators import custom_parsing
 
-import pgbot
 from pgbot import common
-from pgbot.commands.base import BaseCommandCog
-from pgbot.commands.utils import clock, docs, help
-from pgbot.commands.utils.cogs import CommandUtilsCog
-from pgbot.commands.utils.converters import String
+from ..base import BaseCommandCog, CommandMixinCog
+from ..utils import clock, docs, help
+from ..utils.converters import String
 from pgbot.exceptions import BotException
 
 
-class UserHelpCommandCog(CommandUtilsCog, BaseCommandCog):
-    """Base commang cog to handle 'help' commands of the bot."""
+class UserHelpCommandCog(CommandMixinCog, BaseCommandCog):
+    """Base commang cog to handle user-help commands of the bot."""
 
     @commands.command()
     @custom_parsing(inside_class=True, inject_message_reference=True)

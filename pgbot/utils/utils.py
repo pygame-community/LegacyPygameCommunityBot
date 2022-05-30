@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines some important utility functions.
 """
@@ -16,6 +16,28 @@ import pygame
 import snakecore
 
 from pgbot import common
+
+
+def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):
+    """
+    Return a tuple (is_admin, is_priv) for a given user
+    """
+    if mem.id in common.TEST_USER_IDS:
+        return True, True
+
+    if not isinstance(mem, discord.Member):
+        return False, False
+
+    is_priv = False
+
+    if not common.GENERIC:
+        for role in mem.roles:
+            if role.id in common.GuildConstants.ADMIN_ROLES:
+                return True, True
+            elif role.id in common.GuildConstants.PRIV_ROLES:
+                is_priv = True
+
+    return False, is_priv
 
 
 async def get_channel_feature(
@@ -57,7 +79,7 @@ def split_wc_scores(scores: dict[int, int]):
     scores_list = [(score, f"<@!{mem}>") for mem, score in scores.items()]
     scores_list.sort(reverse=True)
 
-    for title, category_score in common.WC_SCORING:
+    for title, category_score in common.GuildConstants.WC_SCORING:
         category_list = list(filter(lambda x: x[0] >= category_score, scores_list))
         if not category_list:
             continue

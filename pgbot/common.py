@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines some constants and variables used across the whole codebase,
 as well as other small helpful constructs.
@@ -64,8 +64,13 @@ guild: Optional[discord.Guild] = None
 # IO object to redirect output to discord, gets patched later
 stdout: Optional[io.StringIO] = None
 
-with open("bootstrap.json", "rb") as fp:
-    bootstrap: dict = json.load(fp)
+bootstrap = {
+    "extensions": [
+        {"name": "pgbot.exts.core_commands.help"},
+        {"name": "pgbot.exts.core_commands.admin"},
+        {"name": "pgbot.exts.core_commands.user"},
+    ]
+}
 
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
@@ -79,10 +84,6 @@ entry_channels = {}
 entry_message_deletion_dict = {}
 
 __version__ = "1.5.3"
-
-# BONCC quiky stuff
-BONK = "<:pg_bonk:780423317718302781>"
-PG_ANGRY_AN = "<a:pg_snake_angry_an:779775305224159232>"
 
 TEST_MODE = "TEST_TOKEN" in os.environ
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
@@ -101,11 +102,7 @@ if TEST_USER_ID is not None:
 
 COMMAND_PREFIX = "pd!" if TEST_MODE else "pg!"
 
-CMD_FUNC_PREFIX = "cmd_"
-
-BASIC_MAX_FILE_SIZE = 8_000_000  # bytes
-
-ZERO_SPACE = "\u200b"  # U+200B
+DEFAULT_FILESIZE_LIMIT = 8_000_000  # bytes
 
 DEFAULT_EMBED_COLOR = 0xFFFFAA
 DOC_EMBED_LIMIT = 3
@@ -117,13 +114,6 @@ BROWSE_MESSAGE_LIMIT = 500
 GENERIC = False
 
 UNIQUE_POLL_MSG = "You cannot make multiple votes in this poll\n"
-
-WC_SCORING = (
-    ("Legendary Guardian ⚜️💫", 42),
-    ("Elite Guardian ⚜️", 30),
-    ("Guardian ⚜️", 15),
-    ("Apprentice ⚜️", 1),
-)
 
 # For commonly used variables
 ints = discord.Intents.default()
@@ -139,14 +129,15 @@ window = pygame.Surface((1, 1))  # This will later be redefined
 
 class GuildConstants:
     """
-    Namespace class of all primary guild constants. If you ever want to make a copy of the bot
-    run on your own server on non-generic mode, replicate this class, but
-    with the constants from your server
+    Namespace class of all primary guild constants.  By default, this class namespace contains constants
+    used by the main PygameCommunityBot instance in the 'Pygame Community' Discord server.
+    If you ever want to make a copy of the bot run on your own server on non-generic mode, replicate this class, but
+    with the constants from your server.
     """
 
-    PYGAME_COMMUNITY_BOT_ID = 772788653326860288
+    BOT_ID = 772788653326860288
 
-    PRIMARY_GUILD_ID = 772505616680878080
+    GUILD_ID = 772505616680878080
 
     RULES_CHANNEL_ID = 772509621747187712
     ROLES_CHANNEL_ID = 772535163195228200
@@ -202,72 +193,80 @@ class GuildConstants:
         (1, 889168765479178240),  # Apprentice
     )
 
+    WC_SCORING = (
+        ("Legendary Guardian ⚜️💫", 42),
+        ("Elite Guardian ⚜️", 30),
+        ("Guardian ⚜️", 15),
+        ("Apprentice ⚜️", 1),
+    )
 
-BOT_WELCOME_MSG = {
-    "greet": (
-        "Hi",
-        "Hello",
-        "Welcome to **Pygame Community**",
-        "Greetings",
-        "Howdy",
-        "Hi there, ",
-        "Hey there",
-        "*Hiss* Who's that? It's",
-        "*Hiss* Welcome",
-        "Hello there,",
-        "Ooooh! Hello",
-        "Hi there,",
-        "*Hiss* Do I see a new user? *hiss*\n" + "Welcome to our wonderful chatroom",
-        "Ooooh! It's",
-        "Oooh! Look who has joined us, it's",
-    ),
-    "check": (
-        "Check out our",
-        "Make sure to check out the",
-        "Take a look at our",
-        "See our",
-        "Please see our",
-        "Be sure to read our",
-        "Be sure to check the",
-        "Be sure to check out our",
-        "Read our",
-        "Have a look at our",
-        "To get started here, please read the",
-    ),
-    "grab": (
-        ", grab",
-        ". Then get some",
-        ", take",
-        ", then grab yourself some shiny",
-        ". Get some fancy",
-        ", get some",
-        ", then get yourself some cool",
-        ", then get yourself some",
-        ", take some",
-        ", then take some",
-        ", then take some",
-        ". Go get some cool roles at",
-        ". Then go take some fancy",
-        ", then grab some shiny",
-    ),
-    "end": (
-        " and have fun!",
-        ", then have fun with pygame!",
-        ", then have fun with pygame! *hiss*",
-        " and have a nice time!",
-        " and enjoy your stay!",
-        " and have some fun! *hisss*",
-        " and have fun here!",
-        " and have fun with pygame!",
-        " and have a wonderful time!",
-        " and join us!",
-        " and join the fun!",
-        " and have fun with pygame! *hisss*",
-        " and have fun here! *hisss*",
-    ),
-}
+    BOT_WELCOME_MSG = {
+        "greet": (
+            "Hi",
+            "Hello",
+            "Welcome to **Pygame Community**",
+            "Greetings",
+            "Howdy",
+            "Hi there, ",
+            "Hey there",
+            "*Hiss* Who's that? It's",
+            "*Hiss* Welcome",
+            "Hello there,",
+            "Ooooh! Hello",
+            "Hi there,",
+            "*Hiss* Do I see a new user? *hiss*\n"
+            + "Welcome to our wonderful chatroom",
+            "Ooooh! It's",
+            "Oooh! Look who has joined us, it's",
+        ),
+        "check": (
+            "Check out our",
+            "Make sure to check out the",
+            "Take a look at our",
+            "See our",
+            "Please see our",
+            "Be sure to read our",
+            "Be sure to check the",
+            "Be sure to check out our",
+            "Read our",
+            "Have a look at our",
+            "To get started here, please read the",
+        ),
+        "grab": (
+            ", grab",
+            ". Then get some",
+            ", take",
+            ", then grab yourself some shiny",
+            ". Get some fancy",
+            ", get some",
+            ", then get yourself some cool",
+            ", then get yourself some",
+            ", take some",
+            ", then take some",
+            ", then take some",
+            ". Go get some cool roles at",
+            ". Then go take some fancy",
+            ", then grab some shiny",
+        ),
+        "end": (
+            " and have fun!",
+            ", then have fun with pygame!",
+            ", then have fun with pygame! *hiss*",
+            " and have a nice time!",
+            " and enjoy your stay!",
+            " and have some fun! *hisss*",
+            " and have fun here!",
+            " and have fun with pygame!",
+            " and have a wonderful time!",
+            " and join us!",
+            " and join the fun!",
+            " and have fun with pygame! *hisss*",
+            " and have fun here! *hisss*",
+        ),
+    }
 
-ILLEGAL_ATTRIBUTES = (
+
+ILLEGAL_EXEC_ATTRIBUTES = (
     "__subclasses__",
     "__loader__",
     "__bases__",
@@ -280,16 +279,9 @@ ILLEGAL_ATTRIBUTES = (
     "__dict__",
 )
 
-BOT_MENTION = "the bot" if GENERIC else f"<@!{GuildConstants.PYGAME_COMMUNITY_BOT_ID}>"
-
-BOT_HELP_PROMPT = {
-    "title": "Help",
-    "color": 0xFFFF00,
-    "description": f"""
-Hey there, do you want to use {BOT_MENTION} ?
-My command prefix is `{COMMAND_PREFIX}`.
+BOT_HELP_DIALOG_FSTRING = """
+Hey there, do you want to use {0} ?
+My command prefix is `{1}`.
 If you want me to run your code, use Discord's code block syntax.
-Learn more about Discord code formatting **[HERE](https://discord.com/channels/772505616680878080/774217896971730974/785510505728311306)**.
-If you want to know about a specifc command run {COMMAND_PREFIX}help [command], for example {COMMAND_PREFIX}help exec.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━""",
-}
+If you want to know about a specifc command run `{1}help [command]`.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""

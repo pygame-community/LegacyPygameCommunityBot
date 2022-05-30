@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines the command handler class for the emsudo commands of the bot
 """
@@ -19,12 +19,12 @@ from discord.ext import commands
 import snakecore
 
 from pgbot import common
-from pgbot.commands.base import (
+from ..base import (
     BaseCommandCog,
 )
-from pgbot.commands.utils.checks import admin_only_and_custom_parsing
+from ..utils.checks import admin_only_and_custom_parsing
+from ..utils.converters import CodeBlock, String
 
-from pgbot.commands.utils.converters import CodeBlock, String
 from pgbot.exceptions import BotException
 
 

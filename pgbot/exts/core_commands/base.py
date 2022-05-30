@@ -1,11 +1,10 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
-This file defines command cog utilities. 
+This file defines the base cog classes for other command handler cogs.
 """
-
 
 from __future__ import annotations
 import datetime
@@ -22,14 +21,26 @@ from snakecore.command_handler.converters import String
 
 from pgbot import common
 import pgbot
-from . import clock
-from .utils import get_primary_guild_perms
+from .utils import clock
+from pgbot.utils import get_primary_guild_perms
 from pgbot.exceptions import BotException
 
 
-class CommandUtilsCog(commands.Cog):
+class BaseCommandCog(commands.Cog):
     """
-    A mixin cog of utility methods to use by other command cogs.
+    Base cog for all command cogs to be used by this bot.
+    """
+
+    def __init__(self, bot: commands.Bot):
+        """
+        Initialise BaseCommandCog class
+        """
+        self.bot: commands.Bot = bot
+
+
+class CommandMixinCog(commands.Cog):
+    """
+    A mixin cog of utility methods to be inherited by other command cogs.
     """
 
     def __init__(self, bot: commands.Bot):
@@ -37,74 +48,6 @@ class CommandUtilsCog(commands.Cog):
         Initialise class
         """
         self.bot: commands.Bot = bot
-
-    async def reminders_add_func(
-        self,
-        ctx: commands.Context,
-        msg: str,
-        on: datetime.datetime,
-        _delta: Optional[datetime.timedelta] = None,
-    ):
-
-        response_message = common.recent_response_messages[ctx.message.id]
-
-        if _delta is None:
-            now = datetime.datetime.utcnow()
-            _delta = on - now
-        else:
-            now = on
-            on = now + _delta
-
-        if on < now:
-            raise BotException(
-                "Failed to set reminder!",
-                "Time cannot go backwards, negative time does not make sense..."
-                "\n Or does it? \\*vsauce music plays in the background\\*",
-            )
-
-        elif _delta <= datetime.timedelta(seconds=10):
-            raise BotException(
-                "Failed to set reminder!",
-                "Why do you want me to set a reminder for such a small duration?\n"
-                "Pretty sure you can remember that one yourself :wink:",
-            )
-
-        # remove microsecond precision of the 'on' variable
-        on -= datetime.timedelta(microseconds=on.microsecond)
-
-        async with snakecore.db.DiscordDB("reminders") as db_obj:
-            db_data = db_obj.obj
-            if ctx.author.id not in db_data:
-                db_data[ctx.author.id] = {}
-
-            # user is editing old reminder message, discard the old reminder
-            for key, (_, chan_id, msg_id) in tuple(db_data[ctx.author.id].items()):
-                if chan_id == ctx.channel.id and msg_id == ctx.message.id:
-                    db_data[ctx.author.id].pop(key)
-
-            limit = 25 if get_primary_guild_perms(ctx.author)[1] else 10
-            if len(db_data[ctx.author.id]) >= limit:
-                raise BotException(
-                    "Failed to set reminder!",
-                    f"I cannot set more than {limit} reminders for you",
-                )
-
-            db_data[ctx.author.id][on] = (
-                msg.string.strip(),
-                ctx.channel.id,
-                ctx.message.id,
-            )
-            db_obj.obj = db_data
-
-        await snakecore.utils.embed_utils.replace_embed_at(
-            response_message,
-            title="Reminder set!",
-            description=(
-                f"Gonna remind {ctx.author.name} in {snakecore.utils.format_time_by_units(_delta)}\n"
-                f"And that is on {snakecore.utils.create_markdown_timestamp(on)}"
-            ),
-            color=common.DEFAULT_EMBED_COLOR,
-        )
 
     async def poll_func(
         self,

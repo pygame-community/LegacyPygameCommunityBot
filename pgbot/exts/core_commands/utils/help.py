@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines some utility functions for pg!help command
 """
@@ -125,18 +125,20 @@ async def send_help_message(
 
         embeds.append(
             discord.Embed(
-                title=common.BOT_HELP_PROMPT["title"],
-                description=common.BOT_HELP_PROMPT["description"],
-                color=common.BOT_HELP_PROMPT["color"],
+                title="Help",
+                description=common.BOT_HELP_DIALOG_FSTRING.format(
+                    bot.user.mention, common.COMMAND_PREFIX
+                ),
+                color=common.DEFAULT_EMBED_COLOR,
             )
         )
         for doc_field in list(doc_fields.values()):
             body = f"{doc_field[0]}\n\n{doc_field[1]}"
             embeds.append(
                 snakecore.utils.embed_utils.create_embed(
-                    title=common.BOT_HELP_PROMPT["title"],
+                    title="Help",
                     description=body,
-                    color=common.BOT_HELP_PROMPT["color"],
+                    color=common.DEFAULT_EMBED_COLOR,
                 )
             )
 
@@ -194,7 +196,7 @@ async def send_help_message(
                         snakecore.utils.embed_utils.create_embed(
                             title=f"Help for `{cmd_qualified_name}`",
                             description=body,
-                            color=common.BOT_HELP_PROMPT["color"],
+                            color=common.DEFAULT_EMBED_COLOR,
                             fields=embed_fields,
                         )
                     )
@@ -203,7 +205,7 @@ async def send_help_message(
                         snakecore.utils.embed_utils.create_embed(
                             title=f"Help for `{cmd_qualified_name}`",
                             description=body,
-                            color=common.BOT_HELP_PROMPT["color"],
+                            color=common.DEFAULT_EMBED_COLOR,
                         )
                     )
                     desc_list_len = len(desc_list)
@@ -212,7 +214,7 @@ async def send_help_message(
                             snakecore.utils.embed_utils.create_embed(
                                 title=f"Help for `{cmd_qualified_name}`",
                                 description=desc_list[i],
-                                color=common.BOT_HELP_PROMPT["color"],
+                                color=common.DEFAULT_EMBED_COLOR,
                                 fields=embed_fields if i == desc_list_len - 1 else None,
                             )
                         )
@@ -237,7 +239,7 @@ async def send_help_message(
 
     msg_embeds = [
         snakecore.utils.embed_utils.create_embed(
-            color=common.BOT_HELP_PROMPT["color"],
+            color=common.DEFAULT_EMBED_COLOR,
             footer_text=footer_text,
         )
     ]
@@ -252,7 +254,7 @@ async def send_help_message(
             whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
             start_page_number=page,
             inactivity_timeout=60,
-            theme_color=common.BOT_HELP_PROMPT["color"],
+            theme_color=common.DEFAULT_EMBED_COLOR,
         ).mainloop()
     except discord.HTTPException:
         pass
