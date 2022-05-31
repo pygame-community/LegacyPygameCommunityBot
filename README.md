@@ -15,7 +15,7 @@ The bot is licensed under the [MIT license](LICENSE).
 
 - When you get the 'sorcerer' role on the discord server, you will be given the token of  the test bot.
 - You can then run the bot locally on your local setup to test the bot.
-- Make sure you have python 3.7 or above, install the deps with `pip install -r requirements.txt`
+- Make sure you have python 3.9 or above, install the deps with `pip install -r requirements.txt`
 
 - Make a `.env` file at the base dir (this is git-ignored), and set it like
 
