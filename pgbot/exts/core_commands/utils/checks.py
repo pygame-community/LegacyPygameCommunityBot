@@ -35,14 +35,10 @@ def _admin_only_predicate(ctx: commands.Context):
     if ctx.guild is None:
         raise commands.NoPrivateMessage()
 
-    if any(
-        role.id in common.GuildConstants.ADMIN_ROLES
-        for role in getattr(ctx.author, "roles", ())
-    ):
+    if any(role.id in common.GuildConstants.ADMIN_ROLES for role in getattr(ctx.author, "roles", ())):
         return True
     raise AdminOnly(
-        f"The command '{ctx.command.qualified_name}' is an admin command, and you do "
-        "not have access to that"
+        f"The command '{ctx.command.qualified_name}' is an admin command, and you do " "not have access to that"
     )
 
 
@@ -54,14 +50,10 @@ def admin_only():
     return commands.check(_admin_only_predicate)
 
 
-def admin_only_and_custom_parsing(
-    inside_class: bool = False, inject_message_reference: bool = False
-):
+def admin_only_and_custom_parsing(inside_class: bool = False, inject_message_reference: bool = False):
     """A decorator combining admin-only role checks and
     `snakecore.command_handler.decorators.custom_parsing(...)`.
     """
     return commands.check(_admin_only_predicate)(
-        custom_parsing(
-            inside_class=inside_class, inject_message_reference=inject_message_reference
-        )
+        custom_parsing(inside_class=inside_class, inject_message_reference=inject_message_reference)
     )

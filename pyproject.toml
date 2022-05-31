@@ -1,5 +1,5 @@
 [tool.black]
-line-length = 88
+line-length = 120
 target_version = ['py39', 'py310']
 include = '\.pyi?$'
 exclude = '''
@@ -24,7 +24,7 @@ exclude = '''
 profile = "black"
 combine_as_imports = true
 combine_star = true
-line_length = 88
+line_length = 120
 
 [tool.pyright]
 include = [

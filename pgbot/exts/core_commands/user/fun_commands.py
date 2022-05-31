@@ -100,10 +100,7 @@ class FunCommandCog(BaseCommandCog):
         for char in unidecode.unidecode(msg.string):
             if char.isalnum():
                 for emoji in emojis:
-                    if (
-                        emoji.name == f"pg_char_{char}"
-                        or emoji.name == f"pg_char_{char}".lower()
-                    ):
+                    if emoji.name == f"pg_char_{char}" or emoji.name == f"pg_char_{char}".lower():
                         fontified += str(emoji)
                         break
                 else:
@@ -148,14 +145,8 @@ class FunCommandCog(BaseCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        if (
-            reply.author.id != self.bot.user.id
-            or not reply.embeds
-            or reply.embeds[0].description != ctx.author.mention
-        ):
-            raise BotException(
-                "Could not execute comamnd", "Please reply to a fontified message"
-            )
+        if reply.author.id != self.bot.user.id or not reply.embeds or reply.embeds[0].description != ctx.author.mention:
+            raise BotException("Could not execute comamnd", "Please reply to a fontified message")
 
         await reply.delete()
         try:

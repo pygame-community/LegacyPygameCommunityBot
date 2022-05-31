@@ -7,8 +7,9 @@ This file defines some important utility functions.
 """
 
 from __future__ import annotations
+from ast import literal_eval
 import asyncio
-from typing import Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 
 import discord
@@ -40,9 +41,7 @@ def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):
     return False, is_priv
 
 
-async def get_channel_feature(
-    name: str, channel: common.Channel, defaultret: bool = False
-):
+async def get_channel_feature(name: str, channel: common.Channel, defaultret: bool = False):
     """
     Get the channel feature. Returns True if the feature name is disabled on
     that channel, False otherwise. Also handles category channel
@@ -65,11 +64,27 @@ def color_to_rgb_int(col: pygame.Color, alpha: bool = False):
     """
     Get integer RGB representation of pygame color object.
     """
-    return (
-        col.r << 32 | col.g << 16 | col.b << 8 | col.a
-        if alpha
-        else col.r << 16 | col.g << 8 | col.b
-    )
+    return col.r << 32 | col.g << 16 | col.b << 8 | col.a if alpha else col.r << 16 | col.g << 8 | col.b
+
+
+def parse_text_to_mapping(
+    string: str, delimiter: str = ":", separator: str = " | ", eval_values: bool = False
+) -> dict[str, Any]:
+    mapping = {}
+    pair_strings = string.split(sep=separator)
+
+    for pair_str in pair_strings:
+        key, _, value = pair_str.strip().partition(delimiter)
+
+        if not value:
+            raise ValueError(f"failed to parse mapping pair: '{pair_str}'")
+
+        if eval_values:
+            mapping[key] = literal_eval(value)
+        else:
+            mapping[key] = value
+
+    return mapping
 
 
 def split_wc_scores(scores: dict[int, int]):
@@ -84,9 +99,7 @@ def split_wc_scores(scores: dict[int, int]):
         if not category_list:
             continue
 
-        desc = ">>> " + "\n".join(
-            (f"`{score}` **•** {mem} :medal:" for score, mem in category_list)
-        )
+        desc = ">>> " + "\n".join((f"`{score}` **•** {mem} :medal:" for score, mem in category_list))
 
         yield title, desc, False
         scores_list = scores_list[len(category_list) :]
@@ -160,10 +173,7 @@ async def message_delete_reaction_listener(
                 and (event.guild_id == getattr(msg.guild, "id", None))
                 and (
                     event.user_id == invoker.id
-                    or any(
-                        role.id in role_whitelist
-                        for role in getattr(event.member, "roles", ())[1:]
-                    )
+                    or any(role.id in role_whitelist for role in getattr(event.member, "roles", ())[1:])
                 )
                 and snakecore.utils.is_emoji_equal(event.emoji, emoji)
             )
@@ -175,9 +185,7 @@ async def message_delete_reaction_listener(
                 and snakecore.utils.is_emoji_equal(event.emoji, emoji)
             )
         else:
-            raise TypeError(
-                f"argument 'invoker' expected discord.Member/.User, not {invoker.__class__.__name__}"
-            )
+            raise TypeError(f"argument 'invoker' expected discord.Member/.User, not {invoker.__class__.__name__}")
 
         event: discord.RawReactionActionEvent = await common.bot.wait_for(
             "raw_reaction_add", check=check, timeout=timeout

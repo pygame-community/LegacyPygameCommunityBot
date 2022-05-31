@@ -58,28 +58,20 @@ class Output:
 
             if 65535 < delay:
                 self.exc = (
-                    "That would take a lot of time."
-                    f" Please choose a number between 0 and 65535. (line {lineno})"
+                    "That would take a lot of time." f" Please choose a number between 0 and 65535. (line {lineno})"
                 )
                 return
             if 0 > delay:
                 self.exc = (
-                    "Negative time? That does not make sense..."
-                    f" Please choose between 0 and 65535. (line {lineno})"
+                    "Negative time? That does not make sense..." f" Please choose between 0 and 65535. (line {lineno})"
                 )
                 return
         else:
-            self.exc = (
-                f"TypeError at line {lineno}: "
-                f"Argument delay must be int not '{delay.__class__.__name__}'"
-            )
+            self.exc = f"TypeError at line {lineno}: " f"Argument delay must be int not '{delay.__class__.__name__}'"
             return
 
         if not isinstance(image, pygame.Surface):
-            self.exc = (
-                f"TypeError at line {lineno}: "
-                "Argument image must be type of pygame.Surface"
-            )
+            self.exc = f"TypeError at line {lineno}: " "Argument image must be type of pygame.Surface"
             return
 
         self._imgs.append(image.copy())
@@ -312,9 +304,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
                 if i == 0:
                     pygame.image.save(surf, f"temp{tstamp}.png")
 
-                image = Image.frombytes(
-                    "RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA")
-                )
+                image = Image.frombytes("RGBA", surf.get_size(), pygame.image.tostring(surf, "RGBA"))
                 images.append(image)
 
                 i += 1
@@ -331,9 +321,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     q.put(sanitized_output)
 
 
-async def exec_sandbox(
-    code: str, tstamp: int, timeout: int = 5, max_memory: int = 2**28
-):
+async def exec_sandbox(code: str, tstamp: int, timeout: int = 5, max_memory: int = 2**28):
     """
     Helper to run pg!exec code in a sandbox, manages the seperate process that
     runs to execute user code.

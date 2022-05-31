@@ -251,9 +251,7 @@ async def put_doc(
 
     main_embeds.extend(embeds)
 
-    footer_text = (
-        "Refresh this by replying with " f"`{common.COMMAND_PREFIX}refresh`.\ncmd: doc"
-    )
+    footer_text = "Refresh this by replying with " f"`{common.COMMAND_PREFIX}refresh`.\n___\ncmd: doc"
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser
@@ -261,11 +259,7 @@ async def put_doc(
     if raw_command_input:
         footer_text += f" | args: {raw_command_input}"
 
-    msg_embeds = [
-        snakecore.utils.embed_utils.create_embed(
-            color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
-        )
-    ]
+    msg_embeds = [snakecore.utils.embed_utils.create_embed(color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text)]
 
     original_msg = await original_msg.edit(embeds=msg_embeds)
 

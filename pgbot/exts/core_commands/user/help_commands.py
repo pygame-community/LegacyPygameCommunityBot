@@ -55,9 +55,7 @@ class UserHelpCommandCog(CommandMixinCog, BaseCommandCog):
         fields = []
         for rule in sorted(set(rules)):
             if 0 < rule <= len(common.GuildConstants.RULES):
-                msg = await common.rules_channel.fetch_message(
-                    common.GuildConstants.RULES[rule - 1]
-                )
+                msg = await common.rules_channel.fetch_message(common.GuildConstants.RULES[rule - 1])
                 value = msg.content
 
             elif rule == 42:

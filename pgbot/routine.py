@@ -51,9 +51,7 @@ async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
                 allowed_mentions.replied_user = True
                 try:
                     message = await channel.fetch_message(msg_id)
-                    await message.reply(
-                        content=content, allowed_mentions=allowed_mentions
-                    )
+                    await message.reply(content=content, allowed_mentions=allowed_mentions)
                 except discord.HTTPException:
                     # The message probably got deleted, try to resend in channel
                     allowed_mentions.users = [discord.Object(mem_id)]
@@ -103,9 +101,7 @@ async def handle_console():
         if not content:
             continue
 
-        await common.console_channel.send(
-            content=snakecore.utils.code_block(content, code_type="cmd")
-        )
+        await common.console_channel.send(content=snakecore.utils.code_block(content, code_type="cmd"))
 
 
 @tasks.loop(seconds=3)

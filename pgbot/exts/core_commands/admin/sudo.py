@@ -140,8 +140,7 @@ class SudoCommandCog(BaseCommandCog):
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{data_count}` inputs processed\n"
-                        f"{(i/data_count)*100:.01f}% | "
-                        + snakecore.utils.progress_bar(i / data_count, divisions=30),
+                        f"{(i/data_count)*100:.01f}% | " + snakecore.utils.progress_bar(i / data_count, divisions=30),
                     ),
                 )
 
@@ -188,10 +187,7 @@ class SudoCommandCog(BaseCommandCog):
                     )
 
                 for attachment in attachment_msg.attachments:
-                    if (
-                        attachment.content_type is not None
-                        and attachment.content_type.startswith("text")
-                    ):
+                    if attachment.content_type is not None and attachment.content_type.startswith("text"):
                         attachment_obj = attachment
                         break
                 else:
@@ -223,10 +219,7 @@ class SudoCommandCog(BaseCommandCog):
                 )
 
             for attachment in attachment_msg.attachments:
-                if (
-                    attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
-                ):
+                if attachment.content_type is not None and attachment.content_type.startswith("text"):
                     attachment_obj = attachment
                     break
             else:
@@ -259,9 +252,7 @@ class SudoCommandCog(BaseCommandCog):
 
             await response_message.edit(embed=load_embed)
 
-        allowed_mentions = (
-            discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
-        )
+        allowed_mentions = discord.AllowedMentions.all() if mention else discord.AllowedMentions.none()
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
@@ -352,9 +343,7 @@ class SudoCommandCog(BaseCommandCog):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        elif isinstance(
-            data, discord.Message
-        ) and not snakecore.utils.have_permissions_in_channels(
+        elif isinstance(data, discord.Message) and not snakecore.utils.have_permissions_in_channels(
             ctx.author,
             data.channel,
             "view_channel",
@@ -394,10 +383,7 @@ class SudoCommandCog(BaseCommandCog):
                 )
 
             for attachment in attachment_msg.attachments:
-                if (
-                    attachment.content_type is not None
-                    and attachment.content_type.startswith("text")
-                ):
+                if attachment.content_type is not None and attachment.content_type.startswith("text"):
                     attachment_obj = attachment
                     break
             else:
@@ -417,9 +403,7 @@ class SudoCommandCog(BaseCommandCog):
         try:
             await msg.edit(content=msg_text)
         except discord.HTTPException as e:
-            raise BotException(
-                "An exception occured while handling the command!", e.args[0]
-            )
+            raise BotException("An exception occured while handling the command!", e.args[0])
         try:
             await ctx.message.delete()
             await response_message.delete()
@@ -476,12 +460,7 @@ class SudoCommandCog(BaseCommandCog):
                 "You do not have enough permissions to run this command with the specified arguments.",
             )
 
-        if (
-            not msg_a.content
-            and not msg_a.embeds
-            or not msg_b.content
-            and not msg_b.embeds
-        ):
+        if not msg_a.content and not msg_a.embeds or not msg_b.content and not msg_b.embeds:
             raise BotException(
                 "Cannot execute command:",
                 "Not enough data found in one or more of the given messages.",
@@ -585,9 +564,7 @@ class SudoCommandCog(BaseCommandCog):
         if not isinstance(destination, discord.TextChannel):
             destination = ctx.channel
 
-        if not snakecore.utils.have_permissions_in_channels(
-            ctx.author, destination, "view_channel", "send_messages"
-        ):
+        if not snakecore.utils.have_permissions_in_channels(ctx.author, destination, "view_channel", "send_messages"):
             raise BotException(
                 "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
@@ -632,8 +609,7 @@ class SudoCommandCog(BaseCommandCog):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
-                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i/msg_count)*100:.01f}% | " + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
                 )
 
@@ -644,11 +620,7 @@ class SudoCommandCog(BaseCommandCog):
             escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
             attached_files = None
             if attachments:
-                filesize_limit = (
-                    ctx.guild.filesize_limit
-                    if ctx.guild is not None
-                    else common.DEFAULT_FILESIZE_LIMIT
-                )
+                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.DEFAULT_FILESIZE_LIMIT
                 with io.StringIO("This file was too large to be duplicated.") as fobj:
                     attached_files = [
                         (
@@ -660,19 +632,14 @@ class SudoCommandCog(BaseCommandCog):
                     ]
 
             if info:
-                info_embed = pgbot.utils.embed_utils.get_msg_info_embed(
-                    msg, author_info
-                )
+                info_embed = pgbot.utils.embed_utils.get_msg_info_embed(msg, author_info)
                 info_embed.set_author(name="Message data & info")
                 info_embed.title = ""
 
                 info_embed.description = "".join(
                     (
-                        "__Text"
-                        + (" (Shortened)" if len(escaped_msg_content) > 2000 else "")
-                        + "__:",
-                        f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```"
-                        + "\n\u2800"
+                        "__Text" + (" (Shortened)" if len(escaped_msg_content) > 2000 else "") + "__:",
+                        f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```" + "\n\u2800"
                         if len(escaped_msg_content) > 2000
                         else "\n\u2800",
                     )
@@ -743,9 +710,7 @@ class SudoCommandCog(BaseCommandCog):
                 for i in range(len(embed_data_fobjs)):
                     await ctx.channel.send(
                         content=f"**Message embed** ({i+1}):",
-                        file=discord.File(
-                            embed_data_fobjs[i], filename="embeddata.json"
-                        ),
+                        file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
                     )
 
                 for embed_data_fobj in embed_data_fobjs:
@@ -832,9 +797,7 @@ class SudoCommandCog(BaseCommandCog):
 
             elif quantity == 0:
                 if pin_range:
-                    messages = messages[
-                        pin_range.start : pin_range.stop : pin_range.step
-                    ]
+                    messages = messages[pin_range.start : pin_range.stop : pin_range.step]
 
                     if pin_range.step != -1 and oldest_first:
                         messages.reverse()
@@ -846,28 +809,19 @@ class SudoCommandCog(BaseCommandCog):
                 )
 
         else:
-            if (
-                isinstance(before, discord.PartialMessage)
-                and before.channel.id != origin.id
-            ):
+            if isinstance(before, discord.PartialMessage) and before.channel.id != origin.id:
                 raise BotException(
                     "Invalid `before` argument",
                     "`before` has to be an ID to a message from the origin channel",
                 )
 
-            if (
-                isinstance(after, discord.PartialMessage)
-                and after.channel.id != origin.id
-            ):
+            if isinstance(after, discord.PartialMessage) and after.channel.id != origin.id:
                 raise BotException(
                     "Invalid `after` argument",
                     "`after` has to be an ID to a message from the origin channel",
                 )
 
-            if (
-                isinstance(around, discord.PartialMessage)
-                and around.channel.id != origin.id
-            ):
+            if isinstance(around, discord.PartialMessage) and around.channel.id != origin.id:
                 raise BotException(
                     "Invalid `around` argument",
                     "`around` has to be an ID to a message from the origin channel",
@@ -915,16 +869,10 @@ class SudoCommandCog(BaseCommandCog):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += sep.join(
-                    messages[j].jump_url
-                    for j in range(start_idx, start_idx + msgs_per_loop)
-                )
+                output_str += sep.join(messages[j].jump_url for j in range(start_idx, start_idx + msgs_per_loop))
                 await asyncio.sleep(0)
 
-            output_str += (
-                sep.join(messages[j].jump_url for j in range(end_idx + 1, msg_count))
-                + suffix
-            )
+            output_str += sep.join(messages[j].jump_url for j in range(end_idx + 1, msg_count)) + suffix
 
         elif channel_ids:
             output_filename = "message_and_channel_ids.txt"
@@ -934,17 +882,12 @@ class SudoCommandCog(BaseCommandCog):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
                 output_str += sep.join(
-                    f"{messages[j].channel.id}/{messages[j].id}"
-                    for j in range(start_idx, start_idx + msgs_per_loop)
+                    f"{messages[j].channel.id}/{messages[j].id}" for j in range(start_idx, start_idx + msgs_per_loop)
                 )
                 await asyncio.sleep(0)
 
             output_str += (
-                sep.join(
-                    f"{messages[j].channel.id}/{messages[j].id}"
-                    for j in range(end_idx + 1, msg_count)
-                )
-                + suffix
+                sep.join(f"{messages[j].channel.id}/{messages[j].id}" for j in range(end_idx + 1, msg_count)) + suffix
             )
 
         else:
@@ -954,16 +897,10 @@ class SudoCommandCog(BaseCommandCog):
             for i in range(msg_count // msgs_per_loop):
                 start_idx = msgs_per_loop * i
                 end_idx = start_idx + msgs_per_loop - 1
-                output_str += sep.join(
-                    f"{messages[j].id}"
-                    for j in range(start_idx, start_idx + msgs_per_loop)
-                )
+                output_str += sep.join(f"{messages[j].id}" for j in range(start_idx, start_idx + msgs_per_loop))
                 await asyncio.sleep(0)
 
-            output_str += (
-                sep.join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count))
-                + suffix
-            )
+            output_str += sep.join(f"{messages[j].id}" for j in range(end_idx + 1, msg_count)) + suffix
 
         with io.StringIO(output_str) as fobj:
             await destination.send(file=discord.File(fobj, filename=output_filename))
@@ -1055,9 +992,7 @@ class SudoCommandCog(BaseCommandCog):
         if not isinstance(destination, discord.TextChannel):
             destination = ctx.channel
 
-        if not snakecore.utils.have_permissions_in_channels(
-            ctx.author, destination, "view_channel", "send_messages"
-        ):
+        if not snakecore.utils.have_permissions_in_channels(ctx.author, destination, "view_channel", "send_messages"):
             raise BotException(
                 "Not enough permissions",
                 "You do not have enough permissions to run this command with the specified arguments.",
@@ -1103,8 +1038,7 @@ class SudoCommandCog(BaseCommandCog):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i/msg_count)*100:.01f}% | "
-                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i/msg_count)*100:.01f}% | " + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
                 )
 
@@ -1114,11 +1048,7 @@ class SudoCommandCog(BaseCommandCog):
             cloned_msg = None
             attached_files = []
             if msg.attachments and attachments:
-                filesize_limit = (
-                    ctx.guild.filesize_limit
-                    if ctx.guild is not None
-                    else common.DEFAULT_FILESIZE_LIMIT
-                )
+                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.DEFAULT_FILESIZE_LIMIT
                 with io.StringIO("This file was too large to be cloned.") as fobj:
                     attached_files = [
                         (
@@ -1175,9 +1105,7 @@ class SudoCommandCog(BaseCommandCog):
 
             if info:
                 await ctx.channel.send(
-                    embed=pgbot.utils.embed_utils.get_msg_info_embed(
-                        msg, author=author_info
-                    ),
+                    embed=pgbot.utils.embed_utils.get_msg_info_embed(msg, author=author_info),
                     reference=cloned_msg,
                 )
 

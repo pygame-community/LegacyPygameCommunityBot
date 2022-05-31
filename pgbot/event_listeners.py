@@ -141,9 +141,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             )
             footer_text = error.__cause__.__class__.__name__
 
-    footer_text = (
-        f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
-    )
+    footer_text = f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
 
     response_message = common.recent_response_messages.get(ctx.message.id)
 
