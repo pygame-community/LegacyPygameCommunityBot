@@ -1,10 +1,9 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
-This file is the main file of the PygameCommunityBot source. Running this
-starts the bot
+This file defines Discord gateway event listeners
 """
 import asyncio
 import discord
@@ -142,9 +141,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             )
             footer_text = error.__cause__.__class__.__name__
 
-    footer_text = (
-        f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
-    )
+    footer_text = f"{footer_text}\n(React with 🗑 to delete this error message in the next 30s)"
 
     response_message = common.recent_response_messages.get(ctx.message.id)
 
@@ -188,7 +185,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
                 target_message,
                 ctx.author,
                 emoji="🗑",
-                role_whitelist=common.ServerConstants.ADMIN_ROLES,
+                role_whitelist=common.GuildConstants.ADMIN_ROLES,
                 timeout=30,
             )
         )
@@ -208,7 +205,3 @@ async def on_command_completion(ctx: commands.Context):
 
     if ctx.message.id in common.recent_response_messages:
         del common.recent_response_messages[ctx.message.id]
-
-
-if __name__ == "__main__":
-    pgbot.run()

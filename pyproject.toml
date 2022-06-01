@@ -1,0 +1,37 @@
+[tool.black]
+line-length = 120
+target_version = ['py39', 'py310']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+combine_star = true
+line_length = 120
+
+[tool.pyright]
+include = [
+    "snakecore"
+]
+exclude = [
+    "**/__pycache__"
+]
+pythonVersion = "3.9"
+

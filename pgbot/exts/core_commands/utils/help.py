@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines some utility functions for pg!help command
 """
@@ -72,11 +72,10 @@ def get_doc_from_func(func: typing.Callable):
 
 async def send_help_message(
     ctx: commands.Context,
+    bot: commands.Bot,
     original_msg: discord.Message,
     invoker: discord.Member,
-    commands: tuple[str, ...],
-    cmds_and_funcs: dict[str, typing.Callable],
-    groups: dict[str, list],
+    qualified_name: typing.Optional[str] = None,
     page: int = 1,
 ):
     """
@@ -87,24 +86,20 @@ async def send_help_message(
     Args:
         original_msg: The message to edit
         invoker: The member who requested the help command
-        commands: A tuple of command names passed by user for help.
-        cmds_and_funcs: The name-function pairs to get the docstrings from
-        groups: The name-list pairs of group commands
         page: The page of the embed, 0 by default
     """
 
     doc_fields = {}
     embeds = []
 
-    if not commands:
-        functions = {}
-        for key, func in cmds_and_funcs.items():
-            if hasattr(func, "groupname"):
-                key = f"{func.groupname} {' '.join(func.subcmds)}"
-            functions[key] = func
+    is_admin = any(role.id in common.GuildConstants.ADMIN_ROLES for role in getattr(invoker, "roles", ()))
 
-        for func in functions.values():
-            data = get_doc_from_func(func)
+    if not qualified_name:
+        for cmd in sorted(bot.walk_commands(), key=lambda cmd: cmd.qualified_name):
+            if cmd.hidden or not is_admin and cmd.extras.get("admin_only", False):
+                continue
+
+            data = get_doc_from_func(cmd.callback)
             if not data:
                 continue
 
@@ -112,9 +107,7 @@ async def send_help_message(
                 doc_fields[data["type"]] = ["", "", True]
 
             doc_fields[data["type"]][0] += f"{data['signature'][2:]}\n"
-            doc_fields[data["type"]][1] += (
-                f"`{data['signature']}`\n" f"{data['description']}\n\n"
-            )
+            doc_fields[data["type"]][1] += f"`{data['signature']}`\n" f"{data['description']}\n\n"
 
         doc_fields_cpy = doc_fields.copy()
 
@@ -127,90 +120,91 @@ async def send_help_message(
 
         embeds.append(
             discord.Embed(
-                title=common.BOT_HELP_PROMPT["title"],
-                description=common.BOT_HELP_PROMPT["description"],
-                color=common.BOT_HELP_PROMPT["color"],
+                title="Help",
+                description=common.BOT_HELP_DIALOG_FSTRING.format(bot.user.mention, common.COMMAND_PREFIX),
+                color=common.DEFAULT_EMBED_COLOR,
             )
         )
         for doc_field in list(doc_fields.values()):
             body = f"{doc_field[0]}\n\n{doc_field[1]}"
             embeds.append(
                 snakecore.utils.embed_utils.create_embed(
-                    title=common.BOT_HELP_PROMPT["title"],
+                    title="Help",
                     description=body,
-                    color=common.BOT_HELP_PROMPT["color"],
+                    color=common.DEFAULT_EMBED_COLOR,
                 )
             )
 
-    elif commands[0] in cmds_and_funcs:
-        func_name = commands[0]
-        funcs = groups[func_name] if func_name in groups else []
-        funcs.insert(0, cmds_and_funcs[func_name])
-
-        for func in funcs:
-            if (
-                commands[1:]
-                and commands[1:] != getattr(func, "subcmds", ())[: len(commands[1:])]
-            ):
-                continue
-
-            doc = get_doc_from_func(func)
-            if not doc:
-                # function found, but does not have help.
-                return await snakecore.utils.embed_utils.replace_embed_at(
-                    original_msg,
-                    title="Could not get docs",
-                    description="Command has no documentation",
-                    color=0xFF0000,
-                )
-
-            body = f"`{doc['signature']}`\n`Category: {doc['type']}`\n\n"
-
-            desc = doc["description"]
-
-            ext_desc = doc.get("extended description")
-            if ext_desc:
-                desc = f"> *{desc}*\n\n{ext_desc}"
-
-            desc_list = desc.split(sep="+===+")
-
-            body += f"**Description:**\n{desc_list[0]}"
-
-            embed_fields = []
-
-            example_cmd = doc.get("example command")
-            if example_cmd:
-                embed_fields.append(
-                    dict(name="Example command(s):", value=example_cmd, inline=True)
-                )
-
-            if len(desc_list) == 1:
-                embeds.append(
-                    snakecore.utils.embed_utils.create_embed(
-                        title=f"Help for `{func_name}`",
-                        description=body,
-                        color=common.BOT_HELP_PROMPT["color"],
-                        fields=embed_fields,
+    else:
+        cmd = bot.get_command(qualified_name)
+        if cmd is not None and not cmd.hidden and (is_admin or cmd.extras.get("admin_only", False)):
+            cmds = [cmd]
+            if isinstance(cmd, commands.Group):
+                cmds.extend(
+                    sorted(
+                        (subcmd for subcmd in cmd.walk_commands()),
+                        key=lambda cmd: cmd.qualified_name,
                     )
                 )
-            else:
-                embeds.append(
-                    snakecore.utils.embed_utils.create_embed(
-                        title=f"Help for `{func_name}`",
-                        description=body,
-                        color=common.BOT_HELP_PROMPT["color"],
+
+            for cmd in cmds:
+                doc = get_doc_from_func(cmd.callback)
+                if not doc:
+                    # function found, but does not have help.
+                    return await snakecore.utils.embed_utils.replace_embed_at(
+                        original_msg,
+                        title="Could not get docs",
+                        description="Command has no documentation",
+                        color=0xFF0000,
                     )
-                )
-                desc_list_len = len(desc_list)
-                for i in range(1, desc_list_len):
+
+                body = f"`{doc['signature']}`\n`Category: {doc['type']}`\n\n"
+
+                desc = doc["description"]
+
+                ext_desc = doc.get("extended description")
+                if ext_desc:
+                    desc = f"> *{desc}*\n\n{ext_desc}"
+
+                desc_list = desc.split(sep="+===+")
+
+                body += f"**Description:**\n{desc_list[0]}"
+
+                embed_fields = []
+
+                example_cmd = doc.get("example command")
+                if example_cmd:
+                    embed_fields.append(dict(name="Example command(s):", value=example_cmd, inline=True))
+
+                cmd_qualified_name = cmd.qualified_name
+
+                if len(desc_list) == 1:
                     embeds.append(
                         snakecore.utils.embed_utils.create_embed(
-                            title=f"Help for `{func_name}`",
-                            description=desc_list[i],
-                            color=common.BOT_HELP_PROMPT["color"],
-                            fields=embed_fields if i == desc_list_len - 1 else None,
+                            title=f"Help for `{cmd_qualified_name}`",
+                            description=body,
+                            color=common.DEFAULT_EMBED_COLOR,
+                            fields=embed_fields,
                         )
                     )
+                else:
+                    embeds.append(
+                        snakecore.utils.embed_utils.create_embed(
+                            title=f"Help for `{cmd_qualified_name}`",
+                            description=body,
+                            color=common.DEFAULT_EMBED_COLOR,
+                        )
+                    )
+                    desc_list_len = len(desc_list)
+                    for i in range(1, desc_list_len):
+                        embeds.append(
+                            snakecore.utils.embed_utils.create_embed(
+                                title=f"Help for `{cmd_qualified_name}`",
+                                description=desc_list[i],
+                                color=common.DEFAULT_EMBED_COLOR,
+                                fields=embed_fields if i == desc_list_len - 1 else None,
+                            )
+                        )
 
     if not embeds:
         return await snakecore.utils.embed_utils.replace_embed_at(
@@ -220,9 +214,7 @@ async def send_help_message(
             color=0xFF0000,
         )
 
-    footer_text = (
-        f"Refresh this by replying with `{common.COMMAND_PREFIX}refresh`.\ncmd: help"
-    )
+    footer_text = f"Refresh this by replying with `{common.COMMAND_PREFIX}refresh`.\n___\ncmd: help"
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser
@@ -232,7 +224,7 @@ async def send_help_message(
 
     msg_embeds = [
         snakecore.utils.embed_utils.create_embed(
-            color=common.BOT_HELP_PROMPT["color"],
+            color=common.DEFAULT_EMBED_COLOR,
             footer_text=footer_text,
         )
     ]
@@ -244,10 +236,10 @@ async def send_help_message(
             original_msg,
             *embeds,
             caller=invoker,
-            whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+            whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
             start_page_number=page,
             inactivity_timeout=60,
-            theme_color=common.BOT_HELP_PROMPT["color"],
+            theme_color=common.DEFAULT_EMBED_COLOR,
         ).mainloop()
     except discord.HTTPException:
         pass

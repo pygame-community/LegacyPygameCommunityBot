@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines converters for parsing command arguments.
 """
@@ -23,9 +23,7 @@ class PygameColor(commands.Converter):
         try:
             return pygame.Color(argument)
         except (ValueError, TypeError) as err:
-            raise commands.BadArgument(
-                f"failed to construct pygame.Color: {err.__class__.__name__}:{err!s}"
-            )
+            raise commands.BadArgument(f"failed to construct pygame.Color: {err.__class__.__name__}:{err!s}")
 
 
 if TYPE_CHECKING:

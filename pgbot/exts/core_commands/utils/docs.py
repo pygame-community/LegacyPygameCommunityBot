@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines some functions to access docs of any module/class/function
 """
@@ -38,7 +38,6 @@ import pygame_gui
 import snakecore
 
 from pgbot import common
-import pgbot
 
 doc_module_tuple = (
     asyncio,
@@ -252,9 +251,7 @@ async def put_doc(
 
     main_embeds.extend(embeds)
 
-    footer_text = (
-        "Refresh this by replying with " f"`{common.COMMAND_PREFIX}refresh`.\ncmd: doc"
-    )
+    footer_text = "Refresh this by replying with " f"`{common.COMMAND_PREFIX}refresh`.\n___\ncmd: doc"
 
     raw_command_input: str = getattr(ctx, "raw_command_input", "")
     # attribute injected by snakecore's custom parser
@@ -262,11 +259,7 @@ async def put_doc(
     if raw_command_input:
         footer_text += f" | args: {raw_command_input}"
 
-    msg_embeds = [
-        snakecore.utils.embed_utils.create_embed(
-            color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
-        )
-    ]
+    msg_embeds = [snakecore.utils.embed_utils.create_embed(color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text)]
 
     original_msg = await original_msg.edit(embeds=msg_embeds)
 
@@ -274,7 +267,7 @@ async def put_doc(
         original_msg,
         *main_embeds,
         caller=msg_invoker,
-        whitelisted_role_ids=common.ServerConstants.ADMIN_ROLES,
+        whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
         start_page_number=page,
         inactivity_timeout=60,
         theme_color=common.DEFAULT_EMBED_COLOR,

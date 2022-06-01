@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines a "routine" function, that gets called on routine.
 It gets called every 5 seconds or so.
@@ -9,25 +9,22 @@ It gets called every 5 seconds or so.
 
 import asyncio
 import datetime
-from http.client import HTTPException
 import io
 import os
-import random
 import sys
-from typing import Union
 
 import discord
 from discord.ext import tasks
 import snakecore
 
-from pgbot import common, db, emotion
+from pgbot import common
 
 
-async def handle_reminders(reminder_obj: db.DiscordDB):
+async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
     """
     Handle reminder routines
     """
-    reminders = reminder_obj.get({})
+    reminders = reminder_obj.obj
 
     new_reminders = {}
     for mem_id, reminder_dict in reminders.items():
@@ -54,9 +51,7 @@ async def handle_reminders(reminder_obj: db.DiscordDB):
                 allowed_mentions.replied_user = True
                 try:
                     message = await channel.fetch_message(msg_id)
-                    await message.reply(
-                        content=content, allowed_mentions=allowed_mentions
-                    )
+                    await message.reply(content=content, allowed_mentions=allowed_mentions)
                 except discord.HTTPException:
                     # The message probably got deleted, try to resend in channel
                     allowed_mentions.users = [discord.Object(mem_id)]
@@ -106,9 +101,7 @@ async def handle_console():
         if not content:
             continue
 
-        await common.console_channel.send(
-            content=snakecore.utils.code_block(content, code_type="cmd")
-        )
+        await common.console_channel.send(content=snakecore.utils.code_block(content, code_type="cmd"))
 
 
 @tasks.loop(seconds=3)
@@ -117,11 +110,8 @@ async def routine():
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    async with db.DiscordDB("reminders") as db_obj:
+    async with snakecore.db.DiscordDB("reminders") as db_obj:
         await handle_reminders(db_obj)
-
-    if random.randint(0, 4) == 0:
-        await emotion.update("bored", 1)
 
     await common.bot.change_presence(
         activity=discord.Activity(
