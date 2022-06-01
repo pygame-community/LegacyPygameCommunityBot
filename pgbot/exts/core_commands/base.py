@@ -101,7 +101,7 @@ class CommandMixinCog(commands.Cog):
             if len(emojis_dict) == 1:
                 raise BotException(
                     "Invalid arguments for emojis",
-                    "Please add at least 2 options in the poll\n" "For more information, see `pg!help poll`",
+                    "Please add at least 2 options in the poll\nFor more information, see `pg!help poll`",
                 )
 
             base_embed_dict["fields"] = [{"name": k, "value": v, "inline": True} for k, v in emojis_dict.items()]
@@ -170,14 +170,14 @@ class CommandMixinCog(commands.Cog):
         if not msg.embeds:
             raise BotException(
                 "Invalid message",
-                "The message specified is not an ongoing vote." " Please double-check the id.",
+                "The message specified is not an ongoing vote. Please double-check the id.",
             )
 
         embed = msg.embeds[0]
         if not isinstance(embed.footer.text, str):
             raise BotException(
                 "Invalid message",
-                "The message specified is not an ongoing vote." " Please double-check the id.",
+                "The message specified is not an ongoing vote. Please double-check the id.",
             )
 
         poll_config_map = {}
@@ -199,7 +199,7 @@ class CommandMixinCog(commands.Cog):
         else:
             raise BotException(
                 "Invalid message",
-                "The message specified is not an ongiong poll." " Please double-check the id.",
+                "The message specified is not an ongiong poll. Please double-check the id.",
             )
 
         if not ("by" in poll_config_map and "voting-mode" in poll_config_map):
@@ -211,7 +211,7 @@ class CommandMixinCog(commands.Cog):
         elif not _privileged and ctx.author.id != poll_config_map["by"]:
             raise BotException(
                 "You can't close this poll",
-                "This poll was not started by you." " Ask the person who started it to close it.",
+                "This poll was not started by you. Ask the person who started it to close it.",
             )
 
         title = "Voting has ended"
@@ -390,7 +390,7 @@ class CommandMixinCog(commands.Cog):
             response_message,
             title="Pygame Community Discord Server Events!",
             description=(
-                "Check out Weekly Challenges!\n" "Run `pg!events wc` to check out the scoreboard for this event!"
+                "Check out Weekly Challenges!\nRun `pg!events wc` to check out the scoreboard for this event!"
             ),
             color=common.DEFAULT_EMBED_COLOR,
         )

@@ -495,7 +495,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             raise BotException(
                 "Cannot overwrite embed!",
-                "The given message's embed cannot be overwritten when" " `overwrite=` is set to `False`",
+                "The given message's embed cannot be overwritten when `overwrite=` is set to `False`",
             )
 
     @emsudo.group(name="remove", invoke_without_command=True)
@@ -1432,7 +1432,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             raise BotException(
                 "Ivalid embed sum operation",
-                "Could not successfully generate" " an embed from the data of those" " given as input.",
+                "Could not successfully generate an embed from the data of those given as input.",
             )
 
         if remove_inputs:
@@ -1937,7 +1937,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 else:
                     raise BotException(
                         "Cannot execute command:",
-                        "Could not find data that matches" " the pattern of the given embed attribute filter string.",
+                        "Could not find data that matches the pattern of the given embed attribute filter string.",
                     )
 
                 if pop and pop_target_embed_dict and embed_mask_dict:

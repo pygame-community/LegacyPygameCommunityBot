@@ -349,7 +349,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
                     file = discord.File(f"temp{tstamp}.png")
                 else:
-                    embed_dict["description"] += "\n```\nGIF could not be sent.\n" "The GIF file size is above 4MiB```"
+                    embed_dict["description"] += "\n```\nGIF could not be sent.\nThe GIF file size is above 4MiB```"
 
             elif returned._imgs:
                 embed_dict["description"] += "\n**GIF output:**"
@@ -357,7 +357,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
                     file = discord.File(f"temp{tstamp}.gif")
                 else:
-                    embed_dict["description"] += "\n```GIF could not be sent.\n" "The GIF file size is above 4MiB```"
+                    embed_dict["description"] += "\n```GIF could not be sent.\nThe GIF file size is above 4MiB```"
 
         try:
             await response_message.delete()
@@ -415,7 +415,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         if cmd_data_match is None:
             raise BotException(
                 "Message does not support pagination",
-                "The message specified does not support pagination. Make sure " "the id of the message is correct.",
+                "The message specified does not support pagination. Make sure the id of the message is correct.",
             )
 
         cmd_data_str = footer_text[slice(*cmd_data_match.span())].removesuffix("\n")
@@ -437,7 +437,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         if page_num_str_match is None or not page_num_str.isdigit() or not cmd_str:
             raise BotException(
                 "Message does not support pagination",
-                "The message specified does not support pagination. Make sure " "the id of the message is correct.",
+                "The message specified does not support pagination. Make sure the id of the message is correct.",
             )
 
         if "page=" not in arg_str:
@@ -480,7 +480,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             return
 
         raise commands.CommandNotFound(
-            "Could not find the original command of the specified message to restart " "pagination."
+            "Could not find the original command of the specified message to restart pagination."
         )
 
     @commands.group(invoke_without_command=True)

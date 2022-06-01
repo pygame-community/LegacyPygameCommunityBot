@@ -71,7 +71,7 @@ class Output:
             return
 
         if not isinstance(image, pygame.Surface):
-            self.exc = f"TypeError at line {lineno}: " "Argument image must be type of pygame.Surface"
+            self.exc = f"TypeError at line {lineno}: Argument image must be type of pygame.Surface"
             return
 
         self._imgs.append(image.copy())

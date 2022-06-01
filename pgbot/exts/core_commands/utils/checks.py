@@ -38,7 +38,7 @@ def _admin_only_predicate(ctx: commands.Context):
     if any(role.id in common.GuildConstants.ADMIN_ROLES for role in getattr(ctx.author, "roles", ())):
         return True
     raise AdminOnly(
-        f"The command '{ctx.command.qualified_name}' is an admin command, and you do " "not have access to that"
+        f"The command '{ctx.command.qualified_name}' is an admin command, and you do not have access to that"
     )
 
 
