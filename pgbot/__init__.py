@@ -24,6 +24,14 @@ import pgbot
 from pgbot import common, exceptions, event_listeners, routine, utils
 from pgbot.utils import get_primary_guild_perms, message_delete_reaction_listener, parse_text_to_mapping
 
+if sys.platform != "win32":
+    try:
+        import uvloop
+
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        pass
+
 
 async def load_startup_extensions(extension_list: list[dict]):
     """Load startup bot extensions required for proper bot
