@@ -60,14 +60,6 @@ guild: Optional[discord.Guild] = None
 # IO object to redirect output to discord, gets patched later
 stdout: Optional[io.StringIO] = None
 
-bootstrap = {
-    "extensions": [
-        {"name": "pgbot.exts.core_commands.help"},
-        {"name": "pgbot.exts.core_commands.admin"},
-        {"name": "pgbot.exts.core_commands.user"},
-    ]
-}
-
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel

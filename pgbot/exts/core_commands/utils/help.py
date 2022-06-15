@@ -7,6 +7,7 @@ This file defines some utility functions for pg!help command
 """
 
 from __future__ import annotations
+import asyncio
 
 import re
 import typing
@@ -16,6 +17,7 @@ from discord.ext import commands
 import snakecore
 
 from pgbot import common
+from pgbot.utils import message_delete_reaction_listener
 
 # regex for doc string
 regex = re.compile(
@@ -230,6 +232,18 @@ async def send_help_message(
     ]
 
     original_msg = await original_msg.edit(embeds=msg_embeds)
+
+    common.hold_task(
+        asyncio.create_task(
+            message_delete_reaction_listener(
+                original_msg,
+                ctx.author,
+                emoji="🗑",
+                role_whitelist=common.GuildConstants.ADMIN_ROLES,
+                timeout=30,
+            )
+        )
+    )
 
     try:
         await snakecore.utils.pagination.EmbedPaginator(

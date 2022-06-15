@@ -9,6 +9,7 @@ This file is the main file of pgbot subdir
 import asyncio
 import datetime
 import io
+import logging
 import os
 import re
 import random
@@ -17,6 +18,7 @@ import sys
 from typing import Optional, Union
 
 import discord
+from discord.client import stream_supports_colour, _ColourFormatter
 import pygame
 import snakecore
 
@@ -24,35 +26,21 @@ import pgbot
 from pgbot import common, exceptions, event_listeners, routine, utils
 from pgbot.utils import get_primary_guild_perms, message_delete_reaction_listener, parse_text_to_mapping
 
-if sys.platform != "win32":
-    try:
-        import uvloop
 
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except ImportError:
-        pass
+def setup_logging():
+    logger = logging.getLogger("discord")
+    logger.setLevel(logging.ERROR)
 
+    log_handler = logging.StreamHandler()
+    dt_fmt = "%Y-%m-%d %H:%M:%S"
+    if stream_supports_colour(log_handler.stream):
+        log_formatter = _ColourFormatter()
+    else:
+        dt_fmt = "%Y-%m-%d %H:%M:%S"
+        log_formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
 
-async def load_startup_extensions(extension_list: list[dict]):
-    """Load startup bot extensions required for proper bot
-    functioning.
-
-    Args:
-        extension_list (list[dict]): The list of extension data
-          retrieved from 'bootstrap.json'
-    """
-    for extension_data in extension_list:
-        try:
-            name = extension_data["name"]
-        except KeyError as k:
-            k.args = ("'name' is required for objects within 'extensions' array in 'bootstrap.json'",)
-            raise
-
-        await common.bot.load_extension(
-            name,
-            package=extension_data.get("package"),
-            options=extension_data.get("setup_options"),
-        )
+    log_handler.setFormatter(log_formatter)
+    logger.addHandler(log_handler)
 
 
 async def _init():
@@ -104,7 +92,9 @@ async def _init():
                 if channel.id == value:
                     common.entry_channels[key] = channel
 
-    await load_startup_extensions(common.bootstrap.get("extensions", []))
+    await common.bot.load_extension("pgbot.exts.core_commands.help")
+    await common.bot.load_extension("pgbot.exts.core_commands.admin")
+    await common.bot.load_extension("pgbot.exts.core_commands.user")
 
     async with snakecore.db.DiscordDB("blacklist", list) as db_obj:  # disable blacklisted commands
         for cmd_qualname in db_obj.obj:
@@ -134,6 +124,8 @@ async def init():
             "Primary guild was not set. Some features of bot would not run as usual."
             " People running commands via DMs might face some problems"
         )
+
+    setup_logging()
 
 
 def format_entries_message(msg: discord.Message, entry_type: str) -> tuple[str, list[dict[str, Union[str, bool]]]]:

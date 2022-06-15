@@ -8,4 +8,3 @@ pygame_gui>=0.5.7
 python-dotenv>=0.17
 snakecore @ git+https://github.com/pygame-community/snakecore.git@main#egg=snakecore-0.1
 unidecode>=1.2.0
-uvloop; sys_platform != "win32"
