@@ -211,7 +211,8 @@ class RedirectTextIOWrapper(io.TextIOWrapper):
     def __init__(
         self,
         buffer: io.BufferedIOBase,
-        redirect_streams: Sequence[io.TextIOBase],
+        streams: Sequence[io.TextIOBase],
+        flush_streams: bool = True,
         close_streams: bool = False,
         **kwargs,
     ):
@@ -219,39 +220,43 @@ class RedirectTextIOWrapper(io.TextIOWrapper):
 
         Args:
             buffer (BufferedIOBase): The buffer.
-            redirect_streams (Sequence[TextIOBase]): The streams to redirect write operations to.
+            streams (Sequence[TextIOBase]): The streams to redirect write operations to.
+            flush_streams (bool, optional): Whether to flush the redirection streams when being flushed. Defaults to True.
             close_streams (bool, optional): Whether to close the redirection streams when being closed. Defaults to False.
 
         Raises:
             TypeError: Invalid redirect stream type.
         """
         super().__init__(buffer, **kwargs)
-        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(redirect_streams)):
-            raise TypeError(
-                "argument 'redirect_streams' must be a sequence of writable TextIOBase instances with encoding utf-8"
-            )
-        self._redirect_streams = tuple(redirect_streams)
-        self._close_streams = bool(close_streams)
+        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(streams)):
+            raise TypeError("argument 'streams' must be a sequence of writable, flushable TextIOBase instances")
+        self._streams = tuple(streams)
+        self._flush_streams = flush_streams
+        self._close_streams = close_streams
 
-    def _redirect_streams_get(self) -> tuple[io.TextIOBase]:
-        return self._redirect_streams
+    def _streams_get(self) -> tuple[io.TextIOBase]:
+        return self._streams
 
-    def _redirect_streams_set(self, redirect_streams: Sequence[io.TextIOBase]):
-        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(redirect_streams)):
-            raise AttributeError(
-                "attribute 'redirect_streams' must be a sequence of writable TextIOBase instances with encoding utf-8"
-            )
-        self._redirect_streams = tuple(redirect_streams)
+    def _streams_set(self, streams: Sequence[io.TextIOBase]):
+        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(streams)):
+            raise AttributeError("attribute 'streams' must be a sequence of writable, flushable TextIOBase instances")
+        self._streams = tuple(streams)
 
-    redirect_streams = property(fget=_redirect_streams_get, fset=_redirect_streams_set)
+    streams = property(fget=_streams_get, fset=_streams_set)
 
     def write(self, __s: str, /):
         super().write(__s)
-        for stream in self._redirect_streams:
+        for stream in self._streams:
             stream.write(__s)
 
+    def flush(self) -> None:
+        super().flush()
+        if self._flush_streams:
+            for stream in self._streams:
+                stream.flush()
+
     def close(self):
-        if self._close_streams:
-            for stream in self._redirect_streams:
-                stream.close()
         super().close()
+        if self._close_streams:
+            for stream in self._streams:
+                stream.close()
