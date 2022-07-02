@@ -9,6 +9,7 @@ This file defines some important utility functions.
 from __future__ import annotations
 from ast import literal_eval
 import asyncio
+import io
 from typing import Any, Optional, Sequence, Union
 
 
@@ -204,3 +205,53 @@ async def message_delete_reaction_listener(
 
         if isinstance(a, asyncio.CancelledError):
             raise a
+
+
+class RedirectTextIOWrapper(io.TextIOWrapper):
+    def __init__(
+        self,
+        buffer: io.BufferedIOBase,
+        redirect_streams: Sequence[io.TextIOBase],
+        close_streams: bool = False,
+        **kwargs,
+    ):
+        """A subclass of `TextIOWrapper` that additionally redirects writes to the given TextIOBase streams.
+
+        Args:
+            buffer (BufferedIOBase): The buffer.
+            redirect_streams (Sequence[TextIOBase]): The streams to redirect write operations to.
+            close_streams (bool, optional): Whether to close the redirection streams when being closed. Defaults to False.
+
+        Raises:
+            TypeError: Invalid redirect stream type.
+        """
+        super().__init__(buffer, **kwargs)
+        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(redirect_streams)):
+            raise TypeError(
+                "argument 'redirect_streams' must be a sequence of writable TextIOBase instances with encoding utf-8"
+            )
+        self._redirect_streams = tuple(redirect_streams)
+        self._close_streams = bool(close_streams)
+
+    def _redirect_streams_get(self) -> tuple[io.TextIOBase]:
+        return self._redirect_streams
+
+    def _redirect_streams_set(self, redirect_streams: Sequence[io.TextIOBase]):
+        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(redirect_streams)):
+            raise AttributeError(
+                "attribute 'redirect_streams' must be a sequence of writable TextIOBase instances with encoding utf-8"
+            )
+        self._redirect_streams = tuple(redirect_streams)
+
+    redirect_streams = property(fget=_redirect_streams_get, fset=_redirect_streams_set)
+
+    def write(self, __s: str, /):
+        super().write(__s)
+        for stream in self._redirect_streams:
+            stream.write(__s)
+
+    def close(self):
+        if self._close_streams:
+            for stream in self._redirect_streams:
+                stream.close()
+        super().close()

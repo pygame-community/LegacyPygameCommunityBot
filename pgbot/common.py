@@ -11,6 +11,7 @@ import asyncio
 import io
 import json
 import os
+import sys
 from typing import Optional, Union
 
 import discord
@@ -60,6 +61,9 @@ guild: Optional[discord.Guild] = None
 # IO object to redirect output to discord, gets patched later
 stdout: Optional[io.StringIO] = None
 
+old_stdout = sys.stdout
+old_stderr = sys.stderr
+
 log_channel: discord.TextChannel
 arrivals_channel: discord.TextChannel
 roles_channel: discord.TextChannel
@@ -104,7 +108,7 @@ ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
 ints.message_content = True  # needed for message content
 bot = snakecore.command_handler.Bot(
-    command_prefix=commands.when_mentioned_or("pd!" if TEST_MODE else "pg!"),
+    command_prefix=commands.when_mentioned_or(COMMAND_PREFIX),
     intents=ints,
     help_command=None,
 )

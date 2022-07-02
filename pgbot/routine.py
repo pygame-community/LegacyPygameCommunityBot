@@ -82,7 +82,7 @@ async def handle_console():
         return
 
     contents = common.stdout.getvalue()
-    sys.stdout = sys.stderr = common.stdout = io.StringIO()
+    common.stdout = io.StringIO()
 
     # hide path data
     contents = contents.replace(os.getcwd(), "PgBot")
@@ -90,8 +90,7 @@ async def handle_console():
         contents = contents.replace(os.path.dirname(sys.executable), "Python")
 
     if common.GENERIC or common.console_channel is None:
-        # just print error to shell if we cannot sent it on discord
-        print(contents, file=sys.__stdout__)
+        # just return if we cannot sent it on discord
         return
 
     # the actual message limit is 2000. But since the message is sent with

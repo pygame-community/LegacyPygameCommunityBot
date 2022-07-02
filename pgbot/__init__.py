@@ -53,7 +53,9 @@ async def _init():
     if not common.TEST_MODE:
         # when we are not in test mode, we want stout/stderr to appear on a console
         # in a discord channel
-        sys.stdout = sys.stderr = common.stdout = io.StringIO()
+        common.stdout = io.StringIO()
+        sys.stdout = pgbot.utils.RedirectTextIOWrapper(sys.stdout.buffer, (common.stdout,))
+        sys.stderr = pgbot.utils.RedirectTextIOWrapper(sys.stderr.buffer, (common.stdout,))
 
     print("The PygameCommunityBot is now online!")
     print("Server(s):")
@@ -112,8 +114,8 @@ async def init():
     except Exception:
         # error happened in the first init sequence. report error to stdout/stderr
         # note that the chances of this happening are pretty slim, but you never know
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
+        sys.stdout = common.old_stdout
+        sys.stderr = common.old_stderr
         raise
 
     routine.handle_console.start()
