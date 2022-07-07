@@ -128,7 +128,12 @@ async def user_clock(t: float, clock_timezones: dict, guild: discord.Guild):
     tx = ty = 0
     tz_and_col = {}
     for mem, (offset, color) in clock_timezones.items():
-        mem = await guild.fetch_member(mem)
+        # try to grab the member information from the guild
+        # skip if not found
+        try:
+            mem = await guild.fetch_member(mem)
+        except discord.HTTPException:
+            continue
         # try to use nickname, if it is too long, fallback to name
         # 14 happens to be the sweet spot, any longer and the name overflows
         if mem.nick and len(mem.nick) <= 14:
