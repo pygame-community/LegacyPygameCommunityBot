@@ -356,11 +356,11 @@ class SudoCommandCog(BaseCommandCog):
         attachment_msg: Optional[discord.Message] = None
         msg_text = ""
 
-        if isinstance(data, str):
-            if not data:
+        if isinstance(data, String):
+            if not data.string:
                 attachment_msg = ctx.message
             else:
-                msg_text = data
+                msg_text = data.string
 
         elif isinstance(data, discord.Message):
             if from_attachment:
