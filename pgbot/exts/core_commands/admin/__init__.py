@@ -424,6 +424,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         show_author: bool = True,
         divider: String = String("-" * 56),
         group_by_author: bool = True,
+        group_by_author_timedelta: float = 600.0,
         message_links: bool = True,
         oldest_first: bool = True,
         same_channel: bool = False,
@@ -432,8 +433,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         ->type Admin commands
         ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
         [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
-        [divider=("-"*56)] [group_by_author=True] [message_links=True]
-        [oldest_first=True] [same_channel=False]
+        [divider=("-"*56)] [group_by_author=True] [group_by_author_timedelta=864e11]
+        [message_links=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
         Implement pg!archive, for admins to archive messages
@@ -606,7 +607,13 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     author_embed = None
                     current_divider_str = divider_str
                     if show_author or divider_str:
-                        if group_by_author and i > 0 and messages[i - 1].author == author:
+                        if (
+                            group_by_author
+                            and i > 0
+                            and messages[i - 1].author == author
+                            or (msg.created_at - messages[i - 1].created_at).total_seconds()
+                            < datetime.timedelta(seconds=group_by_author_timedelta)
+                        ):
                             # no author info or divider for messages next to
                             # each other sharing an author
                             current_divider_str = None
@@ -694,14 +701,14 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         await snakecore.utils.embed_utils.send_embed(
                             channel=destination,
                             description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}",
-                            color=common.DEFAULT_EMBED_COLOR,
+                            color=0x36393F,
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
                         await snakecore.utils.embed_utils.send_embed(
                             channel=destination,
                             description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!",
-                            color=common.DEFAULT_EMBED_COLOR,
+                            color=0x36393F,
                         )
 
                     if len(attached_files) > 1:
