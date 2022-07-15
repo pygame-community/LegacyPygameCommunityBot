@@ -151,7 +151,7 @@ class SudoCommandCog(BaseCommandCog):
                 if not data.string:
                     attachment_msg = ctx.message
                 else:
-                    msg_text = data
+                    msg_text = data.string
                     output_strings.append(msg_text)
 
             elif isinstance(data, discord.Message):
