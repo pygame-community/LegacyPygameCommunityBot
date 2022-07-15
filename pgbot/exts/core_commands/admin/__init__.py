@@ -611,7 +611,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                             group_by_author
                             and i > 0
                             and messages[i - 1].author == author
-                            or (msg.created_at - messages[i - 1].created_at).total_seconds() < group_by_author_timedelta
+                            and (msg.created_at - messages[i - 1].created_at).total_seconds()
+                            < group_by_author_timedelta
                         ):
                             # no author info or divider for messages next to
                             # each other sharing an author
