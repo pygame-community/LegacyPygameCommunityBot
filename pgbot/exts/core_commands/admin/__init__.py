@@ -433,7 +433,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         ->type Admin commands
         ->signature pg!archive <origin> <quantity> [mode=0] [destination=]
         [before=] [after=] [around=] [raw=False] [show_header=True] [show_author=True]
-        [divider=("-"*56)] [group_by_author=True] [group_by_author_timedelta=864e11]
+        [divider=("-"*56)] [group_by_author=True] [group_by_author_timedelta=600]
         [message_links=True] [oldest_first=True] [same_channel=False]
         ->description Archive messages to another channel
         -----
@@ -611,8 +611,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                             group_by_author
                             and i > 0
                             and messages[i - 1].author == author
-                            or (msg.created_at - messages[i - 1].created_at).total_seconds()
-                            < datetime.timedelta(seconds=group_by_author_timedelta)
+                            or (msg.created_at - messages[i - 1].created_at).total_seconds() < group_by_author_timedelta
                         ):
                             # no author info or divider for messages next to
                             # each other sharing an author
