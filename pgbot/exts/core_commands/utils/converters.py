@@ -23,7 +23,9 @@ class PygameColor(commands.Converter):
         try:
             return pygame.Color(argument)
         except (ValueError, TypeError) as err:
-            raise commands.BadArgument(f"failed to construct pygame.Color: {err.__class__.__name__}:{err!s}")
+            raise commands.BadArgument(
+                f"failed to construct pygame.Color: {err.__class__.__name__}:{err!s}"
+            )
 
 
 if TYPE_CHECKING:

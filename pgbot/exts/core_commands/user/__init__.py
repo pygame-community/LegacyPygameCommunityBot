@@ -194,7 +194,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         -----
         Implement pg!reminders_set, for users to set reminders for themselves
         """
-        timestr = timestr.string.strip() if isinstance(timestr, String) else timestr.strip()
+        timestr = (
+            timestr.string.strip() if isinstance(timestr, String) else timestr.strip()
+        )
 
         if timestr:
             time_formats = {
@@ -218,7 +220,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                 month_results = re.search(r"\d+mo", timestr).group()
                 parsed_month_time = int(month_results.replace("mo", ""))
                 sec += (
-                    ctx.message.created_at.replace(month=ctx.message.created_at.month + parsed_month_time)
+                    ctx.message.created_at.replace(
+                        month=ctx.message.created_at.month + parsed_month_time
+                    )
                     - ctx.message.created_at
                 ).total_seconds()
 
@@ -239,7 +243,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                 seconds=seconds,
             )
 
-        await self.reminders_add_func(ctx, msg, datetime.datetime.utcnow(), _delta=delta)
+        await self.reminders_add_func(
+            ctx, msg, datetime.datetime.utcnow(), _delta=delta
+        )
 
     @reminders.command(name="remove")
     @custom_parsing(inside_class=True, inject_message_reference=True)
@@ -271,7 +277,10 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                                 db_data[ctx.author.id].pop(dt)
                                 cnt += 1
                                 break
-                    if reminder_id >= len(db_data_copy[ctx.author.id]) or reminder_id < 0:
+                    if (
+                        reminder_id >= len(db_data_copy[ctx.author.id])
+                        or reminder_id < 0
+                    ):
                         raise BotException(
                             "Invalid Reminder ID!",
                             "Reminder ID was not an existing reminder ID",
@@ -336,12 +345,16 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             file = None
             if returned.exc:
                 embed_dict["description"] += "**Exception output:**\n"
-                embed_dict["description"] += snakecore.utils.code_block(returned.exc, 500)
+                embed_dict["description"] += snakecore.utils.code_block(
+                    returned.exc, 500
+                )
                 embed_dict["description"] += "\n"
 
             if returned.text:
                 embed_dict["description"] += "**Text output:**\n"
-                embed_dict["description"] += snakecore.utils.code_block(returned.text, 1500)
+                embed_dict["description"] += snakecore.utils.code_block(
+                    returned.text, 1500
+                )
 
             if returned.img:
                 embed_dict["description"] += "\n**Image output:**"
@@ -349,7 +362,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.png"
                     file = discord.File(f"temp{tstamp}.png")
                 else:
-                    embed_dict["description"] += "\n```\nGIF could not be sent.\nThe GIF file size is above 4MiB```"
+                    embed_dict[
+                        "description"
+                    ] += "\n```\nGIF could not be sent.\nThe GIF file size is above 4MiB```"
 
             elif returned._imgs:
                 embed_dict["description"] += "\n**GIF output:**"
@@ -357,7 +372,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                     embed_dict["image_url"] = f"attachment://temp{tstamp}.gif"
                     file = discord.File(f"temp{tstamp}.gif")
                 else:
-                    embed_dict["description"] += "\n```GIF could not be sent.\nThe GIF file size is above 4MiB```"
+                    embed_dict[
+                        "description"
+                    ] += "\n```GIF could not be sent.\nThe GIF file size is above 4MiB```"
 
         try:
             await response_message.delete()
@@ -368,11 +385,17 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         embed = snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
         await ctx.message.reply(file=file, embed=embed, mention_author=False)
 
-        filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.DEFAULT_FILESIZE_LIMIT
+        filesize_limit = (
+            ctx.guild.filesize_limit
+            if ctx.guild is not None
+            else common.DEFAULT_FILESIZE_LIMIT
+        )
 
         if len(returned.text) > 1500:
             with io.StringIO(
-                returned.text if len(returned.text) - 40 < filesize_limit else returned.text[: filesize_limit - 40]
+                returned.text
+                if len(returned.text) - 40 < filesize_limit
+                else returned.text[: filesize_limit - 40]
             ) as fobj:
                 await ctx.channel.send(file=discord.File(fobj, filename="output.txt"))
 
@@ -574,7 +597,9 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
 
     @stream.command(name="ping")
     @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def stream_ping(self, ctx: commands.Context, message: Optional[String] = None):
+    async def stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
         """
         ->type Reminders
         ->signature pg!stream ping [message]

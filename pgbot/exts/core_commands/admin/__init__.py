@@ -56,9 +56,13 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         for cnt, arg in enumerate(args):
             if isinstance(arg, CodeBlock):
-                out += f"{cnt} - Codeblock\n" + snakecore.utils.code_block(arg.code, code_type=arg.lang)
+                out += f"{cnt} - Codeblock\n" + snakecore.utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
             elif isinstance(arg, String):
-                out += f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
+                out += (
+                    f"{cnt} - String\n> " + "\n> ".join(arg.string.splitlines()) + "\n"
+                )
             elif isinstance(arg, tuple):
                 out += f"{cnt} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
             else:
@@ -70,9 +74,13 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         for name, arg in kwargs.items():
             if isinstance(arg, CodeBlock):
-                out += f"{name} - Codeblock\n" + snakecore.utils.code_block(arg.code, code_type=arg.lang)
+                out += f"{name} - Codeblock\n" + snakecore.utils.code_block(
+                    arg.code, code_type=arg.lang
+                )
             elif isinstance(arg, String):
-                out += f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
+                out += (
+                    f"{name} - String\n> " + "\n>".join(arg.string.splitlines()) + "\n"
+                )
             elif isinstance(arg, tuple):
                 out += f"{name} - tuple\n {snakecore.utils.code_block(repr(arg), code_type='py')}\n"
             else:
@@ -138,7 +146,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @db.command(name="write")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_write(self, ctx: commands.Context, name: str, data: Union[discord.Message, CodeBlock]):
+    async def db_write(
+        self, ctx: commands.Context, name: str, data: Union[discord.Message, CodeBlock]
+    ):
         """
         ->type Admin commands
         ->signature pg!db write <name> <data>
@@ -171,7 +181,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         elif data.attachments:
             obj_str = (await data.attachments[0].read()).decode()
         else:
-            raise BotException("Failed to overwrite DB", "File attachment was not found")
+            raise BotException(
+                "Failed to overwrite DB", "File attachment was not found"
+            )
 
         async with snakecore.db.DiscordDB(name) as db_obj:
             db_obj.obj = eval(obj_str)  # pylint: disable = eval-used
@@ -200,7 +212,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             try:
                 del db_obj.obj
             except AttributeError:
-                raise BotException("Could not delete DB", "Deletion has already occured")
+                raise BotException(
+                    "Could not delete DB", "Deletion has already occured"
+                )
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -222,7 +236,10 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        cmds = tuple(cmd_str.string if isinstance(cmd_str, String) else cmd_str for cmd_str in cmds)
+        cmds = tuple(
+            cmd_str.string if isinstance(cmd_str, String) else cmd_str
+            for cmd_str in cmds
+        )
 
         for cmd_qualname in cmds:
             cmd = self.bot.get_command(cmd_qualname)
@@ -239,7 +256,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 if cmd_qualname in commands:
                     cmd = self.bot.get_command(cmd_qualname)
                     if cmd is not None:
-                        cmd.update(enabled=True)
+                        cmd.enabled = True
 
                     cnt += 1
                     commands.remove(cmd_qualname)
@@ -266,7 +283,10 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        cmds = tuple(cmd_str.string if isinstance(cmd_str, String) else cmd_str for cmd_str in cmds)
+        cmds = tuple(
+            cmd_str.string if isinstance(cmd_str, String) else cmd_str
+            for cmd_str in cmds
+        )
 
         for cmd_qualname in cmds:
             cmd = self.bot.get_command(cmd_qualname)
@@ -283,7 +303,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 if cmd_qualname not in commands and cmd_qualname != "whitelist_cmd":
                     cmd = self.bot.get_command(cmd_qualname)
                     if cmd is not None:
-                        cmd.update(enabled=False)
+                        cmd.enabled = False
 
                     cnt += 1
                     commands.append(cmd_qualname)
@@ -319,7 +339,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         -----
         Implement pg!clock, to display a clock of helpfulies/mods/wizards
         """
-        return await self.clock_func(ctx, action=action, timezone=timezone, color=color, _member=member)
+        return await self.clock_func(
+            ctx, action=action, timezone=timezone, color=color, _member=member
+        )
 
     @commands.command()
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
@@ -361,7 +383,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         except Exception as ex:
             raise BotException(
                 "An exception occured:",
-                snakecore.utils.code_block(type(ex).__name__ + ": " + ", ".join(map(str, ex.args))),
+                snakecore.utils.code_block(
+                    type(ex).__name__ + ": " + ", ".join(map(str, ex.args))
+                ),
             )
 
         await snakecore.utils.embed_utils.replace_embed_at(
@@ -464,11 +488,16 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         archive_header_msg_embed = None
 
         if origin.id == destination.id and not same_channel:
-            raise BotException("Cannot execute command:", "Origin and destination channels are same")
+            raise BotException(
+                "Cannot execute command:", "Origin and destination channels are same"
+            )
 
         divider_str = divider.string
 
-        if isinstance(before, discord.PartialMessage) and before.channel.id != origin.id:
+        if (
+            isinstance(before, discord.PartialMessage)
+            and before.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `before` argument",
                 "`before` has to be an ID to a message from the origin channel",
@@ -480,7 +509,10 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 "`after` has to be an ID to a message from the origin channel",
             )
 
-        if isinstance(around, discord.PartialMessage) and around.channel.id != origin.id:
+        if (
+            isinstance(around, discord.PartialMessage)
+            and around.channel.id != origin.id
+        ):
             raise BotException(
                 "Invalid `around` argument",
                 "`around` has to be an ID to a message from the origin channel",
@@ -550,7 +582,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             archive_header_msg_embed = snakecore.utils.embed_utils.create_embed(
                 title=f"__Archive of `#{origin.name}`__",
-                description=f"\nAn archive of **{origin.mention}**" f"({len(messages)} message(s))\n\u200b",
+                description=f"\nAn archive of **{origin.mention}**"
+                f"({len(messages)} message(s))\n\u200b",
                 fields=header_fields,
                 color=0xFFFFFF,
                 footer_text="Status: Incomplete",
@@ -568,7 +601,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
             msg: discord.Message
-            for i, msg in enumerate(reversed(messages) if not oldest_first else messages):
+            for i, msg in enumerate(
+                reversed(messages) if not oldest_first else messages
+            ):
                 if msg_count > 2 and not i % 2:
                     snakecore.utils.embed_utils.edit_embed_field_from_dict(
                         load_embed,
@@ -585,14 +620,20 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
                 author = msg.author
                 msg_reference_id = None
-                if msg.reference and not isinstance(msg.reference, discord.DeletedReferencedMessage):
+                if msg.reference and not isinstance(
+                    msg.reference, discord.DeletedReferencedMessage
+                ):
                     msg_reference_id = message_id_cache.get(msg.reference.message_id)
 
                 await destination.typing()
 
                 fobj.seek(0)
 
-                filesize_limit = ctx.guild.filesize_limit if ctx.guild is not None else common.DEFAULT_FILESIZE_LIMIT
+                filesize_limit = (
+                    ctx.guild.filesize_limit
+                    if ctx.guild is not None
+                    else common.DEFAULT_FILESIZE_LIMIT
+                )
 
                 attached_files = [
                     (
@@ -611,7 +652,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                             group_by_author
                             and i > 0
                             and messages[i - 1].author == author
-                            and (msg.created_at - messages[i - 1].created_at).total_seconds()
+                            and (
+                                msg.created_at - messages[i - 1].created_at
+                            ).total_seconds()
                             < group_by_author_timedelta
                         ):
                             # no author info or divider for messages next to
@@ -620,23 +663,40 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         else:
                             shorten = i > 0 and messages[i - 1].author == author
                             if shorten:
-                                shorten_style = "t" if messages[i - 1].created_at.day == msg.created_at.day else "f"
+                                shorten_style = (
+                                    "t"
+                                    if messages[i - 1].created_at.day
+                                    == msg.created_at.day
+                                    else "f"
+                                )
                                 description_str = (
                                     f"{snakecore.utils.create_markdown_timestamp(msg.created_at, tformat=shorten_style)}"
-                                    + (f" [View]({msg.jump_url})" if message_links else "")
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
                                 )
                             else:
                                 description_str = (
                                     f"{author.mention}"
                                     f" {snakecore.utils.create_markdown_timestamp(msg.created_at)}"
-                                    + (f" [View]({msg.jump_url})" if message_links else "")
+                                    + (
+                                        f" [View]({msg.jump_url})"
+                                        if message_links
+                                        else ""
+                                    )
                                 )
 
                             author_embed = snakecore.utils.embed_utils.create_embed(
                                 description=description_str,
                                 color=0x36393F,
-                                author_name=f"{author.name}#{author.discriminator}" if not shorten else None,
-                                author_icon_url=(author.display_avatar.url) if not shorten else None,
+                                author_name=f"{author.name}#{author.discriminator}"
+                                if not shorten
+                                else None,
+                                author_icon_url=(author.display_avatar.url)
+                                if not shorten
+                                else None,
                             )
 
                         if author_embed or current_divider_str:
@@ -649,7 +709,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 if not mode:
                     if msg.content or msg.embeds or attached_files:
                         msg_embed = msg.embeds[0] if msg.embeds else None
-                        msg_embed_dict = msg_embed.to_dict() if msg_embed is not None else None
+                        msg_embed_dict = (
+                            msg_embed.to_dict() if msg_embed is not None else None
+                        )
 
                         if msg_embed_dict and msg_embed_dict.get("type") == "gifv":
                             msg_embed = None
@@ -726,8 +788,13 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 elif mode == 1 or mode == 2:
                     if mode == 1:
                         if msg.content:
-                            escaped_msg_content = msg.content.replace("```", "\\`\\`\\`")
-                            if len(msg.content) > 2000 or len(escaped_msg_content) + 7 > 2000:
+                            escaped_msg_content = msg.content.replace(
+                                "```", "\\`\\`\\`"
+                            )
+                            if (
+                                len(msg.content) > 2000
+                                or len(escaped_msg_content) + 7 > 2000
+                            ):
                                 with io.StringIO(msg.content) as fobj:
                                     message_id_cache[msg.id] = await destination.send(
                                         file=discord.File(fobj, "messagedata.txt"),
@@ -752,7 +819,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         if msg.content:
                             with io.StringIO(msg.content) as fobj2:
                                 message_id_cache[msg.id] = await destination.send(
-                                    file=discord.File(fobj2, filename="messagedata.txt"),
+                                    file=discord.File(
+                                        fobj2, filename="messagedata.txt"
+                                    ),
                                     allowed_mentions=no_mentions,
                                     reference=msg_reference_id,
                                 )
@@ -780,7 +849,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         for i in range(len(embed_data_fobjs)):
                             await destination.send(
                                 content=f"**Message embed** ({i + 1}):",
-                                file=discord.File(embed_data_fobjs[i], filename="embeddata.json"),
+                                file=discord.File(
+                                    embed_data_fobjs[i], filename="embeddata.json"
+                                ),
                             )
 
                         for embed_data_fobj in embed_data_fobjs:
@@ -884,7 +955,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i / msg_count) * 100:.01f}% | " + snakecore.utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i / msg_count) * 100:.01f}% | "
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
                 )
 
@@ -896,7 +968,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             if delete_system_messages:
                 try:
-                    await (await channel.fetch_message(channel.last_message_id)).delete()
+                    await (
+                        await channel.fetch_message(channel.last_message_id)
+                    ).delete()
                 except (discord.HTTPException, discord.NotFound):
                     pass
 
@@ -983,7 +1057,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{msg_count}` messages processed\n"
-                        f"{(i / msg_count) * 100:.01f}% | " + snakecore.utils.progress_bar(i / msg_count, divisions=30),
+                        f"{(i / msg_count) * 100:.01f}% | "
+                        + snakecore.utils.progress_bar(i / msg_count, divisions=30),
                     ),
                     0,
                 )
@@ -1097,7 +1172,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     dict(
                         name="Processing Messages",
                         value=f"`{i}/{idx_count}` messages processed\n"
-                        f"{(i / idx_count) * 100:.01f}% | " + snakecore.utils.progress_bar(i / idx_count, divisions=30),
+                        f"{(i / idx_count) * 100:.01f}% | "
+                        + snakecore.utils.progress_bar(i / idx_count, divisions=30),
                     ),
                 )
 
@@ -1111,7 +1187,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         await msg.unpin()
                         unpinned_msg_id_set.add(msg.id)
                     except discord.HTTPException as e:
-                        raise BotException(f"Cannot unpin input message {i}!", e.args[0])
+                        raise BotException(
+                            f"Cannot unpin input message {i}!", e.args[0]
+                        )
 
             await asyncio.sleep(0)
 
@@ -1257,7 +1335,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_stream.command(name="ping")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_stream_ping(self, ctx: commands.Context, message: Optional[String] = None):
+    async def admin_stream_ping(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
         """
         ->type Admin commands
         ->signature pg!admin_stream ping [message]
@@ -1347,7 +1427,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     dict(
                         name="Processing Inputs",
                         value=f"`{i}/{obj_count}` inputs processed\n"
-                        f"{(i / obj_count) * 100:.01f}% | " + snakecore.utils.progress_bar(i / obj_count, divisions=30),
+                        f"{(i / obj_count) * 100:.01f}% | "
+                        + snakecore.utils.progress_bar(i / obj_count, divisions=30),
                     ),
                 )
 
@@ -1386,7 +1467,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @info.command(name="server")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def info_server(self, ctx: commands.Context, guild: Optional[discord.Guild] = None):
+    async def info_server(
+        self, ctx: commands.Context, guild: Optional[discord.Guild] = None
+    ):
         """
         ->type More admin commands
         ->signature pg!info server [guild_id=None]
@@ -1436,10 +1519,14 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         description += f"Number of Roles: `{len(guild.roles)}`\n"
 
         if guild.premium_subscription_count != 0:
-            description += f"Number of Server Boosts: `{guild.premium_subscription_count}`\n"
+            description += (
+                f"Number of Server Boosts: `{guild.premium_subscription_count}`\n"
+            )
 
         if guild.owner is not None:
-            description += f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
+            description += (
+                f"Owner of Server: `{guild.owner.name}#{guild.owner.discriminator}`\n"
+            )
 
         kwargs = {
             "title": f"Server information for {guild.name}:",
@@ -1486,7 +1573,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 await message.add_reaction(emoji)
             except discord.HTTPException as e:
                 e.args = (
-                    e.args[0] + "\n\nYou gave me some invalid emojis or I am unable to use them here. "
+                    e.args[0]
+                    + "\n\nYou gave me some invalid emojis or I am unable to use them here. "
                     "Remember the emojis have to be separated by spaces. Find help in "
                     "`pg!help react`",
                 )
@@ -1600,7 +1688,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             elif quantity > common.BROWSE_MESSAGE_LIMIT:
                 raise BotException(
                     "Too many messages",
-                    f"{quantity} messages are more than the maximum allowed" f" ({common.BROWSE_MESSAGE_LIMIT}).",
+                    f"{quantity} messages are more than the maximum allowed"
+                    f" ({common.BROWSE_MESSAGE_LIMIT}).",
                 )
 
         messages = [
@@ -1621,7 +1710,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         if len(messages) > common.BROWSE_MESSAGE_LIMIT:
             raise BotException(
                 "Too many messages",
-                f"{len(messages)} messages are more than the maximum allowed" f" ({common.BROWSE_MESSAGE_LIMIT}).",
+                f"{len(messages)} messages are more than the maximum allowed"
+                f" ({common.BROWSE_MESSAGE_LIMIT}).",
             )
 
         if not after:
@@ -1773,7 +1863,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events.group(name="wc", invoke_without_command=True)
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_events_wc(self, ctx: commands.Context, round_no: Optional[int] = None):
+    async def admin_events_wc(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!admin_events wc [round_no]
@@ -1822,7 +1914,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @admin_events_wc.command(name="add")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def admin_events_wc_add(self, ctx: commands.Context, round_name: String, description: String):
+    async def admin_events_wc_add(
+        self, ctx: commands.Context, round_name: String, description: String
+    ):
         """
         ->type Events
         ->signature pg!admin_events wc add <round_name> <description>
@@ -1882,7 +1976,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
             title="Successfully updated events round!",
-            description=(f"Removed round '{round_name}' from Weekly Challenges (WC) event!"),
+            description=(
+                f"Removed round '{round_name}' from Weekly Challenges (WC) event!"
+            ),
             color=common.DEFAULT_EMBED_COLOR,
         )
 
@@ -1927,7 +2023,10 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     else:
                         wc_dict["rounds"][round_no]["scores"].pop(mem.id)
 
-                    total_score = sum(sum(round_dict["scores"].get(mem.id, ())) for round_dict in wc_dict["rounds"])
+                    total_score = sum(
+                        sum(round_dict["scores"].get(mem.id, ()))
+                        for round_dict in wc_dict["rounds"]
+                    )
                     await pgbot.utils.give_wc_roles(mem, total_score)
 
             except IndexError:

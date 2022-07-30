@@ -25,9 +25,13 @@ if os.path.isfile(".env"):
     load_dotenv()  # take environment variables from .env
 
 # declare type alias for any channel
-Channel = Union[discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel]
+Channel = Union[
+    discord.TextChannel, discord.DMChannel, discord.Thread, discord.GroupChannel
+]
 cmd_logs = {}
-_global_task_set: set[asyncio.Task] = set()  # prevents asyncio.Task objects from disappearing due
+_global_task_set: set[
+    asyncio.Task
+] = set()  # prevents asyncio.Task objects from disappearing due
 # to reference loss, not to be modified manually
 
 
@@ -83,7 +87,9 @@ TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
 TEST_USER_ID = int(os.environ["TEST_USER_ID"]) if "TEST_USER_ID" in os.environ else None
 
 TEST_USER_IDS = (
-    set(int(user_id) for user_id in os.environ["TEST_USER_IDS"].split()) if "TEST_USER_IDS" in os.environ else set()
+    set(int(user_id) for user_id in os.environ["TEST_USER_IDS"].split())
+    if "TEST_USER_IDS" in os.environ
+    else set()
 )
 
 if TEST_USER_ID is not None:
@@ -202,7 +208,8 @@ class GuildConstants:
             "Hello there,",
             "Ooooh! Hello",
             "Hi there,",
-            "*Hiss* Do I see a new user? *hiss*\n" + "Welcome to our wonderful chatroom",
+            "*Hiss* Do I see a new user? *hiss*\n"
+            + "Welcome to our wonderful chatroom",
             "Ooooh! It's",
             "Oooh! Look who has joined us, it's",
         ),

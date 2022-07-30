@@ -86,9 +86,14 @@ class CommandMixinCog(commands.Cog):
             "color": 0x34A832,
             "footer": {
                 "text": f"This poll was started by {ctx.author.display_name}#{ctx.author.discriminator}.\n"
-                + ("\n" if multi_votes else "You cannot make multiple votes in this poll.\n")
+                + (
+                    "\n"
+                    if multi_votes
+                    else "You cannot make multiple votes in this poll.\n"
+                )
                 + "___\n"
-                f"by:{ctx.author.id} | voting-mode:" + ("'multi'" if multi_votes else "'single'")
+                f"by:{ctx.author.id} | voting-mode:"
+                + ("'multi'" if multi_votes else "'single'")
             },
             "timestamp": response_message.created_at.isoformat(),
             "description": desc.string,
@@ -104,7 +109,9 @@ class CommandMixinCog(commands.Cog):
                     "Please add at least 2 options in the poll\nFor more information, see `pg!help poll`",
                 )
 
-            base_embed_dict["fields"] = [{"name": k, "value": v, "inline": True} for k, v in emojis_dict.items()]
+            base_embed_dict["fields"] = [
+                {"name": k, "value": v, "inline": True} for k, v in emojis_dict.items()
+            ]
 
         final_embed = discord.Embed.from_dict(base_embed_dict)
         poll_msg = await destination.send(embed=final_embed)
@@ -115,7 +122,9 @@ class CommandMixinCog(commands.Cog):
 
         for field in base_embed_dict["fields"]:
             try:
-                emoji_id = snakecore.utils.extract_markdown_custom_emoji_id(field["name"].strip())
+                emoji_id = snakecore.utils.extract_markdown_custom_emoji_id(
+                    field["name"].strip()
+                )
                 emoji = self.bot.get_emoji(emoji_id)
                 if emoji is None:
                     raise ValueError()
@@ -228,7 +237,9 @@ class CommandMixinCog(commands.Cog):
                 continue
 
             if reaction.count - 1 > top[0][0]:
-                top = [(reaction.count - 1, getattr(reaction.emoji, "id", reaction.emoji))]
+                top = [
+                    (reaction.count - 1, getattr(reaction.emoji, "id", reaction.emoji))
+                ]
                 continue
 
             if reaction.count - 1 == top[0][0]:
@@ -264,10 +275,14 @@ class CommandMixinCog(commands.Cog):
                     inline=True,
                 )
             )
-            if (snakecore.utils.extract_markdown_custom_emoji_id(field.name) if is_custom_emoji else field.name) == top[
-                0
-            ][1]:
-                title += f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
+            if (
+                snakecore.utils.extract_markdown_custom_emoji_id(field.name)
+                if is_custom_emoji
+                else field.name
+            ) == top[0][1]:
+                title += (
+                    f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
+                )
 
         if len(top) >= 2:
             title = title.split("\n")[0]
@@ -356,7 +371,9 @@ class CommandMixinCog(commands.Cog):
 
         await self.stream_func(ctx)
 
-    async def stream_ping_func(self, ctx: commands.Context, message: Optional[String] = None):
+    async def stream_ping_func(
+        self, ctx: commands.Context, message: Optional[String] = None
+    ):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
@@ -365,7 +382,8 @@ class CommandMixinCog(commands.Cog):
 
         msg = message.string if message else "Enjoy the stream!"
         ping = (
-            "Pinging everyone on ping list:\n" + "\n".join((f"<@!{user}>" for user in data))
+            "Pinging everyone on ping list:\n"
+            + "\n".join((f"<@!{user}>" for user in data))
             if data
             else "No one is registered on the ping momento :/"
         )
@@ -395,7 +413,9 @@ class CommandMixinCog(commands.Cog):
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    async def events_wc_func(self, ctx: commands.Context, round_no: Optional[int] = None):
+    async def events_wc_func(
+        self, ctx: commands.Context, round_no: Optional[int] = None
+    ):
         """
         ->type Events
         ->signature pg!events wc [round_no]
@@ -436,19 +456,25 @@ class CommandMixinCog(commands.Cog):
                     f"The Weekly Challenges event does not have round {round_no} (yet)!",
                 ) from None
 
-            score_dict = {mem: sum(scores) for mem, scores in rounds_dict["scores"].items()}
+            score_dict = {
+                mem: sum(scores) for mem, scores in rounds_dict["scores"].items()
+            }
             fields.append((rounds_dict["name"], rounds_dict["description"], False))
 
         if score_dict:
             fields.extend(pgbot.utils.split_wc_scores(score_dict))
 
         else:
-            fields.append(("There are no scores yet!", "Check back after sometime!", False))
+            fields.append(
+                ("There are no scores yet!", "Check back after sometime!", False)
+            )
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
             title=f"Event: Weekly Challenges (WC)",
-            description=wc_dict.get("description", "Upcoming Event! Prepare your peepers!"),
+            description=wc_dict.get(
+                "description", "Upcoming Event! Prepare your peepers!"
+            ),
             url=wc_dict.get("url"),
             fields=fields,
             color=0xFF8C00,
@@ -473,20 +499,25 @@ class CommandMixinCog(commands.Cog):
                     if member.id not in timezones:
                         raise BotException(
                             "Cannot update clock!",
-                            "You cannot run clock update commands because you are " + "not on the clock",
+                            "You cannot run clock update commands because you are "
+                            + "not on the clock",
                         )
                 else:
                     member = _member
 
                 if action == "update":
                     if timezone is not None and abs(timezone) > 12:
-                        raise BotException("Failed to update clock!", "Timezone offset out of range")
+                        raise BotException(
+                            "Failed to update clock!", "Timezone offset out of range"
+                        )
 
                     if member.id in timezones:
                         if timezone is not None:
                             timezones[member.id][0] = timezone
                         if color is not None:
-                            timezones[member.id][1] = pgbot.utils.color_to_rgb_int(color)
+                            timezones[member.id][1] = pgbot.utils.color_to_rgb_int(
+                                color
+                            )
                     else:
                         if timezone is None:
                             raise BotException(
@@ -515,12 +546,18 @@ class CommandMixinCog(commands.Cog):
                         )
 
                 else:
-                    raise BotException("Failed to update clock!", f"Invalid action specifier {action}")
+                    raise BotException(
+                        "Failed to update clock!", f"Invalid action specifier {action}"
+                    )
 
                 db_obj.obj = timezones
 
         t = time.time()
 
-        pygame.image.save(await clock.user_clock(t, timezones, ctx.guild), f"temp{t}.png")
-        await response_message.edit(embeds=[], attachments=[discord.File(f"temp{t}.png")])
+        pygame.image.save(
+            await clock.user_clock(t, timezones, ctx.guild), f"temp{t}.png"
+        )
+        await response_message.edit(
+            embeds=[], attachments=[discord.File(f"temp{t}.png")]
+        )
         os.remove(f"temp{t}.png")

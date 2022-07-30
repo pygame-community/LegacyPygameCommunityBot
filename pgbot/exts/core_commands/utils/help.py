@@ -94,7 +94,10 @@ async def send_help_message(
     doc_fields = {}
     embeds = []
 
-    is_admin = any(role.id in common.GuildConstants.ADMIN_ROLES for role in getattr(invoker, "roles", ()))
+    is_admin = any(
+        role.id in common.GuildConstants.ADMIN_ROLES
+        for role in getattr(invoker, "roles", ())
+    )
 
     if not qualified_name:
         for cmd in sorted(bot.walk_commands(), key=lambda cmd: cmd.qualified_name):
@@ -109,7 +112,9 @@ async def send_help_message(
                 doc_fields[data["type"]] = ["", "", True]
 
             doc_fields[data["type"]][0] += f"{data['signature'][2:]}\n"
-            doc_fields[data["type"]][1] += f"`{data['signature']}`\n" f"{data['description']}\n\n"
+            doc_fields[data["type"]][1] += (
+                f"`{data['signature']}`\n" f"{data['description']}\n\n"
+            )
 
         doc_fields_cpy = doc_fields.copy()
 
@@ -123,7 +128,9 @@ async def send_help_message(
         embeds.append(
             discord.Embed(
                 title="Help",
-                description=common.BOT_HELP_DIALOG_FSTRING.format(bot.user.mention, common.COMMAND_PREFIX),
+                description=common.BOT_HELP_DIALOG_FSTRING.format(
+                    bot.user.mention, common.COMMAND_PREFIX
+                ),
                 color=common.DEFAULT_EMBED_COLOR,
             )
         )
@@ -139,7 +146,11 @@ async def send_help_message(
 
     else:
         cmd = bot.get_command(qualified_name)
-        if cmd is not None and not cmd.hidden and (is_admin or cmd.extras.get("admin_only", False)):
+        if (
+            cmd is not None
+            and not cmd.hidden
+            and (is_admin or cmd.extras.get("admin_only", False))
+        ):
             cmds = [cmd]
             if isinstance(cmd, commands.Group):
                 cmds.extend(
@@ -176,7 +187,9 @@ async def send_help_message(
 
                 example_cmd = doc.get("example command")
                 if example_cmd:
-                    embed_fields.append(dict(name="Example command(s):", value=example_cmd, inline=True))
+                    embed_fields.append(
+                        dict(name="Example command(s):", value=example_cmd, inline=True)
+                    )
 
                 cmd_qualified_name = cmd.qualified_name
 

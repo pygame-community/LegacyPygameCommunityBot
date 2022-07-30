@@ -24,9 +24,14 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
     if hasattr(member, "nick") and member.display_name:
         member_nick = (
-            member.display_name.replace("\\", r"\\").replace("*", r"\*").replace("`", r"\`").replace("_", r"\_")
+            member.display_name.replace("\\", r"\\")
+            .replace("*", r"\*")
+            .replace("`", r"\`")
+            .replace("_", r"\_")
         )
-        member_name_info += f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        member_name_info += (
+            f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        )
     else:
         member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
 
@@ -41,7 +46,13 @@ def get_member_info_str(member: Union[discord.Member, discord.User]):
 
     member_func_role_count = (
         max(
-            len(tuple(member.roles[i] for i in range(1, len(member.roles)) if member.roles[i].id not in divider_roles)),
+            len(
+                tuple(
+                    member.roles[i]
+                    for i in range(1, len(member.roles))
+                    if member.roles[i].id not in divider_roles
+                )
+            ),
             0,
         )
         if isinstance(member, discord.Member)
@@ -100,7 +111,9 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
 
     msg_id_info = f"*Message ID*: \n> `{msg.id}`\n\n"
     msg_char_count_info = f"*Char. Count*: \n> `{len(msg.content) if isinstance(msg.content, str) else 0}`\n\n"
-    msg_attachment_info = f"*Number Of Attachments*: \n> `{len(msg.attachments)} attachment(s)`\n\n"
+    msg_attachment_info = (
+        f"*Number Of Attachments*: \n> `{len(msg.attachments)} attachment(s)`\n\n"
+    )
     msg_embed_info = f"*Number Of Embeds*: \n> `{len(msg.embeds)} embed(s)`\n\n"
     msg_is_pinned = f"*Is Pinned*: \n> `{msg.pinned}`\n\n"
 
@@ -121,8 +134,12 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
             title="__Message & Author Info__",
             description="\n".join(
                 (
-                    "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
-                    f"\n {msg.content[:2001]}" + "\n\n[...]" if len(msg.content) > 2000 else msg.content,
+                    "__Text"
+                    + (" (Shortened)" if len(msg.content) > 2000 else "")
+                    + "__:",
+                    f"\n {msg.content[:2001]}" + "\n\n[...]"
+                    if len(msg.content) > 2000
+                    else msg.content,
                     "\u2800",
                 )
             ),
@@ -146,8 +163,15 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     member_name_info = f"\u200b\n*Name*: \n> {member.mention} \n> "
 
     if isinstance(member, discord.Member) and member.nick:
-        member_nick = member.nick.replace("\\", r"\\").replace("*", r"\*").replace("`", r"\`").replace("_", r"\_")
-        member_name_info += f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        member_nick = (
+            member.nick.replace("\\", r"\\")
+            .replace("*", r"\*")
+            .replace("`", r"\`")
+            .replace("_", r"\_")
+        )
+        member_name_info += (
+            f"**{member_nick}**\n> (*{member.name}#{member.discriminator}*)\n\n"
+        )
     else:
         member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
 
@@ -158,7 +182,9 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
         description="\n".join(
             (
                 "__Text" + (" (Shortened)" if len(msg.content) > 2000 else "") + "__:",
-                f"\n {msg.content[:2001]}" + "\n[...]" if len(msg.content) > 2000 else msg.content,
+                f"\n {msg.content[:2001]}" + "\n[...]"
+                if len(msg.content) > 2000
+                else msg.content,
                 "\u2800",
             )
         ),
@@ -184,7 +210,9 @@ def get_member_info_embed(member: Union[discord.Member, discord.User]):
     """
 
     return snakecore.utils.embed_utils.create_embed(
-        title="__" + ("Member" if isinstance(member, discord.Member) else "User") + " Info__",
+        title="__"
+        + ("Member" if isinstance(member, discord.Member) else "User")
+        + " Info__",
         thumbnail_url=member.display_avatar.url,
         description=get_member_info_str(member),
         color=common.DEFAULT_EMBED_COLOR,

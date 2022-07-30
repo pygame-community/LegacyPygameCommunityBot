@@ -24,7 +24,11 @@ import snakecore
 
 import pgbot
 from pgbot import common, exceptions, event_listeners, routine, utils
-from pgbot.utils import get_primary_guild_perms, message_delete_reaction_listener, parse_text_to_mapping
+from pgbot.utils import (
+    get_primary_guild_perms,
+    message_delete_reaction_listener,
+    parse_text_to_mapping,
+)
 
 
 def setup_logging():
@@ -37,7 +41,9 @@ def setup_logging():
         log_formatter = _ColourFormatter()
     else:
         dt_fmt = "%Y-%m-%d %H:%M:%S"
-        log_formatter = logging.Formatter("[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{")
+        log_formatter = logging.Formatter(
+            "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
+        )
 
     log_handler.setFormatter(log_formatter)
     logger.addHandler(log_handler)
@@ -54,8 +60,12 @@ async def _init():
         # when we are not in test mode, we want stout/stderr to appear on a console
         # in a discord channel
         common.stdout = io.StringIO()
-        sys.stdout = pgbot.utils.RedirectTextIOWrapper(sys.stdout.buffer, (common.stdout,))
-        sys.stderr = pgbot.utils.RedirectTextIOWrapper(sys.stderr.buffer, (common.stdout,))
+        sys.stdout = pgbot.utils.RedirectTextIOWrapper(
+            sys.stdout.buffer, (common.stdout,)
+        )
+        sys.stderr = pgbot.utils.RedirectTextIOWrapper(
+            sys.stderr.buffer, (common.stdout,)
+        )
 
     print("The PygameCommunityBot is now online!")
     print("Server(s):")
@@ -63,7 +73,9 @@ async def _init():
     for guild in common.bot.guilds:
         prim = ""
 
-        if common.guild is None and (common.GENERIC or guild.id == common.GuildConstants.GUILD_ID):
+        if common.guild is None and (
+            common.GENERIC or guild.id == common.GuildConstants.GUILD_ID
+        ):
             prim = "| Primary Guild"
             common.guild = guild
 
@@ -98,11 +110,13 @@ async def _init():
     await common.bot.load_extension("pgbot.exts.core_commands.admin")
     await common.bot.load_extension("pgbot.exts.core_commands.user")
 
-    async with snakecore.db.DiscordDB("blacklist", list) as db_obj:  # disable blacklisted commands
+    async with snakecore.db.DiscordDB(
+        "blacklist", list
+    ) as db_obj:  # disable blacklisted commands
         for cmd_qualname in db_obj.obj:
             cmd = common.bot.get_command(cmd_qualname)
             if cmd is not None:
-                cmd.update(enabled=False)
+                cmd.enabled = False
 
 
 async def init():
@@ -130,7 +144,9 @@ async def init():
     setup_logging()
 
 
-def format_entries_message(msg: discord.Message, entry_type: str) -> tuple[str, list[dict[str, Union[str, bool]]]]:
+def format_entries_message(
+    msg: discord.Message, entry_type: str
+) -> tuple[str, list[dict[str, Union[str, bool]]]]:
     """
     Formats an entries message to be reposted in discussion channel
     """
@@ -161,7 +177,9 @@ def format_entries_message(msg: discord.Message, entry_type: str) -> tuple[str, 
     return title, fields
 
 
-def entry_message_validity_check(message: discord.Message, min_chars=32, max_chars=float("inf")):
+def entry_message_validity_check(
+    message: discord.Message, min_chars=32, max_chars=float("inf")
+):
     """Checks if a message posted in a showcase channel for projects has the right format.
 
     Returns:
@@ -170,7 +188,9 @@ def entry_message_validity_check(message: discord.Message, min_chars=32, max_cha
     url_regex_pattern = r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
     # https://stackoverflow.com/a/6041965/14826938
 
-    search_obj = re.search(url_regex_pattern, (message.content if message.content else ""))
+    search_obj = re.search(
+        url_regex_pattern, (message.content if message.content else "")
+    )
     link_in_msg = bool(search_obj)
     first_link_str = search_obj.group() if link_in_msg else ""
 
@@ -187,7 +207,9 @@ def entry_message_validity_check(message: discord.Message, min_chars=32, max_cha
     return False
 
 
-async def delete_bad_entry_and_warning(entry_msg: discord.Message, warn_msg: discord.Message, delay: float = 0.0):
+async def delete_bad_entry_and_warning(
+    entry_msg: discord.Message, warn_msg: discord.Message, delay: float = 0.0
+):
     """A function to pardon a bad entry message with a grace period. If this coroutine is not cancelled during the
     grace period specified in `delay` in seconds, it will delete both `entry_msg` and `warn_msg`, if possible.
 
@@ -287,7 +309,9 @@ async def message_delete(msg: discord.Message):
 
             del common.entry_message_deletion_dict[msg.id]
 
-        async for message in common.entries_discussion_channel.history(around=msg.created_at, limit=5):
+        async for message in common.entries_discussion_channel.history(
+            around=msg.created_at, limit=5
+        ):
             try:
                 link = message.embeds[0].fields[1].value
                 if not isinstance(link, str):
@@ -328,8 +352,13 @@ async def message_edit(old: discord.Message, new: discord.Message):
                     else:
                         try:
                             deletion_task.cancel()  # try to cancel deletion after noticing edit by sender
-                            warn_msg = await new.channel.fetch_message(deletion_data_list[1])
-                            deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                            warn_msg = await new.channel.fetch_message(
+                                deletion_data_list[1]
+                            )
+                            deletion_datetime = (
+                                datetime.datetime.utcnow()
+                                + datetime.timedelta(minutes=2)
+                            )
                             await warn_msg.edit(
                                 content=(
                                     "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."
@@ -341,14 +370,20 @@ async def message_edit(old: discord.Message, new: discord.Message):
                                 )
                             )
                             common.entry_message_deletion_dict[new.id] = [
-                                asyncio.create_task(delete_bad_entry_and_warning(new, warn_msg, delay=120)),
+                                asyncio.create_task(
+                                    delete_bad_entry_and_warning(
+                                        new, warn_msg, delay=120
+                                    )
+                                ),
                                 warn_msg.id,
                             ]
                         except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
                             del common.entry_message_deletion_dict[new.id]
 
                 else:  # an edit led to an invalid entry message from a valid one
-                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
+                        minutes=2
+                    )
                     warn_msg = await new.reply(
                         "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
                         " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
@@ -359,26 +394,33 @@ async def message_edit(old: discord.Message, new: discord.Message):
                     )
 
                     common.entry_message_deletion_dict[new.id] = [
-                        asyncio.create_task(delete_bad_entry_and_warning(new, warn_msg, delay=120)),
+                        asyncio.create_task(
+                            delete_bad_entry_and_warning(new, warn_msg, delay=120)
+                        ),
                         warn_msg.id,
                     ]
                 return
 
             elif (
-                entry_message_validity_check(new) and new.id in common.entry_message_deletion_dict
+                entry_message_validity_check(new)
+                and new.id in common.entry_message_deletion_dict
             ):  # an invalid entry was corrected
                 deletion_data_list = common.entry_message_deletion_dict[new.id]
                 deletion_task = deletion_data_list[0]
                 if not deletion_task.done():  # too late to do anything
                     try:
                         deletion_task.cancel()  # try to cancel deletion after noticing valid edit by sender
-                        warn_msg = await new.channel.fetch_message(deletion_data_list[1])
+                        warn_msg = await new.channel.fetch_message(
+                            deletion_data_list[1]
+                        )
                         await warn_msg.delete()
                     except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
                         pass
                 del common.entry_message_deletion_dict[new.id]
 
-        async for message in common.entries_discussion_channel.history(around=old.created_at, limit=5):
+        async for message in common.entries_discussion_channel.history(
+            around=old.created_at, limit=5
+        ):
             try:
                 embed = message.embeds[0]
                 link = embed.fields[1].value
@@ -387,7 +429,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await snakecore.utils.embed_utils.edit_embed_at(message, fields=fields)
+                    await snakecore.utils.embed_utils.edit_embed_at(
+                        message, fields=fields
+                    )
                     embed_repost_edited = True
                     break
 
@@ -431,21 +475,32 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     except discord.HTTPException:
         return
 
-    if msg.author.id == common.bot.user.id and msg.embeds and (footer_text := msg.embeds[0].footer.text):
+    if (
+        msg.author.id == common.bot.user.id
+        and msg.embeds
+        and (footer_text := msg.embeds[0].footer.text)
+    ):
         split_footer = footer_text.split("___\n")  # separator used by poll embeds
 
         if len(split_footer) == 1:
             return
 
         try:
-            poll_config_map = parse_text_to_mapping(split_footer[1], delimiter=":", separator=" | ")
+            poll_config_map = parse_text_to_mapping(
+                split_footer[1], delimiter=":", separator=" | "
+            )
         except (SyntaxError, ValueError):
             raise
 
         if "by" in poll_config_map and "voting-mode" in poll_config_map:
             for reaction in msg.reactions:
                 async for user in reaction.users():
-                    if user.id == payload.user_id and not snakecore.utils.is_emoji_equal(payload.emoji, reaction.emoji):
+                    if (
+                        user.id == payload.user_id
+                        and not snakecore.utils.is_emoji_equal(
+                            payload.emoji, reaction.emoji
+                        )
+                    ):
                         await reaction.remove(user)
 
 
@@ -455,7 +510,9 @@ async def handle_message(msg: discord.Message):
     """
     if msg.type == discord.MessageType.premium_guild_subscription:
         if not common.TEST_MODE:
-            await msg.channel.send("A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>")
+            await msg.channel.send(
+                "A LOT OF THANKSSS! :heart: <:pg_party:772652894574084098>"
+            )
 
     mentions = f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>"
 
@@ -487,7 +544,9 @@ async def handle_message(msg: discord.Message):
         if msg.channel in common.entry_channels.values():
             if msg.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
                 if not entry_message_validity_check(msg):
-                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
+                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
+                        minutes=2
+                    )
                     warn_msg = await msg.reply(
                         "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
                         " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
@@ -497,7 +556,9 @@ async def handle_message(msg: discord.Message):
                         f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
                     )
                     common.entry_message_deletion_dict[msg.id] = [
-                        asyncio.create_task(delete_bad_entry_and_warning(msg, warn_msg, delay=120)),
+                        asyncio.create_task(
+                            delete_bad_entry_and_warning(msg, warn_msg, delay=120)
+                        ),
                         warn_msg.id,
                     ]
                     return
@@ -513,7 +574,9 @@ async def handle_message(msg: discord.Message):
                 )
 
 
-async def handle_command(invoke_message: discord.Message, response_message: Optional[discord.Message] = None):
+async def handle_command(
+    invoke_message: discord.Message, response_message: Optional[discord.Message] = None
+):
     """
     Handle a command invocation
     """
@@ -576,7 +639,11 @@ async def handle_command(invoke_message: discord.Message, response_message: Opti
             )
         sys.exit(0)
 
-    if common.TEST_MODE and common.TEST_USER_IDS and invoke_message.author.id not in common.TEST_USER_IDS:
+    if (
+        common.TEST_MODE
+        and common.TEST_USER_IDS
+        and invoke_message.author.id not in common.TEST_USER_IDS
+    ):
         return
 
     if response_message is None:
@@ -599,7 +666,9 @@ async def handle_command(invoke_message: discord.Message, response_message: Opti
         await common.log_channel.send(
             embed=snakecore.utils.embed_utils.create_embed(
                 title=f"Command invoked by {invoke_message.author} / {invoke_message.author.id}",
-                description=escaped_cmd_text if len(escaped_cmd_text) <= 2047 else escaped_cmd_text[:2044] + "...",
+                description=escaped_cmd_text
+                if len(escaped_cmd_text) <= 2047
+                else escaped_cmd_text[:2044] + "...",
                 color=common.DEFAULT_EMBED_COLOR,
                 fields=[
                     dict(

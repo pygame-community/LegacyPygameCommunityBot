@@ -42,7 +42,9 @@ def get_primary_guild_perms(mem: Union[discord.Member, discord.User]):
     return False, is_priv
 
 
-async def get_channel_feature(name: str, channel: common.Channel, defaultret: bool = False):
+async def get_channel_feature(
+    name: str, channel: common.Channel, defaultret: bool = False
+):
     """
     Get the channel feature. Returns True if the feature name is disabled on
     that channel, False otherwise. Also handles category channel
@@ -65,7 +67,11 @@ def color_to_rgb_int(col: pygame.Color, alpha: bool = False):
     """
     Get integer RGB representation of pygame color object.
     """
-    return col.r << 32 | col.g << 16 | col.b << 8 | col.a if alpha else col.r << 16 | col.g << 8 | col.b
+    return (
+        col.r << 32 | col.g << 16 | col.b << 8 | col.a
+        if alpha
+        else col.r << 16 | col.g << 8 | col.b
+    )
 
 
 def parse_text_to_mapping(
@@ -100,7 +106,9 @@ def split_wc_scores(scores: dict[int, int]):
         if not category_list:
             continue
 
-        desc = ">>> " + "\n".join((f"`{score}` **•** {mem} :medal:" for score, mem in category_list))
+        desc = ">>> " + "\n".join(
+            (f"`{score}` **•** {mem} :medal:" for score, mem in category_list)
+        )
 
         yield title, desc, False
         scores_list = scores_list[len(category_list) :]
@@ -174,7 +182,10 @@ async def message_delete_reaction_listener(
                 and (event.guild_id == getattr(msg.guild, "id", None))
                 and (
                     event.user_id == invoker.id
-                    or any(role.id in role_whitelist for role in getattr(event.member, "roles", ())[1:])
+                    or any(
+                        role.id in role_whitelist
+                        for role in getattr(event.member, "roles", ())[1:]
+                    )
                 )
                 and snakecore.utils.is_emoji_equal(event.emoji, emoji)
             )
@@ -186,7 +197,9 @@ async def message_delete_reaction_listener(
                 and snakecore.utils.is_emoji_equal(event.emoji, emoji)
             )
         else:
-            raise TypeError(f"argument 'invoker' expected discord.Member/.User, not {invoker.__class__.__name__}")
+            raise TypeError(
+                f"argument 'invoker' expected discord.Member/.User, not {invoker.__class__.__name__}"
+            )
 
         event: discord.RawReactionActionEvent = await common.bot.wait_for(
             "raw_reaction_add", check=check, timeout=timeout
@@ -228,8 +241,13 @@ class RedirectTextIOWrapper(io.TextIOWrapper):
             TypeError: Invalid redirect stream type.
         """
         super().__init__(buffer, **kwargs)
-        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(streams)):
-            raise TypeError("argument 'streams' must be a sequence of writable, flushable TextIOBase instances")
+        if not all(
+            (isinstance(stream, io.TextIOBase) and stream.writable())
+            for stream in iter(streams)
+        ):
+            raise TypeError(
+                "argument 'streams' must be a sequence of writable, flushable TextIOBase instances"
+            )
         self._streams = tuple(streams)
         self._flush_streams = flush_streams
         self._close_streams = close_streams
@@ -238,8 +256,13 @@ class RedirectTextIOWrapper(io.TextIOWrapper):
         return self._streams
 
     def _streams_set(self, streams: Sequence[io.TextIOBase]):
-        if not all((isinstance(stream, io.TextIOBase) and stream.writable()) for stream in iter(streams)):
-            raise AttributeError("attribute 'streams' must be a sequence of writable, flushable TextIOBase instances")
+        if not all(
+            (isinstance(stream, io.TextIOBase) and stream.writable())
+            for stream in iter(streams)
+        ):
+            raise AttributeError(
+                "attribute 'streams' must be a sequence of writable, flushable TextIOBase instances"
+            )
         self._streams = tuple(streams)
 
     streams = property(fget=_streams_get, fset=_streams_set)
