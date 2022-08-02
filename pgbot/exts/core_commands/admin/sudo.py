@@ -303,7 +303,6 @@ class SudoCommandCog(BaseCommandCog):
         self,
         ctx: commands.Context,
         msg: discord.Message,
-        *,
         data: Union[discord.Message, String],
         from_attachment: bool = True,
     ):
