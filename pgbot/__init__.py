@@ -33,7 +33,7 @@ from pgbot.utils import (
 
 def setup_logging():
     logger = logging.getLogger("discord")
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.INFO)
 
     log_handler = logging.StreamHandler()
     dt_fmt = "%Y-%m-%d %H:%M:%S"
@@ -53,7 +53,6 @@ async def _init():
     """
     Startup call helper for pygame bot
     """
-
     await snakecore.init(global_client=common.bot)
 
     if not common.TEST_MODE:
@@ -123,6 +122,9 @@ async def init():
     """
     Startup call helper for pygame bot
     """
+    if common.pgbot_initialized:
+        return
+
     try:
         await _init()
     except Exception:
@@ -142,6 +144,7 @@ async def init():
         )
 
     setup_logging()
+    common.pgbot_initialized = True
 
 
 def format_entries_message(
@@ -582,6 +585,10 @@ async def handle_command(
     """
     is_admin = get_primary_guild_perms(invoke_message.author)
     bot_id = common.bot.user.id
+
+    is_mention_invocation = invoke_message.content.startswith(
+        (f"<@!{common.bot.user.id}>", f"<@{common.bot.user.id}>")
+    )
     if is_admin and invoke_message.content.startswith(
         (
             f"{common.COMMAND_PREFIX}stop",
@@ -646,6 +653,14 @@ async def handle_command(
     ):
         return
 
+    ctx = await common.bot.get_context(invoke_message)
+
+    if (is_mention_invocation and not ctx.command) or not (
+        is_mention_invocation or (ctx.command or ctx.invoked_with)
+    ):
+        # skip unintended or malformed command invocations
+        return
+
     if response_message is None:
         response_message = await snakecore.utils.embed_utils.send_embed(
             invoke_message.channel,
@@ -693,7 +708,7 @@ async def handle_command(
         )
     )
 
-    await common.bot.process_commands(invoke_message)  # main command handling
+    await common.bot.invoke(ctx)
     return response_message
 
 
