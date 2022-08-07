@@ -79,7 +79,7 @@ rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
 
-__version__ = "1.5.3"
+__version__ = "1.6.1"
 
 TEST_MODE = "TEST_TOKEN" in os.environ
 TOKEN = os.environ["TEST_TOKEN" if TEST_MODE else "TOKEN"]
