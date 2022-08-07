@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines a "routine" function, that gets called on routine.
 It gets called every 5 seconds or so.
@@ -11,22 +11,20 @@ import asyncio
 import datetime
 import io
 import os
-import random
 import sys
-from typing import Union
 
 import discord
 from discord.ext import tasks
+import snakecore
 
-from pgbot import common, db, emotion
-from pgbot.utils import utils
+from pgbot import common
 
 
-async def handle_reminders(reminder_obj: db.DiscordDB):
+async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
     """
     Handle reminder routines
     """
-    reminders = reminder_obj.get({})
+    reminders = reminder_obj.obj
 
     new_reminders = {}
     for mem_id, reminder_dict in reminders.items():
@@ -86,7 +84,7 @@ async def handle_console():
         return
 
     contents = common.stdout.getvalue()
-    sys.stdout = sys.stderr = common.stdout = io.StringIO()
+    common.stdout = io.StringIO()
 
     # hide path data
     contents = contents.replace(os.getcwd(), "PgBot")
@@ -94,19 +92,18 @@ async def handle_console():
         contents = contents.replace(os.path.dirname(sys.executable), "Python")
 
     if common.GENERIC or common.console_channel is None:
-        # just print error to shell if we cannot sent it on discord
-        print(contents, file=sys.__stdout__)
+        # just return if we cannot sent it on discord
         return
 
     # the actual message limit is 2000. But since the message is sent with
     # code ticks, we need room for those, so 1980
-    for content in utils.split_long_message(contents, 1980):
+    for content in snakecore.utils.split_long_message(contents, 1980):
         content = content.strip()
         if not content:
             continue
 
         await common.console_channel.send(
-            content=utils.code_block(content, code_type="cmd")
+            content=snakecore.utils.code_block(content, code_type="cmd")
         )
 
 
@@ -116,11 +113,8 @@ async def routine():
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    async with db.DiscordDB("reminders") as db_obj:
+    async with snakecore.db.DiscordDB("reminders") as db_obj:
         await handle_reminders(db_obj)
-
-    if random.randint(0, 4) == 0:
-        await emotion.update("bored", 1)
 
     await common.bot.change_presence(
         activity=discord.Activity(

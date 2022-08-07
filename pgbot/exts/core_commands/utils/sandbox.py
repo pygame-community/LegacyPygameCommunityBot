@@ -1,7 +1,7 @@
 """
 This file is a part of the source code for the PygameCommunityBot.
 This project has been licensed under the MIT license.
-Copyright (c) 2020-present PygameCommunityDiscord
+Copyright (c) 2020-present pygame-community
 
 This file defines exec sandbox utitites, for sandboxing and running user code.
 """
@@ -24,9 +24,9 @@ import psutil
 import pygame.freetype
 import pygame.gfxdraw
 from PIL import Image
+import snakecore
 
 from pgbot import common
-from pgbot.utils import utils
 
 
 class Output:
@@ -76,10 +76,7 @@ class Output:
             return
 
         if not isinstance(image, pygame.Surface):
-            self.exc = (
-                f"TypeError at line {lineno}: "
-                "Argument image must be type of pygame.Surface"
-            )
+            self.exc = f"TypeError at line {lineno}: Argument image must be type of pygame.Surface"
             return
 
         self._imgs.append(image.copy())
@@ -105,7 +102,7 @@ class Output:
         }
 
         if loops != 1:
-            kwargs["loop"] = utils.clamp(loops - 1, 0, 100)
+            kwargs["loop"] = snakecore.utils.clamp(loops - 1, 0, 100)
 
         return kwargs
 
@@ -261,7 +258,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
     for func_name in sandbox_funcs.public_functions:
         allowed_globals[func_name] = getattr(sandbox_funcs, func_name)
 
-    for ill_attr in common.ILLEGAL_ATTRIBUTES:
+    for ill_attr in common.ILLEGAL_EXEC_ATTRIBUTES:
         if ill_attr in code:
             output.exc = "Suspicious Pattern"
             q.put(output)
@@ -280,7 +277,7 @@ def pg_exec(code: str, tstamp: int, allowed_builtins: dict, q: multiprocessing.Q
         )
 
     except (Exception, BaseException) as err:
-        output.exc = utils.format_code_exception(err)
+        output.exc = snakecore.utils.format_code_exception(err)
     finally:
         output.duration = time.perf_counter() - script_start
 
