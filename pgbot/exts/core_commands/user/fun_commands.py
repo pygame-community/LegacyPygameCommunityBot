@@ -24,6 +24,7 @@ from ..base import (
     BaseCommandCog,
 )
 from ..utils.checks import fun_command
+from ..utils.converters import String
 from pgbot.exceptions import BotException
 
 
@@ -81,11 +82,10 @@ class FunCommandCog(BaseCommandCog):
 
     @commands.group(invoke_without_command=True)
     @fun_command()
-    @custom_parsing(inside_class=True, inject_message_reference=True)
-    async def fontify(self, ctx: commands.Context, msg: str):
+    async def fontify(self, ctx: commands.Context, text: String):
         """
         ->type Play With Me :snake:
-        ->signature pg!fontify <msg>
+        ->signature pg!fontify <text>
         ->description Display message in pygame font
         """
 
@@ -97,7 +97,7 @@ class FunCommandCog(BaseCommandCog):
         if common.guild is not None:
             emojis = tuple(sorted(common.guild.emojis, key=lambda x: x.name))
 
-        for char in unidecode.unidecode(msg.string):
+        for char in unidecode.unidecode(text.string):
             if char.isalnum():
                 for emoji in emojis:
                     if (
@@ -135,8 +135,7 @@ class FunCommandCog(BaseCommandCog):
 
         await response_message.edit(content=fontified)
 
-    fontify.command(name="remove")
-
+    @fontify.command(name="remove")
     @fun_command()
     @custom_parsing(inside_class=True, inject_message_reference=True)
     async def fontify_remove(self, ctx: commands.Context, reply: discord.Message):
