@@ -82,6 +82,7 @@ class FunCommandCog(BaseCommandCog):
 
     @commands.group(invoke_without_command=True)
     @fun_command()
+    @custom_parsing(inside_class=True, inject_message_reference=True)
     async def fontify(self, ctx: commands.Context, text: String):
         """
         ->type Play With Me :snake:
