@@ -24,10 +24,8 @@ async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
     """
     Handle reminder routines
     """
-    reminders = reminder_obj.obj
-
     new_reminders = {}
-    for mem_id, reminder_dict in reminders.items():
+    for mem_id, reminder_dict in reminder_obj.obj.items():
         for dt, (msg, chan_id, msg_id) in reminder_dict.items():
             if datetime.datetime.utcnow() >= dt:
                 content = f"__**Reminder for you:**__\n>>> {msg}"
@@ -71,8 +69,7 @@ async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
 
                 new_reminders[mem_id][dt] = (msg, chan_id, msg_id)
 
-    if reminders != new_reminders:
-        reminder_obj.write(new_reminders)
+    reminder_obj.obj = new_reminders
 
 
 @tasks.loop(seconds=5)

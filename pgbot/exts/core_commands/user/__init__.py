@@ -80,7 +80,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
     async def reminders_add_func(
         self,
         ctx: commands.Context,
-        msg: str,
+        msg: String,
         on: datetime.datetime,
         _delta: Optional[datetime.timedelta] = None,
     ):
@@ -150,7 +150,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
     async def reminders_add(
         self,
         ctx: commands.Context,
-        msg: str,
+        msg: String,
         on: datetime.datetime,
     ):
         """
@@ -173,7 +173,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
     async def reminders_set(
         self,
         ctx: commands.Context,
-        msg: str,
+        msg: String,
         timestr: Union[String, str] = "",
         weeks: int = 0,
         days: int = 0,
