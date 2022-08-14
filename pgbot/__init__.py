@@ -583,7 +583,7 @@ async def handle_command(
     """
     Handle a command invocation
     """
-    is_admin = get_primary_guild_perms(invoke_message.author)
+    is_admin, _ = get_primary_guild_perms(invoke_message.author)
     bot_id = common.bot.user.id
 
     is_mention_invocation = invoke_message.content.startswith(
