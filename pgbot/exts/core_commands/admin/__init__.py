@@ -96,13 +96,13 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
     @commands.group(invoke_without_command=True)
     @admin_only()
-    async def db(self, ctx: commands.Context):
+    async def storage(self, ctx: commands.Context):
         """
         ->type Admin commands
-        ->signature pg!db
-        ->description List contents of DB (table names)
+        ->signature pg!storage
+        ->description List contents of storages (table names)
         -----
-        Implement pg!db, list contents of DB
+        Implement pg!storage, list contents of storages
         """
 
         response_message = common.recent_response_messages[ctx.message.id]
@@ -110,33 +110,35 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
             title="Tables:",
-            description="\n".join(snakecore.db.DiscordDB._db_records.keys()),
+            description="\n".join(
+                snakecore.storage.DiscordStorage._storage_records.keys()
+            ),
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @db.command(name="read")
+    @storage.command(name="read")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_read(self, ctx: commands.Context, name: str):
+    async def storage_read(self, ctx: commands.Context, name: str):
         """
         ->type Admin commands
-        ->signature pg!db read <name>
-        ->description Visualize DB
+        ->signature pg!storage read <name>
+        ->description Visualize storage
         -----
-        Implement pg!db_read, to visualise DB messages
+        Implement pg!storage_read, to visualise storage messages
         """
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB(name) as db_obj:
+        async with snakecore.storage.DiscordStorage(name) as storage_obj:
             str_obj = black.format_str(
-                repr(db_obj.obj or None),
+                repr(storage_obj.obj or None),
                 mode=black.FileMode(),
             )
 
         with io.StringIO(str_obj) as fobj:
             await ctx.channel.send(
                 f"Here are the contents of the table `{name}`:",
-                file=discord.File(fobj, filename=f"{name}_db.py"),
+                file=discord.File(fobj, filename=f"{name}_storage.py"),
             )
 
         try:
@@ -144,17 +146,17 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         except discord.NotFound:
             pass
 
-    @db.command(name="write")
+    @storage.command(name="write")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_write(
+    async def storage_write(
         self, ctx: commands.Context, name: str, data: Union[discord.Message, CodeBlock]
     ):
         """
         ->type Admin commands
-        ->signature pg!db write <name> <data>
-        ->description Overwrite DB. Do not use unless you know what you are doing
+        ->signature pg!storage write <name> <data>
+        ->description Overwrite storage. Do not use unless you know what you are doing
         -----
-        Implement pg!db_write, to overwrite DB messages
+        Implement pg!storage_write, to overwrite storage messages
         """
         # make typecheckers happy
         if not isinstance(ctx.author, discord.Member):
@@ -182,44 +184,44 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             obj_str = (await data.attachments[0].read()).decode()
         else:
             raise BotException(
-                "Failed to overwrite DB", "File attachment was not found"
+                "Failed to overwrite storage", "File attachment was not found"
             )
 
-        async with snakecore.db.DiscordDB(name) as db_obj:
-            db_obj.obj = eval(obj_str)  # pylint: disable = eval-used
+        async with snakecore.storage.DiscordStorage(name) as storage_obj:
+            storage_obj.obj = eval(obj_str)  # pylint: disable = eval-used
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
-            title="DB overwritten!",
-            description="DB contents have been overwritten successfully",
+            title="Storage overwritten!",
+            description="Storage contents have been overwritten successfully",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
-    @db.command(name="del")
+    @storage.command(name="del")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def db_del(self, ctx: commands.Context, name: str):
+    async def storage_del(self, ctx: commands.Context, name: str):
         """
         ->type Admin commands
-        ->signature pg!db del <name>
-        ->description Delete DB. Do not use unless you know what you are doing
+        ->signature pg!storage del <name>
+        ->description Delete storage. Do not use unless you know what you are doing
         -----
-        Implement pg!db_del, to delete DB messages
+        Implement pg!storage_del, to delete storage messages
         """
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB(name) as db_obj:
+        async with snakecore.storage.DiscordStorage(name) as storage_obj:
             try:
-                del db_obj.obj
+                del storage_obj.obj
             except AttributeError:
                 raise BotException(
-                    "Could not delete DB", "Deletion has already occured"
+                    "Could not delete storage", "Deletion has already occured"
                 )
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
-            title="DB has been deleted!",
-            description="DB contents have been deleted successfully",
+            title="Storage has been deleted!",
+            description="Storage contents have been deleted successfully",
             color=common.DEFAULT_EMBED_COLOR,
         )
 
@@ -249,8 +251,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     f"could not find a command named '{cmd_qualname}'",
                 )
 
-        async with snakecore.db.DiscordDB("blacklist", list) as db_obj:
-            commands = db_obj.obj
+        async with snakecore.storage.DiscordStorage("blacklist", list) as storage_obj:
+            commands = storage_obj.obj
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname in commands:
@@ -261,7 +263,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     cnt += 1
                     commands.remove(cmd_qualname)
 
-            db_obj.obj = commands
+            storage_obj.obj = commands
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -296,8 +298,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     f"could not find a command named '{cmd_qualname}'",
                 )
 
-        async with snakecore.db.DiscordDB("blacklist", list) as db_obj:
-            commands = db_obj.obj
+        async with snakecore.storage.DiscordStorage("blacklist", list) as storage_obj:
+            commands = storage_obj.obj
             cnt = 0
             for cmd_qualname in cmds:
                 if cmd_qualname not in commands and cmd_qualname != "whitelist_cmd":
@@ -308,7 +310,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     cnt += 1
                     commands.append(cmd_qualname)
 
-            db_obj.obj = commands
+            storage_obj.obj = commands
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1834,15 +1836,15 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             channels = (ctx.channel,)
 
         if enable or disable:
-            async with snakecore.db.DiscordDB("feature") as db_obj:
-                db_dict = db_obj.obj
-                if name not in db_dict:
-                    db_dict[name] = {}
+            async with snakecore.storage.DiscordStorage("feature") as storage_obj:
+                storage_dict = storage_obj.obj
+                if name not in storage_dict:
+                    storage_dict[name] = {}
 
                 for chan in channels:
-                    db_dict[name][chan.id] = enable or disable
+                    storage_dict[name][chan.id] = enable or disable
 
-                db_obj.obj = db_dict
+                storage_obj.obj = storage_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1895,15 +1897,15 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.obj
+        async with snakecore.storage.DiscordStorage("wc") as storage_obj:
+            wc_dict = storage_obj.obj
             if desc is not None:
                 wc_dict["description"] = desc.string if desc.string else None
 
             if url is not None:
                 wc_dict["url"] = url if url else None
 
-            db_obj.obj = wc_dict
+            storage_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -1926,8 +1928,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.obj
+        async with snakecore.storage.DiscordStorage("wc") as storage_obj:
+            wc_dict = storage_obj.obj
             if "rounds" not in wc_dict:
                 wc_dict["rounds"] = []
 
@@ -1938,7 +1940,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     "scores": {},
                 }
             )
-            db_obj.obj = wc_dict
+            storage_obj.obj = wc_dict
             ind = len(wc_dict["rounds"])
 
         await snakecore.utils.embed_utils.replace_embed_at(
@@ -1960,8 +1962,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.obj
+        async with snakecore.storage.DiscordStorage("wc") as storage_obj:
+            wc_dict = storage_obj.obj
             try:
                 round_name = wc_dict["rounds"].pop(round_no - 1)["name"]
 
@@ -1971,7 +1973,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     "The specified event round does not exist",
                 )
 
-            db_obj.obj = wc_dict
+            storage_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -2008,8 +2010,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         round_no -= 1
-        async with snakecore.db.DiscordDB("wc") as db_obj:
-            wc_dict = db_obj.obj
+        async with snakecore.storage.DiscordStorage("wc") as storage_obj:
+            wc_dict = storage_obj.obj
             try:
                 if round_name is not None:
                     wc_dict["rounds"][round_no]["name"] = round_name
@@ -2035,7 +2037,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     "The specified event round does not exist",
                 ) from None
 
-            db_obj.obj = wc_dict
+            storage_obj.obj = wc_dict
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,

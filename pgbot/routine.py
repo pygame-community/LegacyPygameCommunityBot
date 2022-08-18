@@ -20,7 +20,7 @@ import snakecore
 from pgbot import common
 
 
-async def handle_reminders(reminder_obj: snakecore.db.DiscordDB):
+async def handle_reminders(reminder_obj: snakecore.storage.DiscordStorage):
     """
     Handle reminder routines
     """
@@ -110,8 +110,8 @@ async def routine():
     Function that gets called routinely. This function inturn, calles other
     routine functions to handle stuff
     """
-    async with snakecore.db.DiscordDB("reminders") as db_obj:
-        await handle_reminders(db_obj)
+    async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
+        await handle_reminders(storage_obj)
 
     await common.bot.change_presence(
         activity=discord.Activity(

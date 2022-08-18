@@ -9,7 +9,7 @@ import asyncio
 import discord
 from discord.ext import commands
 import snakecore
-from snakecore.command_handler.parser import ArgError, KwargError
+from snakecore.commands.parser import ArgError, KwargError
 
 import pgbot
 from pgbot import common
@@ -42,7 +42,7 @@ async def on_member_leave(member: discord.Member):
     """
     Routines to run when people leave the server
     """
-    await pgbot.clean_db_member(member)
+    await pgbot.clean_storage_member(member)
 
 
 @bot.event

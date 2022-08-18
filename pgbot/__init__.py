@@ -18,7 +18,6 @@ import sys
 from typing import Optional, Union
 
 import discord
-from discord.client import stream_supports_colour, _ColourFormatter
 import pygame
 import snakecore
 
@@ -32,21 +31,7 @@ from pgbot.utils import (
 
 
 def setup_logging():
-    logger = logging.getLogger("discord")
-    logger.setLevel(logging.INFO)
-
-    log_handler = logging.StreamHandler()
-    dt_fmt = "%Y-%m-%d %H:%M:%S"
-    if stream_supports_colour(log_handler.stream):
-        log_formatter = _ColourFormatter()
-    else:
-        dt_fmt = "%Y-%m-%d %H:%M:%S"
-        log_formatter = logging.Formatter(
-            "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
-        )
-
-    log_handler.setFormatter(log_formatter)
-    logger.addHandler(log_handler)
+    discord.utils.setup_logging(level=logging.ERROR)
 
 
 async def _init():
@@ -83,10 +68,12 @@ async def _init():
             continue
 
         for channel in guild.channels:
-            if channel.id == common.GuildConstants.DB_CHANNEL_ID:
+            if channel.id == common.GuildConstants.STORAGE_CHANNEL_ID:
                 if not common.TEST_MODE:
-                    snakecore.config.conf.db_channel = common.db_channel = channel
-                await snakecore.db.init_discord_db()
+                    snakecore.config.conf.storage_channel = (
+                        common.storage_channel
+                    ) = channel
+                await snakecore.storage.init_discord_storage()
             elif channel.id == common.GuildConstants.LOG_CHANNEL_ID:
                 common.log_channel = channel
             elif channel.id == common.GuildConstants.ARRIVALS_CHANNEL_ID:
@@ -109,10 +96,10 @@ async def _init():
     await common.bot.load_extension("pgbot.exts.core_commands.admin")
     await common.bot.load_extension("pgbot.exts.core_commands.user")
 
-    async with snakecore.db.DiscordDB(
+    async with snakecore.storage.DiscordStorage(
         "blacklist", list
-    ) as db_obj:  # disable blacklisted commands
-        for cmd_qualname in db_obj.obj:
+    ) as storage_obj:  # disable blacklisted commands
+        for cmd_qualname in storage_obj.obj:
             cmd = common.bot.get_command(cmd_qualname)
             if cmd is not None:
                 cmd.enabled = False
@@ -264,16 +251,16 @@ async def member_join(member: discord.Member):
             return
 
 
-async def clean_db_member(member: discord.Member):
+async def clean_storage_member(member: discord.Member):
     """
-    This function silently removes users from database messages
+    This function silently removes users from storage messages
     """
     for table_name in ("stream", "reminders", "clock"):
-        async with snakecore.db.DiscordDB(table_name) as db_obj:
-            data = db_obj.obj
+        async with snakecore.storage.DiscordStorage(table_name) as storage_obj:
+            data = storage_obj.obj
             if member.id in data:
                 data.pop(member)
-                db_obj.obj = data
+                storage_obj.obj = data
 
 
 async def message_delete(msg: discord.Message):
@@ -717,7 +704,7 @@ def cleanup(*_):
     Call cleanup functions
     """
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(snakecore.db.quit_discord_db())
+    loop.run_until_complete(snakecore.storage.quit_discord_storage())
     loop.run_until_complete(common.bot.close())
     loop.close()
 

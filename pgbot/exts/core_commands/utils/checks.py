@@ -7,7 +7,7 @@ This file defines decorators to perform checks on a command.
 """
 
 from discord.ext import commands
-from snakecore.command_handler.decorators import custom_parsing
+from snakecore.commands.decorators import custom_parsing
 
 import pgbot
 from pgbot import common
@@ -57,7 +57,7 @@ def admin_only_and_custom_parsing(
     inside_class: bool = False, inject_message_reference: bool = False
 ):
     """A decorator combining admin-only role checks and
-    `snakecore.command_handler.decorators.custom_parsing(...)`.
+    `snakecore.commands.decorators.custom_parsing(...)`.
     """
     return commands.check(_admin_only_predicate)(
         custom_parsing(

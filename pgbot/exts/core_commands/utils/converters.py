@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from discord.ext import commands
 import pygame
-from snakecore.command_handler.converters import (
+from snakecore.commands.converters import (
     CodeBlock,
     DateTime,
     RangeObject,

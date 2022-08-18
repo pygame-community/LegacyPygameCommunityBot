@@ -49,16 +49,16 @@ async def get_channel_feature(
     Get the channel feature. Returns True if the feature name is disabled on
     that channel, False otherwise. Also handles category channel
     """
-    async with snakecore.db.DiscordDB("feature") as db_obj:
-        db_dict: dict[int, bool] = db_obj.obj
+    async with snakecore.storage.DiscordStorage("feature") as storage_obj:
+        storage_dict: dict[int, bool] = storage_obj.obj
 
-    if channel.id in db_dict:
-        return db_dict[channel.id]
+    if channel.id in storage_dict:
+        return storage_dict[channel.id]
 
     if isinstance(channel, discord.TextChannel):
         if channel.category_id is None:
             return defaultret
-        return db_dict.get(channel.category_id, defaultret)
+        return storage_dict.get(channel.category_id, defaultret)
 
     return defaultret
 

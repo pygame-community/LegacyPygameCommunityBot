@@ -10,13 +10,13 @@ from __future__ import annotations
 import snakecore
 
 
-async def setup(bot: snakecore.command_handler.Bot):
+async def setup(bot: snakecore.commands.Bot):
     await bot.load_extension("core_commands.help")
     await bot.load_extension("core_commands.admin")
     await bot.load_extension("core_commands.user")
 
 
-async def teardown(bot: snakecore.command_handler.Bot):
+async def teardown(bot: snakecore.commands.Bot):
     await bot.unload_extension("core_commands.help")
     await bot.unload_extension("core_commands.admin")
     await bot.unload_extension("core_commands.user")

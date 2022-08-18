@@ -74,7 +74,7 @@ roles_channel: discord.TextChannel
 guide_channel: discord.TextChannel
 entries_discussion_channel: discord.TextChannel
 console_channel: discord.TextChannel
-db_channel: discord.TextChannel
+storage_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
@@ -115,7 +115,7 @@ GENERIC = False
 ints = discord.Intents.default()
 ints.members = True  # needed for on_member_join
 ints.message_content = True  # needed for message content
-bot = snakecore.command_handler.Bot(
+bot = snakecore.commands.Bot(
     command_prefix=commands.when_mentioned_or(COMMAND_PREFIX),
     intents=ints,
     help_command=None,
@@ -179,7 +179,7 @@ class GuildConstants:
     )
 
     # Database channel
-    DB_CHANNEL_ID = 838090567682490458
+    STORAGE_CHANNEL_ID = 838090567682490458
 
     # remember to maintain the scores here in descending order
     WC_ROLES = (

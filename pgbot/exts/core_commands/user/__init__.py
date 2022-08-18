@@ -21,8 +21,8 @@ import discord
 from discord.ext import commands
 import snakecore
 
-from snakecore.command_handler.decorators import custom_parsing
-from snakecore.command_handler.converters import CodeBlock, String
+from snakecore.commands.decorators import custom_parsing
+from snakecore.commands.converters import CodeBlock, String
 
 from pgbot import common
 import pgbot
@@ -51,8 +51,8 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("reminders") as db_obj:
-            db_data = db_obj.obj
+        async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
+            db_data = storage_obj.obj
 
         desc = "You have no reminders set"
         if ctx.author.id in db_data:
@@ -111,8 +111,8 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         # remove microsecond precision of the 'on' variable
         on -= datetime.timedelta(microseconds=on.microsecond)
 
-        async with snakecore.db.DiscordDB("reminders") as db_obj:
-            db_data = db_obj.obj
+        async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
+            db_data = storage_obj.obj
             if ctx.author.id not in db_data:
                 db_data[ctx.author.id] = {}
 
@@ -133,7 +133,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                 ctx.channel.id,
                 ctx.message.id,
             )
-            db_obj.obj = db_data
+            storage_obj.obj = db_data
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -265,8 +265,8 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("reminders") as db_obj:
-            db_data = db_obj.obj
+        async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
+            db_data = storage_obj.obj
             db_data_copy = copy.deepcopy(db_data)
             cnt = 0
             if reminder_ids:
@@ -292,7 +292,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             elif ctx.author.id in db_data:
                 cnt = len(db_data.pop(ctx.author.id))
 
-            db_obj.obj = db_data
+            storage_obj.obj = db_data
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,

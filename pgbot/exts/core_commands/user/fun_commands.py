@@ -16,7 +16,7 @@ import discord
 from discord.ext import commands
 import pygame
 import snakecore
-from snakecore.command_handler.decorators import custom_parsing
+from snakecore.commands.decorators import custom_parsing
 import unidecode
 
 from pgbot import common

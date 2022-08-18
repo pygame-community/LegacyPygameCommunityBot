@@ -656,7 +656,7 @@ class EmsudoCommandCog(BaseCommandCog):
                             str(i): field_list[i] for i in range(len(field_list))
                         }
 
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             embed_dict, embed_mask_dict
                         )
 
@@ -666,11 +666,13 @@ class EmsudoCommandCog(BaseCommandCog):
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
                     else:
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             embed_dict, embed_mask_dict
                         )
                 else:
-                    snakecore.utils.recursive_dict_delete(embed_dict, embed_mask_dict)
+                    snakecore.utils.recursive_mapping_delete(
+                        embed_dict, embed_mask_dict
+                    )
 
                 if embed_dict:
                     snakecore.utils.embed_utils.filter_embed_dict(embed_dict)
@@ -2001,12 +2003,12 @@ class EmsudoCommandCog(BaseCommandCog):
                         }
 
                         if not system_attributes:
-                            snakecore.utils.recursive_dict_delete(
+                            snakecore.utils.recursive_mapping_delete(
                                 embed_dict,
                                 snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
 
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
                         if "fields" in embed_dict:
@@ -2015,7 +2017,7 @@ class EmsudoCommandCog(BaseCommandCog):
                                 field_dict[i] for i in sorted(field_dict.keys())
                             ]
 
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             pop_target_embed_dict, embed_mask_dict
                         )
 
@@ -2026,19 +2028,19 @@ class EmsudoCommandCog(BaseCommandCog):
                             ]
                     else:
                         if not system_attributes:
-                            snakecore.utils.recursive_dict_delete(
+                            snakecore.utils.recursive_mapping_delete(
                                 embed_dict,
                                 snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             embed_dict, embed_mask_dict, inverse=True
                         )
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             pop_target_embed_dict, embed_mask_dict
                         )
                 else:
                     if not system_attributes:
-                        snakecore.utils.recursive_dict_delete(
+                        snakecore.utils.recursive_mapping_delete(
                             embed_dict,
                             snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                         )

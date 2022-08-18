@@ -13,8 +13,8 @@ from __future__ import annotations
 import discord
 from discord.ext import commands
 import snakecore
-from snakecore.command_handler.converters import String
-from snakecore.command_handler.decorators import custom_parsing
+from snakecore.commands.converters import String
+from snakecore.commands.decorators import custom_parsing
 
 from pgbot import common
 from .utils.help import send_help_message
@@ -52,5 +52,5 @@ async def help(
     )
 
 
-async def setup(bot: snakecore.command_handler.Bot):
+async def setup(bot: snakecore.commands.Bot):
     bot.add_command(help)

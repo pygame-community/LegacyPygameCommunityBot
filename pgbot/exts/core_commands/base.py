@@ -18,7 +18,7 @@ import discord
 from discord.ext import commands
 import pygame
 import snakecore
-from snakecore.command_handler.converters import String
+from snakecore.commands.converters import String
 
 from pgbot import common
 import pgbot
@@ -305,8 +305,8 @@ class CommandMixinCog(commands.Cog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("stream", list) as db_obj:
-            data = db_obj.obj
+        async with snakecore.storageorage.DiscordStorage("stream", list) as storage_obj:
+            data = storage_obj.obj
 
         if not data:
             await snakecore.utils.embed_utils.replace_embed_at(
@@ -333,8 +333,8 @@ class CommandMixinCog(commands.Cog):
         ctx: commands.Context,
         _members: Optional[tuple[discord.Member, ...]] = None,
     ):
-        async with snakecore.db.DiscordDB("stream", list) as ping_db:
-            data: list = ping_db.obj
+        async with snakecore.storage.DiscordStorage("stream", list) as ping_storage:
+            data: list = ping_storage.obj
 
             if _members:
                 for mem in _members:
@@ -343,7 +343,7 @@ class CommandMixinCog(commands.Cog):
             elif ctx.author.id not in data:
                 data.append(ctx.author.id)
 
-            ping_db.obj = data
+            ping_storage.obj = data
 
         await self.stream_func(ctx)
 
@@ -352,8 +352,8 @@ class CommandMixinCog(commands.Cog):
         ctx: commands.Context,
         _members: Optional[tuple[discord.Member, ...]] = None,
     ):
-        async with snakecore.db.DiscordDB("stream", list) as ping_db:
-            data: list = ping_db.obj
+        async with snakecore.storage.DiscordStorage("stream", list) as ping_storage:
+            data: list = ping_storage.obj
 
             try:
                 if _members:
@@ -367,7 +367,7 @@ class CommandMixinCog(commands.Cog):
                     "Member was not previously added to the ping list",
                 )
 
-            ping_db.obj = data
+            ping_storage.obj = data
 
         await self.stream_func(ctx)
 
@@ -377,8 +377,8 @@ class CommandMixinCog(commands.Cog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("stream", list) as ping_db:
-            data: list = ping_db.obj
+        async with snakecore.storage.DiscordStorage("stream", list) as ping_storage:
+            data: list = ping_storage.obj
 
         msg = message.string if message else "Enjoy the stream!"
         ping = (
@@ -428,8 +428,8 @@ class CommandMixinCog(commands.Cog):
         """
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("wc") as db_obj:
-            wc_dict: dict[str, Any] = db_obj.obj
+        async with snakecore.storage.DiscordStorage("wc") as storage_obj:
+            wc_dict: dict[str, Any] = storage_obj.obj
 
         if not wc_dict.get("rounds"):
             raise BotException(
@@ -491,8 +491,8 @@ class CommandMixinCog(commands.Cog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.db.DiscordDB("clock") as db_obj:
-            timezones = db_obj.obj
+        async with snakecore.storage.DiscordStorage("clock") as storage_obj:
+            timezones = storage_obj.obj
             if action:
                 if _member is None:
                     member = ctx.author
@@ -550,7 +550,7 @@ class CommandMixinCog(commands.Cog):
                         "Failed to update clock!", f"Invalid action specifier {action}"
                     )
 
-                db_obj.obj = timezones
+                storage_obj.obj = timezones
 
         t = time.time()
 
