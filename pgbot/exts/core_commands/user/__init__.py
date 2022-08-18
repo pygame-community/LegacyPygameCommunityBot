@@ -52,13 +52,13 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
-            db_data = storage_obj.obj
+            storage_data = storage_obj.obj
 
         desc = "You have no reminders set"
-        if ctx.author.id in db_data:
+        if ctx.author.id in storage_data:
             desc = ""
             cnt = 0
-            for on, (reminder, chan_id, _) in db_data[ctx.author.id].items():
+            for on, (reminder, chan_id, _) in storage_data[ctx.author.id].items():
                 channel = None
                 if common.guild is not None:
                     channel = common.guild.get_channel(chan_id)
@@ -112,28 +112,28 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         on -= datetime.timedelta(microseconds=on.microsecond)
 
         async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
-            db_data = storage_obj.obj
-            if ctx.author.id not in db_data:
-                db_data[ctx.author.id] = {}
+            storage_data = storage_obj.obj
+            if ctx.author.id not in storage_data:
+                storage_data[ctx.author.id] = {}
 
             # user is editing old reminder message, discard the old reminder
-            for key, (_, chan_id, msg_id) in tuple(db_data[ctx.author.id].items()):
+            for key, (_, chan_id, msg_id) in tuple(storage_data[ctx.author.id].items()):
                 if chan_id == ctx.channel.id and msg_id == ctx.message.id:
-                    db_data[ctx.author.id].pop(key)
+                    storage_data[ctx.author.id].pop(key)
 
             limit = 25 if get_primary_guild_perms(ctx.author)[1] else 10
-            if len(db_data[ctx.author.id]) >= limit:
+            if len(storage_data[ctx.author.id]) >= limit:
                 raise BotException(
                     "Failed to set reminder!",
                     f"I cannot set more than {limit} reminders for you",
                 )
 
-            db_data[ctx.author.id][on] = (
+            storage_data[ctx.author.id][on] = (
                 msg.string.strip(),
                 ctx.channel.id,
                 ctx.message.id,
             )
-            storage_obj.obj = db_data
+            storage_obj.obj = storage_data
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
@@ -266,19 +266,19 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         async with snakecore.storage.DiscordStorage("reminders") as storage_obj:
-            db_data = storage_obj.obj
-            db_data_copy = copy.deepcopy(db_data)
+            storage_data = storage_obj.obj
+            storage_data_copy = copy.deepcopy(storage_data)
             cnt = 0
             if reminder_ids:
                 for reminder_id in sorted(set(reminder_ids), reverse=True):
-                    if ctx.author.id in db_data:
-                        for i, dt in enumerate(db_data_copy[ctx.author.id]):
+                    if ctx.author.id in storage_data:
+                        for i, dt in enumerate(storage_data_copy[ctx.author.id]):
                             if i == reminder_id:
-                                db_data[ctx.author.id].pop(dt)
+                                storage_data[ctx.author.id].pop(dt)
                                 cnt += 1
                                 break
                     if (
-                        reminder_id >= len(db_data_copy[ctx.author.id])
+                        reminder_id >= len(storage_data_copy[ctx.author.id])
                         or reminder_id < 0
                     ):
                         raise BotException(
@@ -286,13 +286,13 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                             "Reminder ID was not an existing reminder ID",
                         )
 
-                if ctx.author.id in db_data and not db_data[ctx.author.id]:
-                    db_data.pop(ctx.author.id)
+                if ctx.author.id in storage_data and not storage_data[ctx.author.id]:
+                    storage_data.pop(ctx.author.id)
 
-            elif ctx.author.id in db_data:
-                cnt = len(db_data.pop(ctx.author.id))
+            elif ctx.author.id in storage_data:
+                cnt = len(storage_data.pop(ctx.author.id))
 
-            storage_obj.obj = db_data
+            storage_obj.obj = storage_data
 
         await snakecore.utils.embed_utils.replace_embed_at(
             response_message,
