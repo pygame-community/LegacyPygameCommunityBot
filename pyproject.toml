@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 88
-target_version = ['py39', 'py310']
+target_version = ['py39']
 include = '\.pyi?$'
 exclude = '''
 
@@ -28,10 +28,9 @@ line_length = 88
 
 [tool.pyright]
 include = [
-    "snakecore"
+  "pgbot"
 ]
 exclude = [
-    "**/__pycache__"
+  "**/__pycache__"
 ]
 pythonVersion = "3.9"
-
