@@ -1,4 +1,4 @@
-black>=22.1
+black>=22.6
 discord.py>=2.0.0
 numpy>=1.20.0
 pillow>=8.2.0
