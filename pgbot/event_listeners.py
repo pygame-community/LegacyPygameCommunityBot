@@ -128,16 +128,16 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         has_cause = True
         if isinstance(error.__cause__, discord.HTTPException):
             title = footer_text = error.__cause__.__class__.__name__
-            msg = error.__cause__.args[0]
+            msg = error.__cause__.args[0] if error.__cause__.args else ""
         else:
             raise_error = True
             has_cause = True
-            title = "Unknown Error!"
+            title = "Unknown exception!"
             msg = (
                 "An unhandled exception occured while running the command!\n"
                 "This is most likely a bug in the bot itself, and `@Wizard 🝑`s will "
                 f"recast magical spells on it soon!\n\n"
-                f"```\n{error.__cause__.args[0]}```"
+                f"```\n{error.__cause__.args[0] if error.__cause__.args else ''}```"
             )
             footer_text = error.__cause__.__class__.__name__
 
