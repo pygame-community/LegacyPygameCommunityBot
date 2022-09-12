@@ -222,8 +222,8 @@ class EmsudoCommandCog(BaseCommandCog):
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
-                dict(name="\u2800", value="`...`", inline=False),
-                dict(name="\u2800", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
             ],
         )
 
@@ -612,7 +612,7 @@ class EmsudoCommandCog(BaseCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         attribs = (
@@ -1096,7 +1096,7 @@ class EmsudoCommandCog(BaseCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         for i, data in enumerate(datas):
@@ -1471,7 +1471,7 @@ class EmsudoCommandCog(BaseCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         output_embed_dict = {}
@@ -1720,8 +1720,8 @@ class EmsudoCommandCog(BaseCommandCog):
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
-                dict(name="\u2800", value="`...`", inline=False),
-                dict(name="\u2800", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
             ],
         )
 
@@ -1945,8 +1945,8 @@ class EmsudoCommandCog(BaseCommandCog):
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
-                dict(name="\u2800", value="`...`", inline=False),
-                dict(name="\u2800", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
             ],
         )
 
@@ -2099,7 +2099,7 @@ class EmsudoCommandCog(BaseCommandCog):
                                 color=common.DEFAULT_EMBED_COLOR,
                                 fields=[
                                     dict(
-                                        name="\u2800",
+                                        name="\u200b",
                                         value=f"**[View Original Message]({msg.jump_url})**",
                                         inline=True,
                                     ),

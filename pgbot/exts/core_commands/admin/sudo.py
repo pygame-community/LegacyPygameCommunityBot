@@ -127,8 +127,8 @@ class SudoCommandCog(BaseCommandCog):
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
-                dict(name="\u2800", value="`...`", inline=False),
-                dict(name="\u2800", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
+                dict(name="\u200b", value="`...`", inline=False),
             ],
         )
         data_count = len(datas)
@@ -619,7 +619,7 @@ class SudoCommandCog(BaseCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)
@@ -671,9 +671,9 @@ class SudoCommandCog(BaseCommandCog):
                         + (" (Shortened)" if len(escaped_msg_content) > 2000 else "")
                         + "__:",
                         f"\n\n ```\n{escaped_msg_content[:2001]}\n\n[...]\n```"
-                        + "\n\u2800"
+                        + "\n\u200b"
                         if len(escaped_msg_content) > 2000
-                        else "\n\u2800",
+                        else "\n\u200b",
                     )
                 )
 
@@ -712,7 +712,7 @@ class SudoCommandCog(BaseCommandCog):
                         description="```\n{0}```".format(escaped_msg_content),
                         fields=[
                             dict(
-                                name="\u2800",
+                                name="\u200b",
                                 value=f"**[View Original Message]({msg.jump_url})**",
                                 inline=False,
                             ),
@@ -1089,7 +1089,7 @@ class SudoCommandCog(BaseCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)

@@ -598,7 +598,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
         msg_count = len(messages)
         with io.StringIO("This file was too large to be archived.") as fobj:
@@ -946,7 +946,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
@@ -1047,7 +1047,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         msg_count = len(msgs)
@@ -1159,7 +1159,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
 
         idx_count = len(indices_list)
@@ -1418,7 +1418,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         load_embed = snakecore.utils.embed_utils.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`...`", inline=False)],
+            fields=[dict(name="\u200b", value="`...`", inline=False)],
         )
         obj_count = len(objs)
         for i, obj in enumerate(objs):

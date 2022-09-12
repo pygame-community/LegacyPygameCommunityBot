@@ -140,7 +140,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                     f"\n {msg.content[:2001]}" + "\n\n[...]"
                     if len(msg.content) > 2000
                     else msg.content,
-                    "\u2800",
+                    "\u200b",
                 )
             ),
             color=common.DEFAULT_EMBED_COLOR,
@@ -153,7 +153,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                     inline=True,
                 ),
                 dict(
-                    name="\u2800",
+                    name="\u200b",
                     value=f"**[View Original Message]({msg.jump_url})**",
                     inline=False,
                 ),
@@ -185,7 +185,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                 f"\n {msg.content[:2001]}" + "\n[...]"
                 if len(msg.content) > 2000
                 else msg.content,
-                "\u2800",
+                "\u200b",
             )
         ),
         color=common.DEFAULT_EMBED_COLOR,
@@ -196,7 +196,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
                 inline=True,
             ),
             dict(
-                name="\u2800",
+                name="\u200b",
                 value=f"**[View Original Message]({msg.jump_url})**",
                 inline=False,
             ),

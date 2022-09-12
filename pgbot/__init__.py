@@ -653,7 +653,7 @@ async def handle_command(
             invoke_message.channel,
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
-            fields=[dict(name="\u2800", value="`Loading...`", inline=False)],
+            fields=[dict(name="\u200b", value="`Loading...`", inline=False)],
         )
 
     common.recent_response_messages[invoke_message.id] = response_message
