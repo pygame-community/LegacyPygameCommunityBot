@@ -980,7 +980,7 @@ class SudoCommandCog(BaseCommandCog):
         destination: Optional[Union[discord.TextChannel, discord.Thread]] = None,
         embeds: bool = True,
         attachments: bool = True,
-        as_spoiler: bool = False,
+        as_spoiler: Optional[bool] = None,
         info: bool = False,
         author_info: bool = True,
         skip_empty: bool = True,
@@ -1019,10 +1019,11 @@ class SudoCommandCog(BaseCommandCog):
 
         +===+
 
-            `as_spoiler: (bool) = False`
-            > If set to `True`, the attachments of the input messages
-            > will be explicitly marked as spoilers when sent to the
-            > destination channel.
+            `as_spoiler: (bool)`
+            > If set to a truthy/falsy value, the attachments of the input messages
+            > will be explicitly marked as spoilers/not spoilers when sent to the
+            > destination channel. This overrides the setting of the attachments
+            > of the target messages.
 
             `info: (bool) = False`
             > If set to `True`, an embed containing info
@@ -1121,7 +1122,11 @@ class SudoCommandCog(BaseCommandCog):
                 with io.StringIO("This file was too large to be cloned.") as fobj:
                     attached_files = [
                         (
-                            ((await a.to_file(spoiler=as_spoiler)) if as_spoiler else a)
+                            await a.to_file(
+                                spoiler=as_spoiler
+                                if as_spoiler is not None
+                                else a.is_spoiler()
+                            )
                             if a.size <= filesize_limit
                             else discord.File(fobj, f"filetoolarge - {a.filename}.txt")
                         )
