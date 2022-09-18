@@ -102,7 +102,7 @@ async def handle_console():
             continue
 
         await common.console_channel.send(
-            content=snakecore.utils.code_block(content, code_type="cmd")
+            content=snakecore.utils.code_block(content, code_type="ansi")
         )
 
 
