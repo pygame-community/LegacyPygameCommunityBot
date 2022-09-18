@@ -81,7 +81,9 @@ async def handle_console():
         return
 
     contents = common.stdout.getvalue()
-    common.stdout = io.StringIO()
+    # reset StringIO object for reuse
+    common.stdout.truncate(0)
+    common.stdout.seek(0)
 
     # hide path data
     contents = contents.replace(os.getcwd(), "PgBot")
