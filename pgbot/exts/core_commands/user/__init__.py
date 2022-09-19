@@ -88,7 +88,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
         response_message = common.recent_response_messages[ctx.message.id]
 
         if _delta is None:
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.now(datetime.timezone.utc)
             _delta = on - now
         else:
             now = on
@@ -244,7 +244,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             )
 
         await self.reminders_add_func(
-            ctx, msg, datetime.datetime.utcnow(), _delta=delta
+            ctx, msg, datetime.datetime.now(datetime.timezone.utc), _delta=delta
         )
 
     @reminders.command(name="remove")

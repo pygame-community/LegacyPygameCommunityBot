@@ -345,10 +345,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
                             warn_msg = await new.channel.fetch_message(
                                 deletion_data_list[1]
                             )
-                            deletion_datetime = (
-                                datetime.datetime.utcnow()
-                                + datetime.timedelta(minutes=2)
-                            )
+                            deletion_datetime = datetime.datetime.now(
+                                datetime.timezone.utc
+                            ) + datetime.timedelta(minutes=2)
                             await warn_msg.edit(
                                 content=(
                                     "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."
@@ -371,9 +370,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
                             del common.entry_message_deletion_dict[new.id]
 
                 else:  # an edit led to an invalid entry message from a valid one
-                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
-                        minutes=2
-                    )
+                    deletion_datetime = datetime.datetime.now(
+                        datetime.timezone.utc
+                    ) + datetime.timedelta(minutes=2)
                     warn_msg = await new.reply(
                         "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
                         " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
@@ -429,7 +428,9 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 pass
 
         if not embed_repost_edited:
-            if (datetime.datetime.utcnow() - old.created_at) < datetime.timedelta(
+            if (
+                datetime.datetime.now(datetime.timezone.utc) - old.created_at
+            ) < datetime.timedelta(
                 minutes=5
             ):  # for new, recently corrected entry messages
                 entry_type = "showcase"
@@ -534,9 +535,9 @@ async def handle_message(msg: discord.Message):
         if msg.channel in common.entry_channels.values():
             if msg.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
                 if not entry_message_validity_check(msg):
-                    deletion_datetime = datetime.datetime.utcnow() + datetime.timedelta(
-                        minutes=2
-                    )
+                    deletion_datetime = datetime.datetime.now(
+                        datetime.timezone.utc
+                    ) + datetime.timedelta(minutes=2)
                     warn_msg = await msg.reply(
                         "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
                         " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."

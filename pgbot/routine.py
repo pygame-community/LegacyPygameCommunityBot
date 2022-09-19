@@ -27,7 +27,7 @@ async def handle_reminders(reminder_obj: snakecore.storage.DiscordStorage):
     new_reminders = {}
     for mem_id, reminder_dict in reminder_obj.obj.items():
         for dt, (msg, chan_id, msg_id) in reminder_dict.items():
-            if datetime.datetime.utcnow() >= dt:
+            if datetime.datetime.now(datetime.timezone.utc) >= dt:
                 content = f"__**Reminder for you:**__\n>>> {msg}"
 
                 channel = None
