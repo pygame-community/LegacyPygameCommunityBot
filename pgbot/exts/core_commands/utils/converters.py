@@ -11,11 +11,10 @@ from typing import TYPE_CHECKING
 from discord.ext import commands
 import pygame
 from snakecore.commands.converters import (
-    CodeBlock,
     DateTime,
     RangeObject,
-    String,
 )
+from snakecore.commands.parser import CodeBlock, String
 
 
 class PygameColor(commands.Converter):

@@ -167,6 +167,12 @@ def format_entries_message(
     return title, fields
 
 
+URL_PATTERN = re.compile(
+    r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
+)
+# https://stackoverflow.com/a/6041965/14826938
+
+
 def entry_message_validity_check(
     message: discord.Message, min_chars=32, max_chars=float("inf")
 ):
@@ -175,12 +181,7 @@ def entry_message_validity_check(
     Returns:
         bool: True/False
     """
-    url_regex_pattern = r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
-    # https://stackoverflow.com/a/6041965/14826938
-
-    search_obj = re.search(
-        url_regex_pattern, (message.content if message.content else "")
-    )
+    search_obj = URL_PATTERN.search((message.content if message.content else ""))
     link_in_msg = bool(search_obj)
     first_link_str = search_obj.group() if link_in_msg else ""
 
@@ -213,7 +214,7 @@ async def delete_bad_entry_and_warning(
     except asyncio.CancelledError:
         return
 
-    finally:
+    else:
         for msg in (entry_msg, warn_msg):
             # don't error here if messages were already deleted
             try:
@@ -330,84 +331,79 @@ async def message_edit(old: discord.Message, new: discord.Message):
     if common.GENERIC or common.TEST_MODE:
         return
 
-    if new.channel in common.entry_channels.values():
+    if new.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
         embed_repost_edited = False
-        if new.channel.id == common.GuildConstants.ENTRY_CHANNEL_IDS["showcase"]:
-            if not entry_message_validity_check(new):
-                if new.id in common.entry_message_deletion_dict:
-                    deletion_data_list = common.entry_message_deletion_dict[new.id]
-                    deletion_task = deletion_data_list[0]
-                    if deletion_task.done():
-                        del common.entry_message_deletion_dict[new.id]
-                    else:
-                        try:
-                            deletion_task.cancel()  # try to cancel deletion after noticing edit by sender
-                            warn_msg = await new.channel.fetch_message(
-                                deletion_data_list[1]
-                            )
-                            deletion_datetime = datetime.datetime.now(
-                                datetime.timezone.utc
-                            ) + datetime.timedelta(minutes=2)
-                            await warn_msg.edit(
-                                content=(
-                                    "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."
-                                    " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
-                                    f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
-                                    f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
-                                    " If no changes are made, your entry message will be"
-                                    f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
-                                )
-                            )
-                            common.entry_message_deletion_dict[new.id] = [
-                                asyncio.create_task(
-                                    delete_bad_entry_and_warning(
-                                        new, warn_msg, delay=120
-                                    )
-                                ),
-                                warn_msg.id,
-                            ]
-                        except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
-                            del common.entry_message_deletion_dict[new.id]
-
-                else:  # an edit led to an invalid entry message from a valid one
-                    deletion_datetime = datetime.datetime.now(
-                        datetime.timezone.utc
-                    ) + datetime.timedelta(minutes=2)
-                    warn_msg = await new.reply(
-                        "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
-                        " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
-                        f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
-                        f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
-                        " If no changes are made, your entry message will be"
-                        f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
-                    )
-
-                    common.entry_message_deletion_dict[new.id] = [
-                        asyncio.create_task(
-                            delete_bad_entry_and_warning(new, warn_msg, delay=120)
-                        ),
-                        warn_msg.id,
-                    ]
-                return
-
-            elif (
-                entry_message_validity_check(new)
-                and new.id in common.entry_message_deletion_dict
-            ):  # an invalid entry was corrected
+        if not entry_message_validity_check(new):
+            if new.id in common.entry_message_deletion_dict:
                 deletion_data_list = common.entry_message_deletion_dict[new.id]
                 deletion_task = deletion_data_list[0]
-                if not deletion_task.done():  # too late to do anything
+                if deletion_task.done():
+                    del common.entry_message_deletion_dict[new.id]
+                else:
                     try:
-                        deletion_task.cancel()  # try to cancel deletion after noticing valid edit by sender
+                        deletion_task.cancel()  # try to cancel deletion after noticing edit by sender
                         warn_msg = await new.channel.fetch_message(
                             deletion_data_list[1]
                         )
-                        await warn_msg.delete()
+                        deletion_datetime = datetime.datetime.now(
+                            datetime.timezone.utc
+                        ) + datetime.timedelta(minutes=2)
+                        await warn_msg.edit(
+                            content=(
+                                "I noticed your edit, but: Your entry message must contain an attachment or a (Discord recognized) link to be valid."
+                                " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
+                                f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
+                                f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
+                                " If no changes are made, your entry message will be"
+                                f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
+                            )
+                        )
+                        common.entry_message_deletion_dict[new.id] = [
+                            asyncio.create_task(
+                                delete_bad_entry_and_warning(new, warn_msg, delay=120)
+                            ),
+                            warn_msg.id,
+                        ]
                     except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
-                        pass
-                del common.entry_message_deletion_dict[new.id]
+                        del common.entry_message_deletion_dict[new.id]
 
-        async for message in common.entries_discussion_channel.history(
+            else:  # an edit led to an invalid entry message from a valid one
+                deletion_datetime = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) + datetime.timedelta(minutes=2)
+                warn_msg = await new.reply(
+                    "Your entry message must contain an attachment or a (Discord recognized) link to be valid."
+                    " If it doesn't contain any characters but an attachment, it must be a reply to another entry you created."
+                    f" If no attachments are present, it must contain at least 32 characters (including any links, but not links alone)."
+                    f" If you meant to comment on another entry, please delete your message and go to {common.entries_discussion_channel.mention}."
+                    " If no changes are made, your entry message will be"
+                    f" deleted {snakecore.utils.create_markdown_timestamp(deletion_datetime, tformat='R')}."
+                )
+
+                common.entry_message_deletion_dict[new.id] = [
+                    asyncio.create_task(
+                        delete_bad_entry_and_warning(new, warn_msg, delay=120)
+                    ),
+                    warn_msg.id,
+                ]
+            return
+
+        elif (
+            entry_message_validity_check(new)
+            and new.id in common.entry_message_deletion_dict
+        ):  # an invalid entry was corrected
+            deletion_data_list = common.entry_message_deletion_dict[new.id]
+            deletion_task = deletion_data_list[0]
+            if not deletion_task.done():  # too late to do anything
+                try:
+                    deletion_task.cancel()  # try to cancel deletion after noticing valid edit by sender
+                    warn_msg = await new.channel.fetch_message(deletion_data_list[1])
+                    await warn_msg.delete()
+                except discord.NotFound:  # cancelling didn't work, warning and entry message were already deleted
+                    pass
+            del common.entry_message_deletion_dict[new.id]
+
+        async for message in common.entries_discussion_channel.history(  # attempt to find and edit repost
             around=old.created_at, limit=5
         ):
             try:
