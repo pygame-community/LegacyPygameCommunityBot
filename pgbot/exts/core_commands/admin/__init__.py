@@ -1781,9 +1781,9 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         paginator = snakecore.utils.pagination.EmbedPaginator(
             target_message,
             *pages,
-            caller=controllers,
+            callers=controllers,
             whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
-            start_page_number=page,
+            page_number=page,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         )
