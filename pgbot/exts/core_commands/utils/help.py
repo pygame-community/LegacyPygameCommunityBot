@@ -262,9 +262,9 @@ async def send_help_message(
         await snakecore.utils.pagination.EmbedPaginator(
             original_msg,
             *embeds,
-            callers=invoker,
+            caller=invoker,
             whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
-            page_number=page,
+            start_page_number=page,
             inactivity_timeout=60,
             theme_color=common.DEFAULT_EMBED_COLOR,
         ).mainloop()

@@ -154,29 +154,35 @@ class GuildConstants:
 
     INVALID_HELP_THREAD_TITLE_TYPES = {
         "thread_title_too_short",
-        "member_asking_for_help_query",
-        "member_not_working_code_query",
-        "member_asking_for_code_query",
+        "member_asking_for_help",
+        "member_exclaiming_about_not_working_code",
+        "member_asking_for_code",
+        "member_asking_about_problem_with_code",
     }
 
     INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED = {
         "thread_title_too_short": True,
-        "member_asking_for_help_query": True,
-        "member_not_working_code_query": True,
-        "member_asking_for_code_query": True,
+        "member_asking_for_help": True,
+        "member_exclaiming_about_not_working_code": True,
+        "member_asking_for_code": True,
+        "member_asking_about_problem_with_code": True,
     }
     INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS = {
         "thread_title_too_short": re.compile(r"^(.){1,29}$", flags=re.IGNORECASE),
-        "member_asking_for_help_query": re.compile(
+        "member_asking_for_help": re.compile(
             r"[\s]*(^help\s*|help\?*?$|(can|does|is\s+)?(pl(ease|s)|(some|any)(one|body)|you|(need|want)|(can|(want|available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))(\s*me(\s*please)?|pl(ease|s)|with)?\s*",
             re.IGNORECASE,
         ),
-        "member_not_working_code_query": re.compile(
+        "member_exclaiming_about_not_working_code": re.compile(
             r"[\s]*((why\s+)?(is('nt)?|does(\s+not|'nt)?)?\s*(my|the|this)?)\s*(this|code|game|pygame(\s*(game|program|code)?))\s*(((is|does)(\s*not|n't)?|not)?\s*work(s|ed|ing)?)",
             re.IGNORECASE,
         ),
-        "member_asking_for_code_query": re.compile(
+        "member_asking_for_code": re.compile(
             r"[\s]*(can('t|not)?\s+)?(please|pls|(some|any)(one|body)|(need|want)(\s*some)?|(available|around|willing|ready)(\s*to))(\s*help(\s*me)?)?\s*(write|make|create|code|program|fix|correct|implement)(?!ing)(\s*(my|the|this))?\s*(this|code|game|pygame(\s*(game|program|code)?))?\s*(for)?\s*(me(\s*please)?|please)?\s*",
+            re.IGNORECASE,
+        ),
+        "member_asking_about_problem_with_code": re.compile(
+            r"[\s]*((why|what('s)?\s+)(is('nt)?|does(\s+not|'nt)|am\s*i\s*(doing|having))?\s*((wrong|the\s*(problem|issue))?\s*(with(in)?|in(side)?)\s*)?(my|the|this)?)\s*(this|code|game|pygame(\s*(game|program|code)?))\s*",
             re.IGNORECASE,
         ),
     }
@@ -187,35 +193,54 @@ class GuildConstants:
             "30 characters long.",
             "color": 0xDE570F,
         },
-        "member_asking_for_help_query": {
+        "member_asking_for_help": {
             "title": "Don't ask for help in your help post query!",
             "description": "Instead of asking for help or mentioning that you need "
             "help with something, you should be writing a query (post title) "
-            "that describes the actual issue you're having in more detail.\n\n"
-            "**[Here's why!](https://www.dontasktoask.com)**",
-            "color": 0xDE570F,
-            "footer": {
-                "text": "I'm still learning, so I might make mistakes and "
-                "occasionally raise a false alarm. "
-                "Ignore me if you aren't asking for help in your query. 😅"
-            },
-        },
-        "member_not_working_code_query": {
-            "title": "Don't tell us your code/program/whatever isn't working!",
-            "description": "Instead, use your help query (post title) to describe "
-            "the problem that led to that diagnosis. What made your code stop "
-            "working? What are you trying to do (unsuccessfully)?",
+            "that describes the actual issue you're having in more detail. "
+            "Also send code snippets, screenshots and other media, error messages, etc."
+            "\n\n**[Here's why!](https://www.dontasktoask.com)**",
             "color": 0xDE570F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
             },
         },
-        "member_asking_for_code_query": {
+        "member_exclaiming_about_not_working_code": {
+            "title": "Don't tell us your code, game, project or assignment isn't working!",
+            "description": "Instead, use your help query (post title) to describe "
+            "the problem that led to that diagnosis. What made your code stop "
+            "working? What are you trying to do (unsuccessfully)?\n"
+            "Remember to send along code snippets, screenshots and other media, error "
+            "messages, etc.",
+            "color": 0xDE570F,
+            "footer": {
+                "text": "I'm still learning, so I might make mistakes and "
+                "occasionally raise a false alarm. 😅"
+            },
+        },
+        "member_asking_for_code": {
             "title": "Don't ask if anybody can, wants to, or will fix, correct "
-            "or write your code for you!",
-            "description": "All helpers are volunteers, who show people how to "
-            "improve their code by themselves. They don't do all the work for them.",
+            "or write your code, game, project or assignment for you!",
+            "description": "All helpers here are volunteers, who show people how to "
+            "improve or implement things in their code by themselves. They don't do "
+            "all the work for them. Show us what you are working on, what you've "
+            "tried, as well as where you got stuck. "
+            "Remember to send along code snippets, screenshots and other media, error "
+            "messages, etc.",
+            "color": 0xDE570F,
+            "footer": {
+                "text": "I'm still learning, so I might make mistakes and "
+                "occasionally raise a false alarm. 😅"
+            },
+        },
+        "member_asking_about_problem_with_code": {
+            "title": "Don't ask us what the problem with your code, game, project or assignment is!",
+            "description": "Instead, use your help query (post title) to describe "
+            "how the problems with it came up. What made your code stop "
+            "working? What are you trying to do (unsuccessfully)? "
+            "Remember to send along code snippets, screenshots and other media, error "
+            "messages, etc.",
             "color": 0xDE570F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
