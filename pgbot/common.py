@@ -11,6 +11,7 @@ import asyncio
 import io
 import json
 import os
+import re
 import sys
 from typing import Optional, Union
 
@@ -144,6 +145,83 @@ class GuildConstants:
     ENTRY_CHANNEL_IDS = {
         "showcase": 772507247540437032,
         "discussion": 780351772514058291,
+    }
+    HELP_FORUM_CHANNEL_IDS = {
+        1022292223708110929,  # newbies-help-🔰
+        1019741232810954842,  # regulars-pygame-help
+        1022244052088934461,  # python-help
+    }
+
+    INVALID_HELP_THREAD_TITLE_TYPES = {
+        "thread_title_too_short",
+        "member_asking_for_help_query",
+        "member_not_working_code_query",
+        "member_asking_for_code_query",
+    }
+
+    INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED = {
+        "thread_title_too_short": True,
+        "member_asking_for_help_query": True,
+        "member_not_working_code_query": True,
+        "member_asking_for_code_query": True,
+    }
+    INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS = {
+        "thread_title_too_short": re.compile(r"^(.){1,24}$", flags=re.IGNORECASE),
+        "member_asking_for_help_query": re.compile(
+            r"[\s]*(^help$|help\s+|(can\s+)?(please|pls|(some|any)(one|body)|you|(need|want)(\s*some)?|(can|(available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))\s*(me(\s*please)?|please|please|with)?\s*",
+            re.IGNORECASE,
+        ),
+        "member_not_working_code_query": re.compile(
+            r"[\s]*((why\s+)?(is('nt)?|does(\s+not|'nt)?)?\s*(my|the|this)?)\s*(this|code|game|pygame(\s*(game|program|code)?))\s*(((is|does)(\s*not|n't)?|not)?\s*work(s|ed|ing)?)",
+            re.IGNORECASE,
+        ),
+        "member_asking_for_code_query": re.compile(
+            r"[\s]*(can('t|not)?\s+)?(please|pls|(some|any)(one|body)|(need|want)(\s*some)?|(available|around|willing|ready)(\s*to))(\s*help(\s*me)?)?\s*(write|make|create|code|program|fix|correct|implement)(?!ing)(\s*(my|the|this))?\s*(this|code|game|pygame(\s*(game|program|code)?))?\s*(for)?\s*(me(\s*please)?|please)?\s*",
+            re.IGNORECASE,
+        ),
+    }
+    INVALID_HELP_THREAD_TITLE_EMBEDS = {
+        "thread_title_too_short": {
+            "title": "Your help post query is too short!",
+            "description": "Your help post query (post title) must be longer than "
+            "25 characters.",
+            "color": 0xDE570F,
+        },
+        "member_asking_for_help_query": {
+            "title": "Don't ask for help in your help post query!",
+            "description": "Instead of asking for help or mentioning that you need "
+            "help with something, you should be writing a query (post title) "
+            "that describes the actual issue you're having in more detail.\n\n"
+            "**[Here's why!](https://www.dontasktoask.com)**",
+            "color": 0xDE570F,
+            "footer": {
+                "text": "I'm still learning, so I might make mistakes and "
+                "occasionally raise a false alarm. "
+                "Ignore me if you aren't asking for help in your query. 😅"
+            },
+        },
+        "member_not_working_code_query": {
+            "title": "Don't tell us your code/program/whatever isn't working!",
+            "description": "Instead, use your help query (post title) to describe "
+            "the problem that led to that diagnosis. What made your code stop "
+            "working? What are you trying to do (unsuccessfully)?",
+            "color": 0xDE570F,
+            "footer": {
+                "text": "I'm still learning, so I might make mistakes and "
+                "occasionally raise a false alarm. 😅"
+            },
+        },
+        "member_asking_for_code_query": {
+            "title": "Don't ask if anybody can, wants to, or will fix, correct "
+            "or write your code for you!",
+            "description": "All helpers are volunteers, who show people how to "
+            "improve their code by themselves. They don't do all the work for them.",
+            "color": 0xDE570F,
+            "footer": {
+                "text": "I'm still learning, so I might make mistakes and "
+                "occasionally raise a false alarm. 😅"
+            },
+        },
     }
     # eval is a pretty dangerous command, so grant it only for Admins and Senior Mages
     EVAL_ROLES = {772521884373614603, 772849669591400501}

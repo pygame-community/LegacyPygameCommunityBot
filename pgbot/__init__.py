@@ -441,6 +441,68 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 )
 
 
+async def validate_help_forum_channel_thread(thread: discord.Thread):
+    caution_message = None
+    for caution_type in (
+        guild_constants := common.GuildConstants
+    ).INVALID_HELP_THREAD_TITLE_TYPES:
+        if (
+            guild_constants.INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED[caution_type]
+            and guild_constants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
+                caution_type
+            ].search(thread.name)
+            is not None
+        ):
+            caution_message = await thread.send(
+                content=f"<@{thread.owner_id}>",
+                embed=discord.Embed.from_dict(
+                    guild_constants.INVALID_HELP_THREAD_TITLE_EMBEDS[caution_type]
+                ),
+            )
+
+    if caution_message is not None:
+        common.hold_task(
+            asyncio.create_task(
+                message_delete_reaction_listener(
+                    caution_message,
+                    (
+                        thread.owner
+                        or common.bot.get_user(thread.owner_id)
+                        or (await common.bot.fetch_user(thread.owner_id))
+                    ),
+                    emoji="🗑",
+                    role_whitelist=common.GuildConstants.ADMIN_ROLES,
+                    timeout=120,
+                )
+            )
+        )
+
+
+async def thread_create(thread: discord.Thread):
+    if (
+        thread.guild.id == common.GuildConstants.GUILD_ID
+        and thread.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
+    ):
+        try:
+            await (
+                thread.starter_message or (await thread.fetch_message(thread.id))
+            ).pin()
+            await validate_help_forum_channel_thread(thread)
+        except discord.HTTPException:
+            pass
+
+
+async def raw_thread_update(payload: discord.RawThreadUpdateEvent):
+    if payload.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS:
+        try:
+            thread = payload.thread or (
+                await common.bot.fetch_channel(payload.thread_id)
+            )
+            await validate_help_forum_channel_thread(thread)
+        except discord.HTTPException:
+            pass
+
+
 async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     """
     Helper to handle a raw reaction added on discord

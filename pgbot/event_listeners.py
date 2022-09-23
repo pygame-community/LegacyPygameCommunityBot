@@ -57,14 +57,6 @@ async def on_message(msg: discord.Message):
 
 
 @bot.event
-async def on_message_delete(msg: discord.Message):
-    """
-    This function is called for every message deleted by user.
-    """
-    await pgbot.message_delete(msg)
-
-
-@bot.event
 async def on_message_edit(old: discord.Message, new: discord.Message):
     """
     This function is called for every message edited by user.
@@ -73,6 +65,30 @@ async def on_message_edit(old: discord.Message, new: discord.Message):
         return
 
     await pgbot.message_edit(old, new)
+
+
+@bot.event
+async def on_message_delete(msg: discord.Message):
+    """
+    This function is called for every message deleted by user.
+    """
+    await pgbot.message_delete(msg)
+
+
+@bot.event
+async def on_thread_create(thread: discord.Thread):
+    """
+    This function is called for every message deleted by user.
+    """
+    await pgbot.thread_create(thread)
+
+
+@bot.event
+async def on_raw_thread_update(payload: discord.RawThreadUpdateEvent):
+    """
+    This function is called for every message deleted by user.
+    """
+    await pgbot.raw_thread_update(payload)
 
 
 @bot.event
