@@ -441,7 +441,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 )
 
 
-async def validate_help_forum_channel_thread(thread: discord.Thread):
+async def validate_help_forum_channel_thread_name(thread: discord.Thread):
     caution_message = None
     for caution_type in (
         guild_constants := common.GuildConstants
@@ -487,19 +487,16 @@ async def thread_create(thread: discord.Thread):
             await (
                 thread.starter_message or (await thread.fetch_message(thread.id))
             ).pin()
-            await validate_help_forum_channel_thread(thread)
+            await validate_help_forum_channel_thread_name(thread)
         except discord.HTTPException:
             pass
 
 
-async def raw_thread_update(payload: discord.RawThreadUpdateEvent):
-    if payload.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS:
+async def thread_update(before: discord.Thread, after: discord.Thread):
+    if after.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS:
         try:
-            thread = payload.thread or (
-                await common.bot.fetch_channel(payload.thread_id)
-            )
-            if not (thread.archived or thread.locked):
-                await validate_help_forum_channel_thread(thread)
+            if not (after.archived or after.locked) and before.name != after.name:
+                await validate_help_forum_channel_thread_name(after)
         except discord.HTTPException:
             pass
 

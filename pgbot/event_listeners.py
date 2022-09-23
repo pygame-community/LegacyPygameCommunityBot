@@ -6,6 +6,7 @@ Copyright (c) 2020-present pygame-community
 This file defines Discord gateway event listeners
 """
 import asyncio
+from dis import dis
 import discord
 from discord.ext import commands
 import snakecore
@@ -77,18 +78,12 @@ async def on_message_delete(msg: discord.Message):
 
 @bot.event
 async def on_thread_create(thread: discord.Thread):
-    """
-    This function is called for every message deleted by user.
-    """
     await pgbot.thread_create(thread)
 
 
 @bot.event
-async def on_raw_thread_update(payload: discord.RawThreadUpdateEvent):
-    """
-    This function is called for every message deleted by user.
-    """
-    await pgbot.raw_thread_update(payload)
+async def on_thread_update(before: discord.Thread, after: discord.Thread):
+    await pgbot.thread_update(before, after)
 
 
 @bot.event
