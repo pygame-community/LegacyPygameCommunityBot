@@ -166,9 +166,9 @@ class GuildConstants:
         "member_asking_for_code_query": True,
     }
     INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS = {
-        "thread_title_too_short": re.compile(r"^(.){1,24}$", flags=re.IGNORECASE),
+        "thread_title_too_short": re.compile(r"^(.){1,29}$", flags=re.IGNORECASE),
         "member_asking_for_help_query": re.compile(
-            r"[\s]*(^help$|help\s+|(can\s+)?(please|pls|(some|any)(one|body)|you|(need|want)(\s*some)?|(can|(available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))\s*(me(\s*please)?|please|please|with)?\s*",
+            r"[\s]*(^help\s*|help\?*?$|(can|does|is\s+)?(pl(ease|s)|(some|any)(one|body)|you|(need|want)|(can|(want|available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))(\s*me(\s*please)?|pl(ease|s)|with)?\s*",
             re.IGNORECASE,
         ),
         "member_not_working_code_query": re.compile(
@@ -183,8 +183,8 @@ class GuildConstants:
     INVALID_HELP_THREAD_TITLE_EMBEDS = {
         "thread_title_too_short": {
             "title": "Your help post query is too short!",
-            "description": "Your help post query (post title) must be longer than "
-            "25 characters.",
+            "description": "Your help post query (post title) must be at least "
+            "30 characters long.",
             "color": 0xDE570F,
         },
         "member_asking_for_help_query": {

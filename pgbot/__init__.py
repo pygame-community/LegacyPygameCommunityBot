@@ -498,7 +498,8 @@ async def raw_thread_update(payload: discord.RawThreadUpdateEvent):
             thread = payload.thread or (
                 await common.bot.fetch_channel(payload.thread_id)
             )
-            await validate_help_forum_channel_thread(thread)
+            if not (thread.archived or thread.locked):
+                await validate_help_forum_channel_thread(thread)
         except discord.HTTPException:
             pass
 
