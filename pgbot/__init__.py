@@ -7,8 +7,10 @@ This file is the main file of pgbot subdir
 """
 
 import asyncio
+from concurrent.futures import thread
 import datetime
 from email import message
+from email.mime import application
 import io
 import logging
 import os
@@ -595,26 +597,67 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             after, *caution_types
                         )
 
-                elif (
-                    before.applied_tags != after.applied_tags
-                    and after.parent_id
-                    == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
-                ):
-                    if not await handle_invalid_help_forum_channel_thread_tags(after):
-                        issues_found = True
+                elif before.applied_tags != after.applied_tags:
+                    if (
+                        after.parent_id
+                        == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
+                    ):
+                        if not await handle_invalid_help_forum_channel_thread_tags(
+                            after
+                        ):
+                            issues_found = True
 
-                if issues_found:
-                    if after.id not in common.help_threads_under_inspection:
-                        common.help_threads_under_inspection[after.id] = [
-                            after,
-                            0,
-                        ]
-                    common.help_threads_under_inspection[after.id][1] = time.time()
-                elif (
-                    not issues_found
-                    and after.id in common.help_threads_under_inspection
-                ):
-                    del common.help_threads_under_inspection[after.id]
+                    if issues_found:
+                        if after.id not in common.help_threads_under_inspection:
+                            common.help_threads_under_inspection[after.id] = [
+                                after,
+                                0,
+                            ]
+                        common.help_threads_under_inspection[after.id][1] = time.time()
+                    elif (
+                        not issues_found
+                        and after.id in common.help_threads_under_inspection
+                    ):
+                        del common.help_threads_under_inspection[after.id]
+
+                    if not issues_found:
+                        solved_in_before = any(
+                            tag.name.lower() == "solved" for tag in before.applied_tags
+                        )
+                        solved_in_after = any(
+                            tag.name.lower() == "solved" for tag in after.applied_tags
+                        )
+
+                        if not solved_in_before and solved_in_after:
+                            await after.send(
+                                content="help-post-solved",
+                                embed=discord.Embed(
+                                    title="This post has been marked as solved",
+                                    description=(
+                                        "This help post has been marked as solved.\n"
+                                        "A slowmode of 1 minute will now apply here, and the "
+                                        "post will now archive after 1 hour of inactivity.\n"
+                                        "For the sake of the OP, please avoid sending any "
+                                        "further messages that aren't essential additions "
+                                        "to the currently accepted answers.\n\n"
+                                        "The slowmode and archive timeout will be reverted "
+                                        "if this post is unmarked as solved."
+                                    ),
+                                    color=0x00AA00,
+                                ),
+                            )
+                            await after.edit(auto_archive_duration=60, slowmode_delay=60)
+                        elif solved_in_before and not solved_in_after:
+                            parent = (
+                                after.parent
+                                or common.bot.get_channel(after.parent_id)
+                                or await common.bot.fetch_channel(after.parent_id)
+                            )
+                            if isinstance(parent, discord.ForumChannel):
+                                await after.edit(
+                                    auto_archive_duration=parent.default_auto_archive_duration,
+                                    slowmode_delay=parent.default_thread_slowmode_delay,
+                                )
 
         except discord.HTTPException:
             pass
