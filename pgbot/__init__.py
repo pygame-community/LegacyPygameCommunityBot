@@ -472,7 +472,9 @@ def get_help_forum_channel_thread_name_cautions(
             ]
             and common.GuildConstants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
                 caution_type
-            ].search(thread.name)
+            ].search(
+                " ".join(thread.name.split())
+            )  # normalize whitespace
             is not None
         )
     )

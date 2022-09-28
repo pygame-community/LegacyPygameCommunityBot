@@ -180,7 +180,7 @@ class GuildConstants:
             re.IGNORECASE,
         ),
         "member_asking_for_code": re.compile(
-            r"[\s]*(can('t|not)?\s+)?(please|pls|(some|any)(one|body)|(need|want)(\s*some)?|(available|around|willing|ready)(\s*to))(\s*help(\s*me)?)?\s*(write|make|create|code|program|fix|correct|implement)(?!ing)(\s*(my|the|this))?\s*(this|code|game|pygame(\s*(game|program|code)?))?\s*(for)?\s*(me(\s*please)?|please)?\s*",
+            r"(?<!How\s)(?<!How\sdo\s)(?<!How\sdoes\s)(?<!I\s)((can('t|not)?|will)\s+)?(?<!How\scan\s)(please|pls|(some|any)(one|body)|(available|around|willing|ready|want)(\s*to))(\s*help(\s*me)?)?\s*(write|make|create|code|program|fix|correct|implement)(?!ing|ed)(\s*(a|my|the|this))?\s*(this|code|game|pygame(\s*(game|program|code)?))?\s*(for)?\s*(me(\s*please)?|please)?\s*",
             re.IGNORECASE,
         ),
         "member_asking_about_problem_with_code": re.compile(
