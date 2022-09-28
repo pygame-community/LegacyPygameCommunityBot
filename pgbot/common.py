@@ -8,6 +8,7 @@ as well as other small helpful constructs.
 """
 
 import asyncio
+import datetime
 import io
 import json
 import os
@@ -79,6 +80,7 @@ storage_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
+help_threads_under_inspection: dict[int, list[Union[discord.Thread, int]]] = {}
 
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
@@ -147,9 +149,9 @@ class GuildConstants:
         "discussion": 780351772514058291,
     }
     HELP_FORUM_CHANNEL_IDS = {
-        1022292223708110929,  # newbies-help-🔰
-        1019741232810954842,  # regulars-pygame-help
-        1022244052088934461,  # python-help
+        "newbies": 1022292223708110929,  # newbies-help-🔰
+        "regulars": 1019741232810954842,  # regulars-pygame-help
+        "python": 1022244052088934461,  # python-help
     }
 
     INVALID_HELP_THREAD_TITLE_TYPES = {
@@ -190,8 +192,9 @@ class GuildConstants:
         "thread_title_too_short": {
             "title": "Your help post query is too short!",
             "description": "Your help post query (post title) must be at least "
-            "30 characters long.",
-            "color": 0xDE570F,
+            "30 characters long.\n\n"
+            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "color": DEFAULT_EMBED_COLOR,
         },
         "member_asking_for_help": {
             "title": "Don't ask for help in your help post query!",
@@ -199,8 +202,9 @@ class GuildConstants:
             "help with something, you should be writing a query (post title) "
             "that describes the actual issue you're having in more detail. "
             "Also send code snippets, screenshots and other media, error messages, etc."
-            "\n\n**[Here's why!](https://www.dontasktoask.com)**",
-            "color": 0xDE570F,
+            "\n\n**[Here's why!](https://www.dontasktoask.com)**\n\n"
+            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -212,8 +216,9 @@ class GuildConstants:
             "the problem that led to that diagnosis. What made your code stop "
             "working? What are you trying to do (unsuccessfully)?\n"
             "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.",
-            "color": 0xDE570F,
+            "messages, etc.\n\n"
+            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -227,8 +232,9 @@ class GuildConstants:
             "all the work for them. Show us what you are working on, what you've "
             "tried, as well as where you got stuck. "
             "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.",
-            "color": 0xDE570F,
+            "messages, etc.\n\n"
+            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -240,8 +246,9 @@ class GuildConstants:
             "how the problems with it came up. What made your code stop "
             "working? What are you trying to do (unsuccessfully)? "
             "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.",
-            "color": 0xDE570F,
+            "messages, etc.\n\n"
+            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"

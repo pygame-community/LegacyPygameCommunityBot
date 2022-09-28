@@ -8,6 +8,7 @@ This file is the main file of pgbot subdir
 
 import asyncio
 import datetime
+from email import message
 import io
 import logging
 import os
@@ -15,6 +16,7 @@ import re
 import random
 import signal
 import sys
+import time
 from typing import Optional, Union
 
 import discord
@@ -441,26 +443,49 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 )
 
 
-async def validate_help_forum_channel_thread_name(thread: discord.Thread):
-    caution_message = None
-    for caution_type in (
-        guild_constants := common.GuildConstants
-    ).INVALID_HELP_THREAD_TITLE_TYPES:
-        if (
-            guild_constants.INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED[caution_type]
-            and guild_constants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
+def validate_help_forum_channel_thread_name(thread: discord.Thread) -> bool:
+    return any(
+        (
+            common.GuildConstants.INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED[
+                caution_type
+            ]
+            and common.GuildConstants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
                 caution_type
             ].search(thread.name)
             is not None
-        ):
-            caution_message = await thread.send(
-                content=f"<@{thread.owner_id}>",
-                embed=discord.Embed.from_dict(
-                    guild_constants.INVALID_HELP_THREAD_TITLE_EMBEDS[caution_type]
-                ),
-            )
+            for caution_type in common.GuildConstants.INVALID_HELP_THREAD_TITLE_TYPES
+        )
+    )
 
-    if caution_message is not None:
+
+def get_help_forum_channel_thread_name_cautions(
+    thread: discord.Thread,
+) -> tuple[str, ...]:
+    return tuple(
+        (
+            caution_type
+            for caution_type in common.GuildConstants.INVALID_HELP_THREAD_TITLE_TYPES
+            if common.GuildConstants.INVALID_HELP_THREAD_TITLE_SCANNING_ENABLED[
+                caution_type
+            ]
+            and common.GuildConstants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
+                caution_type
+            ].search(thread.name)
+            is not None
+        )
+    )
+
+
+async def caution_about_help_forum_channel_thread_name(
+    thread: discord.Thread, *caution_types: str
+):
+    for caution_type in caution_types:
+        caution_message = await thread.send(
+            content=f"help-post-alert(<@{thread.owner_id}>)",
+            embed=discord.Embed.from_dict(
+                common.GuildConstants.INVALID_HELP_THREAD_TITLE_EMBEDS[caution_type]
+            ),
+        )
         common.hold_task(
             asyncio.create_task(
                 message_delete_reaction_listener(
@@ -478,25 +503,119 @@ async def validate_help_forum_channel_thread_name(thread: discord.Thread):
         )
 
 
+async def handle_invalid_help_forum_channel_thread_tags(thread: discord.Thread) -> bool:
+    applied_tags = thread.applied_tags
+    no_issue = True
+    if applied_tags and not any(
+        tag.name.casefold() in ("solved", "invalid") for tag in applied_tags
+    ):
+        issue_tags = tuple(
+            tag for tag in applied_tags if tag.name.lower().startswith("issue")
+        )
+        if not len(issue_tags) or len(issue_tags) == len(applied_tags):
+            no_issue = False
+            caution_message = await thread.send(
+                content=f"help-post-alert(<@{thread.owner_id}>)",
+                embed=discord.Embed(
+                    title="Your tag selection is invalid!",
+                    description=(
+                        "Please pick exactly 1 issue tag and 1-3 aspect tags.\n"
+                        f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
+                        "React with 🗑 to delete this alert message in the next 2 minutes, after making changes."
+                    ),
+                    color=common.DEFAULT_EMBED_COLOR,
+                ),
+            )
+            common.hold_task(
+                asyncio.create_task(
+                    message_delete_reaction_listener(
+                        caution_message,
+                        (
+                            thread.owner
+                            or common.bot.get_user(thread.owner_id)
+                            or (await common.bot.fetch_user(thread.owner_id))
+                        ),
+                        emoji="🗑",
+                        role_whitelist=common.GuildConstants.ADMIN_ROLES,
+                        timeout=120,
+                    )
+                )
+            )
+
+    return no_issue
+
+
 async def thread_create(thread: discord.Thread):
     if (
         thread.guild.id == common.GuildConstants.GUILD_ID
-        and thread.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
+        and thread.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
     ):
         try:
             await (
                 thread.starter_message or (await thread.fetch_message(thread.id))
             ).pin()
-            await validate_help_forum_channel_thread_name(thread)
+            if caution_types := get_help_forum_channel_thread_name_cautions(
+                thread.name
+            ):
+                await caution_about_help_forum_channel_thread_name(
+                    thread, *caution_types
+                )
+                if thread.id not in common.help_threads_under_inspection:
+                    common.help_threads_under_inspection[thread.id] = [
+                        thread,
+                        time.time(),
+                    ]
+
+            if (
+                thread.parent_id
+                == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
+            ):
+                if not await handle_invalid_help_forum_channel_thread_tags(thread):
+                    if thread.id not in common.help_threads_under_inspection:
+                        common.help_threads_under_inspection[thread.id] = [
+                            thread,
+                            time.time(),
+                        ]
+
         except discord.HTTPException:
             pass
 
 
 async def thread_update(before: discord.Thread, after: discord.Thread):
-    if after.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS:
+    if after.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values():
         try:
-            if not (after.archived or after.locked) and before.name != after.name:
-                await validate_help_forum_channel_thread_name(after)
+            if not (after.archived or after.locked):
+                issues_found = False
+                if before.name != after.name:
+                    if caution_types := get_help_forum_channel_thread_name_cautions(
+                        after.name
+                    ):
+                        issues_found = True
+                        await caution_about_help_forum_channel_thread_name(
+                            after, *caution_types
+                        )
+
+                elif (
+                    before.applied_tags != after.applied_tags
+                    and after.parent_id
+                    == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
+                ):
+                    if not await handle_invalid_help_forum_channel_thread_tags(after):
+                        issues_found = True
+
+                if issues_found:
+                    if after.id not in common.help_threads_under_inspection:
+                        common.help_threads_under_inspection[after.id] = [
+                            after,
+                            0,
+                        ]
+                    common.help_threads_under_inspection[after.id][1] = time.time()
+                elif (
+                    not issues_found
+                    and after.id in common.help_threads_under_inspection
+                ):
+                    del common.help_threads_under_inspection[after.id]
+
         except discord.HTTPException:
             pass
 
@@ -619,6 +738,62 @@ async def handle_message(msg: discord.Message):
                     color=color,
                     fields=fields,
                 )
+
+    if (
+        isinstance(msg.channel, discord.Thread)
+        and msg.channel.parent_id
+        in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+    ):
+        try:
+            if (
+                msg.channel.id in common.help_threads_under_inspection
+                and msg.author.id is msg.channel.owner_id
+            ):
+                if (
+                    isinstance(
+                        (
+                            last_caution_ts := common.help_threads_under_inspection[
+                                msg.channel.id
+                            ][1]
+                        ),
+                        int,
+                    )
+                    and ((caution_ts := time.time()) - last_caution_ts) > 60
+                ):
+                    issues_found = False
+                    if caution_types := get_help_forum_channel_thread_name_cautions(
+                        msg.channel.name
+                    ):
+                        issues_found = True
+                        await caution_about_help_forum_channel_thread_name(
+                            msg.channel, *caution_types
+                        )
+                        common.help_threads_under_inspection[msg.channel.id][
+                            1
+                        ] = caution_ts
+
+                    if not await handle_invalid_help_forum_channel_thread_tags(
+                        msg.channel
+                    ):
+                        issues_found = True
+
+                    if issues_found:
+                        if msg.channel.id not in common.help_threads_under_inspection:
+                            common.help_threads_under_inspection[msg.channel.id] = [
+                                msg.channel,
+                                0,
+                            ]
+                        common.help_threads_under_inspection[msg.channel.id][
+                            1
+                        ] = time.time()
+                    elif (
+                        not issues_found
+                        and msg.channel.id in common.help_threads_under_inspection
+                    ):
+                        del common.help_threads_under_inspection[msg.channel.id]
+
+        except discord.HTTPException:
+            pass
 
 
 async def handle_command(
