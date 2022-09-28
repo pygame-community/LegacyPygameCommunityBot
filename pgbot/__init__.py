@@ -590,7 +590,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                 issues_found = False
                 if before.name != after.name:
                     if caution_types := get_help_forum_channel_thread_name_cautions(
-                        after.name
+                        after
                     ):
                         issues_found = True
                         await caution_about_help_forum_channel_thread_name(
@@ -646,7 +646,9 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                     color=0x00AA00,
                                 ),
                             )
-                            await after.edit(auto_archive_duration=60, slowmode_delay=60)
+                            await after.edit(
+                                auto_archive_duration=60, slowmode_delay=60
+                            )
                         elif solved_in_before and not solved_in_after:
                             parent = (
                                 after.parent
