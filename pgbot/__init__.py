@@ -490,6 +490,7 @@ async def caution_about_help_forum_channel_thread_name(
                 common.GuildConstants.INVALID_HELP_THREAD_TITLE_EMBEDS[caution_type]
             ),
         )
+        await asyncio.sleep(30)
         common.hold_task(
             asyncio.create_task(
                 message_delete_reaction_listener(
@@ -547,6 +548,7 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                     color=common.DEFAULT_EMBED_COLOR,
                 ),
             )
+            await asyncio.sleep(30)
             common.hold_task(
                 asyncio.create_task(
                     message_delete_reaction_listener(
