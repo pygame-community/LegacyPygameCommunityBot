@@ -573,9 +573,7 @@ async def thread_create(thread: discord.Thread):
             await (
                 thread.starter_message or (await thread.fetch_message(thread.id))
             ).pin()
-            if caution_types := get_help_forum_channel_thread_name_cautions(
-                thread.name
-            ):
+            if caution_types := get_help_forum_channel_thread_name_cautions(thread):
                 await caution_about_help_forum_channel_thread_name(
                     thread, *caution_types
                 )
