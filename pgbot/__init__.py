@@ -505,7 +505,24 @@ async def caution_about_help_forum_channel_thread_name(
         )
 
 
-async def handle_invalid_help_forum_channel_thread_tags(thread: discord.Thread) -> bool:
+def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> bool:
+    applied_tags = thread.applied_tags
+    no_issue = True
+    if applied_tags and not any(
+        tag.name.casefold() in ("solved", "invalid") for tag in applied_tags
+    ):
+        issue_tags = tuple(
+            tag for tag in applied_tags if tag.name.lower().startswith("issue")
+        )
+        if not len(issue_tags) or len(issue_tags) == len(applied_tags):
+            no_issue = False
+
+    return no_issue
+
+
+async def caution_about_regulars_help_forum_channel_thread_tags(
+    thread: discord.Thread,
+) -> bool:
     applied_tags = thread.applied_tags
     no_issue = True
     if applied_tags and not any(
@@ -562,8 +579,8 @@ async def thread_create(thread: discord.Thread):
                 await caution_about_help_forum_channel_thread_name(
                     thread, *caution_types
                 )
-                if thread.id not in common.help_threads_under_inspection:
-                    common.help_threads_under_inspection[thread.id] = [
+                if thread.id not in common.bad_help_threads:
+                    common.bad_help_threads[thread.id] = [
                         thread,
                         time.time(),
                     ]
@@ -572,9 +589,10 @@ async def thread_create(thread: discord.Thread):
                 thread.parent_id
                 == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
             ):
-                if not await handle_invalid_help_forum_channel_thread_tags(thread):
-                    if thread.id not in common.help_threads_under_inspection:
-                        common.help_threads_under_inspection[thread.id] = [
+                if not validate_regulars_help_forum_channel_thread_tags(thread):
+                    await caution_about_regulars_help_forum_channel_thread_tags(thread)
+                    if thread.id not in common.bad_help_threads:
+                        common.bad_help_threads[thread.id] = [
                             thread,
                             time.time(),
                         ]
@@ -602,23 +620,21 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         after.parent_id
                         == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
                     ):
-                        if not await handle_invalid_help_forum_channel_thread_tags(
-                            after
-                        ):
+                        if not validate_regulars_help_forum_channel_thread_tags(after):
                             issues_found = True
+                            await caution_about_regulars_help_forum_channel_thread_tags(
+                                after
+                            )
 
                     if issues_found:
-                        if after.id not in common.help_threads_under_inspection:
-                            common.help_threads_under_inspection[after.id] = [
+                        if after.id not in common.bad_help_threads:
+                            common.bad_help_threads[after.id] = [
                                 after,
                                 0,
                             ]
-                        common.help_threads_under_inspection[after.id][1] = time.time()
-                    elif (
-                        not issues_found
-                        and after.id in common.help_threads_under_inspection
-                    ):
-                        del common.help_threads_under_inspection[after.id]
+                        common.bad_help_threads[after.id][1] = time.time()
+                    elif not issues_found and after.id in common.bad_help_threads:
+                        del common.bad_help_threads[after.id]
 
                     if not issues_found:
                         solved_in_before = any(
@@ -791,16 +807,12 @@ async def handle_message(msg: discord.Message):
     ):
         try:
             if (
-                msg.channel.id in common.help_threads_under_inspection
+                msg.channel.id in common.bad_help_threads
                 and msg.author.id is msg.channel.owner_id
             ):
                 if (
                     isinstance(
-                        (
-                            last_caution_ts := common.help_threads_under_inspection[
-                                msg.channel.id
-                            ][1]
-                        ),
+                        (last_caution_ts := common.bad_help_threads[msg.channel.id][1]),
                         int,
                     )
                     and ((caution_ts := time.time()) - last_caution_ts) > 60
@@ -813,29 +825,38 @@ async def handle_message(msg: discord.Message):
                         await caution_about_help_forum_channel_thread_name(
                             msg.channel, *caution_types
                         )
-                        common.help_threads_under_inspection[msg.channel.id][
-                            1
-                        ] = caution_ts
+                        common.bad_help_threads[msg.channel.id][1] = caution_ts
 
-                    if not await handle_invalid_help_forum_channel_thread_tags(
+                    if not validate_regulars_help_forum_channel_thread_tags(
                         msg.channel
                     ):
                         issues_found = True
+                        if (
+                            msg.channel.id not in common.bad_help_threads
+                            or msg.channel.id in common.bad_help_threads
+                            and isinstance(
+                                (
+                                    last_caution_ts := common.bad_help_threads[
+                                        msg.channel.id
+                                    ][1]
+                                ),
+                                int,
+                            )
+                            and (time.time() - last_caution_ts) > 60
+                        ):
+                            await caution_about_regulars_help_forum_channel_thread_tags(
+                                msg.channel
+                            )
 
                     if issues_found:
-                        if msg.channel.id not in common.help_threads_under_inspection:
-                            common.help_threads_under_inspection[msg.channel.id] = [
+                        if msg.channel.id not in common.bad_help_threads:
+                            common.bad_help_threads[msg.channel.id] = [
                                 msg.channel,
                                 0,
                             ]
-                        common.help_threads_under_inspection[msg.channel.id][
-                            1
-                        ] = time.time()
-                    elif (
-                        not issues_found
-                        and msg.channel.id in common.help_threads_under_inspection
-                    ):
-                        del common.help_threads_under_inspection[msg.channel.id]
+                        common.bad_help_threads[msg.channel.id][1] = time.time()
+                    elif not issues_found and msg.channel.id in common.bad_help_threads:
+                        del common.bad_help_threads[msg.channel.id]
 
         except discord.HTTPException:
             pass

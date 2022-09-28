@@ -80,7 +80,7 @@ storage_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
-help_threads_under_inspection: dict[int, list[Union[discord.Thread, int]]] = {}
+bad_help_threads: dict[int, list[Union[discord.Thread, int]]] = {}
 
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
