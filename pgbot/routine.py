@@ -205,7 +205,7 @@ async def stale_help_post_alert():
                                         "\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
                                         "To make changes to your post's tags, either right-click on it (desktop/web) or "
                                         "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
-                                        "Mark all messages you deem helpful here with a ✅ reaction please "
+                                        "**Mark all messages you find helpful here with a ✅ reaction please** "
                                         "<:pg_robot:837389387024957440>",
                                         color=0x888888,
                                     ),

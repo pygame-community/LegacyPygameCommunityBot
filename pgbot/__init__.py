@@ -574,8 +574,10 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                     description=(
                         "Please pick exactly **1 issue tag** and **1-3 aspect tags**. "
                         "Issue tags look like this: `issue: ...`. Aspect tags are all "
-                        "non-issue tags in lowercase.\n"
-                        f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n"
+                        "non-issue tags that are in lowercase.\n\n"
+                        "**Example combination for a help post about collisions: "
+                        "(`issue: how to do`) (`collisions`)**.\n\n"
+                        f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
                         "To make changes to your post's tags, either right-click on it (desktop/web) or "
                         "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
                         "React with 🗑 to delete this alert message in the next 2 minutes, after making changes."
@@ -685,7 +687,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             await after.send(
                                 content="help-post-solved",
                                 embed=discord.Embed(
-                                    title="This post has been marked as solved",
+                                    title="Post marked as solved",
                                     description=(
                                         "This help post has been marked as solved.\n"
                                         "A slowmode of 1 minute will now apply here, and the "
@@ -693,8 +695,8 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                         "For the sake of the OP, please avoid sending any "
                                         "further messages that aren't essential additions "
                                         "to the currently accepted answers.\n\n"
-                                        "Mark all messages you deem helpful here with a ✅ reaction "
-                                        "please <:pg_robot:837389387024957440>\n\n"
+                                        "**Mark all messages you find helpful here with a ✅ reaction "
+                                        "please** <:pg_robot:837389387024957440>\n\n"
                                         "The slowmode and archive timeout will both be reverted "
                                         "if this post is unmarked as solved."
                                     ),
@@ -766,8 +768,11 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
             return
 
     if not (
-        (isinstance(channel, discord.abc.GuildChannel)
-        and isinstance(channel, discord.abc.Messageable)) or isinstance(channel, discord.Thread)
+        (
+            isinstance(channel, discord.abc.GuildChannel)
+            and isinstance(channel, discord.abc.Messageable)
+        )
+        or isinstance(channel, discord.Thread)
     ):
         return
 
