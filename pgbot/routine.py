@@ -18,6 +18,7 @@ from discord.ext import tasks
 import snakecore
 
 from pgbot import common
+from pgbot.utils.utils import message_delete_reaction_listener
 
 
 async def handle_reminders(reminder_obj: snakecore.storage.DiscordStorage):
@@ -128,3 +129,98 @@ async def routine():
             name="in discord.io/pygame_community",
         )
     )
+
+
+@tasks.loop(hours=1, reconnect=True)
+async def stale_help_post_alert():
+    async with snakecore.storage.DiscordStorage(
+        "stale_help_threads", dict
+    ) as storage_obj:
+        # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
+        # UNIX timestamps which represent the last time a caution was made.
+        stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
+
+        for forum_channel in (
+            common.bot.get_channel(fid) or await common.bot.fetch_channel(fid)
+            for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
+        ):
+            if not isinstance(forum_channel, discord.ForumChannel):
+                return
+
+            now = datetime.datetime.now(datetime.timezone.utc)
+            for help_thread in forum_channel.threads:
+                try:
+                    if not help_thread.created_at:
+                        continue
+                    last_active = help_thread.created_at
+
+                    if not (help_thread.archived or help_thread.locked) and not any(
+                        tag.name.lower() == "solved" for tag in help_thread.applied_tags
+                    ):
+                        last_message = help_thread.last_message
+                        if last_message is None:
+                            if help_thread.last_message_id is not None:
+                                last_message = await help_thread.fetch_message(
+                                    help_thread.last_message_id
+                                )
+
+                            else:
+                                last_messages = tuple(
+                                    msg
+                                    async for msg in help_thread.history(
+                                        limit=1, before=now
+                                    )
+                                )
+                                if last_messages:
+                                    last_message = last_messages[0]
+                        if last_message is not None:
+                            last_active = last_message.created_at
+
+                        if (now - last_active).days > 1:
+                            if forum_channel.id not in stale_help_thread_ids:
+                                stale_help_thread_ids[forum_channel.id] = {}
+
+                            if (
+                                help_thread.id
+                                not in stale_help_thread_ids[forum_channel.id]
+                                or stale_help_thread_ids[forum_channel.id][
+                                    help_thread.id
+                                ]
+                                < last_active.timestamp()
+                            ):
+                                stale_help_thread_ids[forum_channel.id][
+                                    help_thread.id
+                                ] = now.timestamp()
+                                caution_message = await help_thread.send(
+                                    f"help-post-stale(<@{help_thread.owner_id}>)",
+                                    embed=discord.Embed(
+                                        title="Your help post has gone stale... 💤",
+                                        description=f"Your help post was last active **<t:{last_active.timestamp()}:R> .\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.**",
+                                        color=common.DEFAULT_EMBED_COLOR,
+                                    ),
+                                )
+                                common.hold_task(
+                                    asyncio.create_task(
+                                        message_delete_reaction_listener(
+                                            caution_message,
+                                            (
+                                                help_thread.owner
+                                                or common.bot.get_user(
+                                                    help_thread.owner_id
+                                                )
+                                                or (
+                                                    await common.bot.fetch_user(
+                                                        help_thread.owner_id
+                                                    )
+                                                )
+                                            ),
+                                            emoji="🗑",
+                                            role_whitelist=common.GuildConstants.ADMIN_ROLES,
+                                            timeout=120,
+                                        )
+                                    )
+                                )
+                except discord.HTTPException:
+                    pass
+
+        storage_obj.obj = stale_help_thread_ids

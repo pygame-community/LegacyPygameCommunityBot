@@ -87,6 +87,11 @@ async def on_thread_update(before: discord.Thread, after: discord.Thread):
 
 
 @bot.event
+async def on_raw_thread_delete(payload: discord.RawThreadDeleteEvent):
+    await pgbot.raw_thread_delete(payload)
+
+
+@bot.event
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     """
     This function is called for every reaction added by user.

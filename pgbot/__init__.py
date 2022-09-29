@@ -667,6 +667,23 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             await after.edit(
                                 auto_archive_duration=60, slowmode_delay=60
                             )
+
+                            async with snakecore.storage.DiscordStorage(
+                                "stale_help_threads", dict
+                            ) as storage_obj:
+                                # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
+                                # UNIX timestamps which represent the last time a caution was made.
+                                stale_help_thread_ids: dict[
+                                    int, dict[int, int]
+                                ] = storage_obj.obj
+                                if (
+                                    after.parent_id in stale_help_thread_ids
+                                    and after.id
+                                    in stale_help_thread_ids[after.parent_id]
+                                ):
+                                    del stale_help_thread_ids[after.parent_id][after.id]
+                                    storage_obj.obj = stale_help_thread_ids
+
                         elif solved_in_before and not solved_in_after:
                             parent = (
                                 after.parent
@@ -681,6 +698,21 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
 
         except discord.HTTPException:
             pass
+
+
+async def raw_thread_delete(payload: discord.RawThreadDeleteEvent):
+    async with snakecore.storage.DiscordStorage(
+        "stale_help_threads", dict
+    ) as storage_obj:
+        # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
+        # UNIX timestamps which represent the last time a caution was made.
+        stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
+        if (
+            payload.parent_id in stale_help_thread_ids
+            and payload.thread_id in stale_help_thread_ids[payload.parent_id]
+        ):
+            del stale_help_thread_ids[payload.parent_id][payload.thread_id]
+            storage_obj.obj = stale_help_thread_ids
 
 
 async def raw_reaction_add(payload: discord.RawReactionActionEvent):
