@@ -197,7 +197,7 @@ async def stale_help_post_alert():
                                     f"help-post-stale(<@{help_thread.owner_id}>)",
                                     embed=discord.Embed(
                                         title="Your help post has gone stale... 💤",
-                                        description=f"Your help post was last active **<t:{last_active.timestamp()}:R> .\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.**",
+                                        description=f"Your help post was last active **<t:{int(last_active.timestamp())}:R>** .\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.**",
                                         color=common.DEFAULT_EMBED_COLOR,
                                     ),
                                 )

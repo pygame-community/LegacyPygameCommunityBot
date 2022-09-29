@@ -570,8 +570,12 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                 embed=discord.Embed(
                     title="Your tag selection is invalid!",
                     description=(
-                        "Please pick exactly 1 issue tag and 1-3 aspect tags.\n"
-                        f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
+                        "Please pick exactly **1 issue tag** and **1-3 aspect tags**. "
+                        "Issue tags look like this: `issue: ...`. Aspect tags are all "
+                        "non-issue tags in lowercase.\n"
+                        f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n"
+                        "To make changes to your post, either right-click on it (desktop/web) or "
+                        "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
                         "React with 🗑 to delete this alert message in the next 2 minutes, after making changes."
                     ),
                     color=common.DEFAULT_EMBED_COLOR,
