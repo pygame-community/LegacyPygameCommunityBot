@@ -765,7 +765,10 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
         except discord.HTTPException:
             return
 
-    if not isinstance(channel, discord.TextChannel):
+    if not (
+        (isinstance(channel, discord.abc.GuildChannel)
+        and isinstance(channel, discord.abc.Messageable)) or isinstance(channel, discord.Thread)
+    ):
         return
 
     try:
@@ -829,7 +832,6 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                 await msg.pin(
                     reason="The owner of this message's thread has marked it as helpful."
                 )
-
             elif payload.user_id == msg.author.id:
                 await msg.remove_reaction("✅", msg.author.id)
 
