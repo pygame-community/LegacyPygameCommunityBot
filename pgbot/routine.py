@@ -182,7 +182,7 @@ async def stale_help_post_alert():
                         if last_message is not None:
                             last_active = last_message.created_at
 
-                        if (now - last_active).days > 1:
+                        if (now - last_active).seconds > (3600*23 + 1800): # 23h30m
                             if forum_channel.id not in stale_help_thread_ids:
                                 stale_help_thread_ids[forum_channel.id] = {}
 
