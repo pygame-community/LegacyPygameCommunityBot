@@ -322,7 +322,8 @@ async def message_delete(msg: discord.Message):
 
     if (
         isinstance(msg.channel, discord.Thread)
-        and msg.channel.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
+        and msg.channel.parent_id
+        in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
     ):
         member_msg_count = 0
         async for thread_message in msg.channel.history(limit=30):
@@ -340,7 +341,7 @@ async def message_delete(msg: discord.Message):
                     title="Post scheduled for deletion",
                     description=(
                         "The OP of this post has deleted their starter message, "
-                        f"therefore this post will be deleted <t:{time.time()+300}:R>."
+                        f"therefore this post will be deleted **<t:{int(time.time()+300)}:R>**."
                     ),
                     color=0x551111,
                 )
