@@ -575,7 +575,7 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                         "Issue tags look like this: `issue: ...`. Aspect tags are all "
                         "non-issue tags in lowercase.\n"
                         f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n"
-                        "To make changes to your post, either right-click on it (desktop/web) or "
+                        "To make changes to your post's tags, either right-click on it (desktop/web) or "
                         "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
                         "React with 🗑 to delete this alert message in the next 2 minutes, after making changes."
                     ),
@@ -692,7 +692,9 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                         "For the sake of the OP, please avoid sending any "
                                         "further messages that aren't essential additions "
                                         "to the currently accepted answers.\n\n"
-                                        "The slowmode and archive timeout will be reverted "
+                                        "Mark all messages you deem helpful here with a ✅ reaction "
+                                        "please <:pg_robot:837389387024957440>\n\n"
+                                        "The slowmode and archive timeout will both be reverted "
                                         "if this post is unmarked as solved."
                                     ),
                                     color=0x00AA00,
