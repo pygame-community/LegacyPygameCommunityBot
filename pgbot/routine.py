@@ -156,7 +156,11 @@ async def stale_help_post_alert():
                         continue
                     last_active = help_thread.created_at
 
-                    if not (help_thread.archived or help_thread.locked) and not any(
+                    if not (
+                        help_thread.archived
+                        or help_thread.locked
+                        or help_thread.flags.pinned
+                    ) and not any(
                         tag.name.lower() == "solved" for tag in help_thread.applied_tags
                     ):
                         last_message = help_thread.last_message
@@ -197,8 +201,9 @@ async def stale_help_post_alert():
                                     f"help-post-stale(<@{help_thread.owner_id}>)",
                                     embed=discord.Embed(
                                         title="Your help post has gone stale... 💤",
-                                        description=f"Your help post was last active **<t:{int(last_active.timestamp())}:R>** .\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.**",
-                                        color=common.DEFAULT_EMBED_COLOR,
+                                        description=f"Your help post was last active **<t:{int(last_active.timestamp())}:R>** ."
+                                        "\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.",
+                                        color=0x888888,
                                     ),
                                 )
                                 common.hold_task(
