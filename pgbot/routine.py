@@ -140,10 +140,12 @@ async def stale_help_post_alert():
         # UNIX timestamps which represent the last time a caution was made.
         stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
 
-        for forum_channel in (
-            common.bot.get_channel(fid) or await common.bot.fetch_channel(fid)
-            for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
-        ):
+        forum_channels = []
+        for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values():
+            forum_channels.append(
+                common.bot.get_channel(fid) or await common.bot.fetch_channel(fid)
+            )
+        for forum_channel in forum_channels:
             if not isinstance(forum_channel, discord.ForumChannel):
                 return
 
