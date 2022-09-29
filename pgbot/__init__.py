@@ -817,11 +817,13 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
 
             if (
                 payload.user_id == msg.channel.owner_id
-                or (await common.bot.is_owner(payload.user_id))
                 or payload.member is not None
-                and any(
-                    role.id in common.GuildConstants.ADMIN_ROLES
-                    for role in payload.member.roles
+                and (
+                    (await common.bot.is_owner(payload.member))
+                    or any(
+                        role.id in common.GuildConstants.ADMIN_ROLES
+                        for role in payload.member.roles
+                    )
                 )
             ):
                 await msg.pin(
@@ -876,11 +878,13 @@ async def raw_reaction_remove(payload: discord.RawReactionActionEvent):
 
             if (
                 payload.user_id == msg.channel.owner_id
-                or (await common.bot.is_owner(payload.user_id))
                 or payload.member is not None
-                and any(
-                    role.id in common.GuildConstants.ADMIN_ROLES
-                    for role in payload.member.roles
+                and (
+                    (await common.bot.is_owner(payload.member))
+                    or any(
+                        role.id in common.GuildConstants.ADMIN_ROLES
+                        for role in payload.member.roles
+                    )
                 )
             ):
                 await msg.unpin(
