@@ -93,13 +93,12 @@ async def on_raw_thread_delete(payload: discord.RawThreadDeleteEvent):
 
 @bot.event
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
-    """
-    This function is called for every reaction added by user.
-    """
-    if payload.member is None or payload.member.bot:
-        return
-
     await pgbot.raw_reaction_add(payload)
+
+
+@bot.event
+async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    await pgbot.raw_reaction_remove(payload)
 
 
 @bot.event

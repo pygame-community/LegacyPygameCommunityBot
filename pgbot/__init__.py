@@ -9,6 +9,7 @@ This file is the main file of pgbot subdir
 import asyncio
 from concurrent.futures import thread
 import datetime
+from dis import dis
 from email import message
 from email.mime import application
 import io
@@ -799,6 +800,107 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                         )
                     ):
                         await reaction.remove(user)
+    try:
+        if (
+            isinstance(msg.channel, discord.Thread)
+            and msg.channel.parent_id
+            in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+            and not msg.channel.flags.pinned
+        ):
+            if not snakecore.utils.is_emoji_equal(payload.emoji, "✅"):
+                return
+
+            white_check_mark_reaction = discord.utils.find(
+                lambda r: snakecore.utils.is_emoji_equal(r.emoji, "✅"),
+                msg.reactions,
+            )
+
+            if (
+                payload.user_id == msg.channel.owner_id
+                or (await common.bot.is_owner(payload.user_id))
+                or payload.member is not None
+                and any(
+                    role.id in common.GuildConstants.ADMIN_ROLES
+                    for role in payload.member.roles
+                )
+            ):
+                await msg.pin(
+                    reason="The owner of this message's thread has marked it as helpful."
+                )
+
+            elif payload.user_id == msg.author.id:
+                await msg.remove_reaction("✅", msg.author.id)
+
+            elif white_check_mark_reaction and white_check_mark_reaction.count > 4:
+                await msg.pin(
+                    reason="Multiple members of this message's thread "
+                    "have marked it as helpful."
+                )
+    except discord.HTTPException:
+        pass
+
+
+async def raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    channel = common.bot.get_channel(payload.channel_id)
+    if channel is not None:
+        try:
+            channel = await common.bot.fetch_channel(payload.channel_id)
+        except discord.HTTPException:
+            return
+
+    if (
+        not isinstance(channel, discord.Thread)
+        or isinstance(channel, discord.Thread)
+        and (
+            channel.parent_id
+            not in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+            or channel.flags.pinned
+        )
+    ):
+        return
+
+    try:
+        msg = await channel.fetch_message(payload.message_id)
+        if (
+            isinstance(msg.channel, discord.Thread)
+            and msg.channel.parent_id
+            in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+        ):
+            if not snakecore.utils.is_emoji_equal(payload.emoji, "✅"):
+                return
+
+            white_check_mark_reaction = discord.utils.find(
+                lambda r: snakecore.utils.is_emoji_equal(r.emoji, "✅"),
+                msg.reactions,
+            )
+
+            if (
+                payload.user_id == msg.channel.owner_id
+                or (await common.bot.is_owner(payload.user_id))
+                or payload.member is not None
+                and any(
+                    role.id in common.GuildConstants.ADMIN_ROLES
+                    for role in payload.member.roles
+                )
+            ):
+                await msg.unpin(
+                    reason="The owner of this message's thread has unmarked it as helpful."
+                )
+
+            elif payload.user_id == msg.author.id:
+                await msg.remove_reaction("✅", msg.author.id)
+
+            elif (
+                not white_check_mark_reaction
+                or white_check_mark_reaction
+                and white_check_mark_reaction.count <= 4
+            ):
+                await msg.unpin(
+                    reason="Multiple members of this message's thread "
+                    "have unmarked it as helpful."
+                )
+    except discord.HTTPException:
+        pass
 
 
 async def handle_message(msg: discord.Message):
