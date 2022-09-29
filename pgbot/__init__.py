@@ -127,6 +127,7 @@ async def init():
 
     routine.handle_console.start()
     routine.routine.start()
+    routine.stale_help_post_alert.start()
 
     if common.guild is None:
         raise RuntimeWarning(
@@ -318,6 +319,34 @@ async def message_delete(msg: discord.Message):
 
             except (IndexError, AttributeError):
                 pass
+
+    if (
+        isinstance(msg.channel, discord.Thread)
+        and msg.channel.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS
+    ):
+        member_msg_count = 0
+        async for thread_message in msg.channel.history(limit=30):
+            if (
+                not thread_message.author.bot
+                and thread_message.type == discord.MessageType.default
+            ):
+                member_msg_count += 1
+                if member_msg_count > 10:
+                    break
+
+        if member_msg_count < 10:
+            await msg.channel.send(
+                embed=discord.Embed(
+                    title="Post scheduled for deletion",
+                    description=(
+                        "The OP of this post has deleted their starter message, "
+                        f"therefore this post will be deleted <t:{time.time()+300}:R>."
+                    ),
+                    color=0x551111,
+                )
+            )
+            await asyncio.sleep(300)
+            await msg.channel.delete()
 
 
 async def message_edit(old: discord.Message, new: discord.Message):
