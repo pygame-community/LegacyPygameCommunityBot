@@ -12,6 +12,7 @@ import datetime
 import io
 import os
 import sys
+import time
 
 import discord
 from discord.ext import tasks
@@ -149,12 +150,12 @@ async def stale_help_post_alert():
             if not isinstance(forum_channel, discord.ForumChannel):
                 return
 
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now_ts = time.time()
             for help_thread in forum_channel.threads:
                 try:
                     if not help_thread.created_at:
                         continue
-                    last_active = help_thread.created_at
+                    last_active_ts = help_thread.created_at.timestamp()
 
                     if not (
                         help_thread.archived
@@ -172,17 +173,14 @@ async def stale_help_post_alert():
 
                             else:
                                 last_messages = tuple(
-                                    msg
-                                    async for msg in help_thread.history(
-                                        limit=1, before=now
-                                    )
+                                    msg async for msg in help_thread.history(limit=1)
                                 )
                                 if last_messages:
                                     last_message = last_messages[0]
                         if last_message is not None:
-                            last_active = last_message.created_at
+                            last_active_ts = last_message.created_at.timestamp()
 
-                        if (now - last_active).seconds > (3600 * 23 + 1800):  # 23h30m
+                        if (now_ts - last_active_ts) > (3600 * 23 + 1800):  # 23h30m
                             if forum_channel.id not in stale_help_thread_ids:
                                 stale_help_thread_ids[forum_channel.id] = {}
 
@@ -192,16 +190,16 @@ async def stale_help_post_alert():
                                 or stale_help_thread_ids[forum_channel.id][
                                     help_thread.id
                                 ]
-                                < last_active.timestamp()
+                                < last_active_ts
                             ):
                                 stale_help_thread_ids[forum_channel.id][
                                     help_thread.id
-                                ] = now.timestamp()
+                                ] = now_ts
                                 caution_message = await help_thread.send(
                                     f"help-post-stale(<@{help_thread.owner_id}>)",
                                     embed=discord.Embed(
                                         title="Your help post has gone stale... 💤",
-                                        description=f"Your help post was last active **<t:{int(last_active.timestamp())}:R>** ."
+                                        description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
                                         "\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
                                         "To make changes to your post's tags, either right-click on it (desktop/web) or "
                                         "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
