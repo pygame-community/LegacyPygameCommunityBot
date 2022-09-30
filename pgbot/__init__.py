@@ -129,6 +129,7 @@ async def init():
     routine.handle_console.start()
     routine.routine.start()
     routine.stale_help_post_alert.start()
+    routine.force_help_thread_archive_after_timeout.start()
 
     if common.guild is None:
         raise RuntimeWarning(

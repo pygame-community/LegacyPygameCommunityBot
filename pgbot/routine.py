@@ -8,6 +8,7 @@ It gets called every 5 seconds or so.
 """
 
 import asyncio
+from concurrent.futures import thread
 import datetime
 import io
 import os
@@ -19,7 +20,10 @@ from discord.ext import tasks
 import snakecore
 
 from pgbot import common
-from pgbot.utils.utils import message_delete_reaction_listener
+from pgbot.utils.utils import (
+    fetch_last_thread_activity_dt,
+    message_delete_reaction_listener,
+)
 
 
 async def handle_reminders(reminder_obj: snakecore.storage.DiscordStorage):
@@ -74,7 +78,7 @@ async def handle_reminders(reminder_obj: snakecore.storage.DiscordStorage):
     reminder_obj.obj = new_reminders
 
 
-@tasks.loop(seconds=5)
+@tasks.loop(seconds=5, reconnect=True)
 async def handle_console():
     """
     Function for sending the console output to the bot-console channel.
@@ -108,7 +112,7 @@ async def handle_console():
         )
 
 
-@tasks.loop(seconds=3)
+@tasks.loop(seconds=3, reconnect=True)
 async def routine():
     """
     Function that gets called routinely. This function inturn, calles other
@@ -141,12 +145,10 @@ async def stale_help_post_alert():
         # UNIX timestamps which represent the last time a caution was made.
         stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
 
-        forum_channels = []
-        for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values():
-            forum_channels.append(
-                common.bot.get_channel(fid) or await common.bot.fetch_channel(fid)
-            )
-        for forum_channel in forum_channels:
+        for forum_channel in [
+            common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
+            for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+        ]:
             if not isinstance(forum_channel, discord.ForumChannel):
                 return
 
@@ -164,21 +166,9 @@ async def stale_help_post_alert():
                     ) and not any(
                         tag.name.lower() == "solved" for tag in help_thread.applied_tags
                     ):
-                        last_message = help_thread.last_message
-                        if last_message is None:
-                            if help_thread.last_message_id is not None:
-                                last_message = await help_thread.fetch_message(
-                                    help_thread.last_message_id
-                                )
-
-                            else:
-                                last_messages = tuple(
-                                    msg async for msg in help_thread.history(limit=1)
-                                )
-                                if last_messages:
-                                    last_message = last_messages[0]
-                        if last_message is not None:
-                            last_active_ts = last_message.created_at.timestamp()
+                        last_active_ts = (
+                            await fetch_last_thread_activity_dt(help_thread)
+                        ).timestamp()
 
                         if (now_ts - last_active_ts) > (3600 * 23 + 1800):  # 23h30m
                             if forum_channel.id not in stale_help_thread_ids:
@@ -200,11 +190,12 @@ async def stale_help_post_alert():
                                     embed=discord.Embed(
                                         title="Your help post has gone stale... 💤",
                                         description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
-                                        "\nHave your issues been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
+                                        "\nHas your issue been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
                                         "To make changes to your post's tags, either right-click on it (desktop/web) or "
                                         "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
                                         "**Mark all messages you find helpful here with a ✅ reaction please** "
-                                        "<:pg_robot:837389387024957440>",
+                                        "<:pg_robot:837389387024957440>\n\n"
+                                        "*If your issue has't been solved, you may either wait or close this post.*",
                                         color=0x888888,
                                     ),
                                 )
@@ -233,3 +224,38 @@ async def stale_help_post_alert():
                     pass
 
         storage_obj.obj = stale_help_thread_ids
+
+
+@tasks.loop(hours=1, reconnect=True)
+async def force_help_thread_archive_after_timeout():
+    for forum_channel in [
+        common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
+        for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+    ]:
+        if not isinstance(forum_channel, discord.ForumChannel):
+            return
+
+        now_ts = time.time()
+        for help_thread in forum_channel.threads:
+            try:
+                if not help_thread.created_at:
+                    continue
+
+                if not (
+                    help_thread.archived
+                    or help_thread.locked
+                    or help_thread.flags.pinned
+                ):
+                    last_active_ts = (
+                        await fetch_last_thread_activity_dt(help_thread)
+                    ).timestamp()
+                    if (
+                        now_ts - last_active_ts
+                    ) / 60.0 > help_thread.auto_archive_duration:
+                        await help_thread.edit(
+                            archived=True,
+                            reason="This help thread has been archived "
+                            "after exceeding its inactivity timeout.",
+                        )
+            except discord.HTTPException:
+                pass

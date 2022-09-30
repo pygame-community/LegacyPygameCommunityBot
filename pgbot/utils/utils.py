@@ -9,6 +9,7 @@ This file defines some important utility functions.
 from __future__ import annotations
 from ast import literal_eval
 import asyncio
+import datetime
 import io
 from typing import Any, Optional, Sequence, Union
 
@@ -92,6 +93,33 @@ def parse_text_to_mapping(
             mapping[key] = value
 
     return mapping
+
+
+async def fetch_last_thread_activity_dt(thread: discord.Thread) -> datetime.datetime:
+    """Get the last time this thread was active. This is usually
+    the creation date of the most recent message.
+
+    Args:
+        thread (discord.Thread): The thread.
+
+    Returns:
+        datetime.datetime: The time.
+    """
+    last_active = thread.created_at
+    last_message = thread.last_message
+    if last_message is None:
+        if thread.last_message_id is not None:
+            last_message = await thread.fetch_message(thread.last_message_id)
+
+        else:
+            last_messages = tuple(msg async for msg in thread.history(limit=1))
+            if last_messages:
+                last_message = last_messages[0]
+
+    if last_message is not None:
+        last_active = last_message.created_at
+
+    return last_active
 
 
 def split_wc_scores(scores: dict[int, int]):
