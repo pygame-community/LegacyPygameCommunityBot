@@ -326,6 +326,7 @@ async def message_delete(msg: discord.Message):
         isinstance(msg.channel, discord.Thread)
         and msg.channel.parent_id
         in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+        and msg.id == msg.channel.id  # OP deleted starter message
     ):
         member_msg_count = 0
         async for thread_message in msg.channel.history(limit=30):
@@ -613,7 +614,9 @@ async def thread_create(thread: discord.Thread):
     ):
         try:
             await (
-                thread.starter_message or (await thread.fetch_message(thread.id))
+                thread.starter_message
+                if thread.starter_message and thread.starter_message.id == thread.id
+                else (await thread.fetch_message(thread.id))
             ).pin()
             if caution_types := get_help_forum_channel_thread_name_cautions(thread):
                 await caution_about_help_forum_channel_thread_name(
