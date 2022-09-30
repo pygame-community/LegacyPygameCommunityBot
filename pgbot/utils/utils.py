@@ -108,13 +108,21 @@ async def fetch_last_thread_activity_dt(thread: discord.Thread) -> datetime.date
     last_active = thread.created_at
     last_message = thread.last_message
     if last_message is None:
+        last_message_found = False
         if thread.last_message_id is not None:
-            last_message = await thread.fetch_message(thread.last_message_id)
+            try:
+                last_message = await thread.fetch_message(thread.last_message_id)
+                last_message_found = True
+            except discord.NotFound:
+                pass
 
-        else:
-            last_messages = tuple(msg async for msg in thread.history(limit=1))
-            if last_messages:
-                last_message = last_messages[0]
+        if not last_message_found:
+            try:
+                last_messages = [msg async for msg in thread.history(limit=1)]
+                if last_messages:
+                    last_message = last_messages[0]
+            except discord.HTTPException:
+                pass
 
     if last_message is not None:
         last_active = last_message.created_at
