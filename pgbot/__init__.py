@@ -692,7 +692,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                     description=(
                                         "This help post has been marked as solved.\n"
                                         "A slowmode of 1 minute will now apply here, and the "
-                                        "post will now archive after 1 hour of inactivity.\n"
+                                        "post will now close after 1 hour of inactivity.\n"
                                         "For the sake of the OP, please avoid sending any "
                                         "further messages that aren't essential additions "
                                         "to the currently accepted answers.\n\n"
