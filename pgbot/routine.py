@@ -137,7 +137,7 @@ async def routine():
 
 
 @tasks.loop(hours=1, reconnect=True)
-async def stale_help_post_alert():
+async def stale_help_thread_alert():
     async with snakecore.storage.DiscordStorage(
         "stale_help_threads", dict
     ) as storage_obj:
