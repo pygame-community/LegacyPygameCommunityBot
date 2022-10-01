@@ -191,8 +191,10 @@ async def stale_help_thread_alert():
                                         title="Your help post has gone stale... 💤",
                                         description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
                                         "\nHas your issue been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
-                                        "To make changes to your post's tags, either right-click on it (desktop/web) or "
-                                        "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
+                                        "To make changes to your post's tags, either right-click on "
+                                        "it (desktop/web) or click and hold on it (mobile), then click "
+                                        "on **'Edit Tags'** to see a tag selection menu. Remember to save "
+                                        "your changes after selecting the correct tag(s).\n\n"
                                         "**Mark all messages you find helpful here with a ✅ reaction please** "
                                         "<:pg_robot:837389387024957440>\n\n"
                                         "*If your issue has't been solved, you may either wait or close this post.*",

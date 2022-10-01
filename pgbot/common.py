@@ -192,7 +192,12 @@ class GuildConstants:
         "thread_title_too_short": {
             "title": "Your help post query is too short!",
             "description": "Your help post query (post title) must be at least "
-            "30 characters long.\n\n"
+            "30 characters long.\n"
+            "To make changes to your post's title, either right-click on it "
+            "(desktop/web) or click and hold on it (mobile), then click on "
+            "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
+            "post settings menu to change your post title. Remember to save "
+            "your changes.\n\n"
             "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
             "color": DEFAULT_EMBED_COLOR,
         },

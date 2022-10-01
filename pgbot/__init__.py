@@ -580,8 +580,10 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                         "**Example combination for a help post about collisions: "
                         "(`issue: how to do`) (`collisions`)**.\n\n"
                         f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
-                        "To make changes to your post's tags, either right-click on it (desktop/web) or "
-                        "click and hold on it (mobile) and go to **'Edit Tags'**.\n\n"
+                        "To make changes to your post's tags, either right-click on "
+                        "it (desktop/web) or click and hold on it (mobile), then click "
+                        "on **'Edit Tags'** to see a tag selection menu. Remember to save "
+                        "your changes after selecting the correct tag(s).\n\n"
                         "React with 🗑 to delete this alert message in the next 2 minutes, after making changes."
                     ),
                     color=common.DEFAULT_EMBED_COLOR,
