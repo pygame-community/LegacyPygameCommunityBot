@@ -655,7 +655,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                             after.parent_id
                                         )
                                     ).default_thread_slowmode_delay,
-                                    reason="This help post's title is not invalid anymore.",
+                                    reason="This help post's title is not too short anymore.",
                                 )
                                 common.edited_by_bot_help_thread_ids.add(after.id)
 
@@ -707,9 +707,9 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                 )
                                 common.edited_by_bot_help_thread_ids.add(after.id)
 
-                            for msg_id in common.bad_help_threads[after.id][
-                                "caution_message_ids"
-                            ]:
+                            for msg_id in tuple(
+                                common.bad_help_threads[after.id]["caution_message_ids"]
+                            ):
                                 try:
                                     await after.get_partial_message(msg_id).delete()
                                 except discord.NotFound:
