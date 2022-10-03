@@ -645,8 +645,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                 common.edited_by_bot_help_thread_ids.add(after.id)
                             elif (
                                 after.slowmode_delay
-                                == after.slowmode_delay
-                                < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
                             ):
                                 await after.edit(
                                     slowmode_delay=(
@@ -706,6 +705,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                     ).default_thread_slowmode_delay,
                                     reason="This help post's title is not invalid anymore.",
                                 )
+                                common.edited_by_bot_help_thread_ids.add(after.id)
 
                             for msg_id in common.bad_help_threads[after.id][
                                 "caution_message_ids"
