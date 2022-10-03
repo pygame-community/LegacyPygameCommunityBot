@@ -204,7 +204,7 @@ class GuildConstants:
             "title": "Your help post query is too short!",
             "description": "Your help post query (post title) must be at least "
             "30 characters long. As a consequence, this help post will have a 5 "
-            "minute slowmode.\n"
+            "minute slowmode.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
