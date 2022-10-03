@@ -14,7 +14,7 @@ import json
 import os
 import re
 import sys
-from typing import Optional, Union
+from typing import Optional, TypedDict, Union
 
 import discord
 from discord.ext import commands
@@ -80,8 +80,19 @@ storage_channel: discord.TextChannel
 rules_channel: discord.TextChannel
 entry_channels = {}
 entry_message_deletion_dict = {}
-bad_help_threads: dict[int, list[Union[discord.Thread, int]]] = {}
 
+
+class BadHelpThreadData(TypedDict):
+    thread: discord.Thread
+    last_cautioned_ts: int
+    caution_message_ids: set[int]
+
+
+bad_help_threads: dict[int, BadHelpThreadData] = {}
+edited_by_bot_help_thread_ids: set[int] = set()
+
+CAUTION_WHILE_MESSAGING_COOLDOWN: int = 900
+THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 300
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
 pgbot_initialized: bool = False
@@ -192,13 +203,14 @@ class GuildConstants:
         "thread_title_too_short": {
             "title": "Your help post query is too short!",
             "description": "Your help post query (post title) must be at least "
-            "30 characters long.\n"
+            "30 characters long. As a consequence, this help post will have a 5 "
+            "minute slowmode.\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
-            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "This alert and the slowmode should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
         },
         "member_asking_for_help": {
@@ -208,7 +220,7 @@ class GuildConstants:
             "that describes the actual issue you're having in more detail. "
             "Also send code snippets, screenshots and other media, error messages, etc."
             "\n\n**[Here's why!](https://www.dontasktoask.com)**\n\n"
-            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "This alert should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
@@ -222,7 +234,7 @@ class GuildConstants:
             "working? What are you trying to do (unsuccessfully)?\n"
             "Remember to send along code snippets, screenshots and other media, error "
             "messages, etc.\n\n"
-            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "This alert should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
@@ -238,7 +250,7 @@ class GuildConstants:
             "tried, as well as where you got stuck. "
             "Remember to send along code snippets, screenshots and other media, error "
             "messages, etc.\n\n"
-            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "This alert should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
@@ -252,7 +264,7 @@ class GuildConstants:
             "working? What are you trying to do (unsuccessfully)? "
             "Remember to send along code snippets, screenshots and other media, error "
             "messages, etc.\n\n"
-            "React with 🗑 to delete this alert message in the next 2 minutes, after making changes.",
+            "This alert should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
