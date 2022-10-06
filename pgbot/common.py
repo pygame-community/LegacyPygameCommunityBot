@@ -92,7 +92,7 @@ bad_help_threads: dict[int, BadHelpThreadData] = {}
 edited_by_bot_help_thread_ids: set[int] = set()
 
 CAUTION_WHILE_MESSAGING_COOLDOWN: int = 900
-THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 300
+THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 120
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
 pgbot_initialized: bool = False

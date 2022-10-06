@@ -639,7 +639,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             ):
                                 await after.edit(
                                     slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                                    reason="Slowmode punishment for the title of this "
+                                    reason="Slowmode penalty for the title of this "
                                     "help post being too short.",
                                 )
                                 common.edited_by_bot_help_thread_ids.add(after.id)
