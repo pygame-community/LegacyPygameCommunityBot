@@ -204,12 +204,13 @@ class GuildConstants:
     }
     INVALID_HELP_THREAD_TITLE_EMBEDS = {
         "thread_title_too_short": {
-            "title": "Your help post title is less than "
+            "title": "Your help post title must be at least "
             f"{THREAD_TITLE_MINIMUM_LENGTH} characters long",
             "description": "Your help post title must be at least "
-            f"{THREAD_TITLE_MINIMUM_LENGTH} characters long, so I am forced to "
-            f"put a slowmode of {THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} "
-            "on your post <:pg_sad:863165920038223912>.\n\n"
+            f"{THREAD_TITLE_MINIMUM_LENGTH} characters long, so I'm "
+            "forced to put a slowmode delay of "
+            f"{THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} minutes "
+            " on your post <:pg_sad:863165920038223912>.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
