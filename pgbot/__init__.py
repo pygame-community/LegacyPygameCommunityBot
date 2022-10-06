@@ -714,7 +714,11 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                                     await after.get_partial_message(msg_id).delete()
                                 except discord.NotFound:
                                     pass
-                            del common.bad_help_threads[after.id]
+
+                            if (
+                                after.id in common.bad_help_threads
+                            ):  # fix concurrency bugs where key was already deleted
+                                del common.bad_help_threads[after.id]
 
                         solved_in_before = any(
                             tag.name.lower() == "solved" for tag in before.applied_tags
