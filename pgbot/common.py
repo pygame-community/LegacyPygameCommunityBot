@@ -93,6 +93,7 @@ edited_by_bot_help_thread_ids: set[int] = set()
 
 CAUTION_WHILE_MESSAGING_COOLDOWN: int = 900
 THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 120
+THREAD_TITLE_MINIMUM_LENGTH: int = 20
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
 pgbot_initialized: bool = False
@@ -181,7 +182,7 @@ class GuildConstants:
         "member_asking_about_problem_with_code": True,
     }
     INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS = {
-        "thread_title_too_short": re.compile(r"^(.){1,29}$", flags=re.IGNORECASE),
+        "thread_title_too_short": re.compile(fr"^(.){1,{THREAD_TITLE_MINIMUM_LENGTH}}$", flags=re.IGNORECASE),
         "member_asking_for_help": re.compile(
             r"[\s]*(^help\s*|help\?*?$|(can|does|is\s+)?(pl(ease|s)|(some|any)(one|body)|you|(need|want)|(can|(want|available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))(\s*me(\s*please)?|pl(ease|s)|with)?\s*",
             re.IGNORECASE,
