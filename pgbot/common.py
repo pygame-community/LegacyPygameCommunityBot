@@ -190,7 +190,7 @@ class GuildConstants:
             re.IGNORECASE,
         ),
         "member_exclaiming_about_not_working_code": re.compile(
-            r"[\s]*((why\s+)?(is('nt)?|does(\s+not|'nt)?)?\s*(my|the|this)?)\s*(this|code|game|pygame(\s*(game|program|code)?))\s*(((is|does)(\s*not|n't)?|not)?\s*work(s|ed|ing)?)",
+            r"[\s]*((why\s+)?(is('nt)?|does(\s+not|'nt)?)?\s*(my|the|this)?)\s*(this|code|game|pygame(\s*(game|program|code|project|assignment)?))\s*(((is|does)(\s*not|n't)?|not)\s*work(s|ed|ing)?)",
             re.IGNORECASE,
         ),
         "member_asking_for_code": re.compile(
@@ -209,7 +209,7 @@ class GuildConstants:
             "description": "Your help post title must be at least "
             f"{THREAD_TITLE_MINIMUM_LENGTH} characters long, so I'm "
             "forced to put a slowmode delay of "
-            f"{THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} minutes "
+            f"{THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} minute{'s'*(THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY > 60)} "
             " on your post <:pg_sad:863165920038223912>.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
