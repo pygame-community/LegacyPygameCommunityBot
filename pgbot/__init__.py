@@ -563,7 +563,7 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                 "your changes after selecting the correct tag(s).\n\n"
                 "Thank you for helping us maintain clean help forum channels "
                 "<:pg_robot:837389387024957440>\n\n"
-                "This alert should disappear after you have made appropriate changes.",
+                "This alert should disappear after you have made appropriate changes."
             ),
             color=common.DEFAULT_EMBED_COLOR,
         ),
