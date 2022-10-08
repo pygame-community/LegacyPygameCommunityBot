@@ -531,7 +531,7 @@ def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> 
     applied_tags = thread.applied_tags
     no_issue = True
     if applied_tags and not any(
-        tag.name.casefold() in ("solved", "invalid") for tag in applied_tags
+        tag.name.lower() in ("solved", "invalid") for tag in applied_tags
     ):
         issue_tags = tuple(
             tag for tag in applied_tags if tag.name.lower().startswith("issue")
@@ -861,7 +861,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                 msg.reactions,
             )
 
-            if (
+            if not msg.pinned and (
                 payload.user_id == msg.channel.owner_id
                 or payload.member is not None
                 and (
@@ -875,14 +875,52 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                 await msg.pin(
                     reason="The owner of this message's thread has marked it as helpful."
                 )
-            elif payload.user_id == msg.author.id:
-                await msg.remove_reaction("✅", msg.author.id)
+            elif payload.user_id == msg.author.id and msg.id != msg.channel.id:
+                await msg.remove_reaction("✅", msg.author)
 
-            elif white_check_mark_reaction and white_check_mark_reaction.count > 4:
+            elif not msg.pinned and (
+                white_check_mark_reaction and white_check_mark_reaction.count >= 4
+            ):
                 await msg.pin(
                     reason="Multiple members of this message's thread "
                     "have marked it as helpful."
                 )
+
+            if (
+                msg.id == msg.channel.id
+                and (
+                    (by_op := payload.user_id == msg.channel.owner_id)
+                    or payload.member is not None
+                    and (
+                        (await common.bot.is_owner(payload.member))
+                        or any(
+                            role.id in common.GuildConstants.ADMIN_ROLES
+                            for role in payload.member.roles
+                        )
+                    )
+                )
+                and msg.channel.applied_tags
+                and not any(
+                    tag.name.lower() in ("solved", "invalid")
+                    for tag in msg.channel.applied_tags
+                )
+            ) and len(
+                msg.channel.applied_tags
+            ) < 5:  # help post should be marked as solved
+                for tag in (
+                    msg.channel.parent
+                    or common.bot.get_channel(msg.channel.parent_id)
+                    or await common.bot.fetch_channel(msg.channel.parent_id)
+                ).available_tags:
+                    if tag.name.lower() == "solved":
+                        await msg.channel.add_tags(
+                            tag,
+                            reason="This help post was marked as solved by "
+                            + ("the OP" if by_op else "an admin")
+                            + " (via a ✅ reaction).",
+                        )
+                        break
+
     except discord.HTTPException:
         pass
 
@@ -921,33 +959,61 @@ async def raw_reaction_remove(payload: discord.RawReactionActionEvent):
                 msg.reactions,
             )
 
-            if (
-                payload.user_id == msg.channel.owner_id
-                or payload.member is not None
-                and (
-                    (await common.bot.is_owner(payload.member))
-                    or any(
-                        role.id in common.GuildConstants.ADMIN_ROLES
-                        for role in payload.member.roles
+            if msg.pinned and (
+                (
+                    not white_check_mark_reaction
+                    or white_check_mark_reaction
+                    and white_check_mark_reaction.count < 4
+                )
+                or (
+                    payload.member is not None
+                    and (
+                        (await common.bot.is_owner(payload.member))
+                        or any(
+                            role.id in common.GuildConstants.ADMIN_ROLES
+                            for role in payload.member.roles
+                        )
                     )
                 )
-            ):
-                await msg.unpin(
-                    reason="The owner of this message's thread has unmarked it as helpful."
-                )
-
-            elif payload.user_id == msg.author.id:
-                await msg.remove_reaction("✅", msg.author.id)
-
-            elif (
-                not white_check_mark_reaction
-                or white_check_mark_reaction
-                and white_check_mark_reaction.count <= 4
             ):
                 await msg.unpin(
                     reason="Multiple members of this message's thread "
                     "have unmarked it as helpful."
                 )
+
+            if (
+                msg.id == msg.channel.id
+                and (
+                    (by_op := payload.user_id == msg.channel.owner_id)
+                    or (
+                        payload.member is not None
+                        and (
+                            (await common.bot.is_owner(payload.member))
+                            or any(
+                                role.id in common.GuildConstants.ADMIN_ROLES
+                                for role in payload.member.roles
+                            )
+                        )
+                    )
+                )
+                and msg.channel.applied_tags
+                and any(
+                    tag.name.lower() == "solved" for tag in msg.channel.applied_tags
+                )
+            ):  # help post should be unmarked as solved
+                for tag in (
+                    msg.channel.parent
+                    or common.bot.get_channel(msg.channel.parent_id)
+                    or await common.bot.fetch_channel(msg.channel.parent_id)
+                ).available_tags:
+                    if tag.name.lower() == "solved":
+                        await msg.channel.remove_tags(
+                            tag,
+                            reason="This help post was unmarked as solved by "
+                            + ("the OP" if by_op else "an admin")
+                            + " (via removing a ✅ reaction).",
+                        )
+                        break
     except discord.HTTPException:
         pass
 
