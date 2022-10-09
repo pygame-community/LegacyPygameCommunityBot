@@ -1085,6 +1085,12 @@ async def handle_message(msg: discord.Message):
                     fields=fields,
                 )
 
+    if msg.channel.id in common.UPVOTE_THREADS:
+        try:
+            await msg.add_reaction(common.UPVOTE_THREADS[msg.channel.id])
+        except discord.HTTPException:
+            pass
+
     if (
         isinstance(msg.channel, discord.Thread)
         and msg.channel.parent_id

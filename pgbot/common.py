@@ -94,6 +94,9 @@ bad_help_thread_data: dict[int, BadHelpThreadData] = {}
 CAUTION_WHILE_MESSAGING_COOLDOWN: int = 900
 THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 300
 THREAD_TITLE_MINIMUM_LENGTH: int = 20
+
+UPVOTE_THREADS = {1026850063013658715: "⬆️"}
+
 __version__ = "1.6.1"
 # boolean guard to prevent double-initialization
 pgbot_initialized: bool = False
