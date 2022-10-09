@@ -46,7 +46,7 @@ class FunCommandCog(BaseCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Current bot's version",
             description=f"`{common.__version__}`",
@@ -72,7 +72,7 @@ class FunCommandCog(BaseCommandCog):
         if sec < sec2:
             sec2 = sec
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title=random.choice(("Pingy Pongy", "Pong!")),
             description=f"The bot's ping is `{snakecore.utils.format_time_by_units(sec, decimal_places=0)}`\n"
@@ -128,7 +128,7 @@ class FunCommandCog(BaseCommandCog):
                 "Text cannot be empty",
             )
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             description=ctx.author.mention,
             color=0x40E32D,

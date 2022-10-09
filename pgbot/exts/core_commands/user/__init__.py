@@ -70,7 +70,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
                 )
                 cnt += 1
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title=f"Reminders for {ctx.author.display_name}:",
             description=desc,
@@ -135,7 +135,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             )
             storage_obj.obj = storage_data
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Reminder set!",
             description=(
@@ -294,7 +294,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
 
             storage_obj.obj = storage_data
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Reminders removed!",
             description=f"Successfully removed {cnt} reminder(s)",
@@ -382,7 +382,7 @@ class UserCommandCog(FunCommandCog, UserHelpCommandCog):
             # Message already deleted
             pass
 
-        embed = snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
+        embed = snakecore.utils.embeds.create_embed_from_dict(embed_dict)
         await ctx.message.reply(file=file, embed=embed, mention_author=False)
 
         filesize_limit = (

@@ -123,7 +123,7 @@ class SudoCommandCog(BaseCommandCog):
                 await asyncio.sleep(0)
 
         output_strings = []
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
@@ -134,7 +134,7 @@ class SudoCommandCog(BaseCommandCog):
         data_count = len(datas)
         for i, data in enumerate(datas):
             if data_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -247,7 +247,7 @@ class SudoCommandCog(BaseCommandCog):
                 )
 
         if data_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -265,7 +265,7 @@ class SudoCommandCog(BaseCommandCog):
         output_count = len(output_strings)
         for j, msg_txt in enumerate(output_strings):
             if output_count > 2 and not j % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -279,7 +279,7 @@ class SudoCommandCog(BaseCommandCog):
             await destination.send(content=msg_txt, allowed_mentions=allowed_mentions)
 
         if data_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 1,
                 dict(
@@ -616,7 +616,7 @@ class SudoCommandCog(BaseCommandCog):
                 "No messages given as input.",
             )
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -625,7 +625,7 @@ class SudoCommandCog(BaseCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -688,7 +688,7 @@ class SudoCommandCog(BaseCommandCog):
                 with io.StringIO(msg.content) as fobj:
                     await destination.send(
                         file=discord.File(fobj, "messagedata.txt"),
-                        embed=snakecore.utils.embed_utils.create_embed(
+                        embed=snakecore.utils.embeds.create_embed(
                             author_name="Message data",
                             color=common.DEFAULT_EMBED_COLOR,
                             description=f"**[View Original Message]({msg.jump_url})**",
@@ -699,14 +699,14 @@ class SudoCommandCog(BaseCommandCog):
                     with io.StringIO(msg.content) as fobj:
                         await destination.send(
                             file=discord.File(fobj, "messagedata.txt"),
-                            embed=snakecore.utils.embed_utils.create_embed(
+                            embed=snakecore.utils.embeds.create_embed(
                                 author_name="Message data",
                                 color=common.DEFAULT_EMBED_COLOR,
                                 description=f"**[View Original Message]({msg.jump_url})**",
                             ),
                         )
                 else:
-                    await snakecore.utils.embed_utils.send_embed(
+                    await snakecore.utils.embeds.send_embed(
                         ctx.channel,
                         author_name="Message data",
                         description="```\n{0}```".format(escaped_msg_content),
@@ -730,7 +730,7 @@ class SudoCommandCog(BaseCommandCog):
                 embed_data_fobjs = []
                 for embed in msg.embeds:
                     embed_data_fobj = io.StringIO()
-                    snakecore.utils.embed_utils.export_embed_data(
+                    snakecore.utils.embeds.export_embed_data(
                         embed.to_dict(),
                         fp=embed_data_fobj,
                         indent=4,
@@ -753,7 +753,7 @@ class SudoCommandCog(BaseCommandCog):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -1087,7 +1087,7 @@ class SudoCommandCog(BaseCommandCog):
                 "No messages given as input.",
             )
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1097,7 +1097,7 @@ class SudoCommandCog(BaseCommandCog):
         no_mentions = discord.AllowedMentions.none()
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1155,7 +1155,7 @@ class SudoCommandCog(BaseCommandCog):
                     with io.StringIO(msg.content) as fobj:
                         await destination.send(
                             content=msg.content[stop_idx:],
-                            embed=snakecore.utils.embed_utils.create_embed(
+                            embed=snakecore.utils.embeds.create_embed(
                                 color=common.DEFAULT_EMBED_COLOR,
                                 footer_text="Full message data",
                             ),
@@ -1188,7 +1188,7 @@ class SudoCommandCog(BaseCommandCog):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(

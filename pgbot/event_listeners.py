@@ -167,7 +167,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     try:
         (
             (
-                await snakecore.utils.embed_utils.replace_embed_at(
+                await snakecore.utils.embeds.replace_embed_at(
                     target_message,
                     title=title,
                     description=msg,
@@ -177,7 +177,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
             )
             if target_message is not None
             else (
-                target_message := await snakecore.utils.embed_utils.send_embed(
+                target_message := await snakecore.utils.embeds.send_embed(
                     ctx.channel,
                     title=title,
                     description=msg,
@@ -188,7 +188,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         )
     except discord.NotFound:
         # response message was deleted, send a new message
-        target_message = await snakecore.utils.embed_utils.send_embed(
+        target_message = await snakecore.utils.embeds.send_embed(
             ctx.channel,
             title=title,
             description=msg,

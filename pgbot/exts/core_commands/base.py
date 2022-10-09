@@ -288,7 +288,7 @@ class CommandMixinCog(commands.Cog):
             title = title.split("\n")[0]
             title += "\nIt's a draw!"
 
-        await snakecore.utils.embed_utils.edit_embed_at(
+        await snakecore.utils.embeds.edit_embed_at(
             msg,
             color=0xA83232 if not _color else _color.value,
             title=title,
@@ -309,7 +309,7 @@ class CommandMixinCog(commands.Cog):
             data = storage_obj.obj
 
         if not data:
-            await snakecore.utils.embed_utils.replace_embed_at(
+            await snakecore.utils.embeds.replace_embed_at(
                 response_message,
                 title="Memento ping list",
                 description="Ping list is empty!",
@@ -317,7 +317,7 @@ class CommandMixinCog(commands.Cog):
             )
             return
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Memento ping list",
             description=(
@@ -404,7 +404,7 @@ class CommandMixinCog(commands.Cog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Pygame Community Discord Server Events!",
             description=(
@@ -469,7 +469,7 @@ class CommandMixinCog(commands.Cog):
                 ("There are no scores yet!", "Check back after sometime!", False)
             )
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title=f"Event: Weekly Challenges (WC)",
             description=wc_dict.get(

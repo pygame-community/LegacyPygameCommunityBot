@@ -218,7 +218,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         data_count = len(datas)
         output_embeds = []
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
@@ -229,7 +229,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         for i, data in enumerate(datas):
             if data_count > 1 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -298,22 +298,22 @@ class EmsudoCommandCog(BaseCommandCog):
                 embed_data = embed_data.decode()
 
                 if attachment_obj.content_type.startswith("application/json"):
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         embed_data, input_format="JSON_STRING"
                     )
                 else:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         embed_data, input_format="STRING"
                     )
 
                 output_embeds.append(
-                    snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
+                    snakecore.utils.embeds.create_embed_from_dict(embed_dict)
                 )
 
             elif not edit_description_only:
                 if data.lang == "json":
                     try:
-                        embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                        embed_dict = snakecore.utils.embeds.import_embed_data(
                             data.code, input_format="JSON_STRING"
                         )
                     except json.JSONDecodeError as j:
@@ -323,7 +323,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         )
 
                     output_embeds.append(
-                        snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
+                        snakecore.utils.embeds.create_embed_from_dict(embed_dict)
                     )
                 else:
                     try:
@@ -333,15 +333,13 @@ class EmsudoCommandCog(BaseCommandCog):
 
                     if isinstance(args, dict):
                         output_embeds.append(
-                            snakecore.utils.embed_utils.create_embed_from_dict(args)
+                            snakecore.utils.embeds.create_embed_from_dict(args)
                         )
 
                     elif isinstance(args, (list, tuple)):
                         try:
                             send_embed_args.update(
-                                snakecore.utils.embed_utils.parse_condensed_embed_list(
-                                    args
-                                )
+                                snakecore.utils.embeds.parse_condensed_embed_list(args)
                             )
                         except ValueError as v:
                             raise BotException(
@@ -351,12 +349,12 @@ class EmsudoCommandCog(BaseCommandCog):
                             raise BotException(
                                 f"Input {i}:",
                                 "Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                                f"```py\n{snakecore.utils.embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
+                                f"```py\n{snakecore.utils.embeds.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             ) from t
 
                         output_embeds.append(
-                            snakecore.utils.embed_utils.create_embed(**send_embed_args)
+                            snakecore.utils.embeds.create_embed(**send_embed_args)
                         )
                     else:
                         raise BotException(
@@ -369,7 +367,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         )
             else:
                 output_embeds.append(
-                    snakecore.utils.embed_utils.create_embed(
+                    snakecore.utils.embeds.create_embed(
                         description=send_embed_args["description"],
                         color=common.DEFAULT_EMBED_COLOR,
                     )
@@ -405,20 +403,20 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
             output_embeds.append(
-                snakecore.utils.embed_utils.create_embed_from_dict(embed_dict)
+                snakecore.utils.embeds.create_embed_from_dict(embed_dict)
             )
 
         else:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -433,7 +431,7 @@ class EmsudoCommandCog(BaseCommandCog):
         output_embed_count = len(output_embeds)
         for j, embed in enumerate(output_embeds):
             if data_count > 2 and not j % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     1,
                     dict(
@@ -450,7 +448,7 @@ class EmsudoCommandCog(BaseCommandCog):
             await destination.send(content=content, embed=embed)
 
         if data_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 1,
                 dict(
@@ -609,7 +607,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 "No messages given as input.",
             )
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -620,7 +618,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
 
         try:
-            embed_mask_dict = snakecore.utils.embed_utils.create_embed_mask_dict(
+            embed_mask_dict = snakecore.utils.embeds.create_embed_mask_dict(
                 attributes=attribs,
                 allow_system_attributes=True,
                 fields_as_field_dict=True,
@@ -632,7 +630,7 @@ class EmsudoCommandCog(BaseCommandCog):
         if attribs:
             for i, msg in enumerate(msgs):
                 if msg_count > 2 and not i % 3:
-                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                    snakecore.utils.embeds.edit_embed_field_from_dict(
                         load_embed,
                         0,
                         dict(
@@ -675,7 +673,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 if embed_dict:
-                    snakecore.utils.embed_utils.filter_embed_dict(embed_dict)
+                    snakecore.utils.embeds.filter_embed_dict(embed_dict)
                     if embed_dict:
                         final_embed = discord.Embed.from_dict(embed_dict)
                     else:
@@ -688,7 +686,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             for i, msg in enumerate(msgs):
                 if msg_count > 2 and not i % 3:
-                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                    snakecore.utils.embeds.edit_embed_field_from_dict(
                         load_embed,
                         0,
                         dict(
@@ -711,7 +709,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 await asyncio.sleep(0)
 
         if msg_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -851,22 +849,20 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
-            await snakecore.utils.embed_utils.replace_embed_from_dict_at(
-                msg, embed_dict
-            )
+            await snakecore.utils.embeds.replace_embed_from_dict_at(msg, embed_dict)
 
         elif not edit_description_only:
             if data.lang == "json":
                 try:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         data.code, input_format="JSON_STRING"
                     )
                 except json.JSONDecodeError as j:
@@ -874,9 +870,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         "Invalid JSON data",
                         f"```\n{j.args[0]}\n```",
                     )
-                await snakecore.utils.embed_utils.replace_embed_from_dict_at(
-                    msg, embed_dict
-                )
+                await snakecore.utils.embeds.replace_embed_from_dict_at(msg, embed_dict)
             else:
                 try:
                     args = literal_eval(data.code)
@@ -884,14 +878,12 @@ class EmsudoCommandCog(BaseCommandCog):
                     raise BotException("Invalid arguments!", e.args[0])
 
                 if isinstance(args, dict):
-                    await snakecore.utils.embed_utils.replace_embed_from_dict_at(
-                        msg, args
-                    )
+                    await snakecore.utils.embeds.replace_embed_from_dict_at(msg, args)
 
                 elif isinstance(args, (list, tuple)):
                     try:
                         replace_embed_args.update(
-                            snakecore.utils.embed_utils.parse_condensed_embed_list(args)
+                            snakecore.utils.embeds.parse_condensed_embed_list(args)
                         )
                     except ValueError as v:
                         raise BotException("Condensed Embed Syntax Error:", v.args[0])
@@ -899,11 +891,11 @@ class EmsudoCommandCog(BaseCommandCog):
                         raise BotException(
                             "Invalid arguments!",
                             "The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                            f"```py\n{snakecore.utils.embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
+                            f"```py\n{snakecore.utils.embeds.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                             "The input Python `list` or `tuple` must contain at least 1 element.",
                         )
 
-                    await snakecore.utils.embed_utils.replace_embed_at(
+                    await snakecore.utils.embeds.replace_embed_at(
                         msg, **replace_embed_args
                     )
                 else:
@@ -1093,7 +1085,7 @@ class EmsudoCommandCog(BaseCommandCog):
         target_embed_dicts = tuple(msg.embeds[0].to_dict() for msg in target_msgs)
         data_count = len(datas)
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1101,7 +1093,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
         for i, data in enumerate(datas):
             if data_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1174,16 +1166,16 @@ class EmsudoCommandCog(BaseCommandCog):
                 embed_data = embed_data.decode()
 
                 if attachment_obj.content_type.startswith("application/json"):
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         embed_data, input_format="JSON_STRING"
                     )
                 else:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         embed_data, input_format="STRING"
                     )
 
                 for target_embed_dict in target_embed_dicts:
-                    snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                    snakecore.utils.embeds.edit_embed_dict_from_dict(
                         target_embed_dict,
                         embed_dict,
                         add_attributes=add_attributes,
@@ -1193,7 +1185,7 @@ class EmsudoCommandCog(BaseCommandCog):
             elif not edit_description_only:
                 if data.lang == "json":
                     try:
-                        embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                        embed_dict = snakecore.utils.embeds.import_embed_data(
                             data.code, input_format="JSON_STRING"
                         )
                     except json.JSONDecodeError as j:
@@ -1203,7 +1195,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         )
 
                     for target_embed_dict in target_embed_dicts:
-                        snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                        snakecore.utils.embeds.edit_embed_dict_from_dict(
                             target_embed_dict,
                             embed_dict,
                             add_attributes=add_attributes,
@@ -1217,7 +1209,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                     if isinstance(args, dict):
                         for target_embed_dict in target_embed_dicts:
-                            snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                            snakecore.utils.embeds.edit_embed_dict_from_dict(
                                 target_embed_dict,
                                 args,
                                 add_attributes=add_attributes,
@@ -1227,9 +1219,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     elif isinstance(args, (list, tuple)):
                         try:
                             edit_embed_args.update(
-                                snakecore.utils.embed_utils.parse_condensed_embed_list(
-                                    args
-                                )
+                                snakecore.utils.embeds.parse_condensed_embed_list(args)
                             )
                         except ValueError as v:
                             raise BotException(f"Input {i}:", v.args[0])
@@ -1237,15 +1227,15 @@ class EmsudoCommandCog(BaseCommandCog):
                             raise BotException(
                                 f"Input {i}:",
                                 "Invalid arguments! The condensed embed syntax is:\n\n\\`\\`\\`py\n"
-                                f"```py\n{snakecore.utils.embed_utils.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
+                                f"```py\n{snakecore.utils.embeds.CONDENSED_EMBED_DATA_LIST_SYNTAX}\n```\\`\\`\\`\n"
                                 "The input Python `list` or `tuple` must contain at least 1 element.",
                             )
 
-                        embed_dict = snakecore.utils.embed_utils.create_embed_as_dict(
+                        embed_dict = snakecore.utils.embeds.create_embed_as_dict(
                             **edit_embed_args,
                         )
                         for target_embed_dict in target_embed_dicts:
-                            snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                            snakecore.utils.embeds.edit_embed_dict_from_dict(
                                 target_embed_dict,
                                 embed_dict,
                                 add_attributes=add_attributes,
@@ -1262,12 +1252,12 @@ class EmsudoCommandCog(BaseCommandCog):
                             "data\n\\`\\`\\`\n)",
                         )
             else:
-                embed_dict = snakecore.utils.embed_utils.create_embed_as_dict(
+                embed_dict = snakecore.utils.embeds.create_embed_as_dict(
                     description=edit_embed_args["description"],
                     color=-1,
                 )
                 for target_embed_dict in target_embed_dicts:
-                    snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                    snakecore.utils.embeds.edit_embed_dict_from_dict(
                         target_embed_dict,
                         embed_dict,
                         add_attributes=add_attributes,
@@ -1304,16 +1294,16 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
             for target_embed_dict in target_embed_dicts:
-                snakecore.utils.embed_utils.edit_embed_dict_from_dict(
+                snakecore.utils.embeds.edit_embed_dict_from_dict(
                     target_embed_dict,
                     embed_dict,
                     add_attributes=add_attributes,
@@ -1323,7 +1313,7 @@ class EmsudoCommandCog(BaseCommandCog):
             for i, msg in enumerate(target_msgs):
                 await msg.edit(
                     embed=discord.Embed.from_dict(
-                        snakecore.utils.embed_utils.filter_embed_dict(
+                        snakecore.utils.embeds.filter_embed_dict(
                             target_embed_dicts[i], in_place=False
                         )
                     )
@@ -1333,14 +1323,14 @@ class EmsudoCommandCog(BaseCommandCog):
             for i, msg in enumerate(target_msgs):
                 await msg.edit(
                     embed=discord.Embed.from_dict(
-                        snakecore.utils.embed_utils.filter_embed_dict(
+                        snakecore.utils.embeds.filter_embed_dict(
                             target_embed_dicts[i], in_place=False
                         )
                     )
                 )
 
         if data_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -1468,7 +1458,7 @@ class EmsudoCommandCog(BaseCommandCog):
             if not i % 50:
                 await asyncio.sleep(0)
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1478,7 +1468,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1501,20 +1491,18 @@ class EmsudoCommandCog(BaseCommandCog):
                     output_embed_dict["fields"].extend(embed_dict["fields"])
                     del embed_dict["fields"]
 
-                output_embed_dict = (
-                    snakecore.utils.embed_utils.edit_embed_dict_from_dict(
-                        output_embed_dict,
-                        embed_dict,
-                        add_attributes=True,
-                        in_place=False,
-                    )
+                output_embed_dict = snakecore.utils.embeds.edit_embed_dict_from_dict(
+                    output_embed_dict,
+                    embed_dict,
+                    add_attributes=True,
+                    in_place=False,
                 )
             else:
                 output_embed_dict = embed_dict
 
             await asyncio.sleep(0)
 
-        if snakecore.utils.embed_utils.validate_embed_dict(output_embed_dict):
+        if snakecore.utils.embeds.validate_embed_dict(output_embed_dict):
             if in_place:
                 await msgs[0].edit(embed=discord.Embed.from_dict(output_embed_dict))
             else:
@@ -1537,7 +1525,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         await asyncio.sleep(0)
 
         if msg_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -1716,7 +1704,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 "No messages given as input.",
             )
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
@@ -1728,7 +1716,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1745,7 +1733,7 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if msg_count > 2 and not j % 3:
-                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                    snakecore.utils.embeds.edit_embed_field_from_dict(
                         load_embed,
                         1,
                         dict(
@@ -1764,7 +1752,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 await destination.send(embed=embed)
 
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 1,
                 dict(
@@ -1779,7 +1767,7 @@ class EmsudoCommandCog(BaseCommandCog):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 1,
                 dict(
@@ -1933,7 +1921,7 @@ class EmsudoCommandCog(BaseCommandCog):
         )
 
         try:
-            embed_mask_dict = snakecore.utils.embed_utils.create_embed_mask_dict(
+            embed_mask_dict = snakecore.utils.embeds.create_embed_mask_dict(
                 attributes=attribs,
                 allow_system_attributes=system_attributes,
                 fields_as_field_dict=True,
@@ -1941,7 +1929,7 @@ class EmsudoCommandCog(BaseCommandCog):
         except ValueError as v:
             raise BotException("An attribute string parsing error occured:", v.args[0])
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[
@@ -1953,7 +1941,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1970,7 +1958,7 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_count = len(msg.embeds)
             for j, embed in enumerate(msg.embeds):
                 if msg_count > 2 and embed_count > 2 and not j % 3:
-                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                    snakecore.utils.embeds.edit_embed_field_from_dict(
                         load_embed,
                         1,
                         dict(
@@ -1986,7 +1974,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     await response_message.edit(embed=load_embed)
 
                 embed_dict = embed.to_dict()
-                pop_target_embed_dict = snakecore.utils.embed_utils.copy_embed_dict(
+                pop_target_embed_dict = snakecore.utils.embeds.copy_embed_dict(
                     embed_dict
                 )  # circumvents discord.py bug
                 corrected_embed_dict = None
@@ -2005,7 +1993,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         if not system_attributes:
                             snakecore.utils.recursive_mapping_delete(
                                 embed_dict,
-                                snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
+                                snakecore.utils.embeds.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
 
                         snakecore.utils.recursive_mapping_delete(
@@ -2030,7 +2018,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         if not system_attributes:
                             snakecore.utils.recursive_mapping_delete(
                                 embed_dict,
-                                snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
+                                snakecore.utils.embeds.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                             )
                         snakecore.utils.recursive_mapping_delete(
                             embed_dict, embed_mask_dict, inverse=True
@@ -2042,15 +2030,13 @@ class EmsudoCommandCog(BaseCommandCog):
                     if not system_attributes:
                         snakecore.utils.recursive_mapping_delete(
                             embed_dict,
-                            snakecore.utils.embed_utils.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
+                            snakecore.utils.embeds.EMBED_SYSTEM_ATTRIBUTES_MASK_DICT,
                         )
 
                 if embed_dict:
                     if mode == 1 or mode == 2:
-                        corrected_embed_dict = (
-                            snakecore.utils.embed_utils.filter_embed_dict(
-                                embed_dict, in_place=False
-                            )
+                        corrected_embed_dict = snakecore.utils.embeds.filter_embed_dict(
+                            embed_dict, in_place=False
                         )
                 else:
                     raise BotException(
@@ -2060,7 +2046,7 @@ class EmsudoCommandCog(BaseCommandCog):
 
                 if pop and pop_target_embed_dict and embed_mask_dict:
                     corrected_pop_target_embed_dict = (
-                        snakecore.utils.embed_utils.filter_embed_dict(
+                        snakecore.utils.embeds.filter_embed_dict(
                             pop_target_embed_dict, in_place=False
                         )
                     )
@@ -2069,7 +2055,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     if (
                         mode == 2
                         and corrected_embed_dict
-                        and snakecore.utils.embed_utils.validate_embed_dict(
+                        and snakecore.utils.embeds.validate_embed_dict(
                             corrected_embed_dict
                         )
                     ):
@@ -2079,10 +2065,10 @@ class EmsudoCommandCog(BaseCommandCog):
                             embed=discord.Embed.from_dict(corrected_embed_dict)
                         )
                     with io.StringIO() as fobj:
-                        snakecore.utils.embed_utils.export_embed_data(
+                        snakecore.utils.embeds.export_embed_data(
                             {
                                 k: embed_dict[k]
-                                for k in snakecore.utils.embed_utils.EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
+                                for k in snakecore.utils.embeds.EMBED_TOP_LEVEL_ATTRIBUTES_MASK_DICT
                                 if k in embed_dict
                             },
                             fp=fobj,
@@ -2091,7 +2077,7 @@ class EmsudoCommandCog(BaseCommandCog):
                         )
                         fobj.seek(0)
                         await destination.send(
-                            embed=snakecore.utils.embed_utils.create_embed(
+                            embed=snakecore.utils.embeds.create_embed(
                                 author_name="Embed Data",
                                 title=output_name.string
                                 if len(msgs) < 2
@@ -2107,7 +2093,7 @@ class EmsudoCommandCog(BaseCommandCog):
                                 footer_text="Structural validity: "
                                 + (
                                     "Valid."
-                                    if snakecore.utils.embed_utils.validate_embed_dict(
+                                    if snakecore.utils.embeds.validate_embed_dict(
                                         embed_dict
                                     )
                                     else "Invalid.\nMight lead to embed creation errors when used alone."
@@ -2128,7 +2114,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 elif mode == 1:
                     if (
                         corrected_embed_dict
-                        and snakecore.utils.embed_utils.validate_embed_dict(
+                        and snakecore.utils.embeds.validate_embed_dict(
                             corrected_embed_dict
                         )
                     ):
@@ -2149,7 +2135,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
             if embed_count > 2:
-                await snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                await snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     1,
                     dict(
@@ -2164,7 +2150,7 @@ class EmsudoCommandCog(BaseCommandCog):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            await snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            await snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -2417,7 +2403,7 @@ class EmsudoCommandCog(BaseCommandCog):
             field_str = data.string
 
             try:
-                field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
+                field_list = snakecore.utils.embeds.parse_embed_field_strings(
                     field_str
                 )[0]
             except (TypeError, IndexError):
@@ -2442,7 +2428,7 @@ class EmsudoCommandCog(BaseCommandCog):
         elif isinstance(data, CodeBlock):
             if data.lang == "json":
                 try:
-                    field_dict = snakecore.utils.embed_utils.import_embed_data(
+                    field_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -2469,11 +2455,9 @@ class EmsudoCommandCog(BaseCommandCog):
                     field_str = args
 
                     try:
-                        field_list = (
-                            snakecore.utils.embed_utils.parse_embed_field_strings(
-                                field_str
-                            )[0]
-                        )
+                        field_list = snakecore.utils.embeds.parse_embed_field_strings(
+                            field_str
+                        )[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -2501,7 +2485,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
         await msg.edit(
-            embed=snakecore.utils.embed_utils.add_embed_fields_from_dicts(
+            embed=snakecore.utils.embeds.add_embed_fields_from_dicts(
                 msg_embed, field_dict, in_place=False
             )
         )
@@ -2648,11 +2632,11 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
@@ -2660,7 +2644,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 raise BotException("No embed field data found in attachment message.")
 
             await msg.edit(
-                embed=snakecore.utils.embed_utils.add_embed_fields_from_dicts(
+                embed=snakecore.utils.embeds.add_embed_fields_from_dicts(
                     msg_embed, *embed_dict["fields"], in_place=False
                 )
             )
@@ -2668,7 +2652,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             if data.lang == "json":
                 try:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -2684,7 +2668,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.add_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.add_embed_fields_from_dicts(
                         msg_embed, *embed_dict["fields"], in_place=False
                     )
                 )
@@ -2720,11 +2704,11 @@ class EmsudoCommandCog(BaseCommandCog):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = snakecore.utils.embed_utils.parse_embed_field_strings(
-                                    data
-                                )[
-                                    0
-                                ]
+                                data_list = (
+                                    snakecore.utils.embeds.parse_embed_field_strings(
+                                        data
+                                    )[0]
+                                )
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -2764,7 +2748,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.add_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.add_embed_fields_from_dicts(
                         msg_embed, *field_dicts_list, in_place=False
                     )
                 )
@@ -2853,7 +2837,7 @@ class EmsudoCommandCog(BaseCommandCog):
             field_str = data.string
 
             try:
-                field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
+                field_list = snakecore.utils.embeds.parse_embed_field_strings(
                     field_str
                 )[0]
             except (TypeError, IndexError):
@@ -2878,7 +2862,7 @@ class EmsudoCommandCog(BaseCommandCog):
         elif isinstance(data, CodeBlock):
             if data.lang == "json":
                 try:
-                    field_dict = snakecore.utils.embed_utils.import_embed_data(
+                    field_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -2905,11 +2889,9 @@ class EmsudoCommandCog(BaseCommandCog):
                     field_str = args
 
                     try:
-                        field_list = (
-                            snakecore.utils.embed_utils.parse_embed_field_strings(
-                                field_str
-                            )[0]
-                        )
+                        field_list = snakecore.utils.embeds.parse_embed_field_strings(
+                            field_str
+                        )[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -2937,7 +2919,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
         await msg.edit(
-            embed=snakecore.utils.embed_utils.insert_embed_fields_from_dicts(
+            embed=snakecore.utils.embeds.insert_embed_fields_from_dicts(
                 msg_embed, index, field_dict, in_place=False
             )
         )
@@ -3088,11 +3070,11 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
@@ -3100,7 +3082,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 raise BotException("No embed field data found in attachment message.")
 
             await msg.edit(
-                embed=snakecore.utils.embed_utils.insert_embed_fields_from_dicts(
+                embed=snakecore.utils.embeds.insert_embed_fields_from_dicts(
                     msg_embed, index, *embed_dict["fields"], in_place=False
                 )
             )
@@ -3108,7 +3090,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             if data.lang == "json":
                 try:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -3124,7 +3106,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.insert_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.insert_embed_fields_from_dicts(
                         msg_embed, index, *embed_dict["fields"], in_place=False
                     )
                 )
@@ -3160,11 +3142,11 @@ class EmsudoCommandCog(BaseCommandCog):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = snakecore.utils.embed_utils.parse_embed_field_strings(
-                                    data
-                                )[
-                                    0
-                                ]
+                                data_list = (
+                                    snakecore.utils.embeds.parse_embed_field_strings(
+                                        data
+                                    )[0]
+                                )
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -3204,7 +3186,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.insert_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.insert_embed_fields_from_dicts(
                         msg_embed, index, *reversed(field_dicts_list), in_place=False
                     )
                 )
@@ -3296,7 +3278,7 @@ class EmsudoCommandCog(BaseCommandCog):
             field_str = data.string
 
             try:
-                field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
+                field_list = snakecore.utils.embeds.parse_embed_field_strings(
                     field_str
                 )[0]
             except (TypeError, IndexError):
@@ -3320,7 +3302,7 @@ class EmsudoCommandCog(BaseCommandCog):
         elif isinstance(data, CodeBlock):
             if data.lang == "json":
                 try:
-                    field_dict = snakecore.utils.embed_utils.import_embed_data(
+                    field_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -3347,11 +3329,9 @@ class EmsudoCommandCog(BaseCommandCog):
                     field_str = args
 
                     try:
-                        field_list = (
-                            snakecore.utils.embed_utils.parse_embed_field_strings(
-                                field_str
-                            )[0]
-                        )
+                        field_list = snakecore.utils.embeds.parse_embed_field_strings(
+                            field_str
+                        )[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -3378,7 +3358,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
         await msg.edit(
-            embed=snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            embed=snakecore.utils.embeds.edit_embed_field_from_dict(
                 msg_embed, index, field_dict, in_place=False
             )
         )
@@ -3527,11 +3507,11 @@ class EmsudoCommandCog(BaseCommandCog):
             embed_data = embed_data.decode()
 
             if attachment_obj.content_type.startswith("application/json"):
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="JSON_STRING"
                 )
             else:
-                embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                embed_dict = snakecore.utils.embeds.import_embed_data(
                     embed_data, input_format="STRING"
                 )
 
@@ -3539,7 +3519,7 @@ class EmsudoCommandCog(BaseCommandCog):
                 raise BotException("No embed field data found in attachment message.")
 
             await msg.edit(
-                embed=snakecore.utils.embed_utils.edit_embed_fields_from_dicts(
+                embed=snakecore.utils.embeds.edit_embed_fields_from_dicts(
                     msg_embed, *embed_dict["fields"], in_place=False
                 )
             )
@@ -3547,7 +3527,7 @@ class EmsudoCommandCog(BaseCommandCog):
         else:
             if data.lang == "json":
                 try:
-                    embed_dict = snakecore.utils.embed_utils.import_embed_data(
+                    embed_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -3563,7 +3543,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.edit_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.edit_embed_fields_from_dicts(
                         msg_embed, *embed_dict["fields"], in_place=False
                     )
                 )
@@ -3599,11 +3579,11 @@ class EmsudoCommandCog(BaseCommandCog):
 
                         elif isinstance(data, str):
                             try:
-                                data_list = snakecore.utils.embed_utils.parse_embed_field_strings(
-                                    data
-                                )[
-                                    0
-                                ]
+                                data_list = (
+                                    snakecore.utils.embeds.parse_embed_field_strings(
+                                        data
+                                    )[0]
+                                )
                             except (TypeError, IndexError):
                                 raise BotException(
                                     f"Invalid field string in input list at index {i}!",
@@ -3643,7 +3623,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
                 await msg.edit(
-                    embed=snakecore.utils.embed_utils.edit_embed_fields_from_dicts(
+                    embed=snakecore.utils.embeds.edit_embed_fields_from_dicts(
                         msg_embed, *field_dicts_list, in_place=False
                     )
                 )
@@ -3733,7 +3713,7 @@ class EmsudoCommandCog(BaseCommandCog):
             field_str = data.string
 
             try:
-                field_list = snakecore.utils.embed_utils.parse_embed_field_strings(
+                field_list = snakecore.utils.embeds.parse_embed_field_strings(
                     field_str
                 )[0]
             except (TypeError, IndexError):
@@ -3757,7 +3737,7 @@ class EmsudoCommandCog(BaseCommandCog):
         elif isinstance(data, CodeBlock):
             if data.lang == "json":
                 try:
-                    field_dict = snakecore.utils.embed_utils.import_embed_data(
+                    field_dict = snakecore.utils.embeds.import_embed_data(
                         data.code,
                         input_format="JSON_STRING",
                     )
@@ -3784,11 +3764,9 @@ class EmsudoCommandCog(BaseCommandCog):
                     field_str = args
 
                     try:
-                        field_list = (
-                            snakecore.utils.embed_utils.parse_embed_field_strings(
-                                field_str
-                            )[0]
-                        )
+                        field_list = snakecore.utils.embeds.parse_embed_field_strings(
+                            field_str
+                        )[0]
                     except (TypeError, IndexError):
                         raise BotException(
                             "Invalid format for field string(s)!",
@@ -3815,7 +3793,7 @@ class EmsudoCommandCog(BaseCommandCog):
                     )
 
         await msg.edit(
-            embed=snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            embed=snakecore.utils.embeds.edit_embed_field_from_dict(
                 msg_embed, index, field_dict, in_place=False
             )
         )
@@ -3880,7 +3858,7 @@ class EmsudoCommandCog(BaseCommandCog):
         msg_embed = msg.embeds[0]
 
         await msg.edit(
-            embed=snakecore.utils.embed_utils.swap_embed_fields(
+            embed=snakecore.utils.embeds.swap_embed_fields(
                 msg_embed, index_a, index_b, in_place=False
             )
         )
@@ -3978,7 +3956,7 @@ class EmsudoCommandCog(BaseCommandCog):
         field_indices = field_indices if multi_indices else list(set(field_indices))
         try:
             await msg.edit(
-                embed=snakecore.utils.embed_utils.clone_embed_fields(
+                embed=snakecore.utils.embeds.clone_embed_fields(
                     msg_embed, *field_indices, insertion_index=clone_to, in_place=False
                 )
             )
@@ -4073,7 +4051,7 @@ class EmsudoCommandCog(BaseCommandCog):
         field_indices = field_indices if multi_indices else list(set(field_indices))
         try:
             await msg.edit(
-                embed=snakecore.utils.embed_utils.remove_embed_fields(
+                embed=snakecore.utils.embeds.remove_embed_fields(
                     msg_embed, *field_indices, in_place=False
                 )
             )

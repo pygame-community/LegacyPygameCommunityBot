@@ -130,7 +130,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     )
 
     if author:
-        return snakecore.utils.embed_utils.create_embed(
+        return snakecore.utils.embeds.create_embed(
             title="__Message & Author Info__",
             description="\n".join(
                 (
@@ -175,7 +175,7 @@ def get_msg_info_embed(msg: discord.Message, author: bool = True):
     else:
         member_name_info += f"**{member.name}**#{member.discriminator}\n\n"
 
-    return snakecore.utils.embed_utils.create_embed(
+    return snakecore.utils.embeds.create_embed(
         title="__Message Info__",
         author_name=f"{member.name}#{member.discriminator}",
         author_icon_url=member.display_avatar.url,
@@ -209,7 +209,7 @@ def get_member_info_embed(member: Union[discord.Member, discord.User]):
     Generate an embed containing info about a server member.
     """
 
-    return snakecore.utils.embed_utils.create_embed(
+    return snakecore.utils.embeds.create_embed(
         title="__"
         + ("Member" if isinstance(member, discord.Member) else "User")
         + " Info__",

@@ -87,7 +87,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 out += f"{name} - arg\n> {arg}\n"
 
         out += "\n"
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Here are the args and kwargs you passed",
             description=out,
@@ -107,7 +107,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Tables:",
             description="\n".join(
@@ -190,7 +190,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         async with snakecore.storage.DiscordStorage(name) as storage_obj:
             storage_obj.obj = eval(obj_str)  # pylint: disable = eval-used
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Storage overwritten!",
             description="Storage contents have been overwritten successfully",
@@ -218,7 +218,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     "Could not delete storage", "Deletion has already occured"
                 )
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Storage has been deleted!",
             description="Storage contents have been deleted successfully",
@@ -265,7 +265,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             storage_obj.obj = commands
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Whitelisted!",
             description=f"Successfully whitelisted {cnt} command(s)",
@@ -312,7 +312,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             storage_obj.obj = commands
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Blacklisted!",
             description=f"Successfully blacklisted {cnt} command(s)",
@@ -390,7 +390,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 ),
             )
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title=f"Return output (code executed in {snakecore.utils.format_time_by_units(total)}):",
             description=snakecore.utils.code_block(repr(eval_output)),
@@ -411,7 +411,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Total memory used:",
             description=f"**{snakecore.utils.format_byte(mem, 4)}**\n({mem} B)",
@@ -582,7 +582,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                     },
                 )
 
-            archive_header_msg_embed = snakecore.utils.embed_utils.create_embed(
+            archive_header_msg_embed = snakecore.utils.embeds.create_embed(
                 title=f"__Archive of `#{origin.name}`__",
                 description=f"\nAn archive of **{origin.mention}**"
                 f"({len(messages)} message(s))\n\u200b",
@@ -595,7 +595,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
         no_mentions = discord.AllowedMentions.none()
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -607,7 +607,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 reversed(messages) if not oldest_first else messages
             ):
                 if msg_count > 2 and not i % 2:
-                    snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                    snakecore.utils.embeds.edit_embed_field_from_dict(
                         load_embed,
                         0,
                         dict(
@@ -690,7 +690,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                                     )
                                 )
 
-                            author_embed = snakecore.utils.embed_utils.create_embed(
+                            author_embed = snakecore.utils.embeds.create_embed(
                                 description=description_str,
                                 color=0x36393F,
                                 author_name=f"{author.name}#{author.discriminator}"
@@ -740,7 +740,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                             with io.StringIO(msg.content) as fobj:
                                 await destination.send(
                                     content=msg.content[stop_idx:],
-                                    embed=snakecore.utils.embed_utils.create_embed(
+                                    embed=snakecore.utils.embeds.create_embed(
                                         color=common.DEFAULT_EMBED_COLOR,
                                         footer_text="Full message data",
                                     ),
@@ -762,14 +762,14 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                             )
 
                     elif msg.type == discord.MessageType.pins_add:
-                        await snakecore.utils.embed_utils.send_embed(
+                        await snakecore.utils.embeds.send_embed(
                             channel=destination,
                             description=f"**{msg.author.name}#{msg.author.discriminator}** pinned a message in #{origin.name}",
                             color=0x36393F,
                         )
 
                     elif msg.type == discord.MessageType.premium_guild_subscription:
-                        await snakecore.utils.embed_utils.send_embed(
+                        await snakecore.utils.embeds.send_embed(
                             channel=destination,
                             description=f"{msg.author.name}#{msg.author.discriminator} just boosted this server!",
                             color=0x36393F,
@@ -804,7 +804,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                                     )
                             else:
                                 message_id_cache[msg.id] = await destination.send(
-                                    embed=snakecore.utils.embed_utils.create_embed(
+                                    embed=snakecore.utils.embeds.create_embed(
                                         color=0x36393F,
                                         description=f"```\n{escaped_msg_content}```",
                                     ),
@@ -839,7 +839,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                         embed_data_fobjs = []
                         for embed in msg.embeds:
                             embed_data_fobj = io.StringIO()
-                            snakecore.utils.embed_utils.export_embed_data(
+                            snakecore.utils.embeds.export_embed_data(
                                 embed.to_dict(),
                                 fp=embed_data_fobj,
                                 indent=4,
@@ -869,7 +869,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             if archive_header_msg is not None:
                 await archive_header_msg.edit(embed=archive_header_msg_embed)
 
-        snakecore.utils.embed_utils.edit_embed_field_from_dict(
+        snakecore.utils.embeds.edit_embed_field_from_dict(
             load_embed,
             0,
             dict(
@@ -943,7 +943,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 except discord.HTTPException as e:
                     raise BotException(f"Cannot unpin message at index {i}!", e.args[0])
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -951,7 +951,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -978,7 +978,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             await asyncio.sleep(0)
 
-        snakecore.utils.embed_utils.edit_embed_field_from_dict(
+        snakecore.utils.embeds.edit_embed_field_from_dict(
             load_embed,
             0,
             dict(
@@ -1044,7 +1044,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         pinned_msgs = await channel.pins()
         pinned_msg_id_set = set(msg.id for msg in pinned_msgs)
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1053,7 +1053,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         msg_count = len(msgs)
         for i, msg in enumerate(msgs):
             if msg_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1075,7 +1075,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             await asyncio.sleep(0)
 
-        snakecore.utils.embed_utils.edit_embed_field_from_dict(
+        snakecore.utils.embeds.edit_embed_field_from_dict(
             load_embed,
             0,
             dict(
@@ -1156,7 +1156,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         indices_list = sorted(set(indices_list))
         indices_list.reverse()
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1168,7 +1168,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
                 unpin_index = pinned_msg_count + unpin_index
 
             if idx_count > 2 and not i % 3:
-                snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1195,7 +1195,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             await asyncio.sleep(0)
 
-        snakecore.utils.embed_utils.edit_embed_field_from_dict(
+        snakecore.utils.embeds.edit_embed_field_from_dict(
             load_embed,
             0,
             dict(
@@ -1415,7 +1415,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             embed = pgbot.utils.embed_utils.get_member_info_embed(obj)
             await ctx.channel.send(embed=embed)
 
-        load_embed = snakecore.utils.embed_utils.create_embed(
+        load_embed = snakecore.utils.embeds.create_embed(
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
             fields=[dict(name="\u200b", value="`...`", inline=False)],
@@ -1423,7 +1423,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         obj_count = len(objs)
         for i, obj in enumerate(objs):
             if obj_count > 2 and not i % 3:
-                await snakecore.utils.embed_utils.edit_embed_field_from_dict(
+                await snakecore.utils.embeds.edit_embed_field_from_dict(
                     load_embed,
                     0,
                     dict(
@@ -1450,7 +1450,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             await asyncio.sleep(0)
 
         if obj_count > 2:
-            snakecore.utils.embed_utils.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
@@ -1537,7 +1537,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             "color": common.DEFAULT_EMBED_COLOR,
         }
 
-        await snakecore.utils.embed_utils.replace_embed_at(response_message, **kwargs)
+        await snakecore.utils.embeds.replace_embed_at(response_message, **kwargs)
 
     @commands.command()
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
@@ -1748,7 +1748,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             desc += f"\nLink to [Original message]({message.jump_url})"
             desc += "\n**━━━━━━━━━━━━**"
 
-            embed = snakecore.utils.embed_utils.create_embed(
+            embed = snakecore.utils.embeds.create_embed(
                 author_icon_url=message.author.display_avatar.url,
                 author_name=message.author.display_name,
                 description=desc,
@@ -1770,7 +1770,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             footer_text += f" | args: {raw_command_input}"
 
         msg_embeds = [
-            snakecore.utils.embed_utils.create_embed(
+            snakecore.utils.embeds.create_embed(
                 color=common.DEFAULT_EMBED_COLOR,
                 footer_text=footer_text,
             )
@@ -1846,7 +1846,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
                 storage_obj.obj = storage_dict
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Successfully executed command!",
             description=f"Changed settings on {len(channels)} channel(s)",
@@ -1907,7 +1907,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             storage_obj.obj = wc_dict
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Successfully updated data!",
             description="Updated Weekly Challenges (WC) Event description and/or url!",
@@ -1943,7 +1943,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
             storage_obj.obj = wc_dict
             ind = len(wc_dict["rounds"])
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Successfully updated events round!",
             description=f"Weekly Challenges got round {ind} - '{round_name.string}'!",
@@ -1975,7 +1975,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             storage_obj.obj = wc_dict
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Successfully updated events round!",
             description=(
@@ -2039,7 +2039,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
 
             storage_obj.obj = wc_dict
 
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             response_message,
             title="Successfully updated data!",
             description="The round related data or the scores have been updated!",

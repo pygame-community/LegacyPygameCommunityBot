@@ -92,7 +92,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
         is_builtin = False
 
     if splits[0] not in doc_module_dict and not is_builtin:
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             original_msg,
             title="Unknown module!",
             description="No such module was found.",
@@ -115,7 +115,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
                 if i != "__abstractmethods__":
                     module_objs[i] = getattr(obj, i)
         except KeyError:
-            await snakecore.utils.embed_utils.replace_embed_at(
+            await snakecore.utils.embeds.replace_embed_at(
                 original_msg,
                 title="Class/function/sub-module not found!",
                 description=f"There's no such thing here named `{name}`",
@@ -123,7 +123,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
             return None, None
 
     if isinstance(obj, (int, float, str, dict, list, tuple, bool)):
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             original_msg,
             title=f"Documentation for `{name}`",
             description=f"{name} is a constant with a type of "
@@ -169,7 +169,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
 
         if text:
             embeds.append(
-                snakecore.utils.embed_utils.create_embed(
+                snakecore.utils.embeds.create_embed(
                     title=f"Documentation for `{name}`",
                     description=header + snakecore.utils.code_block(text),
                     color=common.DEFAULT_EMBED_COLOR,
@@ -181,7 +181,7 @@ async def put_main_doc(name: str, original_msg: discord.Message):
             break
 
     if not embeds:
-        await snakecore.utils.embed_utils.replace_embed_at(
+        await snakecore.utils.embeds.replace_embed_at(
             original_msg,
             title="Class/function/sub-module not found!",
             description=f"There's no such thing here named `{name}`",
@@ -242,7 +242,7 @@ async def put_doc(
             continue
 
         embeds.append(
-            snakecore.utils.embed_utils.create_embed(
+            snakecore.utils.embeds.create_embed(
                 title=f"{otype} in `{name}`",
                 description=snakecore.utils.code_block("\n".join(olist)),
                 color=common.DEFAULT_EMBED_COLOR,
@@ -263,17 +263,28 @@ async def put_doc(
         footer_text += f" | args: {raw_command_input}"
 
     msg_embeds = [
-        snakecore.utils.embed_utils.create_embed(
+        snakecore.utils.embeds.create_embed(
             color=common.DEFAULT_EMBED_COLOR, footer_text=footer_text
         )
     ]
 
     original_msg = await original_msg.edit(embeds=msg_embeds)
+    callers = [msg_invoker]
+    if ctx.message.reference is not None:
+        try:
+            reference_msg_author = (
+                ctx.message.reference.cached_message
+                or (await ctx.channel.fetch_message(ctx.message.reference.message_id))
+            ).author
+        except discord.HTTPException:
+            pass
+        else:
+            callers.append(reference_msg_author)
 
     paginator = snakecore.utils.pagination.EmbedPaginator(
         original_msg,
         *main_embeds,
-        caller=msg_invoker,
+        caller=callers,
         whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
         start_page_number=page,
         inactivity_timeout=60,

@@ -137,7 +137,7 @@ async def send_help_message(
         for doc_field in list(doc_fields.values()):
             body = f"{doc_field[0]}\n\n{doc_field[1]}"
             embeds.append(
-                snakecore.utils.embed_utils.create_embed(
+                snakecore.utils.embeds.create_embed(
                     title="Help",
                     description=body,
                     color=common.DEFAULT_EMBED_COLOR,
@@ -164,7 +164,7 @@ async def send_help_message(
                 doc = get_doc_from_func(cmd.callback)
                 if not doc:
                     # function found, but does not have help.
-                    return await snakecore.utils.embed_utils.replace_embed_at(
+                    return await snakecore.utils.embeds.replace_embed_at(
                         original_msg,
                         title="Could not get docs",
                         description="Command has no documentation",
@@ -195,7 +195,7 @@ async def send_help_message(
 
                 if len(desc_list) == 1:
                     embeds.append(
-                        snakecore.utils.embed_utils.create_embed(
+                        snakecore.utils.embeds.create_embed(
                             title=f"Help for `{cmd_qualified_name}`",
                             description=body,
                             color=common.DEFAULT_EMBED_COLOR,
@@ -204,7 +204,7 @@ async def send_help_message(
                     )
                 else:
                     embeds.append(
-                        snakecore.utils.embed_utils.create_embed(
+                        snakecore.utils.embeds.create_embed(
                             title=f"Help for `{cmd_qualified_name}`",
                             description=body,
                             color=common.DEFAULT_EMBED_COLOR,
@@ -213,7 +213,7 @@ async def send_help_message(
                     desc_list_len = len(desc_list)
                     for i in range(1, desc_list_len):
                         embeds.append(
-                            snakecore.utils.embed_utils.create_embed(
+                            snakecore.utils.embeds.create_embed(
                                 title=f"Help for `{cmd_qualified_name}`",
                                 description=desc_list[i],
                                 color=common.DEFAULT_EMBED_COLOR,
@@ -222,7 +222,7 @@ async def send_help_message(
                         )
 
     if not embeds:
-        return await snakecore.utils.embed_utils.replace_embed_at(
+        return await snakecore.utils.embeds.replace_embed_at(
             original_msg,
             title="Command not found",
             description="No such command exists",
@@ -238,7 +238,7 @@ async def send_help_message(
         footer_text += f" | args: {raw_command_input}"
 
     msg_embeds = [
-        snakecore.utils.embed_utils.create_embed(
+        snakecore.utils.embeds.create_embed(
             color=common.DEFAULT_EMBED_COLOR,
             footer_text=footer_text,
         )
@@ -258,11 +258,23 @@ async def send_help_message(
         )
     )
 
+    callers = [invoker]
+    if ctx.message.reference is not None:
+        try:
+            reference_msg_author = (
+                ctx.message.reference.cached_message
+                or (await ctx.channel.fetch_message(ctx.message.reference.message_id))
+            ).author
+        except discord.HTTPException:
+            pass
+        else:
+            callers.append(reference_msg_author)
+
     try:
         await snakecore.utils.pagination.EmbedPaginator(
             original_msg,
             *embeds,
-            caller=invoker,
+            caller=callers,
             whitelisted_role_ids=common.GuildConstants.ADMIN_ROLES,
             start_page_number=page,
             inactivity_timeout=60,

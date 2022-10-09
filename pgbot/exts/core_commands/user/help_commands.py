@@ -91,7 +91,7 @@ class UserHelpCommandCog(CommandMixinCog, BaseCommandCog):
             )
 
         if len(rules) == 1:
-            await snakecore.utils.embed_utils.replace_embed_at(
+            await snakecore.utils.embeds.replace_embed_at(
                 response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.guild.icon.url,
@@ -103,7 +103,7 @@ class UserHelpCommandCog(CommandMixinCog, BaseCommandCog):
             for field in fields:
                 field["value"] = field["value"][:1024]
 
-            await snakecore.utils.embed_utils.replace_embed_at(
+            await snakecore.utils.embeds.replace_embed_at(
                 response_message,
                 author_name="Pygame Community",
                 author_icon_url=common.guild.icon.url,

@@ -448,9 +448,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
 
                 if int(link.split("/")[6][:-1]) == new.id:
                     _, fields = format_entries_message(new, "")
-                    await snakecore.utils.embed_utils.edit_embed_at(
-                        message, fields=fields
-                    )
+                    await snakecore.utils.embeds.edit_embed_at(message, fields=fields)
                     embed_repost_edited = True
                     break
 
@@ -467,7 +465,7 @@ async def message_edit(old: discord.Message, new: discord.Message):
                 color = 0xFF8800
 
                 title, fields = format_entries_message(new, entry_type)
-                await snakecore.utils.embed_utils.send_embed(
+                await snakecore.utils.embeds.send_embed(
                     common.entries_discussion_channel,
                     title=title,
                     color=color,
@@ -1080,7 +1078,7 @@ async def handle_message(msg: discord.Message):
                 entry_type = "showcase"
                 color = 0xFF8800
                 title, fields = format_entries_message(msg, entry_type)
-                await snakecore.utils.embed_utils.send_embed(
+                await snakecore.utils.embeds.send_embed(
                     common.entries_discussion_channel,
                     title=title,
                     color=color,
@@ -1180,14 +1178,14 @@ async def handle_command(
 
         except ValueError:
             if response_message is None:
-                await snakecore.utils.embed_utils.send_embed(
+                await snakecore.utils.embeds.send_embed(
                     invoke_message.channel,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
                     color=0xFF0000,
                 )
             else:
-                await snakecore.utils.embed_utils.replace_embed_at(
+                await snakecore.utils.embeds.replace_embed_at(
                     response_message,
                     title="Invalid arguments!",
                     description="All arguments must be integer IDs or member mentions",
@@ -1196,14 +1194,14 @@ async def handle_command(
             return
 
         if response_message is None:
-            await snakecore.utils.embed_utils.send_embed(
+            await snakecore.utils.embeds.send_embed(
                 invoke_message.channel,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
                 color=common.DEFAULT_EMBED_COLOR,
             )
         else:
-            await snakecore.utils.embed_utils.replace_embed_at(
+            await snakecore.utils.embeds.replace_embed_at(
                 response_message,
                 title="Stopping bot...",
                 description="Change da world,\nMy final message,\nGoodbye.",
@@ -1227,7 +1225,7 @@ async def handle_command(
         return
 
     if response_message is None:
-        response_message = await snakecore.utils.embed_utils.send_embed(
+        response_message = await snakecore.utils.embeds.send_embed(
             invoke_message.channel,
             title="Your command is being processed:",
             color=common.DEFAULT_EMBED_COLOR,
@@ -1244,7 +1242,7 @@ async def handle_command(
                 log_txt_file = discord.File(log_buffer, filename="command.txt")
 
         await common.log_channel.send(
-            embed=snakecore.utils.embed_utils.create_embed(
+            embed=snakecore.utils.embeds.create_embed(
                 title=f"Command invoked by {invoke_message.author} / {invoke_message.author.id}",
                 description=escaped_cmd_text
                 if len(escaped_cmd_text) <= 2047
