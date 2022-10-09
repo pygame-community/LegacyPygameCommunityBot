@@ -1544,7 +1544,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
     async def react(
         self,
         ctx: commands.Context,
-        message: Optional[discord.PartialMessage] = None,
+        messages: Union[discord.PartialMessage, tuple[discord.PartialMessage, ...]],
         *emojis: str,
     ):
         """
@@ -1556,10 +1556,10 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         Reacts to a Discord message with the given emojis.
 
         __Args__:
-            `*objects: Message`
-            > A Discord message that reactions should be added to.
+            `message: Message | (Message ...)`
+            > A Discord message or a tuple sequence of them that reactions should be added to.
 
-            `emojis: str`
+            `*emojis: str`
             > The emojis to react with, separated by spaces.
 
         __Raises__:
@@ -1568,11 +1568,15 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         -----
         """
 
+        if isinstance(messages, discord.PartialMessage):
+            messages = (messages,)
+
         response_message = common.recent_response_messages[ctx.message.id]
 
         for emoji in emojis:
             try:
-                await message.add_reaction(emoji)
+                for message in messages:
+                    await message.add_reaction(emoji)
             except discord.HTTPException as e:
                 e.args = (
                     e.args[0]
