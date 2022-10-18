@@ -546,14 +546,14 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
     return await thread.send(
         content=f"help-post-alert(<@{thread.owner_id}>)",
         embed=discord.Embed(
-            title="Your tag selection is invalid!",
+            title="Your tag selection is incomplete",
             description=(
                 "Please pick exactly **1 issue tag** and **1-3 aspect tags**. "
                 "Issue tags look like this: `issue: ...`. Aspect tags are all "
                 "non-issue tags that are in lowercase.\n\n"
                 "**Example tag combination for a help post about reworking a "
                 "project's collision detection code: "
-                "(`issue: reworking`) (`collisions`)**.\n\n"
+                "(`🪛 issue: rework/optim.`) (`💥 collisions`)**.\n\n"
                 f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
                 "To make changes to your post's tags, either right-click on "
                 "it (desktop/web) or click and hold on it (mobile), then click "

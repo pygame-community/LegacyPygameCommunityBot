@@ -207,10 +207,10 @@ class GuildConstants:
     }
     INVALID_HELP_THREAD_TITLE_EMBEDS = {
         "thread_title_too_short": {
-            "title": "Your help post title must be at least "
+            "title": "Whoops, your help post title must be at least "
             f"{THREAD_TITLE_MINIMUM_LENGTH} characters long",
             "description": "Your help post title must be at least "
-            f"{THREAD_TITLE_MINIMUM_LENGTH} characters long, so I'm "
+            f"**{THREAD_TITLE_MINIMUM_LENGTH}** characters long, so I'm "
             "forced to put a slowmode delay of "
             f"{THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} minute{'s'*(THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY > 60)} "
             " on your post <:pg_sad:863165920038223912>.\n\n"
@@ -219,16 +219,16 @@ class GuildConstants:
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
-            "Thank you for helping us maintain clean help forum channels "
-            "<:pg_robot:837389387024957440>\n\n"
+            "**Thank you for helping us maintain clean help forum channels "
+            "<:pg_robot:837389387024957440>**\n\n"
             "This alert and the slowmode should disappear after you have made appropriate changes.",
             "color": DEFAULT_EMBED_COLOR,
         },
         "member_asking_for_help": {
-            "title": "Don't ask for help in your post title (no need to). "
+            "title": "Please don't ask for help in your post title (no need to). "
             "We'd love to help you either way!",
             "description": "Instead of asking for help or mentioning that you need "
-            "help with something, write a post title and starter message "
+            "help with something, please write a post title and starter message "
             "that describes the actual issue you're having in more detail. "
             "Also send code snippets, screenshots and other media, error messages, etc."
             "\n\n**[Here's why!](https://www.dontasktoask.com)**\n\n"
@@ -264,7 +264,7 @@ class GuildConstants:
             },
         },
         "member_asking_for_code": {
-            "title": "Don't ask if anybody can, wants to, or will fix, correct "
+            "title": "Please don't ask if anybody can, wants to, or will fix, correct "
             "or write your code, game, project or assignment for you!",
             "description": "All helpers here are volunteers, who show people how to "
             "improve or implement things in their code by themselves. They don't do "
@@ -286,7 +286,7 @@ class GuildConstants:
         },
         "member_asking_about_problem_with_code": {
             "title": "There's a problem with your code, game, project or assignment? "
-            "What are you struggling with?",
+            "Please tell us what are you struggling with.",
             "description": "Use your help post title and your starter message "
             "to describe how the problems with it came up. What made your code stop "
             "working? What are you trying to do? "
