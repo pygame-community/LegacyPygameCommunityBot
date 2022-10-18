@@ -11,7 +11,7 @@ from ast import literal_eval
 import asyncio
 import datetime
 import io
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Callable, Coroutine, Optional, Sequence, Union
 
 
 import discord
@@ -180,6 +180,7 @@ async def message_delete_reaction_listener(
     emoji: Union[discord.Emoji, discord.PartialEmoji, str],
     role_whitelist: Sequence[int] = None,
     timeout: Optional[float] = None,
+    on_delete: Optional[Callable[[discord.Message], Coroutine[Any, Any, Any]]] = None,
 ):
     """Allows for a message to be deleted using a specific reaction.
     If any HTTP-related exceptions are raised by `discord.py` within this function,
@@ -195,6 +196,9 @@ async def message_delete_reaction_listener(
           role IDs whose reactions can also be picked up by this function.
         timeout (Optional[float]): A timeout for waiting, before automatically
           removing any added reactions and returning silently.
+        on_delete(Optional[Callable[[discord.Message], Coroutine[Any, Any, Any]]], optional):
+          A coroutine function to call when a message is successfully deleted via the
+          reaction. Defaults to None.
 
     Raises:
         TypeError: Invalid argument types.
@@ -245,15 +249,15 @@ async def message_delete_reaction_listener(
             await msg.delete()
         except discord.HTTPException:
             pass
+        else:
+            if on_delete is not None:
+                await on_delete(msg)
 
-    except (asyncio.TimeoutError, asyncio.CancelledError) as a:
+    except asyncio.TimeoutError as a:
         try:
-            await msg.clear_reaction(emoji)
+            await msg.remove_reaction(emoji, msg.author)  # author is always this bot
         except discord.HTTPException:
             pass
-
-        if isinstance(a, asyncio.CancelledError):
-            raise a
 
 
 class RedirectTextIOWrapper(io.TextIOWrapper):

@@ -137,13 +137,13 @@ async def routine():
 
 
 @tasks.loop(hours=1, reconnect=True)
-async def stale_help_thread_alert():
+async def inactive_help_thread_alert():
     async with snakecore.storage.DiscordStorage(
-        "stale_help_threads", dict
+        "inactive_help_threads", dict
     ) as storage_obj:
         # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
-        # UNIX timestamps which represent the last time a caution was made.
-        stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
+        # UNIX timestamps which represent the last time activity occured.
+        inactive_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
 
         for forum_channel in [
             common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
@@ -171,24 +171,21 @@ async def stale_help_thread_alert():
                         ).timestamp()
 
                         if (now_ts - last_active_ts) > (3600 * 23 + 1800):  # 23h30m
-                            if forum_channel.id not in stale_help_thread_ids:
-                                stale_help_thread_ids[forum_channel.id] = {}
+                            if forum_channel.id not in inactive_help_thread_ids:
+                                inactive_help_thread_ids[forum_channel.id] = {}
 
                             if (
                                 help_thread.id
-                                not in stale_help_thread_ids[forum_channel.id]
-                                or stale_help_thread_ids[forum_channel.id][
+                                not in inactive_help_thread_ids[forum_channel.id]
+                                or inactive_help_thread_ids[forum_channel.id][
                                     help_thread.id
                                 ]
                                 < last_active_ts
                             ):
-                                stale_help_thread_ids[forum_channel.id][
-                                    help_thread.id
-                                ] = now_ts
                                 caution_message = await help_thread.send(
-                                    f"help-post-stale(<@{help_thread.owner_id}>)",
+                                    f"help-post-inactive(<@{help_thread.owner_id}>)",
                                     embed=discord.Embed(
-                                        title="Your help post has gone stale... 💤",
+                                        title="Your help post has gone inactive... 💤",
                                         description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
                                         "\nHas your issue been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
                                         "To make changes to your post's tags, either right-click on "
@@ -197,10 +194,14 @@ async def stale_help_thread_alert():
                                         "your changes after selecting the correct tag(s).\n\n"
                                         "**Mark all messages you find helpful here with a ✅ reaction please** "
                                         "<:pg_robot:837389387024957440>\n\n"
-                                        "*If your issue has't been solved, you may either wait or close this post.*",
+                                        "*If your issue has't been solved, you may "
+                                        "either wait for help or close this post.*",
                                         color=0x888888,
                                     ),
                                 )
+                                inactive_help_thread_ids[forum_channel.id][
+                                    help_thread.id
+                                ] = caution_message.created_at.timestamp()
                                 common.hold_task(
                                     asyncio.create_task(
                                         message_delete_reaction_listener(
@@ -225,7 +226,7 @@ async def stale_help_thread_alert():
                 except discord.HTTPException:
                     pass
 
-        storage_obj.obj = stale_help_thread_ids
+        storage_obj.obj = inactive_help_thread_ids
 
 
 @tasks.loop(hours=1, reconnect=True)

@@ -124,7 +124,7 @@ async def init():
 
     routine.handle_console.start()
     routine.routine.start()
-    routine.stale_help_thread_alert.start()
+    routine.inactive_help_thread_alert.start()
     routine.force_help_thread_archive_after_timeout.start()
 
     if common.guild is None:
@@ -607,6 +607,7 @@ async def thread_create(thread: discord.Thread):
 
             if issue_found and thread.id not in common.bad_help_thread_data:
                 common.bad_help_thread_data[thread.id] = {
+                    "thread_id": thread.id,
                     "thread": thread,
                     "last_cautioned_ts": time.time(),
                     "caution_message_ids": set(msg.id for msg in caution_messages),
@@ -670,6 +671,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                 if issues_found:
                     if after.id not in common.bad_help_thread_data:
                         common.bad_help_thread_data[after.id] = {
+                            "thread_id": after.id,
                             "thread": after,
                             "last_cautioned_ts": time.time(),
                             "caution_message_ids": set(
@@ -744,19 +746,20 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         )
 
                         async with snakecore.storage.DiscordStorage(
-                            "stale_help_threads", dict
+                            "inactive_help_threads", dict
                         ) as storage_obj:
                             # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
                             # UNIX timestamps which represent the last time a caution was made.
-                            stale_help_thread_ids: dict[
+                            inactive_help_thread_ids: dict[
                                 int, dict[int, int]
                             ] = storage_obj.obj
                             if (
-                                after.parent_id in stale_help_thread_ids
-                                and after.id in stale_help_thread_ids[after.parent_id]
+                                after.parent_id in inactive_help_thread_ids
+                                and after.id
+                                in inactive_help_thread_ids[after.parent_id]
                             ):
-                                del stale_help_thread_ids[after.parent_id][after.id]
-                                storage_obj.obj = stale_help_thread_ids
+                                del inactive_help_thread_ids[after.parent_id][after.id]
+                                storage_obj.obj = inactive_help_thread_ids
 
                     elif solved_in_before and not solved_in_after:
                         parent = (
@@ -777,17 +780,17 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
 
 async def raw_thread_delete(payload: discord.RawThreadDeleteEvent):
     async with snakecore.storage.DiscordStorage(
-        "stale_help_threads", dict
+        "inactive_help_threads", dict
     ) as storage_obj:
         # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
         # UNIX timestamps which represent the last time a caution was made.
-        stale_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
+        inactive_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
         if (
-            payload.parent_id in stale_help_thread_ids
-            and payload.thread_id in stale_help_thread_ids[payload.parent_id]
+            payload.parent_id in inactive_help_thread_ids
+            and payload.thread_id in inactive_help_thread_ids[payload.parent_id]
         ):
-            del stale_help_thread_ids[payload.parent_id][payload.thread_id]
-            storage_obj.obj = stale_help_thread_ids
+            del inactive_help_thread_ids[payload.parent_id][payload.thread_id]
+            storage_obj.obj = inactive_help_thread_ids
 
 
 async def raw_reaction_add(payload: discord.RawReactionActionEvent):
@@ -1129,6 +1132,7 @@ async def handle_message(msg: discord.Message):
                     if issues_found:
                         if msg.channel.id not in common.bad_help_thread_data:
                             common.bad_help_thread_data[msg.channel.id] = {
+                                "thread_id": msg.channel.id,
                                 "thread": msg.channel,
                                 "last_cautioned_ts": time.time(),
                                 "caution_message_ids": set(
