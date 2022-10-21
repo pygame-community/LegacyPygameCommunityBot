@@ -222,7 +222,7 @@ class GuildConstants:
             "**Thank you for helping us maintain clean help forum channels "
             "<:pg_robot:837389387024957440>**\n\n"
             "This alert and the slowmode should disappear after you have made appropriate changes.",
-            "color": DEFAULT_EMBED_COLOR,
+            "color": 0x36393F,
         },
         "member_asking_for_help": {
             "title": "Please don't ask for help in your post title (no need to). "
@@ -238,7 +238,7 @@ class GuildConstants:
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
-            "color": DEFAULT_EMBED_COLOR,
+            "color": 0x36393F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -257,7 +257,7 @@ class GuildConstants:
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
-            "color": DEFAULT_EMBED_COLOR,
+            "color": 0x36393F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -278,7 +278,7 @@ class GuildConstants:
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
-            "color": DEFAULT_EMBED_COLOR,
+            "color": 0x36393F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"
@@ -298,7 +298,7 @@ class GuildConstants:
             "post settings menu to change your post title. Remember to save "
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
-            "color": DEFAULT_EMBED_COLOR,
+            "color": 0x36393F,
             "footer": {
                 "text": "I'm still learning, so I might make mistakes and "
                 "occasionally raise a false alarm. 😅"

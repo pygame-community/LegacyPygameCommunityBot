@@ -563,7 +563,7 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
                 "<:pg_robot:837389387024957440>\n\n"
                 "This alert should disappear after you have made appropriate changes."
             ),
-            color=common.DEFAULT_EMBED_COLOR,
+            color=0x36393F,
         ),
     )
 
@@ -614,6 +614,28 @@ async def thread_create(thread: discord.Thread):
                 }
         except discord.HTTPException:
             pass
+
+
+async def send_help_thread_solved_alert(thread: discord.Thread):
+    await thread.send(
+        content="help-post-solved",
+        embed=discord.Embed(
+            title="Post marked as solved",
+            description=(
+                "This help post has been marked as solved.\n"
+                "This post will now close with a 1 minute slowmode "
+                "after 1 hour of inactivity.\nFor the sake of the "
+                "OP, please avoid sending any further messages "
+                "that aren't essential additions to the currently "
+                "accepted answers.\n\n"
+                "**Mark all messages you find helpful here with a ✅ reaction "
+                "please** <:pg_robot:837389387024957440>\n\n"
+                "The slowmode and archive timeout will both be reverted "
+                "if this post is unmarked as solved."
+            ),
+            color=0x00AA00,
+        ),
+    )
 
 
 async def thread_update(before: discord.Thread, after: discord.Thread):
@@ -720,28 +742,9 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     )
 
                     if not solved_in_before and solved_in_after:
-                        await after.send(
-                            content="help-post-solved",
-                            embed=discord.Embed(
-                                title="Post marked as solved",
-                                description=(
-                                    "This help post has been marked as solved.\n"
-                                    "A slowmode of 1 minute will now apply here, and the "
-                                    "post will now close after 1 hour of inactivity.\n"
-                                    "For the sake of the OP, please avoid sending any "
-                                    "further messages that aren't essential additions "
-                                    "to the currently accepted answers.\n\n"
-                                    "**Mark all messages you find helpful here with a ✅ reaction "
-                                    "please** <:pg_robot:837389387024957440>\n\n"
-                                    "The slowmode and archive timeout will both be reverted "
-                                    "if this post is unmarked as solved."
-                                ),
-                                color=0x00AA00,
-                            ),
-                        )
+                        await send_help_thread_solved_alert(after)
                         await after.edit(
                             auto_archive_duration=60,
-                            slowmode_delay=60,
                             reason="This help post was marked as solved.",
                         )
 
@@ -768,11 +771,29 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             or await common.bot.fetch_channel(after.parent_id)
                         )
                         if isinstance(parent, discord.ForumChannel):
+                            slowmode_delay = discord.utils.MISSING
+                            if (
+                                after.slowmode_delay == 60
+                            ):  # no custom slowmode override
+                                slowmode_delay = parent.default_thread_slowmode_delay
+
                             await after.edit(
                                 auto_archive_duration=parent.default_auto_archive_duration,
-                                slowmode_delay=parent.default_thread_slowmode_delay,
+                                slowmode_delay=slowmode_delay,
                                 reason="This help post was marked as solved.",
                             )
+
+            elif after.archived:
+                if any(tag.name.lower() == "solved" for tag in after.applied_tags):
+                    parent = (
+                        after.parent
+                        or common.bot.get_channel(after.parent_id)
+                        or await common.bot.fetch_channel(after.parent_id)
+                    )
+                    if (
+                        after.slowmode_delay == parent.default_thread_slowmode_delay
+                    ):  # no custom slowmode override
+                        await after.edit(slowmode_delay=60)
 
         except discord.HTTPException:
             pass

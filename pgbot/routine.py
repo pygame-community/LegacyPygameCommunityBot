@@ -255,9 +255,23 @@ async def force_help_thread_archive_after_timeout():
                     if (
                         now_ts - last_active_ts
                     ) / 60.0 > help_thread.auto_archive_duration:
+                        slowmode_delay = discord.utils.MISSING
+
+                        if (
+                            any(
+                                tag.name.lower() == "solved"
+                                for tag in help_thread.applied_tags
+                            )
+                            and help_thread.slowmode_delay
+                            == forum_channel.default_thread_slowmode_delay
+                        ):
+                            # solved and no overridden slowmode
+                            slowmode_delay = 60  # seconds
+
                         await help_thread.edit(
                             archived=True,
-                            reason="This help thread has been archived "
+                            slowmode_delay=slowmode_delay,
+                            reason="This help thread has been closed "
                             "after exceeding its inactivity timeout.",
                         )
             except discord.HTTPException:
