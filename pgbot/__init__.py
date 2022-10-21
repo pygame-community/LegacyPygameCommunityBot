@@ -793,7 +793,8 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     if (
                         after.slowmode_delay == parent.default_thread_slowmode_delay
                     ):  # no custom slowmode override
-                        await after.edit(slowmode_delay=60)
+                        await after.edit(archived=False, slowmode_delay=60)
+                        await after.edit(archived=True)
 
         except discord.HTTPException:
             pass
