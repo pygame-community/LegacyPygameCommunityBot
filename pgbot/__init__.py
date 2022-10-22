@@ -1313,6 +1313,7 @@ async def load_bad_help_thread_data():
     ) as storage_obj:
         bad_help_thread_data = storage_obj.obj
         for thread_id, thread_data in bad_help_thread_data.items():
+            thread_data = thread_data.copy()  # don't modify existing reference to data
             try:
                 thread_data["thread"] = common.bot.get_channel(
                     thread_id
