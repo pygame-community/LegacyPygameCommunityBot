@@ -821,6 +821,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
     """
 
     # Try to fetch channel without API call first
+
     channel = common.bot.get_channel(payload.channel_id)
     if channel is None:
         try:
@@ -838,8 +839,14 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
         return
 
     try:
+        user = common.bot.get_user(payload.user_id) or await common.bot.fetch_user(
+            payload.user_id
+        )
         msg: discord.Message = await channel.fetch_message(payload.message_id)
     except discord.HTTPException:
+        return
+
+    if user.bot:
         return
 
     if (
