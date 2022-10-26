@@ -527,17 +527,17 @@ async def caution_about_help_forum_channel_thread_name(
 
 def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> bool:
     applied_tags = thread.applied_tags
-    no_issue = True
+    valid = True
     if applied_tags and not any(
         tag.name.lower() in ("solved", "invalid") for tag in applied_tags
     ):
         issue_tags = tuple(
             tag for tag in applied_tags if tag.name.lower().startswith("issue")
         )
-        if not len(issue_tags) or len(issue_tags) == len(applied_tags):
-            no_issue = False
+        if not len(issue_tags) or len(issue_tags) > 1:
+            valid = False
 
-    return no_issue
+    return valid
 
 
 async def caution_about_regulars_help_forum_channel_thread_tags(
