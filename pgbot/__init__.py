@@ -581,6 +581,31 @@ async def thread_create(thread: discord.Thread):
                 if thread.starter_message and thread.starter_message.id == thread.id
                 else (await thread.fetch_message(thread.id))
             ).pin()
+
+            first_thread_edit_applied = False
+
+            parent = (
+                thread.parent
+                or common.bot.get_channel(thread.parent_id)
+                or await common.bot.fetch_channel(thread.parent_id)
+            )
+
+            new_tags = thread.applied_tags
+
+            if (
+                len(new_tags) < common.FORUM_THREAD_TAG_LIMIT
+                or len(new_tags) == common.FORUM_THREAD_TAG_LIMIT
+                and any(tag.name.lower() == "solved" for tag in thread.applied_tags)
+            ):
+                new_tags = [
+                    tag for tag in thread.applied_tags if tag.name.lower() != "solved"
+                ]
+
+                for tag in parent.available_tags:
+                    if tag.name.lower() == "unsolved":
+                        new_tags.insert(0, tag)  # mark help post as unsolved
+                        break
+
             if caution_types := get_help_forum_channel_thread_name_cautions(thread):
                 issue_found = True
                 caution_messages.extend(
@@ -591,8 +616,10 @@ async def thread_create(thread: discord.Thread):
                 if "thread_title_too_short" in caution_types:
                     await thread.edit(
                         slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                        reason="Slowmode punishment for the title of this help post being too short.",
+                        reason="Slowmode penalty for the title of this help post being too short.",
+                        applied_tags=new_tags,
                     )
+                    first_thread_edit_applied = True
             if (
                 thread.parent_id
                 == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
@@ -604,6 +631,10 @@ async def thread_create(thread: discord.Thread):
                             thread
                         )
                     )
+
+            if not first_thread_edit_applied:
+                await thread.edit(applied_tags=new_tags)
+                first_thread_edit_applied = True
 
             if issue_found and thread.id not in common.bad_help_thread_data:
                 common.bad_help_thread_data[thread.id] = {
@@ -740,12 +771,17 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     solved_in_after = any(
                         tag.name.lower() == "solved" for tag in after.applied_tags
                     )
-
                     if not solved_in_before and solved_in_after:
+                        new_tags = [
+                            tag
+                            for tag in after.applied_tags
+                            if tag.name.lower() != "unsolved"
+                        ]
                         await send_help_thread_solved_alert(after)
                         await after.edit(
                             auto_archive_duration=60,
                             reason="This help post was marked as solved.",
+                            applied_tags=new_tags,
                         )
 
                         async with snakecore.storage.DiscordStorage(
@@ -770,18 +806,26 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             or common.bot.get_channel(after.parent_id)
                             or await common.bot.fetch_channel(after.parent_id)
                         )
-                        if isinstance(parent, discord.ForumChannel):
-                            slowmode_delay = discord.utils.MISSING
-                            if (
-                                after.slowmode_delay == 60
-                            ):  # no custom slowmode override
-                                slowmode_delay = parent.default_thread_slowmode_delay
 
-                            await after.edit(
-                                auto_archive_duration=parent.default_auto_archive_duration,
-                                slowmode_delay=slowmode_delay,
-                                reason="This help post was marked as solved.",
-                            )
+                        new_tags = after.applied_tags
+                        if len(new_tags) < common.FORUM_THREAD_TAG_LIMIT:
+                            for tag in parent.available_tags:
+                                if tag.name.lower() == "unsolved":
+                                    new_tags.insert(
+                                        0, tag
+                                    )  # mark help post as unsolved
+                                    break
+
+                        slowmode_delay = discord.utils.MISSING
+                        if after.slowmode_delay == 60:  # no custom slowmode override
+                            slowmode_delay = parent.default_thread_slowmode_delay
+
+                        await after.edit(
+                            auto_archive_duration=parent.default_auto_archive_duration,
+                            slowmode_delay=slowmode_delay,
+                            reason="This help post was unmarked as solved.",
+                            applied_tags=new_tags,
+                        )
 
             elif after.archived:
                 if any(tag.name.lower() == "solved" for tag in after.applied_tags):
@@ -936,18 +980,25 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                 )
             ) and len(
                 msg.channel.applied_tags
-            ) < 5:  # help post should be marked as solved
+            ) < common.FORUM_THREAD_TAG_LIMIT:  # help post should be marked as solved
                 for tag in (
                     msg.channel.parent
                     or common.bot.get_channel(msg.channel.parent_id)
                     or await common.bot.fetch_channel(msg.channel.parent_id)
                 ).available_tags:
                     if tag.name.lower() == "solved":
-                        await msg.channel.add_tags(
-                            tag,
+                        new_tags = [
+                            tg
+                            for tg in msg.channel.applied_tags
+                            if tg.name.lower() != "unsolved"
+                        ]
+                        new_tags.append(tag)
+
+                        await msg.channel.edit(
                             reason="This help post was marked as solved by "
                             + ("the OP" if by_op else "an admin")
                             + " (via a ✅ reaction).",
+                            applied_tags=new_tags,
                         )
                         break
 

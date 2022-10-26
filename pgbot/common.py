@@ -123,6 +123,7 @@ DEFAULT_FILESIZE_LIMIT = 8_000_000  # bytes
 DEFAULT_EMBED_COLOR = 0xFFFFAA
 DOC_EMBED_LIMIT = 3
 BROWSE_MESSAGE_LIMIT = 500
+FORUM_THREAD_TAG_LIMIT = 5
 
 # indicates whether the bot is in generic mode or not. Generic mode is useful
 # when you are testing the bot on other servers. Generic mode limits features of
