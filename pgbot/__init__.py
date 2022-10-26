@@ -126,6 +126,7 @@ async def init():
     routine.routine.start()
     routine.inactive_help_thread_alert.start()
     routine.force_help_thread_archive_after_timeout.start()
+    routine.delete_help_threads_without_starter_message.start()
 
     if common.guild is None:
         raise RuntimeWarning(
@@ -326,13 +327,15 @@ async def message_delete(msg: discord.Message):
         and msg.id == msg.channel.id  # OP deleted starter message
     ):
         member_msg_count = 0
-        async for thread_message in msg.channel.history(limit=30):
+        async for thread_message in msg.channel.history(
+            limit=max(msg.channel.message_count, 60)
+        ):
             if (
                 not thread_message.author.bot
                 and thread_message.type == discord.MessageType.default
             ):
                 member_msg_count += 1
-                if member_msg_count > 10:
+                if member_msg_count > 9:
                     break
 
         if member_msg_count < 10:
@@ -340,8 +343,10 @@ async def message_delete(msg: discord.Message):
                 embed=discord.Embed(
                     title="Post scheduled for deletion",
                     description=(
-                        "The OP of this post has deleted their starter message, "
-                        f"therefore this post will be deleted **<t:{int(time.time()+300)}:R>**."
+                        "The OP of this post has deleted its starter message.\n\n"
+                        "Since this post contains less than 10 messages sent by "
+                        "server members, it will be deleted "
+                        f"**<t:{int(time.time()+300)}:R>**."
                     ),
                     color=0x551111,
                 )
@@ -1103,6 +1108,9 @@ async def handle_message(msg: discord.Message):
     """
     Handle a message posted by user
     """
+    if msg.author.bot:
+        return
+
     if msg.type == discord.MessageType.premium_guild_subscription:
         if not common.TEST_MODE:
             await msg.channel.send(

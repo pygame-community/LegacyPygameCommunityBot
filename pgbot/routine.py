@@ -8,9 +8,7 @@ It gets called every 5 seconds or so.
 """
 
 import asyncio
-from concurrent.futures import thread
 import datetime
-import io
 import os
 import sys
 import time
@@ -227,6 +225,64 @@ async def inactive_help_thread_alert():
                     pass
 
         storage_obj.obj = inactive_help_thread_ids
+
+
+@tasks.loop(hours=1, reconnect=True)
+async def delete_help_threads_without_starter_message():
+    for forum_channel in [
+        common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
+        for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
+    ]:
+        if not isinstance(forum_channel, discord.ForumChannel):
+            return
+
+        for help_thread in forum_channel.threads:
+            try:
+                try:
+                    starter_message = (
+                        help_thread.starter_message
+                        or await help_thread.fetch_message(help_thread.id)
+                    )
+                except discord.NotFound:
+                    pass
+                else:
+                    continue  # starter message still exists, skip
+
+                member_msg_count = 0
+                async for thread_message in help_thread.history(
+                    limit=max(help_thread.message_count, 60)
+                ):
+                    if (
+                        not thread_message.author.bot
+                        and thread_message.type is discord.MessageType.default
+                    ):
+                        member_msg_count += 1
+                        if member_msg_count > 9:
+                            break
+
+                if member_msg_count < 10:
+                    common.hold_task(
+                        asyncio.create_task(_schedule_help_thread_deletion(help_thread))
+                    )
+            except discord.HTTPException:
+                pass
+
+
+async def _schedule_help_thread_deletion(thread: discord.Thread):
+    await thread.send(
+        embed=discord.Embed(
+            title="Post scheduled for deletion",
+            description=(
+                "The OP of this post has deleted its starter message.\n\n"
+                "Since this post contains less than 10 messages sent by "
+                "server members, it will be deleted "
+                f"**<t:{int(time.time()+300)}:R>**."
+            ),
+            color=0x551111,
+        )
+    )
+    await asyncio.sleep(300)
+    await thread.delete()
 
 
 @tasks.loop(hours=1, reconnect=True)
