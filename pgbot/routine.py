@@ -162,7 +162,8 @@ async def inactive_help_thread_alert():
                         or help_thread.locked
                         or help_thread.flags.pinned
                     ) and not any(
-                        tag.name.lower() == "solved" for tag in help_thread.applied_tags
+                        tag.name.lower().startswith("solved")
+                        for tag in help_thread.applied_tags
                     ):
                         last_active_ts = (
                             await fetch_last_thread_activity_dt(help_thread)
@@ -315,7 +316,7 @@ async def force_help_thread_archive_after_timeout():
 
                         if (
                             any(
-                                tag.name.lower() == "solved"
+                                tag.name.lower().startswith("solved")
                                 for tag in help_thread.applied_tags
                             )
                             and help_thread.slowmode_delay

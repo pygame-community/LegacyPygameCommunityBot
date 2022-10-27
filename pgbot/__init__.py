@@ -534,7 +534,7 @@ def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> 
     applied_tags = thread.applied_tags
     valid = True
     if applied_tags and not any(
-        tag.name.lower() in ("solved", "invalid") for tag in applied_tags
+        tag.name.lower().startswith(("solved", "invalid")) for tag in applied_tags
     ):
         issue_tags = tuple(
             tag for tag in applied_tags if tag.name.lower().startswith("issue")
@@ -600,14 +600,18 @@ async def thread_create(thread: discord.Thread):
             if (
                 len(new_tags) < common.FORUM_THREAD_TAG_LIMIT
                 or len(new_tags) == common.FORUM_THREAD_TAG_LIMIT
-                and any(tag.name.lower() == "solved" for tag in thread.applied_tags)
+                and any(
+                    tag.name.lower().startswith("solved") for tag in thread.applied_tags
+                )
             ):
                 new_tags = [
-                    tag for tag in thread.applied_tags if tag.name.lower() != "solved"
+                    tag
+                    for tag in thread.applied_tags
+                    if not tag.name.lower().startswith("solved")
                 ]
 
                 for tag in parent.available_tags:
-                    if tag.name.lower() == "unsolved":
+                    if tag.name.lower().startswith("unsolved"):
                         new_tags.insert(0, tag)  # mark help post as unsolved
                         break
 
@@ -771,16 +775,18 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             del common.bad_help_thread_data[after.id]
 
                     solved_in_before = any(
-                        tag.name.lower() == "solved" for tag in before.applied_tags
+                        tag.name.lower().startswith("solved")
+                        for tag in before.applied_tags
                     )
                     solved_in_after = any(
-                        tag.name.lower() == "solved" for tag in after.applied_tags
+                        tag.name.lower().startswith("solved")
+                        for tag in after.applied_tags
                     )
                     if not solved_in_before and solved_in_after:
                         new_tags = [
                             tag
                             for tag in after.applied_tags
-                            if tag.name.lower() != "unsolved"
+                            if not tag.name.lower().startswith("unsolved")
                         ]
                         await send_help_thread_solved_alert(after)
                         await after.edit(
@@ -815,7 +821,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         new_tags = after.applied_tags
                         if len(new_tags) < common.FORUM_THREAD_TAG_LIMIT:
                             for tag in parent.available_tags:
-                                if tag.name.lower() == "unsolved":
+                                if tag.name.lower().startswith("unsolved"):
                                     new_tags.insert(
                                         0, tag
                                     )  # mark help post as unsolved
@@ -833,7 +839,9 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         )
 
             elif after.archived:
-                if any(tag.name.lower() == "solved" for tag in after.applied_tags):
+                if any(
+                    tag.name.lower().startswith("solved") for tag in after.applied_tags
+                ):
                     parent = (
                         after.parent
                         or common.bot.get_channel(after.parent_id)
@@ -991,7 +999,7 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
                     or common.bot.get_channel(msg.channel.parent_id)
                     or await common.bot.fetch_channel(msg.channel.parent_id)
                 ).available_tags:
-                    if tag.name.lower() == "solved":
+                    if tag.name.lower().startswith("solved"):
                         new_tags = [
                             tg
                             for tg in msg.channel.applied_tags
@@ -1084,7 +1092,8 @@ async def raw_reaction_remove(payload: discord.RawReactionActionEvent):
                 )
                 and msg.channel.applied_tags
                 and any(
-                    tag.name.lower() == "solved" for tag in msg.channel.applied_tags
+                    tag.name.lower().startswith("solved")
+                    for tag in msg.channel.applied_tags
                 )
             ):  # help post should be unmarked as solved
                 for tag in (
@@ -1092,7 +1101,7 @@ async def raw_reaction_remove(payload: discord.RawReactionActionEvent):
                     or common.bot.get_channel(msg.channel.parent_id)
                     or await common.bot.fetch_channel(msg.channel.parent_id)
                 ).available_tags:
-                    if tag.name.lower() == "solved":
+                    if tag.name.lower().startswith("solved"):
                         await msg.channel.remove_tags(
                             tag,
                             reason="This help post was unmarked as solved by "
