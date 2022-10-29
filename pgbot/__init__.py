@@ -136,7 +136,7 @@ async def init():
 
     setup_logging()
     common.pgbot_initialized = True
-    await load_bad_help_thread_data()
+    await load_help_thread_data()
 
 
 def format_entries_message(
@@ -648,9 +648,8 @@ async def thread_create(thread: discord.Thread):
             if issue_found and thread.id not in common.bad_help_thread_data:
                 common.bad_help_thread_data[thread.id] = {
                     "thread_id": thread.id,
-                    "thread": thread,
                     "last_cautioned_ts": time.time(),
-                    "caution_message_ids": set(msg.id for msg in caution_messages),
+                    "alert_message_ids": set(msg.id for msg in caution_messages),
                 }
         except discord.HTTPException:
             pass
@@ -734,16 +733,15 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     if after.id not in common.bad_help_thread_data:
                         common.bad_help_thread_data[after.id] = {
                             "thread_id": after.id,
-                            "thread": after,
                             "last_cautioned_ts": time.time(),
-                            "caution_message_ids": set(
+                            "alert_message_ids": set(
                                 msg.id for msg in caution_messages
                             ),
                         }
                     common.bad_help_thread_data[after.id][
                         "last_cautioned_ts"
                     ] = time.time()
-                    common.bad_help_thread_data[after.id]["caution_message_ids"].update(
+                    common.bad_help_thread_data[after.id]["alert_message_ids"].update(
                         (msg.id for msg in caution_messages)
                     )
                 else:
@@ -762,7 +760,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             )
 
                         for msg_id in tuple(
-                            common.bad_help_thread_data[after.id]["caution_message_ids"]
+                            common.bad_help_thread_data[after.id]["alert_message_ids"]
                         ):
                             try:
                                 await after.get_partial_message(msg_id).delete()
@@ -795,21 +793,19 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             applied_tags=new_tags,
                         )
 
-                        async with snakecore.storage.DiscordStorage(
-                            "inactive_help_threads", dict
-                        ) as storage_obj:
-                            # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
-                            # UNIX timestamps which represent the last time a caution was made.
-                            inactive_help_thread_ids: dict[
-                                int, dict[int, int]
-                            ] = storage_obj.obj
-                            if (
-                                after.parent_id in inactive_help_thread_ids
-                                and after.id
-                                in inactive_help_thread_ids[after.parent_id]
-                            ):
-                                del inactive_help_thread_ids[after.parent_id][after.id]
-                                storage_obj.obj = inactive_help_thread_ids
+                        if after.id in common.inactive_help_thread_data:
+                            try:
+                                if alert_message_id := common.inactive_help_thread_data[
+                                    after.id
+                                ].get("alert_message_id", None):
+                                    try:
+                                        await after.get_partial_message(
+                                            alert_message_id
+                                        ).delete()
+                                    except discord.NotFound:
+                                        pass
+                            finally:
+                                del common.inactive_help_thread_data[after.id]
 
                     elif solved_in_before and not solved_in_after:
                         parent = (
@@ -858,18 +854,8 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
 
 
 async def raw_thread_delete(payload: discord.RawThreadDeleteEvent):
-    async with snakecore.storage.DiscordStorage(
-        "inactive_help_threads", dict
-    ) as storage_obj:
-        # a dict of forum channel IDs mapping to dicts of help thread ids mapping to
-        # UNIX timestamps which represent the last time a caution was made.
-        inactive_help_thread_ids: dict[int, dict[int, int]] = storage_obj.obj
-        if (
-            payload.parent_id in inactive_help_thread_ids
-            and payload.thread_id in inactive_help_thread_ids[payload.parent_id]
-        ):
-            del inactive_help_thread_ids[payload.parent_id][payload.thread_id]
-            storage_obj.obj = inactive_help_thread_ids
+    if payload.thread_id in common.inactive_help_thread_data:
+        del common.inactive_help_thread_data[payload.thread_id]
 
 
 async def raw_reaction_add(payload: discord.RawReactionActionEvent):
@@ -1230,9 +1216,8 @@ async def handle_message(msg: discord.Message):
                         if msg.channel.id not in common.bad_help_thread_data:
                             common.bad_help_thread_data[msg.channel.id] = {
                                 "thread_id": msg.channel.id,
-                                "thread": msg.channel,
                                 "last_cautioned_ts": time.time(),
-                                "caution_message_ids": set(
+                                "alert_message_ids": set(
                                     msg.id for msg in caution_messages
                                 ),
                             }
@@ -1240,7 +1225,7 @@ async def handle_message(msg: discord.Message):
                             "last_cautioned_ts"
                         ] = caution_ts
                         common.bad_help_thread_data[msg.channel.id][
-                            "caution_message_ids"
+                            "alert_message_ids"
                         ].update((caution_msg.id for caution_msg in caution_messages))
 
         except discord.HTTPException:
@@ -1382,29 +1367,29 @@ async def handle_command(
     return response_message
 
 
-async def load_bad_help_thread_data():
+async def load_help_thread_data():
+    async with snakecore.storage.DiscordStorage(
+        "inactive_help_thread_data", dict
+    ) as storage_obj:
+        common.inactive_help_thread_data = storage_obj.obj
+
     async with snakecore.storage.DiscordStorage(
         "bad_help_thread_data", dict
     ) as storage_obj:
         bad_help_thread_data = storage_obj.obj
         for thread_id, thread_data in bad_help_thread_data.items():
-            thread_data = thread_data.copy()  # don't modify existing reference to data
-            try:
-                thread_data["thread"] = common.bot.get_channel(
-                    thread_id
-                ) or await common.bot.fetch_channel(thread_id)
-            except discord.HTTPException:
-                continue
-            else:
-                common.bad_help_thread_data[thread_id] = thread_data
+            common.bad_help_thread_data[thread_id] = thread_data
 
 
-async def dump_bad_help_thread_data():
+async def dump_help_thread_data():
+    async with snakecore.storage.DiscordStorage(
+        "inactive_help_thread_data", dict
+    ) as storage_obj:
+        storage_obj.obj = common.inactive_help_thread_data
+
     async with snakecore.storage.DiscordStorage(
         "bad_help_thread_data", dict
     ) as storage_obj:
-        for thread_data in common.bad_help_thread_data.values():
-            thread_data.pop("thread", None)
         storage_obj.obj = common.bad_help_thread_data
 
 
@@ -1413,7 +1398,7 @@ def cleanup(*_):
     Call cleanup functions
     """
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(dump_bad_help_thread_data())
+    loop.run_until_complete(dump_help_thread_data())
     loop.run_until_complete(snakecore.storage.quit_discord_storage())
     loop.run_until_complete(common.bot.close())
     loop.close()

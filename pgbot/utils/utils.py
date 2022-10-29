@@ -197,7 +197,7 @@ async def message_delete_reaction_listener(
         timeout (Optional[float]): A timeout for waiting, before automatically
           removing any added reactions and returning silently.
         on_delete(Optional[Callable[[discord.Message], Coroutine[Any, Any, Any]]], optional):
-          A coroutine function to call when a message is successfully deleted via the
+          A (coroutine) function to call when a message is successfully deleted via the
           reaction. Defaults to None.
 
     Raises:
@@ -251,7 +251,7 @@ async def message_delete_reaction_listener(
             pass
         else:
             if on_delete is not None:
-                await on_delete(msg)
+                await discord.utils.maybe_coroutine(on_delete, msg)
 
     except asyncio.TimeoutError as a:
         try:

@@ -15,6 +15,7 @@ import os
 import re
 import sys
 from typing import Optional, TypedDict, Union
+from typing_extensions import NotRequired
 
 import discord
 from discord.ext import commands
@@ -84,12 +85,19 @@ entry_message_deletion_dict = {}
 
 class BadHelpThreadData(TypedDict):
     thread_id: int
-    thread: discord.Thread
     last_cautioned_ts: int
-    caution_message_ids: set[int]
+    alert_message_ids: set[int]
+
+
+class InactiveHelpThreadData(TypedDict):
+    thread_id: int
+    last_active_ts: float
+    alert_message_id: NotRequired[int]
 
 
 bad_help_thread_data: dict[int, BadHelpThreadData] = {}
+inactive_help_thread_data: dict[int, InactiveHelpThreadData] = {}
+
 
 CAUTION_WHILE_MESSAGING_COOLDOWN: int = 900
 THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY: int = 300
