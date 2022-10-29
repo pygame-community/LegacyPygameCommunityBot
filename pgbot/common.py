@@ -187,7 +187,7 @@ class GuildConstants:
     }
     INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS = {
         "thread_title_too_short": re.compile(
-            r"^(.){1," f"{THREAD_TITLE_MINIMUM_LENGTH}" r"}$", flags=re.IGNORECASE
+            r"^(.){1," f"{THREAD_TITLE_MINIMUM_LENGTH-1}" r"}$", flags=re.IGNORECASE
         ),
         "member_asking_for_help": re.compile(
             r"[\s]*(^help\s*|help\?*?$|(can|does|is\s+)?(pl(ease|s)|(some|any)(one|body)|you|(need|want)|(can|(want|available|around|willing|ready)(\s*to)))\s*help)(?!(s|ed|er|ing))(\s*me(\s*please)?|pl(ease|s)|with)?\s*",
