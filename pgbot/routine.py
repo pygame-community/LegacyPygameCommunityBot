@@ -208,10 +208,12 @@ async def inactive_help_thread_alert():
                                         emoji="🗑",
                                         role_whitelist=common.GuildConstants.ADMIN_ROLES,
                                         timeout=120,
-                                        on_delete=lambda msg: common.inactive_help_thread_data(
-                                            help_thread.id, {}
-                                        ).pop(
-                                            "alert_message_id", None
+                                        on_delete=(
+                                            lambda msg: common.inactive_help_thread_data.get(
+                                                help_thread.id, {}
+                                            ).pop(
+                                                "alert_message_id", None
+                                            )
                                         ),
                                     )
                                 )
