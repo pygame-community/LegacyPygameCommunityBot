@@ -305,7 +305,7 @@ class CommandMixinCog(commands.Cog):
 
         response_message = common.recent_response_messages[ctx.message.id]
 
-        async with snakecore.storageorage.DiscordStorage("stream", list) as storage_obj:
+        async with snakecore.storage.DiscordStorage("stream", list) as storage_obj:
             data = storage_obj.obj
 
         if not data:
