@@ -226,8 +226,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def whitelist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
+    @admin_only()
+    async def whitelist_cmd(self, ctx: commands.Context, *cmds: str):
         """
         ->type Admin commands
         ->signature pg!whitelist_cmd [*cmds]
@@ -273,8 +273,8 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         )
 
     @commands.command()
-    @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)
-    async def blacklist_cmd(self, ctx: commands.Context, *cmds: Union[String, str]):
+    @admin_only()
+    async def blacklist_cmd(self, ctx: commands.Context, *cmds: str):
         """
         ->type Admin commands
         ->signature pg!blacklist_cmd [*cmds]
