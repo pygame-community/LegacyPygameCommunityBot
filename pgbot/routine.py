@@ -144,17 +144,17 @@ async def inactive_help_thread_alert():
             return
 
         now_ts = time.time()
-        for help_thread in forum_channel.threads:
+        for _, help_thread in {
+            thread.id: thread
+            for thread in forum_channel.threads
+            + [thr async for thr in forum_channel.archived_threads(limit=20)]
+        }.items():
             try:
                 if not help_thread.created_at:
                     continue
                 last_active_ts = help_thread.created_at.timestamp()
 
-                if not (
-                    help_thread.archived
-                    or help_thread.locked
-                    or help_thread.flags.pinned
-                ) and not any(
+                if not (help_thread.locked or help_thread.flags.pinned) and not any(
                     tag.name.lower().startswith("solved")
                     for tag in help_thread.applied_tags
                 ):
