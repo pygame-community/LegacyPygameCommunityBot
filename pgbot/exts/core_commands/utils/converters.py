@@ -12,7 +12,7 @@ from discord.ext import commands
 import pygame
 from snakecore.commands.converters import (
     DateTime,
-    RangeObject,
+    Interval,
 )
 from snakecore.commands.parser import CodeBlock, String
 

@@ -124,9 +124,11 @@ async def init():
 
     routine.handle_console.start()
     routine.routine.start()
-    routine.inactive_help_thread_alert.start()
-    routine.force_help_thread_archive_after_timeout.start()
-    routine.delete_help_threads_without_starter_message.start()
+
+    if not common.TEST_MODE:
+        routine.inactive_help_thread_alert.start()
+        routine.force_help_thread_archive_after_timeout.start()
+        routine.delete_help_threads_without_starter_message.start()
 
     if common.guild is None:
         raise RuntimeWarning(

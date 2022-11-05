@@ -22,13 +22,13 @@ from discord.ext import commands
 import snakecore
 
 from snakecore.commands.decorators import custom_parsing
-from snakecore.commands.converters import CodeBlock, String
 
 from pgbot import common
 import pgbot
 
 from pgbot.utils import get_primary_guild_perms
 from ..utils import sandbox
+from ..utils.converters import CodeBlock, String
 from pgbot.exceptions import BotException
 from pgbot.utils import message_delete_reaction_listener
 
