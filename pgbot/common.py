@@ -248,10 +248,6 @@ class GuildConstants:
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
             "color": 0x36393F,
-            "footer": {
-                "text": "I'm still learning, so I might make mistakes and "
-                "occasionally raise a false alarm. 😅"
-            },
         },
         "member_exclaiming_about_not_working_code": {
             "title": "Something doesn't work? Please tell us what.",
@@ -267,10 +263,6 @@ class GuildConstants:
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
             "color": 0x36393F,
-            "footer": {
-                "text": "I'm still learning, so I might make mistakes and "
-                "occasionally raise a false alarm. 😅"
-            },
         },
         "member_asking_for_code": {
             "title": "Please don't ask if anybody can, wants to, or will fix, correct "
@@ -288,10 +280,6 @@ class GuildConstants:
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
             "color": 0x36393F,
-            "footer": {
-                "text": "I'm still learning, so I might make mistakes and "
-                "occasionally raise a false alarm. 😅"
-            },
         },
         "member_asking_about_problem_with_code": {
             "title": "There's a problem with your code, game, project or assignment? "
@@ -308,10 +296,6 @@ class GuildConstants:
             "your changes.\n\n"
             "This alert should disappear after you have made appropriate changes.",
             "color": 0x36393F,
-            "footer": {
-                "text": "I'm still learning, so I might make mistakes and "
-                "occasionally raise a false alarm. 😅"
-            },
         },
     }
     # eval is a pretty dangerous command, so grant it only for Admins and Senior Mages
