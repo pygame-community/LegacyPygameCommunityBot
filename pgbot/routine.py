@@ -186,6 +186,7 @@ async def inactive_help_thread_alert():
                                     "either wait for help or close this post.*",
                                     color=0x888888,
                                 ),
+                                allowed_mentions=discord.AllowedMentions.none()
                             )
                             common.inactive_help_thread_data[help_thread.id] = {
                                 "thread_id": help_thread.id,
