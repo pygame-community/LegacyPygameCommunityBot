@@ -20,6 +20,7 @@ import snakecore
 from pgbot import common
 from pgbot.utils.utils import (
     fetch_last_thread_activity_dt,
+    fetch_last_thread_message,
     message_delete_reaction_listener,
 )
 
@@ -186,28 +187,41 @@ async def inactive_help_thread_alert():
                                     "either wait for help or close this post.*",
                                     color=0x888888,
                                 ),
-                                allowed_mentions=discord.AllowedMentions.none()
+                                allowed_mentions=discord.AllowedMentions.none(),
                             )
                             common.inactive_help_thread_data[help_thread.id] = {
                                 "thread_id": help_thread.id,
                                 "last_active_ts": alert_message.created_at.timestamp(),
                                 "alert_message_id": alert_message.id,
                             }
-                    elif help_thread.id in common.inactive_help_thread_data and (
-                        alert_message_id := common.inactive_help_thread_data[
-                            help_thread.id
-                        ].get("alert_message_id", None)
+                    elif (
+                        help_thread.id in common.inactive_help_thread_data
+                        and (
+                            alert_message_id := common.inactive_help_thread_data[
+                                help_thread.id
+                            ].get("alert_message_id", None)
+                        )
+                    ) and (
+                        (
+                            partial_alert_message := help_thread.get_partial_message(
+                                alert_message_id
+                            )
+                        ).created_at.timestamp()
+                        < last_active_ts  # someone messaged into the channel
                     ):
                         try:
-                            await help_thread.get_partial_message(
-                                alert_message_id
-                            ).delete()
+                            last_message = await fetch_last_thread_message(help_thread)
+                            if last_message and not last_message.is_system():
+                                try:
+                                    await partial_alert_message.delete()
+                                except discord.NotFound:
+                                    pass
+                                finally:
+                                    del common.inactive_help_thread_data[
+                                        help_thread.id
+                                    ]["alert_message_id"]
                         except discord.NotFound:
                             pass
-                        finally:
-                            del common.inactive_help_thread_data[help_thread.id][
-                                "alert_message_id"
-                            ]
 
             except discord.HTTPException:
                 pass

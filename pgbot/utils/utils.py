@@ -130,6 +130,38 @@ async def fetch_last_thread_activity_dt(thread: discord.Thread) -> datetime.date
     return last_active
 
 
+async def fetch_last_thread_message(
+    thread: discord.Thread,
+) -> Optional[discord.Message]:
+    """Get the last message sent in the given thread.
+
+    Args:
+        thread (discord.Thread): The thread.
+
+    Returns:
+        Optional[discord.Message]: The message, if it exists.
+    """
+    last_message = thread.last_message
+    if last_message is None:
+        last_message_found = False
+        if thread.last_message_id is not None:
+            try:
+                last_message = await thread.fetch_message(thread.last_message_id)
+                last_message_found = True
+            except discord.NotFound:
+                pass
+
+        if not last_message_found:
+            try:
+                last_messages = [msg async for msg in thread.history(limit=1)]
+                if last_messages:
+                    last_message = last_messages[0]
+            except discord.HTTPException:
+                pass
+
+    return last_message
+
+
 def split_wc_scores(scores: dict[int, int]):
     """
     Split wc scoreboard into different categories
