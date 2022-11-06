@@ -171,7 +171,7 @@ async def inactive_help_thread_alert():
                             < last_active_ts
                         ):
                             alert_message = await help_thread.send(
-                                f"help-post-inactive(<@{help_thread.owner_id}>)",
+                                f"help-post-inactive(<@{help_thread.owner_id}>, **{help_thread.name}**)",
                                 embed=discord.Embed(
                                     title="Your help post has gone inactive... 💤",
                                     description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."

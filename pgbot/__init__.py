@@ -522,7 +522,7 @@ async def caution_about_help_forum_channel_thread_name(
     for caution_type in caution_types:
         caution_messages.append(
             await thread.send(
-                content=f"help-post-alert(<@{thread.owner_id}>)",
+                content=f"help-post-alert(<@{thread.owner_id}>, **{thread.name}**)",
                 embed=discord.Embed.from_dict(
                     common.GuildConstants.INVALID_HELP_THREAD_TITLE_EMBEDS[caution_type]
                 ),
@@ -551,7 +551,7 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
     thread: discord.Thread,
 ) -> discord.Message:
     return await thread.send(
-        content=f"help-post-alert(<@{thread.owner_id}>)",
+        content=f"help-post-alert(<@{thread.owner_id}>, **{thread.name}**)",
         embed=discord.Embed(
             title="Your tag selection is incomplete",
             description=(
