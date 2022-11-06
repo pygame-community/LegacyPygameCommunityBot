@@ -21,7 +21,6 @@ from pgbot import common
 from pgbot.utils.utils import (
     fetch_last_thread_activity_dt,
     fetch_last_thread_message,
-    message_delete_reaction_listener,
 )
 
 

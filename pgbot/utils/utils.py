@@ -15,6 +15,7 @@ from typing import Any, Callable, Coroutine, Optional, Sequence, Union
 
 
 import discord
+from discord.ext import commands
 import pygame
 import snakecore
 
@@ -207,12 +208,17 @@ async def give_wc_roles(member: discord.Member, score: int):
 
 
 async def message_delete_reaction_listener(
+    client: Union[discord.Client, discord.AutoShardedClient],
     msg: discord.Message,
     invoker: Union[discord.Member, discord.User],
     emoji: Union[discord.Emoji, discord.PartialEmoji, str],
-    role_whitelist: Sequence[int] = None,
+    role_whitelist: Optional[Sequence[Union[discord.Role, int]]] = None,
     timeout: Optional[float] = None,
-    on_delete: Optional[Callable[[discord.Message], Coroutine[Any, Any, Any]]] = None,
+    on_delete: Union[
+        Callable[[discord.Message], Coroutine[Any, Any, Any]],
+        Callable[[discord.Message], Any],
+        None,
+    ] = None,
 ):
     """Allows for a message to be deleted using a specific reaction.
     If any HTTP-related exceptions are raised by `discord.py` within this function,
@@ -224,11 +230,11 @@ async def message_delete_reaction_listener(
           a message.
         emoji (Union[discord.Emoji, discord.PartialEmoji, str]): The emoji to
           listen for.
-        role_whitelist (Sequence[int]): A sequence (that supports `__contains__`) of
+        role_whitelist (Sequence[int], optional): A sequence (that supports `__contains__`) of
           role IDs whose reactions can also be picked up by this function.
-        timeout (Optional[float]): A timeout for waiting, before automatically
+        timeout (Optional[float], optional): A timeout for waiting, before automatically
           removing any added reactions and returning silently.
-        on_delete(Optional[Callable[[discord.Message], Coroutine[Any, Any, Any]]], optional):
+        on_delete (Union[Callable[[discord.Message], Coroutine[Any, Any, Any]], Callable[[discord.Message], Any], None], optional):
           A (coroutine) function to call when a message is successfully deleted via the
           reaction. Defaults to None.
 
@@ -236,10 +242,12 @@ async def message_delete_reaction_listener(
         TypeError: Invalid argument types.
     """
 
-    role_whitelist = role_whitelist or ()
+    role_whitelist_set = set(
+        r.id if isinstance(r, discord.Role) else r for r in (role_whitelist or ())
+    )
 
     if not isinstance(emoji, (discord.Emoji, discord.PartialEmoji, str)):
-        raise TypeError("invalid emoji given as input")
+        raise TypeError("invalid emoji given as input.")
 
     try:
         try:
@@ -248,32 +256,52 @@ async def message_delete_reaction_listener(
             return
 
         check = None
+        if isinstance(client, commands.Bot):
+            await client.is_owner(invoker)  # fetch and cache bot owners implicitly
+            # fmt: off
+            valid_user_ids = set((
+                (invoker.id, *(
+                (client.owner_id,)
+                if client.owner_id else
+                tuple(client.owner_ids)
+                if client.owner_ids
+                else ()),)
+            ))
+            # fmt: on
+        else:
+            valid_user_ids = set((invoker.id,))
+
         if isinstance(invoker, discord.Member):
             check = (
                 lambda event: event.message_id == msg.id
-                and (event.guild_id == getattr(msg.guild, "id", None))
+                and snakecore.utils.is_emoji_equal(event.emoji, emoji)
                 and (
-                    event.user_id == invoker.id
+                    event.user_id in valid_user_ids
                     or any(
-                        role.id in role_whitelist
+                        role.id in role_whitelist_set
                         for role in getattr(event.member, "roles", ())[1:]
                     )
                 )
-                and snakecore.utils.is_emoji_equal(event.emoji, emoji)
             )
         elif isinstance(invoker, discord.User):
-            check = (
-                lambda event: event.message_id == msg.id
-                and (event.guild_id == getattr(msg.guild, "id", None))
-                and (event.user_id == invoker.id)
-                and snakecore.utils.is_emoji_equal(event.emoji, emoji)
-            )
+            if isinstance(msg.channel, discord.DMChannel):
+                check = (
+                    lambda event: event.message_id == msg.id
+                    and snakecore.utils.is_emoji_equal(event.emoji, emoji)
+                )
+            else:
+                check = (
+                    lambda event: event.message_id == msg.id
+                    and snakecore.utils.is_emoji_equal(event.emoji, emoji)
+                    and event.user_id in valid_user_ids
+                )
         else:
             raise TypeError(
-                f"argument 'invoker' expected discord.Member/.User, not {invoker.__class__.__name__}"
+                "argument 'invoker' expected discord.Member/.User, "
+                f"not {invoker.__class__.__name__}"
             )
 
-        event: discord.RawReactionActionEvent = await common.bot.wait_for(
+        event: discord.RawReactionActionEvent = await client.wait_for(
             "raw_reaction_add", check=check, timeout=timeout
         )
 
@@ -285,11 +313,14 @@ async def message_delete_reaction_listener(
             if on_delete is not None:
                 await discord.utils.maybe_coroutine(on_delete, msg)
 
-    except asyncio.TimeoutError as a:
+    except (asyncio.TimeoutError, asyncio.CancelledError) as a:
         try:
-            await msg.remove_reaction(emoji, msg.author)  # author is always this bot
+            await msg.clear_reaction(emoji)
         except discord.HTTPException:
             pass
+
+        if isinstance(a, asyncio.CancelledError):
+            raise a
 
 
 class RedirectTextIOWrapper(io.TextIOWrapper):

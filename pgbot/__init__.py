@@ -1356,6 +1356,7 @@ async def handle_command(
     common.hold_task(
         asyncio.create_task(
             message_delete_reaction_listener(
+                common.bot,
                 response_message,
                 invoke_message.author,
                 emoji="🗑",

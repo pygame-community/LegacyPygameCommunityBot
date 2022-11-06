@@ -199,6 +199,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     common.hold_task(
         asyncio.create_task(
             message_delete_reaction_listener(
+                common.bot,
                 target_message,
                 ctx.author,
                 emoji="🗑",

@@ -249,6 +249,7 @@ async def send_help_message(
     common.hold_task(
         asyncio.create_task(
             message_delete_reaction_listener(
+                common.bot,
                 original_msg,
                 ctx.author,
                 emoji="🗑",
