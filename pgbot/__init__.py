@@ -337,16 +337,16 @@ async def message_delete(msg: discord.Message):
                 and thread_message.type == discord.MessageType.default
             ):
                 member_msg_count += 1
-                if member_msg_count > 9:
+                if member_msg_count > 29:
                     break
 
-        if member_msg_count < 10:
+        if member_msg_count < 30:
             await msg.channel.send(
                 embed=discord.Embed(
                     title="Post scheduled for deletion",
                     description=(
                         "The OP of this post has deleted its starter message.\n\n"
-                        "Since this post contains less than 10 messages sent by "
+                        "Since this post contains less than 30 messages sent by "
                         "server members, it will be deleted "
                         f"**<t:{int(time.time()+300)}:R>**."
                     ),
