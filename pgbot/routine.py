@@ -192,32 +192,6 @@ async def inactive_help_thread_alert():
                                 "last_active_ts": alert_message.created_at.timestamp(),
                                 "alert_message_id": alert_message.id,
                             }
-                            common.hold_task(
-                                asyncio.create_task(
-                                    message_delete_reaction_listener(
-                                        alert_message,
-                                        (
-                                            help_thread.owner
-                                            or common.bot.get_user(help_thread.owner_id)
-                                            or (
-                                                await common.bot.fetch_user(
-                                                    help_thread.owner_id
-                                                )
-                                            )
-                                        ),
-                                        emoji="🗑",
-                                        role_whitelist=common.GuildConstants.ADMIN_ROLES,
-                                        timeout=120,
-                                        on_delete=(
-                                            lambda msg: common.inactive_help_thread_data.get(
-                                                help_thread.id, {}
-                                            ).pop(
-                                                "alert_message_id", None
-                                            )
-                                        ),
-                                    )
-                                )
-                            )
                     elif help_thread.id in common.inactive_help_thread_data and (
                         alert_message_id := common.inactive_help_thread_data[
                             help_thread.id
