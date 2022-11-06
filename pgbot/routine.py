@@ -176,7 +176,9 @@ async def inactive_help_thread_alert():
                                 embed=discord.Embed(
                                     title="Your help post has gone inactive... 💤",
                                     description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
-                                    "\nHas your issue been solved? If so, remember to tag your post with a 'Solved' tag.\n\n"
+                                    "\nHas your issue been solved? If so, remember to tag your post with a "
+                                    "`✅ Solved` tag. You may also react with ✅ on the starter message "
+                                    "to mark your post as solved.\n\n"
                                     "To make changes to your post's tags, either right-click on "
                                     "it (desktop/web) or click and hold on it (mobile), then click "
                                     "on **'Edit Tags'** to see a tag selection menu. Remember to save "
@@ -187,7 +189,6 @@ async def inactive_help_thread_alert():
                                     "either wait for help or close this post.*",
                                     color=0x888888,
                                 ),
-                                allowed_mentions=discord.AllowedMentions.none(),
                             )
                             common.inactive_help_thread_data[help_thread.id] = {
                                 "thread_id": help_thread.id,
