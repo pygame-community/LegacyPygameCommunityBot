@@ -216,13 +216,13 @@ class GuildConstants:
     }
     INVALID_HELP_THREAD_TITLE_EMBEDS = {
         "thread_title_too_short": {
-            "title": "Whoops, your help post title must be at least "
+            "title": "Whoops, your post title must be at least "
             f"{THREAD_TITLE_MINIMUM_LENGTH} characters long (excluding numbers)",
-            "description": "Your help post title must be at least "
+            "description": "Your post title must be at least "
             f"**{THREAD_TITLE_MINIMUM_LENGTH}** characters long, so I'm "
             "forced to put a slowmode delay of "
             f"{THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY//60} minute{'s'*(THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY > 60)} "
-            " on your post <:pg_sad:863165920038223912>.\n\n"
+            " on your post (sorry) <:pg_sad:863165920038223912>.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
@@ -237,9 +237,10 @@ class GuildConstants:
             "title": "Please don't ask for help in your post title (no need to). "
             "We'd love to help you either way!",
             "description": "Instead of asking for help or mentioning that you need "
-            "help with something, please write a post title and starter message "
-            "that describes the actual issue you're having in more detail. "
-            "Also send code snippets, screenshots and other media, error messages, etc."
+            "help, please write a post title and starter message "
+            "that describes the actual issue you're having in more detail.\n"
+            "Also send code snippets (no code screenshots), screenshots and "
+            "other media, error messages, etc."
             "\n\n**[Here's why!](https://www.dontasktoask.com)**\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
@@ -254,8 +255,8 @@ class GuildConstants:
             "description": "Edit your help post title and your starter message "
             "to describe the problem that led to that diagnosis. What made your code "
             "stop working? What are you trying to do?\n"
-            "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.\n\n"
+            "Remember to send along code snippets (no code screenshots), screenshots "
+            "and other media, error messages, etc.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
@@ -266,13 +267,13 @@ class GuildConstants:
         },
         "member_asking_for_code": {
             "title": "Please don't ask if anybody can, wants to, or will fix, correct "
-            "or write your code, game, project or assignment for you!",
+            "or write your code, game, project or assignment for you.",
             "description": "All helpers here are volunteers, who show people how to "
             "improve or implement things in their code by themselves. They don't do "
             "all the work for them. Show us what you are working on, what you've "
             "tried, as well as where you got stuck. "
-            "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.\n\n"
+            "Remember to send along code snippets (no code screenshots), screenshots "
+            "and other media, error messages, etc.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "
@@ -287,8 +288,8 @@ class GuildConstants:
             "description": "Use your help post title and your starter message "
             "to describe how the problems with it came up. What made your code stop "
             "working? What are you trying to do? "
-            "Remember to send along code snippets, screenshots and other media, error "
-            "messages, etc.\n\n"
+            "Remember to send along code snippets (no code screenshots), screenshots "
+            "and other media, error messages, etc.\n\n"
             "To make changes to your post's title, either right-click on it "
             "(desktop/web) or click and hold on it (mobile), then click on "
             "**'Edit Post'**. Use the input field called 'POST TITLE' in the "

@@ -175,13 +175,11 @@ async def inactive_help_thread_alert():
                                 embed=discord.Embed(
                                     title="Your help post has gone inactive... 💤",
                                     description=f"Your help post was last active **<t:{int(last_active_ts)}:R>** ."
-                                    "\nHas your issue been solved? If so, remember to tag your post with a "
-                                    "`✅ Solved` tag. You may also react with ✅ on the starter message "
-                                    "to mark your post as solved.\n\n"
-                                    "To make changes to your post's tags, either right-click on "
-                                    "it (desktop/web) or click and hold on it (mobile), then click "
-                                    "on **'Edit Tags'** to see a tag selection menu. Remember to save "
-                                    "your changes after selecting the correct tag(s).\n\n"
+                                    "\nHas your issue been solved? If so, mark it as **Solved** by "
+                                    "doing one of these:\n\n"
+                                    "  **• React on your starter message with ✅**.\n"
+                                    "  **• Right-click on your post (click and hold on mobile), "
+                                    "go to 'Edit Tags', select the `✅ Solved` tag and save your changes.**\n\n"
                                     "**Mark all messages you find helpful here with a ✅ reaction please** "
                                     "<:pg_robot:837389387024957440>\n\n"
                                     "*If your issue has't been solved, you may "
@@ -273,8 +271,8 @@ async def _schedule_help_thread_deletion(thread: discord.Thread):
         embed=discord.Embed(
             title="Post scheduled for deletion",
             description=(
-                "The OP of this post has deleted its starter message.\n\n"
-                "Since this post contains less than 30 messages sent by "
+                "Someone deleted the starter message of this post.\n\n"
+                "Since it contains less than 30 messages sent by "
                 "server members, it will be deleted "
                 f"**<t:{int(time.time()+300)}:R>**."
             ),

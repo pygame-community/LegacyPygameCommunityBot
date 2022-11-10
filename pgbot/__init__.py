@@ -345,8 +345,8 @@ async def message_delete(msg: discord.Message):
                 embed=discord.Embed(
                     title="Post scheduled for deletion",
                     description=(
-                        "The OP of this post has deleted its starter message.\n\n"
-                        "Since this post contains less than 30 messages sent by "
+                        "Someone deleted the starter message of this post.\n\n"
+                        "Since it contains less than 30 messages sent by "
                         "server members, it will be deleted "
                         f"**<t:{int(time.time()+300)}:R>**."
                     ),
@@ -555,11 +555,10 @@ async def caution_about_regulars_help_forum_channel_thread_tags(
         embed=discord.Embed(
             title="Your tag selection is incomplete",
             description=(
-                "Please pick exactly **1 issue tag** and **1-3 aspect tags**. "
-                "Issue tags look like this: `issue: ...`. Aspect tags are all "
-                "non-issue tags that are in lowercase.\n\n"
-                "**Example tag combination for a help post about reworking a "
-                "project's collision detection code: "
+                "Please pick exactly **1 issue tag** and **1-3 aspect tags**.\n\n"
+                "**Issue Tags** look like this: **(`issue: ...`)**.\n"
+                "**Aspect Tags** are all non-issue tags in lowercase, e.g. **(`💥 collisions`)**\n\n"
+                "**Example tag combination for reworking collisions:\n"
                 "(`🪛 issue: rework/optim.`) (`💥 collisions`)**.\n\n"
                 f"See the Post Guidelines of <#{thread.parent_id}> for more details.\n\n"
                 "To make changes to your post's tags, either right-click on "
@@ -678,7 +677,7 @@ async def send_help_thread_solved_alert(thread: discord.Thread):
             title="Post marked as solved",
             description=(
                 "This help post has been marked as solved.\n"
-                "This post will now close with a 1 minute slowmode "
+                "It will now close with a 1 minute slowmode "
                 "after 1 hour of inactivity.\nFor the sake of the "
                 "OP, please avoid sending any further messages "
                 "that aren't essential additions to the currently "
