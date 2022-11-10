@@ -488,7 +488,7 @@ def validate_help_forum_channel_thread_name(thread: discord.Thread) -> bool:
             ]
             and common.GuildConstants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
                 caution_type
-            ].search(thread.name)
+            ].search(thread.name.replace(f" | {thread.owner_id}", ""))
             is not None
             for caution_type in common.GuildConstants.INVALID_HELP_THREAD_TITLE_TYPES
         )
@@ -508,7 +508,7 @@ def get_help_forum_channel_thread_name_cautions(
             and common.GuildConstants.INVALID_HELP_THREAD_TITLE_REGEX_PATTERNS[
                 caution_type
             ].search(
-                " ".join(thread.name.split())
+                " ".join(thread.name.replace(f" | {thread.owner_id}", "").split())
             )  # normalize whitespace
             is not None
         )
@@ -581,7 +581,7 @@ async def thread_create(thread: discord.Thread):
         and thread.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
     ):
         caution_messages: list[discord.Message] = []
-        issue_found = False
+        issues_found = False
         try:
             await (
                 thread.starter_message
@@ -618,7 +618,7 @@ async def thread_create(thread: discord.Thread):
                         break
 
             if caution_types := get_help_forum_channel_thread_name_cautions(thread):
-                issue_found = True
+                issues_found = True
                 caution_messages.extend(
                     await caution_about_help_forum_channel_thread_name(
                         thread, *caution_types
@@ -636,7 +636,7 @@ async def thread_create(thread: discord.Thread):
                 == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
             ):
                 if not validate_regulars_help_forum_channel_thread_tags(thread):
-                    issue_found = True
+                    issues_found = True
                     caution_messages.append(
                         await caution_about_regulars_help_forum_channel_thread_tags(
                             thread
@@ -647,12 +647,26 @@ async def thread_create(thread: discord.Thread):
                 await thread.edit(applied_tags=new_tags)
                 first_thread_edit_applied = True
 
-            if issue_found and thread.id not in common.bad_help_thread_data:
+            if issues_found and thread.id not in common.bad_help_thread_data:
                 common.bad_help_thread_data[thread.id] = {
                     "thread_id": thread.id,
                     "last_cautioned_ts": time.time(),
                     "alert_message_ids": set(msg.id for msg in caution_messages),
                 }
+
+            if not (
+                thread.name.endswith(f" | {thread.owner_id}")
+                or str(thread.owner_id) in thread.name
+            ):
+                await thread.edit(
+                    name=(
+                        thread.name
+                        if len(thread.name) < 72
+                        else thread.name[:72] + "..."
+                    )
+                    + f" | {thread.owner_id}"
+                )
+
         except discord.HTTPException:
             pass
 
@@ -835,6 +849,19 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             reason="This help post was unmarked as solved.",
                             applied_tags=new_tags,
                         )
+
+                if not (
+                    after.name.endswith(f" | {after.owner_id}")
+                    or str(after.owner_id) in after.name
+                ):
+                    await after.edit(
+                        name=(
+                            after.name
+                            if len(after.name) < 72
+                            else after.name[:72] + "..."
+                        )
+                        + f" | {after.owner_id}"
+                    )
 
             elif after.archived:
                 if any(

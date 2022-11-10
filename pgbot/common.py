@@ -217,7 +217,7 @@ class GuildConstants:
     INVALID_HELP_THREAD_TITLE_EMBEDS = {
         "thread_title_too_short": {
             "title": "Whoops, your help post title must be at least "
-            f"{THREAD_TITLE_MINIMUM_LENGTH} characters long",
+            f"{THREAD_TITLE_MINIMUM_LENGTH} characters long (excluding numbers)",
             "description": "Your help post title must be at least "
             f"**{THREAD_TITLE_MINIMUM_LENGTH}** characters long, so I'm "
             "forced to put a slowmode delay of "
