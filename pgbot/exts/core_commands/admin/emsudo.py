@@ -2150,7 +2150,7 @@ class EmsudoCommandCog(BaseCommandCog):
             await asyncio.sleep(0)
 
         if msg_count > 2:
-            await snakecore.utils.embeds.edit_embed_field_from_dict(
+            snakecore.utils.embeds.edit_embed_field_from_dict(
                 load_embed,
                 0,
                 dict(
