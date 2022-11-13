@@ -853,14 +853,19 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     after.name.endswith(f" | {after.owner_id}")
                     or str(after.owner_id) in after.name
                 ):
-                    await after.edit(
-                        name=(
-                            after.name
-                            if len(after.name) < 72
-                            else after.name[:72] + "..."
+                    await asyncio.sleep(2)  # wait for a few event loop iterationd
+                    if not (
+                        after.name.endswith(f" | {after.owner_id}")
+                        or str(after.owner_id) in after.name
+                    ):  # check again to be sure that a bot edit hasn't already occured
+                        await after.edit(
+                            name=(
+                                after.name
+                                if len(after.name) < 72
+                                else after.name[:72] + "..."
+                            )
+                            + f" | {after.owner_id}"
                         )
-                        + f" | {after.owner_id}"
-                    )
 
             elif after.archived:
                 if any(
