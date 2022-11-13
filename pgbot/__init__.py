@@ -596,15 +596,14 @@ async def thread_create(thread: discord.Thread):
             )
 
             if (
-                len(new_tags) < common.FORUM_THREAD_TAG_LIMIT
-                or len(new_tags) == common.FORUM_THREAD_TAG_LIMIT
-                and any(
-                    tag.name.lower().startswith("solved") for tag in thread.applied_tags
-                )
+                len((applied_tags := thread.applied_tags))
+                < common.FORUM_THREAD_TAG_LIMIT
+                or len(applied_tags) == common.FORUM_THREAD_TAG_LIMIT
+                and any(tag.name.lower().startswith("solved") for tag in applied_tags)
             ):
                 new_tags = [
                     tag
-                    for tag in thread.applied_tags
+                    for tag in applied_tags
                     if not tag.name.lower().startswith("solved")
                 ]
 
