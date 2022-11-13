@@ -1222,7 +1222,7 @@ async def handle_message(msg: discord.Message):
                     caution_messages: list[discord.Message] = []
                     issues_found = False
                     if caution_types := get_help_forum_channel_thread_name_cautions(
-                        msg.channel.name
+                        msg.channel
                     ):
                         issues_found = True
                         caution_messages.extend(
