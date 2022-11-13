@@ -653,8 +653,9 @@ async def thread_create(thread: discord.Thread):
                     "alert_message_ids": set(msg.id for msg in caution_messages),
                 }
 
+            owner_id_suffix = f" | {thread.owner_id}"
             if not (
-                thread.name.endswith(f" | {thread.owner_id}")
+                thread.name.endswith(owner_id_suffix)
                 or str(thread.owner_id) in thread.name
             ):
                 await thread.edit(
@@ -663,7 +664,7 @@ async def thread_create(thread: discord.Thread):
                         if len(thread.name) < 72
                         else thread.name[:72] + "..."
                     )
-                    + f" | {thread.owner_id}"
+                    + owner_id_suffix
                 )
 
         except discord.HTTPException:
@@ -698,174 +699,195 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
             if not (after.archived or after.locked):
                 caution_messages: list[discord.Message] = []
                 issues_found = False
-                if before.name != after.name:
-                    if caution_types := get_help_forum_channel_thread_name_cautions(
-                        after
-                    ):
-                        issues_found = True
-                        caution_messages.extend(
-                            await caution_about_help_forum_channel_thread_name(
-                                after, *caution_types
-                            )
-                        )
-                        if (
-                            "thread_title_too_short" in caution_types
-                            and after.slowmode_delay
-                            < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                        ):
-                            await after.edit(
-                                slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                                reason="Slowmode penalty for the title of this "
-                                "help post being too short.",
-                            )
-                        elif (
-                            after.slowmode_delay
-                            == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                        ):
-                            await after.edit(
-                                slowmode_delay=(
-                                    after.parent
-                                    or common.bot.get_channel(after.parent_id)
-                                    or await common.bot.fetch_channel(after.parent_id)
-                                ).default_thread_slowmode_delay,
-                                reason="This help post's title is not too short anymore.",
-                            )
+                owner_id_suffix = f" | {after.owner_id}"
+                owner_id_suffix_added = not before.name.endswith(
+                    owner_id_suffix
+                ) and after.name.endswith(owner_id_suffix)
 
-                elif before.applied_tags != after.applied_tags:
-                    if (
-                        after.parent_id
-                        == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
-                    ):
-                        if not validate_regulars_help_forum_channel_thread_tags(after):
+                if not owner_id_suffix_added:
+                    if before.name != after.name:
+                        if caution_types := get_help_forum_channel_thread_name_cautions(
+                            after
+                        ):
                             issues_found = True
-                            caution_messages.append(
-                                await caution_about_regulars_help_forum_channel_thread_tags(
-                                    after
+                            caution_messages.extend(
+                                await caution_about_help_forum_channel_thread_name(
+                                    after, *caution_types
                                 )
                             )
+                            if (
+                                "thread_title_too_short" in caution_types
+                                and after.slowmode_delay
+                                < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            ):
+                                await after.edit(
+                                    slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
+                                    reason="Slowmode penalty for the title of this "
+                                    "help post being too short.",
+                                )
+                            elif (
+                                after.slowmode_delay
+                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            ):
+                                await after.edit(
+                                    slowmode_delay=(
+                                        after.parent
+                                        or common.bot.get_channel(after.parent_id)
+                                        or await common.bot.fetch_channel(
+                                            after.parent_id
+                                        )
+                                    ).default_thread_slowmode_delay,
+                                    reason="This help post's title is not too short anymore.",
+                                )
 
-                if issues_found:
-                    if after.id not in common.bad_help_thread_data:
-                        common.bad_help_thread_data[after.id] = {
-                            "thread_id": after.id,
-                            "last_cautioned_ts": time.time(),
-                            "alert_message_ids": set(
-                                msg.id for msg in caution_messages
-                            ),
-                        }
-                    common.bad_help_thread_data[after.id][
-                        "last_cautioned_ts"
-                    ] = time.time()
-                    common.bad_help_thread_data[after.id]["alert_message_ids"].update(
-                        (msg.id for msg in caution_messages)
-                    )
-                else:
-                    if after.id in common.bad_help_thread_data:
+                    elif before.applied_tags != after.applied_tags:
                         if (
-                            after.slowmode_delay
-                            == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            after.parent_id
+                            == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
                         ):
-                            await after.edit(
-                                slowmode_delay=(
-                                    after.parent
-                                    or common.bot.get_channel(after.parent_id)
-                                    or await common.bot.fetch_channel(after.parent_id)
-                                ).default_thread_slowmode_delay,
-                                reason="This help post's title is not invalid anymore.",
-                            )
+                            if not validate_regulars_help_forum_channel_thread_tags(
+                                after
+                            ):
+                                issues_found = True
+                                caution_messages.append(
+                                    await caution_about_regulars_help_forum_channel_thread_tags(
+                                        after
+                                    )
+                                )
 
-                        for msg_id in tuple(
-                            common.bad_help_thread_data[after.id]["alert_message_ids"]
-                        ):
-                            try:
-                                await after.get_partial_message(msg_id).delete()
-                            except discord.NotFound:
-                                pass
+                    if issues_found:
+                        if after.id not in common.bad_help_thread_data:
+                            common.bad_help_thread_data[after.id] = {
+                                "thread_id": after.id,
+                                "last_cautioned_ts": time.time(),
+                                "alert_message_ids": set(
+                                    msg.id for msg in caution_messages
+                                ),
+                            }
+                        common.bad_help_thread_data[after.id][
+                            "last_cautioned_ts"
+                        ] = time.time()
+                        common.bad_help_thread_data[after.id][
+                            "alert_message_ids"
+                        ].update((msg.id for msg in caution_messages))
+                    else:
+                        if after.id in common.bad_help_thread_data:
+                            if (
+                                after.slowmode_delay
+                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            ):
+                                await after.edit(
+                                    slowmode_delay=(
+                                        after.parent
+                                        or common.bot.get_channel(after.parent_id)
+                                        or await common.bot.fetch_channel(
+                                            after.parent_id
+                                        )
+                                    ).default_thread_slowmode_delay,
+                                    reason="This help post's title is not invalid anymore.",
+                                )
 
-                        if (
-                            after.id in common.bad_help_thread_data
-                        ):  # fix concurrency bugs where key was already deleted
-                            del common.bad_help_thread_data[after.id]
+                            for msg_id in tuple(
+                                common.bad_help_thread_data[after.id][
+                                    "alert_message_ids"
+                                ]
+                            ):
+                                try:
+                                    await after.get_partial_message(msg_id).delete()
+                                except discord.NotFound:
+                                    pass
 
-                    solved_in_before = any(
-                        tag.name.lower().startswith("solved")
-                        for tag in before.applied_tags
-                    )
-                    solved_in_after = any(
-                        tag.name.lower().startswith("solved")
-                        for tag in after.applied_tags
-                    )
-                    if not solved_in_before and solved_in_after:
-                        new_tags = [
-                            tag
+                            if (
+                                after.id in common.bad_help_thread_data
+                            ):  # fix concurrency bugs where key was already deleted
+                                del common.bad_help_thread_data[after.id]
+
+                        solved_in_before = any(
+                            tag.name.lower().startswith("solved")
+                            for tag in before.applied_tags
+                        )
+                        solved_in_after = any(
+                            tag.name.lower().startswith("solved")
                             for tag in after.applied_tags
-                            if not tag.name.lower().startswith("unsolved")
-                        ]
-                        await send_help_thread_solved_alert(after)
-                        await after.edit(
-                            auto_archive_duration=60,
-                            reason="This help post was marked as solved.",
-                            applied_tags=new_tags,
                         )
-
-                        if after.id in common.inactive_help_thread_data:
-                            try:
-                                if alert_message_id := common.inactive_help_thread_data[
-                                    after.id
-                                ].get("alert_message_id", None):
-                                    try:
-                                        await after.get_partial_message(
-                                            alert_message_id
-                                        ).delete()
-                                    except discord.NotFound:
-                                        pass
-                            finally:
-                                del common.inactive_help_thread_data[after.id]
-
-                    elif solved_in_before and not solved_in_after:
-                        parent = (
-                            after.parent
-                            or common.bot.get_channel(after.parent_id)
-                            or await common.bot.fetch_channel(after.parent_id)
-                        )
-
-                        new_tags = after.applied_tags
-                        if len(new_tags) < common.FORUM_THREAD_TAG_LIMIT:
-                            for tag in parent.available_tags:
-                                if tag.name.lower().startswith("unsolved"):
-                                    new_tags.insert(
-                                        0, tag
-                                    )  # mark help post as unsolved
-                                    break
-
-                        slowmode_delay = discord.utils.MISSING
-                        if after.slowmode_delay == 60:  # no custom slowmode override
-                            slowmode_delay = parent.default_thread_slowmode_delay
-
-                        await after.edit(
-                            auto_archive_duration=parent.default_auto_archive_duration,
-                            slowmode_delay=slowmode_delay,
-                            reason="This help post was unmarked as solved.",
-                            applied_tags=new_tags,
-                        )
-
-                if not (
-                    after.name.endswith(f" | {after.owner_id}")
-                    or str(after.owner_id) in after.name
-                ):
-                    await asyncio.sleep(2)  # wait for a few event loop iterationd
-                    if not (
-                        after.name.endswith(f" | {after.owner_id}")
-                        or str(after.owner_id) in after.name
-                    ):  # check again to be sure that a bot edit hasn't already occured
-                        await after.edit(
-                            name=(
-                                after.name
-                                if len(after.name) < 72
-                                else after.name[:72] + "..."
+                        if not solved_in_before and solved_in_after:
+                            new_tags = [
+                                tag
+                                for tag in after.applied_tags
+                                if not tag.name.lower().startswith("unsolved")
+                            ]
+                            await send_help_thread_solved_alert(after)
+                            await after.edit(
+                                auto_archive_duration=60,
+                                reason="This help post was marked as solved.",
+                                applied_tags=new_tags,
                             )
-                            + f" | {after.owner_id}"
+
+                            if after.id in common.inactive_help_thread_data:
+                                try:
+                                    if alert_message_id := common.inactive_help_thread_data[
+                                        after.id
+                                    ].get(
+                                        "alert_message_id", None
+                                    ):
+                                        try:
+                                            await after.get_partial_message(
+                                                alert_message_id
+                                            ).delete()
+                                        except discord.NotFound:
+                                            pass
+                                finally:
+                                    del common.inactive_help_thread_data[after.id]
+
+                        elif solved_in_before and not solved_in_after:
+                            parent = (
+                                after.parent
+                                or common.bot.get_channel(after.parent_id)
+                                or await common.bot.fetch_channel(after.parent_id)
+                            )
+
+                            new_tags = after.applied_tags
+                            if len(new_tags) < common.FORUM_THREAD_TAG_LIMIT:
+                                for tag in parent.available_tags:
+                                    if tag.name.lower().startswith("unsolved"):
+                                        new_tags.insert(
+                                            0, tag
+                                        )  # mark help post as unsolved
+                                        break
+
+                            slowmode_delay = discord.utils.MISSING
+                            if (
+                                after.slowmode_delay == 60
+                            ):  # no custom slowmode override
+                                slowmode_delay = parent.default_thread_slowmode_delay
+
+                            await after.edit(
+                                auto_archive_duration=parent.default_auto_archive_duration,
+                                slowmode_delay=slowmode_delay,
+                                reason="This help post was unmarked as solved.",
+                                applied_tags=new_tags,
+                            )
+
+                if (
+                    not (
+                        after.name.endswith(owner_id_suffix)
+                        or str(after.owner_id) in after.name
+                    )
+                    and not (await asyncio.sleep(2))
+                    and not (
+                        after.name.endswith(owner_id_suffix)
+                        or str(after.owner_id) in after.name
+                    )
+                ):  # wait for a few event loop iterations, before doing a second,
+                    # check, to be sure that a bot edit hasn't already occured
+                    await after.edit(
+                        name=(
+                            after.name
+                            if len(after.name) < 72
+                            else after.name[:72] + "..."
                         )
+                        + owner_id_suffix
+                    )
 
             elif after.archived:
                 if any(
