@@ -962,7 +962,11 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
         except (SyntaxError, ValueError):
             raise
 
-        if "by" in poll_config_map and "voting-mode" in poll_config_map:
+        if (
+            "by" in poll_config_map
+            and "voting-mode" in poll_config_map
+            and poll_config_map["voting-mode"] == "single"
+        ):
             for reaction in msg.reactions:
                 async for user in reaction.users():
                     if (
