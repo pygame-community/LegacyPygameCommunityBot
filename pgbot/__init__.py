@@ -626,7 +626,6 @@ async def thread_create(thread: discord.Thread):
                         dict(
                             slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
                             reason="Slowmode penalty for the title of this help post being too short.",
-                            applied_tags=new_tags,
                         )
                     )
             if (
