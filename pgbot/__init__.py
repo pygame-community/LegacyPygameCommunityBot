@@ -968,14 +968,12 @@ async def raw_reaction_add(payload: discord.RawReactionActionEvent):
             and poll_config_map["voting-mode"] == "single"
         ):
             for reaction in msg.reactions:
-                async for user in reaction.users():
-                    if (
-                        user.id == payload.user_id
-                        and not snakecore.utils.is_emoji_equal(
-                            payload.emoji, reaction.emoji
-                        )
-                    ):
+                if not snakecore.utils.is_emoji_equal(payload.emoji, reaction.emoji):
+                    try:
                         await reaction.remove(user)
+                    except discord.HTTPException:
+                        pass
+                    await asyncio.sleep(0.1)
     try:
         if (
             isinstance(msg.channel, discord.Thread)

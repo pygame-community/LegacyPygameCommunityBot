@@ -93,7 +93,7 @@ class CommandMixinCog(commands.Cog):
                 )
                 + "___\n"
                 f"by:{ctx.author.id} | voting-mode:"
-                + ("'multi'" if multi_votes else "'single'")
+                + ("multiple" if multi_votes else "single")
             },
             "timestamp": response_message.created_at.isoformat(),
             "description": desc.string,
@@ -197,7 +197,9 @@ class CommandMixinCog(commands.Cog):
 
             try:
                 poll_config_map = parse_text_to_mapping(
-                    split_footer[1], delimiter=":", separator=" | ", eval_values=True
+                    split_footer[1],
+                    delimiter=":",
+                    separator=" | ",
                 )
             except (SyntaxError, ValueError) as err:
                 raise BotException(
@@ -211,61 +213,46 @@ class CommandMixinCog(commands.Cog):
                 "The message specified is not an ongiong poll. Please double-check the id.",
             )
 
-        if not ("by" in poll_config_map and "voting-mode" in poll_config_map):
+        if not (
+            "by" in poll_config_map
+            and poll_config_map["by"].isnumeric()
+            and "voting-mode" in poll_config_map
+        ):
             raise BotException(
                 "Invalid poll message",
                 "The specified poll is malformed",
             )
 
-        elif not _privileged and ctx.author.id != poll_config_map["by"]:
+        elif not _privileged and ctx.author.id != int(poll_config_map["by"]):
             raise BotException(
                 "You can't close this poll",
                 "This poll was not started by you. Ask the person who started it to close it.",
             )
 
         title = "Voting has ended"
-        reactions = {}
-        for reaction in msg.reactions:
-            if isinstance(reaction.emoji, str):
-                reactions[reaction.emoji] = reaction.count
-            else:
-                reactions[reaction.emoji.id] = reaction.count
+
+        msg = await msg.channel.fetch_message(
+            msg.id
+        )  # force population of msg.reactions
+
+        reaction_counts = {
+            str(reaction.emoji): reaction.count for reaction in msg.reactions
+        }
 
         top: list[tuple[int, Any]] = [(0, None)]
-        for reaction in msg.reactions:
-            if getattr(reaction.emoji, "id", reaction.emoji) not in reactions:
+        for reaction_emoji_str, count in reaction_counts.items():
+            if count - 1 > top[0][0]:
+                top = [(count - 1, reaction_emoji_str)]
                 continue
 
-            if reaction.count - 1 > top[0][0]:
-                top = [
-                    (reaction.count - 1, getattr(reaction.emoji, "id", reaction.emoji))
-                ]
-                continue
-
-            if reaction.count - 1 == top[0][0]:
-                top.append((reaction.count - 1, reaction.emoji))
+            if count - 1 == top[0][0]:
+                top.append((count - 1, reaction_emoji_str))
 
         fields = []
         for field in embed.fields:
-            if not isinstance(field.name, str):
-                continue
-
-            is_custom_emoji = snakecore.utils.is_markdown_custom_emoji(field.name)
-
             try:
-                r_count = (
-                    reactions[
-                        (
-                            snakecore.utils.extract_markdown_custom_emoji_id(field.name)
-                            if is_custom_emoji
-                            else field.name
-                        )
-                    ]
-                    - 1
-                )
+                r_count = reaction_counts[field.name] - 1  # type: ignore
             except KeyError:
-                # The reactions and the embed fields dont match up.
-                # Someone is abusing their mod powers if this happens probably.
                 continue
 
             fields.append(
@@ -275,11 +262,7 @@ class CommandMixinCog(commands.Cog):
                     inline=True,
                 )
             )
-            if (
-                snakecore.utils.extract_markdown_custom_emoji_id(field.name)
-                if is_custom_emoji
-                else field.name
-            ) == top[0][1]:
+            if field.name == top[0][1]:
                 title += (
                     f"\n{field.value}({field.name}) has won with {top[0][0]} votes!"
                 )
@@ -288,13 +271,17 @@ class CommandMixinCog(commands.Cog):
             title = title.split("\n")[0]
             title += "\nIt's a draw!"
 
-        await snakecore.utils.embeds.edit_embed_at(
-            msg,
-            color=0xA83232 if not _color else _color.value,
-            title=title,
-            fields=fields,
-            footer_text="This poll has ended.",
-            timestamp=response_message.created_at,
+        await msg.edit(
+            embed=discord.Embed.from_dict(
+                embed.to_dict()
+                | dict(
+                    color=0xA83232 if not _color else _color.value,
+                    title=title,
+                    fields=fields,
+                    footer=dict(text="This poll has ended."),
+                    timestamp=ctx.message.created_at.isoformat(),
+                )
+            ),
         )
         try:
             await response_message.delete()
