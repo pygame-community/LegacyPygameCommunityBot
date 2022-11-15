@@ -688,55 +688,51 @@ async def send_help_thread_solved_alert(thread: discord.Thread):
 async def thread_update(before: discord.Thread, after: discord.Thread):
     if after.parent_id in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values():
         try:
+            owner_id_suffix = f" | {after.owner_id}"
             if not (after.archived or after.locked):
                 thread_edits = {}
                 caution_messages: list[discord.Message] = []
                 bad_thread_name = False
                 bad_thread_tags = False
-                owner_id_suffix = f" | {after.owner_id}"
-                owner_id_suffix_added = not before.name.endswith(
-                    owner_id_suffix
-                ) and after.name.endswith(owner_id_suffix)
 
                 if before.name != after.name:
                     if caution_types := get_help_forum_channel_thread_name_cautions(
                         after
                     ):
                         bad_thread_name = True
-                        if not owner_id_suffix_added:
-                            caution_messages.extend(
-                                await caution_about_help_forum_channel_thread_name(
-                                    after, *caution_types
+                        caution_messages.extend(
+                            await caution_about_help_forum_channel_thread_name(
+                                after, *caution_types
+                            )
+                        )
+                        if (
+                            "thread_title_too_short" in caution_types
+                            and after.slowmode_delay
+                            < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                        ):
+                            thread_edits.update(
+                                dict(
+                                    slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
+                                    reason="Slowmode penalty for the title of this "
+                                    "help post being too short.",
                                 )
                             )
-                            if (
-                                "thread_title_too_short" in caution_types
-                                and after.slowmode_delay
-                                < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                            ):
-                                thread_edits.update(
-                                    dict(
-                                        slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                                        reason="Slowmode penalty for the title of this "
-                                        "help post being too short.",
-                                    )
+                        elif (
+                            after.slowmode_delay
+                            == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                        ):
+                            thread_edits.update(
+                                dict(
+                                    slowmode_delay=(
+                                        after.parent
+                                        or common.bot.get_channel(after.parent_id)
+                                        or await common.bot.fetch_channel(
+                                            after.parent_id
+                                        )
+                                    ).default_thread_slowmode_delay,
+                                    reason="This help post's title is not too short anymore.",
                                 )
-                            elif (
-                                after.slowmode_delay
-                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                            ):
-                                thread_edits.update(
-                                    dict(
-                                        slowmode_delay=(
-                                            after.parent
-                                            or common.bot.get_channel(after.parent_id)
-                                            or await common.bot.fetch_channel(
-                                                after.parent_id
-                                            )
-                                        ).default_thread_slowmode_delay,
-                                        reason="This help post's title is not too short anymore.",
-                                    )
-                                )
+                            )
 
                 elif before.applied_tags != after.applied_tags:
                     if (
@@ -864,23 +860,8 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             )
                         )
 
-                if (
-                    not (
-                        after.name.endswith(owner_id_suffix)
-                        or str(after.owner_id) in after.name
-                    )
-                    and not (await asyncio.sleep(2))
-                    and not (
-                        after.name.endswith(owner_id_suffix)
-                        or str(after.owner_id) in after.name
-                    )
-                ):  # wait for a few event loop iterations, before doing a second,
-                    # check, to be sure that a bot edit hasn't already occured
-                    thread_edits["name"] = (
-                        after.name if len(after.name) < 72 else after.name[:72] + "..."
-                    ) + owner_id_suffix
-
                 if thread_edits:
+                    await asyncio.sleep(5)
                     await after.edit(
                         **thread_edits
                     )  # apply edits in a batch to save API calls
@@ -889,6 +870,8 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                 if any(
                     tag.name.lower().startswith("solved") for tag in after.applied_tags
                 ):
+                    thread_edits = {}
+                    thread_edits["archived"] = False
                     parent = (
                         after.parent
                         or common.bot.get_channel(after.parent_id)
@@ -897,9 +880,22 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                     if (
                         after.slowmode_delay == parent.default_thread_slowmode_delay
                     ):  # no custom slowmode override
-                        await after.edit(archived=False, slowmode_delay=60)
-                        await asyncio.sleep(5)
-                        await after.edit(archived=True)
+                        thread_edits["slowmode_delay"] = 60
+
+                    if not (
+                        after.name.endswith(owner_id_suffix)
+                        or str(after.owner_id) in after.name
+                    ):  # wait for a few event loop iterations, before doing a second,
+                        # check, to be sure that a bot edit hasn't already occured
+                        thread_edits["name"] = (
+                            after.name
+                            if len(after.name) < 72
+                            else after.name[:72] + "..."
+                        ) + owner_id_suffix
+
+                    await after.edit(**thread_edits)
+                    await asyncio.sleep(5)
+                    await after.edit(archived=True)
 
         except discord.HTTPException:
             pass

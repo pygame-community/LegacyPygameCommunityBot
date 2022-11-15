@@ -309,7 +309,9 @@ async def force_help_thread_archive_after_timeout():
                     if (
                         now_ts - last_active_ts
                     ) / 60.0 > help_thread.auto_archive_duration:
-                        slowmode_delay = discord.utils.MISSING
+
+                        thread_edits = {}
+                        thread_edits["archived"] = True
 
                         if (
                             any(
@@ -320,13 +322,26 @@ async def force_help_thread_archive_after_timeout():
                             == forum_channel.default_thread_slowmode_delay
                         ):
                             # solved and no overridden slowmode
-                            slowmode_delay = 60  # seconds
+                            thread_edits["slowmode_delay"] = 60  # seconds
+
+                        if not (
+                            help_thread.name.endswith(
+                                owner_id_suffix := f" | {help_thread.owner_id}"
+                            )
+                            or str(help_thread.owner_id) in help_thread.name
+                        ):  # wait for a few event loop iterations, before doing a second,
+                            # check, to be sure that a bot edit hasn't already occured
+                            thread_edits["archived"] = False
+                            thread_edits["name"] = (
+                                help_thread.name
+                                if len(help_thread.name) < 72
+                                else help_thread.name[:72] + "..."
+                            ) + owner_id_suffix
 
                         await help_thread.edit(
-                            archived=True,
-                            slowmode_delay=slowmode_delay,
                             reason="This help thread has been closed "
                             "after exceeding its inactivity timeout.",
+                            **thread_edits,
                         )
             except discord.HTTPException:
                 pass
