@@ -695,44 +695,49 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                 bad_thread_name = False
                 bad_thread_tags = False
 
+                owner_id_suffix_added = not before.name.endswith(
+                    owner_id_suffix
+                ) and after.name.endswith(owner_id_suffix)
+
                 if before.name != after.name:
                     if caution_types := get_help_forum_channel_thread_name_cautions(
                         after
                     ):
                         bad_thread_name = True
-                        caution_messages.extend(
-                            await caution_about_help_forum_channel_thread_name(
-                                after, *caution_types
-                            )
-                        )
-                        if (
-                            "thread_title_too_short" in caution_types
-                            and after.slowmode_delay
-                            < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                        ):
-                            thread_edits.update(
-                                dict(
-                                    slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                                    reason="Slowmode penalty for the title of this "
-                                    "help post being too short.",
+                        if not owner_id_suffix_added:
+                            caution_messages.extend(
+                                await caution_about_help_forum_channel_thread_name(
+                                    after, *caution_types
                                 )
                             )
-                        elif (
-                            after.slowmode_delay
-                            == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                        ):
-                            thread_edits.update(
-                                dict(
-                                    slowmode_delay=(
-                                        after.parent
-                                        or common.bot.get_channel(after.parent_id)
-                                        or await common.bot.fetch_channel(
-                                            after.parent_id
-                                        )
-                                    ).default_thread_slowmode_delay,
-                                    reason="This help post's title is not too short anymore.",
+                            if (
+                                "thread_title_too_short" in caution_types
+                                and after.slowmode_delay
+                                < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            ):
+                                thread_edits.update(
+                                    dict(
+                                        slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
+                                        reason="Slowmode penalty for the title of this "
+                                        "help post being too short.",
+                                    )
                                 )
-                            )
+                            elif (
+                                after.slowmode_delay
+                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                            ):
+                                thread_edits.update(
+                                    dict(
+                                        slowmode_delay=(
+                                            after.parent
+                                            or common.bot.get_channel(after.parent_id)
+                                            or await common.bot.fetch_channel(
+                                                after.parent_id
+                                            )
+                                        ).default_thread_slowmode_delay,
+                                        reason="This help post's title is not too short anymore.",
+                                    )
+                                )
 
                 elif before.applied_tags != after.applied_tags:
                     if (
