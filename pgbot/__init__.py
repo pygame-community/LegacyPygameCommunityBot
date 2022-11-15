@@ -532,7 +532,9 @@ async def caution_about_help_forum_channel_thread_name(
     return caution_messages
 
 
-def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> bool:
+def validate_regulars_help_forum_channel_thread_tags(
+    thread: discord.Thread,
+) -> bool:
     applied_tags = thread.applied_tags
     valid = True
     if applied_tags and not any(
@@ -541,7 +543,12 @@ def validate_regulars_help_forum_channel_thread_tags(thread: discord.Thread) -> 
         issue_tags = tuple(
             tag for tag in applied_tags if tag.name.lower().startswith("issue")
         )
-        if not len(issue_tags) or len(issue_tags) > 1:
+        aspect_tags = tuple(
+            tag
+            for tag in applied_tags
+            if not tag.name.lower().startswith(("issue", "unsolved"))
+        )
+        if not len(issue_tags) or len(issue_tags) > 1 or not aspect_tags:
             valid = False
 
     return valid
@@ -871,17 +878,16 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         **thread_edits
                     )  # apply edits in a batch to save API calls
 
-            elif after.archived:
+            elif after.archived and not after.locked:
                 if any(
                     tag.name.lower().startswith("solved") for tag in after.applied_tags
                 ):
                     thread_edits = {}
-                    thread_edits["archived"] = False
-                    parent = (
+                    parent: discord.ForumChannel = (
                         after.parent
                         or common.bot.get_channel(after.parent_id)
                         or await common.bot.fetch_channel(after.parent_id)
-                    )
+                    )  # type: ignore
                     if (
                         after.slowmode_delay == parent.default_thread_slowmode_delay
                     ):  # no custom slowmode override
@@ -898,9 +904,11 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                             else after.name[:72] + "..."
                         ) + owner_id_suffix
 
-                    await after.edit(**thread_edits)
-                    await asyncio.sleep(5)
-                    await after.edit(archived=True)
+                    if thread_edits:
+                        await after.edit(archived=False)
+                        await asyncio.sleep(5)
+                        thread_edits["archived"] = True
+                        await after.edit(**thread_edits)
 
         except discord.HTTPException:
             pass
