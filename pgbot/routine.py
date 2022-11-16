@@ -9,6 +9,7 @@ It gets called every 5 seconds or so.
 
 import asyncio
 import datetime
+import itertools
 import os
 import sys
 import time
@@ -18,9 +19,10 @@ from discord.ext import tasks
 import snakecore
 
 from pgbot import common
-from pgbot.utils.utils import (
+from pgbot.utils import (
     fetch_last_thread_activity_dt,
     fetch_last_thread_message,
+    help_thread_deletion_checks,
 )
 
 
@@ -144,11 +146,10 @@ async def inactive_help_thread_alert():
             return
 
         now_ts = time.time()
-        for _, help_thread in {
-            thread.id: thread
-            for thread in forum_channel.threads
-            + [thr async for thr in forum_channel.archived_threads(limit=20)]
-        }.items():
+        for help_thread in itertools.chain(
+            forum_channel.threads,
+            [thr async for thr in forum_channel.archived_threads(limit=20)],
+        ):
             try:
                 if not help_thread.created_at:
                     continue
@@ -231,56 +232,22 @@ async def delete_help_threads_without_starter_message():
         common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
         for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
     ]:
-        if not isinstance(forum_channel, discord.ForumChannel):
-            return
-
-        for help_thread in forum_channel.threads:
+        for help_thread in itertools.chain(
+            forum_channel.threads,
+            [thr async for thr in forum_channel.archived_threads(limit=20)],
+        ):
             try:
-                try:
-                    starter_message = (
-                        help_thread.starter_message
-                        or await help_thread.fetch_message(help_thread.id)
-                    )
-                except discord.NotFound:
-                    pass
-                else:
-                    continue  # starter message still exists, skip
-
-                member_msg_count = 0
-                async for thread_message in help_thread.history(
-                    limit=max(help_thread.message_count, 60)
-                ):
-                    if (
-                        not thread_message.author.bot
-                        and thread_message.type is discord.MessageType.default
-                    ):
-                        member_msg_count += 1
-                        if member_msg_count > 29:
-                            break
-
-                if member_msg_count < 30:
-                    common.hold_task(
-                        asyncio.create_task(_schedule_help_thread_deletion(help_thread))
-                    )
-            except discord.HTTPException:
+                starter_message = (
+                    help_thread.starter_message
+                    or await help_thread.fetch_message(help_thread.id)
+                )
+            except discord.NotFound:
                 pass
-
-
-async def _schedule_help_thread_deletion(thread: discord.Thread):
-    await thread.send(
-        embed=discord.Embed(
-            title="Post scheduled for deletion",
-            description=(
-                "Someone deleted the starter message of this post.\n\n"
-                "Since it contains less than 30 messages sent by "
-                "server members, it will be deleted "
-                f"**<t:{int(time.time()+300)}:R>**."
-            ),
-            color=0x551111,
-        )
-    )
-    await asyncio.sleep(300)
-    await thread.delete()
+            else:
+                continue  # starter message still exists, skip
+            common.hold_task(
+                asyncio.create_task(help_thread_deletion_checks(help_thread))
+            )
 
 
 @tasks.loop(hours=1, reconnect=True)
@@ -289,9 +256,6 @@ async def force_help_thread_archive_after_timeout():
         common.bot.get_channel(fid) or (await common.bot.fetch_channel(fid))
         for fid in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
     ]:
-        if not isinstance(forum_channel, discord.ForumChannel):
-            return
-
         now_ts = time.time()
         for help_thread in forum_channel.threads:
             try:

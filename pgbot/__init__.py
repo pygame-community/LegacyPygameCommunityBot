@@ -29,6 +29,7 @@ from pgbot.utils import (
     message_delete_reaction_listener,
     parse_text_to_mapping,
 )
+from pgbot.utils import help_thread_deletion_checks
 
 
 def setup_logging():
@@ -328,33 +329,7 @@ async def message_delete(msg: discord.Message):
         in common.GuildConstants.HELP_FORUM_CHANNEL_IDS.values()
         and msg.id == msg.channel.id  # OP deleted starter message
     ):
-        member_msg_count = 0
-        async for thread_message in msg.channel.history(
-            limit=max(msg.channel.message_count, 60)
-        ):
-            if (
-                not thread_message.author.bot
-                and thread_message.type == discord.MessageType.default
-            ):
-                member_msg_count += 1
-                if member_msg_count > 29:
-                    break
-
-        if member_msg_count < 30:
-            await msg.channel.send(
-                embed=discord.Embed(
-                    title="Post scheduled for deletion",
-                    description=(
-                        "Someone deleted the starter message of this post.\n\n"
-                        "Since it contains less than 30 messages sent by "
-                        "server members, it will be deleted "
-                        f"**<t:{int(time.time()+300)}:R>**."
-                    ),
-                    color=0x551111,
-                )
-            )
-            await asyncio.sleep(300)
-            await msg.channel.delete()
+        await help_thread_deletion_checks(msg.channel)
 
 
 async def message_edit(old: discord.Message, new: discord.Message):

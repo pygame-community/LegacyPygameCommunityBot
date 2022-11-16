@@ -11,6 +11,7 @@ from ast import literal_eval
 import asyncio
 import datetime
 import io
+import time
 from typing import Any, Callable, Coroutine, Optional, Sequence, Union
 
 
@@ -161,6 +162,37 @@ async def fetch_last_thread_message(
                 pass
 
     return last_message
+
+
+async def help_thread_deletion_checks(thread: discord.Thread):
+    member_msg_count = 0
+    try:
+        async for thread_message in thread.history(limit=max(thread.message_count, 60)):
+            if (
+                not thread_message.author.bot
+                and thread_message.type == discord.MessageType.default
+            ):
+                member_msg_count += 1
+                if member_msg_count > 29:
+                    break
+
+        if member_msg_count < 30:
+            await thread.send(
+                embed=discord.Embed(
+                    title="Post scheduled for deletion",
+                    description=(
+                        "Someone deleted the starter message of this post.\n\n"
+                        "Since it contains less than 30 messages sent by "
+                        "server members, it will be deleted "
+                        f"**<t:{int(time.time()+300)}:R>**."
+                    ),
+                    color=0x551111,
+                )
+            )
+            await asyncio.sleep(300)
+            await thread.delete()
+    except discord.HTTPException:
+        pass
 
 
 def split_wc_scores(scores: dict[int, int]):
