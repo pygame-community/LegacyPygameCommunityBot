@@ -446,14 +446,24 @@ class CommandMixinCog(commands.Cog):
             score_dict = {
                 mem: sum(scores) for mem, scores in rounds_dict["scores"].items()
             }
-            fields.append((rounds_dict["name"], rounds_dict["description"], False))
+            fields.append(
+                dict(
+                    name=rounds_dict["name"],
+                    value=rounds_dict["description"],
+                    inline=False,
+                )
+            )
 
         if score_dict:
             fields.extend(pgbot.utils.split_wc_scores(score_dict))
 
         else:
             fields.append(
-                ("There are no scores yet!", "Check back after sometime!", False)
+                dict(
+                    name="There are no scores yet!",
+                    value="Check back after sometime!",
+                    inline=False,
+                )
             )
 
         await snakecore.utils.embeds.replace_embed_at(

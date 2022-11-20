@@ -1882,7 +1882,7 @@ class AdminCommandCog(CommandMixinCog, SudoCommandCog, EmsudoCommandCog):
         the final scoreboard of all rounds combined.
         -----
         """
-        return self.events_wc_func(ctx, round_no=round_no)
+        return await self.events_wc_func(ctx, round_no=round_no)
 
     @admin_events_wc.command(name="set")
     @admin_only_and_custom_parsing(inside_class=True, inject_message_reference=True)

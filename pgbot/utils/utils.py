@@ -211,7 +211,7 @@ def split_wc_scores(scores: dict[int, int]):
             (f"`{score}` **•** {mem} :medal:" for score, mem in category_list)
         )
 
-        yield title, desc, False
+        yield dict(name=title, value=desc, inline=False)
         scores_list = scores_list[len(category_list) :]
 
 
