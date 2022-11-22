@@ -677,51 +677,59 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                 bad_thread_name = False
                 bad_thread_tags = False
 
-                owner_id_suffix_added = not before.name.endswith(
-                    owner_id_suffix
-                ) and after.name.endswith(owner_id_suffix)
+                updater_id = None
 
-                if before.name != after.name:
+                async for action in after.guild.audit_logs(
+                    limit=20, action=discord.AuditLogAction.thread_update
+                ):
+                    if (target := action.target) and target.id == after.id:
+                        if action.user:
+                            updater_id = action.user.id
+                            break
+
+                if before.name != after.name and updater_id != common.bot.user.id:
                     if caution_types := get_help_forum_channel_thread_name_cautions(
                         after
                     ):
                         bad_thread_name = True
-                        if not owner_id_suffix_added:
-                            caution_messages.extend(
-                                await caution_about_help_forum_channel_thread_name(
-                                    after, *caution_types
+                        caution_messages.extend(
+                            await caution_about_help_forum_channel_thread_name(
+                                after, *caution_types
+                            )
+                        )
+                        if (
+                            "thread_title_too_short" in caution_types
+                            and after.slowmode_delay
+                            < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                        ):
+                            thread_edits.update(
+                                dict(
+                                    slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
+                                    reason="Slowmode penalty for the title of this "
+                                    "help post being too short.",
                                 )
                             )
-                            if (
-                                "thread_title_too_short" in caution_types
-                                and after.slowmode_delay
-                                < common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                            ):
-                                thread_edits.update(
-                                    dict(
-                                        slowmode_delay=common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY,
-                                        reason="Slowmode penalty for the title of this "
-                                        "help post being too short.",
-                                    )
+                        elif (
+                            after.slowmode_delay
+                            == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
+                        ):
+                            thread_edits.update(
+                                dict(
+                                    slowmode_delay=(
+                                        after.parent
+                                        or common.bot.get_channel(after.parent_id)
+                                        or await common.bot.fetch_channel(
+                                            after.parent_id
+                                        )
+                                    ).default_thread_slowmode_delay,
+                                    reason="This help post's title is not too short anymore.",
                                 )
-                            elif (
-                                after.slowmode_delay
-                                == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
-                            ):
-                                thread_edits.update(
-                                    dict(
-                                        slowmode_delay=(
-                                            after.parent
-                                            or common.bot.get_channel(after.parent_id)
-                                            or await common.bot.fetch_channel(
-                                                after.parent_id
-                                            )
-                                        ).default_thread_slowmode_delay,
-                                        reason="This help post's title is not too short anymore.",
-                                    )
-                                )
+                            )
 
-                elif before.applied_tags != after.applied_tags:
+                elif (
+                    before.applied_tags != after.applied_tags
+                    and updater_id != common.bot.user.id
+                ):
                     if (
                         after.parent_id
                         == common.GuildConstants.HELP_FORUM_CHANNEL_IDS["regulars"]
@@ -750,7 +758,7 @@ async def thread_update(before: discord.Thread, after: discord.Thread):
                         (msg.id for msg in caution_messages)
                     )
                 else:
-                    if after.id in common.bad_help_thread_data:
+                    if after.id in common.bad_help_thread_data and updater_id != common.bot.user.id:
                         if (
                             after.slowmode_delay
                             == common.THREAD_TITLE_TOO_SHORT_SLOWMODE_DELAY
